@@ -61,9 +61,7 @@ export function rateLimiterMiddleware(
     return;
   }
 
-  // Deliberately use the direct socket address here. The application currently
-  // trusts reverse-proxy headers, so x-forwarded-for is not safe as a limiter key.
-  const key = req.socket.remoteAddress || 'unknown';
+  const key = req.ip || req.socket.remoteAddress || 'unknown';
   const now = Date.now();
   const result = enforceRateLimit(ipRateLimitMap, key, IP_MAX_REQUESTS, now);
 
@@ -94,7 +92,7 @@ export function authenticatedRateLimiterMiddleware(
   }
 
   const uid = (req as Request & { user?: { uid?: string } }).user?.uid;
-  const key = uid ? `uid:${uid}` : `ip:${req.socket.remoteAddress || 'unknown'}`;
+  const key = uid ? `uid:${uid}` : `ip:${req.ip || req.socket.remoteAddress || 'unknown'}`;
   const now = Date.now();
   const result = enforceRateLimit(authRateLimitMap, key, AUTH_MAX_REQUESTS, now);
 
