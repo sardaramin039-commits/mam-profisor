@@ -90,7 +90,17 @@ export class RagResearchService {
 
     this.http.post<{
       query: string;
-      candidates: RetrievedChunkModel[];
+      candidates: Array<{
+        chunkId: string;
+        documentId: string;
+        sourceId: string;
+        sourceTitle: string;
+        text: string;
+        verificationStatus: 'verified' | 'unverified';
+        score: number;
+        provenance?: { author?: string; year?: string };
+        retrievalStatus: string;
+      }>;
       metrics: {
         lexicalMatchCount: number;
         semanticMatchCount: number;
@@ -105,7 +115,19 @@ export class RagResearchService {
       limit
     }).subscribe({
       next: (result) => {
-        this.retrievedChunks.set(result.candidates || []);
+        this.retrievedChunks.set((result.candidates || []).map(candidate => ({
+          id: candidate.chunkId,
+          bookTitle: candidate.sourceTitle,
+          bookAuthor: candidate.provenance?.author,
+          author: candidate.provenance?.author,
+          year: candidate.provenance?.year ? Number(candidate.provenance.year) : undefined,
+          content: candidate.text,
+          relevanceScore: candidate.score,
+          text: candidate.text,
+          sourceTitle: candidate.sourceTitle,
+          isUsedInChapter: false,
+          isVerified: candidate.verificationStatus === 'verified'
+        })));
       },
       error: (err) => {
         console.error('RAG Retrieval Error:', err);
