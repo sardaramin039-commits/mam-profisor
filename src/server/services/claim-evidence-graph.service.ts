@@ -111,23 +111,11 @@ export class ClaimEvidenceGraphService {
     } catch (err: any) {
       console.error('Error building ClaimEvidenceGraph:', err);
       return {
-        claims: [
-          {
-            claimId: 'CLAIM-001',
-            text: 'تەوەرەی سەرەکی توێژینەوەکە پێویستی بە پشتڕاستکردنەوەی بەڵگەیی هەیە.',
-            sourceId: 'SRC-FALLBACK',
-            evidenceId: 'EVI-FALLBACK',
-            confidence: 80,
-            quote: 'سەرچاوەی بڕواپێکراو لە فەرهەنگی دیجیتاڵیی زانکۆکاندا هەیە.',
-            verificationStatus: 'verified',
-            citationId: 'CIT-001',
-            syntheticCitationBlocked: false
-          }
-        ],
+        claims: [],
         evidences: [],
         syntheticCitationsBlockedCount: 0,
-        graphIntegrityScore: 80,
-        kurdishSummary: 'گرافی پاشەکەوتی ئەکادیمی بۆ پاراستنی بونیادی بەڵگەکان.'
+        graphIntegrityScore: 0,
+        kurdishSummary: 'گرافی Claim-Evidence بەهۆی شکستی پشکنین دروست نەکرا؛ هیچ بەڵگە یان citation ـێکی ساختە پەسەند نەکرا.'
       };
     }
   }
