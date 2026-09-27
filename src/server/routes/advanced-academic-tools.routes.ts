@@ -187,5 +187,54 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
     }
   });
 
+  /**
+   * Viva Defense Answer Evaluation Endpoint
+   */
+  router.post('/evaluate_viva_defense', async (req: Request, res: Response) => {
+    try {
+      const { thesisTitle, chapterContext, question, answer, academicLevel = 'ماستەر' } = req.body;
+      if (typeof thesisTitle !== 'string' || typeof question !== 'string' || typeof answer !== 'string' || !answer.trim()) {
+        res.status(400).json({ error: 'ناونیشانی تێز، پرسیاری Viva و وەڵام پێویستن.' });
+        return;
+      }
+
+      const ai = getGeminiClient();
+      const prompt =
+        'تۆ هەڵسەنگێنەری Viva Voce ـی ئەکادیمیت.\n' +
+        'ئاستی خوێندن: ' + academicLevel + '\n' +
+        'ناونیشانی تێز: ' + thesisTitle + '\n' +
+        'کورتەی چوارچێوەی بەش: ' + String(chapterContext || '').slice(0, 8000) + '\n' +
+        'پرسیاری لێژنە: ' + question + '\n' +
+        'وەڵامی توێژەر: ' + answer + '\n\n' +
+        'وەڵام بە JSON بدەرەوە: {"evaluationStatus":"evaluated","score":0,"passBand":"strong|adequate|needs_revision","feedbackText":"پێداچوونەوەی ورد لەسەر وەڵامەکە","strengths":[],"weaknesses":[],"improvementActions":[]}\n' +
+        'نمرە تەنها هەڵسەنگاندنی AI ـیە، نە بڕیاری فەرمیی کۆتاییی زانکۆ. هیچ سەرچاوە یان citation لە خۆتەوە دروست مەکە.';
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: { responseMimeType: 'application/json', temperature: 0.1 }
+      });
+
+      const parsed = robustParseJson(response.text || '');
+      const numericScore = Number(parsed?.score);
+      const score = Number.isFinite(numericScore) ? Math.max(0, Math.min(100, numericScore)) : 0;
+      const validBand = ['strong', 'adequate', 'needs_revision'];
+
+      res.json({
+        evaluationStatus: 'evaluated',
+        score,
+        passBand: validBand.includes(parsed?.passBand) ? parsed.passBand : 'needs_revision',
+        isPassed: score >= 70,
+        feedbackText: parsed?.feedbackText || 'هەڵسەنگاندنی AI بۆ وەڵامەکە بەردەست بوو.',
+        strengths: Array.isArray(parsed?.strengths) ? parsed.strengths : [],
+        weaknesses: Array.isArray(parsed?.weaknesses) ? parsed.weaknesses : [],
+        improvementActions: Array.isArray(parsed?.improvementActions) ? parsed.improvementActions : []
+      });
+    } catch (error) {
+      console.error('Evaluate viva defense error:', error);
+      res.status(503).json({ error: 'هەڵسەنگاندنی وەڵامی Viva لەم کاتەدا بەردەست نییە.', code: 'VIVA_EVALUATION_UNAVAILABLE' });
+    }
+  });
+
   return router;
 }
