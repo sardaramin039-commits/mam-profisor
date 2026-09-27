@@ -50,6 +50,27 @@ export function generateDynamicAcademicFallback(params: FallbackParams): {
   academicNotes: string;
 } {
   const { chapterTitle, discipline, academicLevel, targetWords, documentTitle, currentChapterIndex } = params;
+
+  // Safety-first fallback: never invent empirical findings, scholars, citations, or research results.
+  // When the model is unavailable, return a structured drafting scaffold that explicitly requires
+  // verified evidence before factual claims are inserted.
+  const safeFallbackContent = [
+    `سەرنووسی کاتیی بەشی ${currentChapterIndex + 1}: «${chapterTitle}»`,
+    `\nئاستی خوێندن: ${academicLevel} | بوار: ${discipline}`,
+    `\n\n١. چوارچێوەی چەمکی\nئەم بەشە دەبێت چەمک و زاراوە سەرەکییەکانی «${chapterTitle}» بە پێناسەی ڕوون و بەستراو بە ئەدەبیاتی زانستی ڕاستەقینە ناسێنێت. هەر پێناسە یان ئیدعایەکی فاکتی دەبێت بە سەرچاوەی پشتڕاستکراو پشتگیری بکرێت.`,
+    `\n\n٢. پێداچوونەوەی ئەدەبیات\nلە ئەم شوێنەدا، توێژەر دەبێت سەرچاوە پەیوەندیدارەکان کۆبکاتەوە، جیاوازییەکانیان بخاتەڕوو، و تەنها ئەو ئەنجامانە باس بکات کە لە سەرچاوەکاندا بە ڕوونی هاتوون.`,
+    `\n\n٣. شیکردنەوە و مشتومڕ\nئەم بەشە دەبێت ئەرگیومێنت و ڕوانگە دژەکان بە شێوازی بێلایەن بەراورد بکات. نابێت هیچ داتا، ئەنجام، ناوی لێکۆڵەر، ساڵ، ژمارەی لاپەڕە یان سەرچاوەیەک خۆکارانە دروست بکرێت.`,
+    `\n\n٤. میتۆدۆلۆژی\nجۆری میتۆد، نموونە، ئامراز، شێوازی شیکردنەوە و سنووردارییەکان تەنها لەسەر بنەمای زانیارییە ڕاستەقینەکانی پڕۆژەکە دەنووسرێن. ئەگەر زانیاری نەدرابێت، دەبێت بە «پێویستی بە زانیاری/بەڵگە» نیشان بکرێت.`,
+    `\n\n٥. کۆتاییی کاتی\nپوختەی کۆتایی نابێت وەک ئەنجامی سەلمێندراوی توێژینەوە پیشان بدرێت تا ئەو کاتەی بەڵگە و داتا بەردەست بێت.\n\nبۆ پڕکردنەوەی ئەم بەشە، سەرچاوەی پشتڕاستکراو، داتا و ئەنجامە ڕاستەقینەکان زیاد بکە.`,
+    `\n\nناونیشانی تێز: ${documentTitle}`
+  ].join('');
+  const safeWordCount = safeFallbackContent.trim().split(/\\s+/).filter(Boolean).length;
+
+  return {
+    content: safeFallbackContent,
+    wordCount: safeWordCount,
+    academicNotes: `Fallback safety mode چالاکە: بەهۆی نەبوونی AI، هیچ سەرچاوە، داتا، ناوی توێژەر یان ئەنجامی ئەزموونی دروست نەکراوە. پێویستی بە بەڵگەی پشتڕاستکراو هەیە؛ ئامانجی داواکراو: نزیکەی ${targetWords} وشە.`
+  };
   
   // Extract key terms for custom contextual injection
   const keywords = extractKeywords(chapterTitle);
