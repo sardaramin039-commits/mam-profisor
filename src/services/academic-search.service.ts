@@ -39,16 +39,21 @@ export class AcademicSearchService {
       const results = response.data?.results;
       if (!Array.isArray(results)) return [];
 
-      return results.map((item: any) => ({
-        id: item.id || `openalex-${Math.random()}`,
-        title: item.display_name || item.title || 'سەردێڕی دیارینەکراو',
-        doi: item.doi || undefined,
-        authors: item.authorships?.map((a: any) => a.author?.display_name || '').filter(Boolean) || ['توێژەری نەناسراو'],
-        publicationYear: item.publication_year || new Date().getFullYear(),
-        abstract: item.abstract_inverted_index ? this.decodeAbstract(item.abstract_inverted_index) : undefined,
-        source: 'openalex' as const,
-        url: item.doi || (item.id ? `https://openalex.org/${item.id}` : undefined),
-      }));
+      return results.flatMap((item: any, index: number) => {
+        const title = (item.display_name || item.title || '').trim();
+        if (!title) return [];
+
+        return [{
+          id: item.id || item.doi || `openalex-${index}`,
+          title,
+          doi: item.doi || undefined,
+          authors: item.authorships?.map((a: any) => a.author?.display_name || '').filter(Boolean) || [],
+          publicationYear: typeof item.publication_year === 'number' ? item.publication_year : 0,
+          abstract: item.abstract_inverted_index ? this.decodeAbstract(item.abstract_inverted_index) : undefined,
+          source: 'openalex' as const,
+          url: item.doi || (item.id ? `https://openalex.org/${item.id}` : undefined),
+        }];
+      });
     } catch (error) {
       console.warn('[OpenAlex Error]:', error);
       return [];
@@ -78,15 +83,22 @@ export class AcademicSearchService {
       const items = response.data?.message?.items;
       if (!Array.isArray(items)) return [];
 
-      return items.map((item: any) => ({
-        id: item.DOI || `crossref-${Math.random()}`,
-        title: item.title?.[0] || 'سەردێڕی دیارینەکراو',
-        doi: item.DOI,
-        authors: item.author?.map((a: any) => `${a.given || ''} ${a.family || ''}`.trim()).filter(Boolean) || ['توێژەری نەناسراو'],
-        publicationYear: item.published?.['date-parts']?.[0]?.[0] || new Date().getFullYear(),
-        source: 'crossref' as const,
-        url: item.URL || (item.DOI ? `https://doi.org/${item.DOI}` : undefined),
-      }));
+      return items.flatMap((item: any, index: number) => {
+        const title = String(item.title?.[0] || '').trim();
+        if (!title) return [];
+
+        return [{
+          id: item.DOI || `crossref-${index}`,
+          title,
+          doi: item.DOI || undefined,
+          authors: item.author?.map((a: any) => `${a.given || ''} ${a.family || ''}`.trim()).filter(Boolean) || [],
+          publicationYear: typeof item.published?.['date-parts']?.[0]?.[0] === 'number'
+            ? item.published['date-parts'][0][0]
+            : 0,
+          source: 'crossref' as const,
+          url: item.URL || (item.DOI ? `https://doi.org/${item.DOI}` : undefined),
+        }];
+      });
     } catch (error) {
       console.warn('[CrossRef Error]:', error);
       return [];
@@ -121,20 +133,24 @@ export class AcademicSearchService {
       const items = response.data?.items;
       if (!Array.isArray(items)) return [];
 
-      return items.map((item: any) => {
+      return items.flatMap((item: any, index: number) => {
         const info = item.volumeInfo || {};
-        const yearMatch = info.publishedDate?.match(/\d{4}/);
-        const year = yearMatch ? parseInt(yearMatch[0], 10) : new Date().getFullYear();
+        const title = String(info.title || '').trim();
+        if (!title) return [];
 
-        return {
-          id: item.id || `gbooks-${Math.random()}`,
-          title: info.title || 'سەردێڕی دیارینەکراو',
-          authors: info.authors || ['نووسەری دیارینەکراو'],
-          publicationYear: year,
+        const yearMatch = typeof info.publishedDate === 'string'
+          ? info.publishedDate.match(/\d{4}/)
+          : null;
+
+        return [{
+          id: item.id || `gbooks-${index}`,
+          title,
+          authors: Array.isArray(info.authors) ? info.authors.filter(Boolean) : [],
+          publicationYear: yearMatch ? parseInt(yearMatch[0], 10) : 0,
           source: 'googlebooks' as const,
-          url: info.infoLink,
-          abstract: info.description ? info.description.slice(0, 200) + '...' : undefined,
-        };
+          url: info.infoLink || undefined,
+          abstract: typeof info.description === 'string' ? info.description.slice(0, 200) + '...' : undefined,
+        }];
       });
     } catch {
       return [];
