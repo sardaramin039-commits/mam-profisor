@@ -216,9 +216,7 @@ export class SourceVerificationEngine {
     // Adjust Reliability Score based on verification
     const finalScore = status === 'VERIFIED'
       ? Math.min(100, tierInfo.score + 5)
-      : status === 'PARTIALLY_VERIFIED'
-        ? tierInfo.score
-        : 0;
+      : 0;
 
     // Step 5: Cite (ONLY allowed if VERIFIED)
     const cited = status === 'VERIFIED';
