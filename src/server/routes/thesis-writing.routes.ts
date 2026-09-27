@@ -317,8 +317,30 @@ ${comparisonPrompt}
         config
       });
 
-      const text = response.text || '';
-      res.json(robustParseJson(text));
+      const parsed = robustParseJson(response.text || '{}') as Record<string, unknown>;
+      const generatedContent = typeof parsed['content'] === 'string'
+        ? parsed['content'].trim()
+        : '';
+
+      if (!generatedContent) {
+        throw new Error('Chapter generator returned no usable content.');
+      }
+
+      const rawWordCount = Number(parsed['wordCount']);
+      const wordCount = Number.isFinite(rawWordCount)
+        ? Math.max(0, Math.round(rawWordCount))
+        : generatedContent.split(/\s+/).filter(Boolean).length;
+
+      res.json({
+        content: generatedContent,
+        wordCount,
+        academicNotes: typeof parsed['academicNotes'] === 'string'
+          ? parsed['academicNotes']
+          : 'Chapter content generated successfully.',
+        citationStatus: 'not_verified',
+        citationPolicy: 'Citation and bibliography eligibility must be established by the source-verification/evidence pipeline.',
+        bibliography: []
+      });
     } catch (error) {
       console.error('Generate chapter error:', error);
       const fallbackTitle = req.body.chapterTitle || 'ناونیشانی بەشەکە';
@@ -331,7 +353,10 @@ ${comparisonPrompt}
       res.json({
         content: fallbackText,
         wordCount: fallbackText.trim().split(/\s+/).filter(Boolean).length,
-        academicNotes: 'دەقی بەشەکە بە ڕێگەی مۆدێلی ئۆفلاین دروستکرا.'
+        academicNotes: 'AI بەردەست نەبوو؛ ئەم وەڵامە تەنها scaffold ـە و هیچ citation ی پشتڕاستکراوی تێدا نییە.',
+        citationStatus: 'not_verified',
+        citationPolicy: 'No citation is emitted from fallback mode.',
+        bibliography: []
       });
     }
   });
