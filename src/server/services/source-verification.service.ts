@@ -1,5 +1,3 @@
-import { GoogleGenAI } from '@google/genai';
-import { robustParseJson } from '../utils/json-repair';
 
 export type TrustLevel = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
 
@@ -190,7 +188,7 @@ function buildUnverifiedReport(source: SourceInput, detail: string): SourceVerif
 export class SourceVerificationService {
   public async verifySources(
     sources: SourceInput[],
-    getGeminiClient: () => GoogleGenAI
+    _getGeminiClient?: unknown
   ): Promise<{ verifiedSources: SourceVerificationReport[]; rejectedSourcesCount: number }> {
     if (!Array.isArray(sources) || sources.length === 0) {
       return { verifiedSources: [], rejectedSourcesCount: 0 };
@@ -200,49 +198,15 @@ export class SourceVerificationService {
       sources.map(source => verifyAgainstCrossref(source))
     );
 
-    let aiReports: SourceVerificationReport[] = [];
-    try {
-      const ai = getGeminiClient();
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: `ئەم سەرچاوانە تەنها لە ڕووی metadata ـی ناوخۆیی شیکاربکە. نابێت بە خۆت بڵێیت سەرچاوەکە هەیە مەگەر بەڵگەی registry هەبێت.
-سەرچاوەکان:
-${JSON.stringify(sources)}
-
-بۆ هەر سەرچاوەیەک JSON ـێک بدە:
-{
-  "reports": [
-    {
-      "sourceTitle": "ناوی سەرچاوە",
-      "author": "نووسەر",
-      "publisher": "بڵاوکار",
-      "metadataAccuracy": 0,
-      "peerReviewed": false
-    }
-  ]
-}`,
-        config: { responseMimeType: 'application/json', temperature: 0.1 }
-      });
-      const parsed = robustParseJson(response.text || '{}') as any;
-      aiReports = Array.isArray(parsed?.reports) ? parsed.reports : [];
-    } catch {
-      aiReports = [];
-    }
-
     const verifiedSources: SourceVerificationReport[] = [];
     let rejectedSourcesCount = 0;
 
     for (let index = 0; index < sources.length; index += 1) {
       const source = sources[index];
       const match = registryMatches[index];
-      const ai = aiReports.find(
-        report => normalize(report?.sourceTitle) === normalize(source.title)
-      );
 
       if (!match.verified) {
-        if (ai?.rejectedAsFabricated === true || ai?.trustLevel === 'F') {
-          rejectedSourcesCount += 1;
-        }
+        rejectedSourcesCount += 1;
         continue;
       }
 
@@ -268,14 +232,11 @@ ${JSON.stringify(sources)}
         peerReviewed: false,
         rejectedAsFabricated: false,
         kurdishVerificationDetails: match.detail +
-          ' تێبینی: Crossref بوونی metadata پشتڕاست دەکات، بەڵام بە تەنیا خۆی peer-review یان کوالیتی زانستی نادەسەلمێنێت.'
+          ' تێبینی: registry تەنها بوونی metadata ـەکە پشتڕاست دەکات؛ peer-review یان کوالێتی زانستی بە تەنیا لەم پشکنینەوە ناسڕێتەوە.'
       });
     }
 
-    return {
-      verifiedSources,
-      rejectedSourcesCount
-    };
+    return { verifiedSources, rejectedSourcesCount };
   }
 }
 
