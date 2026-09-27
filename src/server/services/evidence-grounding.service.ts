@@ -87,13 +87,20 @@ export class EvidenceGroundingService {
       return gate.eligible;
     });
 
-    const prompt = `تۆ سەرنووسەرێکی ئەکادیمی باڵای زانکۆی هارفەردیت و بەرپرسی بزوێنەری Evidence Intelligence یت.
+    if (eligibleChunks.length === 0) {
+      return this.createFallbackGroundedResult(
+        topic,
+        verifiedEvidenceChunks
+      );
+    }
+
+    const prompt = `تۆ سەرنووسەرێکی ئەکادیمی و بەرپرسی بزوێنەری Evidence Intelligence یت.
 ئەرکی تۆ: دروستکردنی دەقێکی زانستیی فەرمی بە کوردی بۆ:
 تەوەرە: ${topic}
 داواکاری: ${promptText}
 
 بەڵگە بڕواپێکراوەکان (VERIFIED EVIDENCE):
-${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceChunks, null, 2)}
+${JSON.stringify(eligibleChunks, null, 2)}
 
 یاسای نەگۆڕی Citation Eligibility Gate:
 1. تەنها ئەو ادعانەی (Claims) کە بەڵگەی سەلمێنراوی VERIFIED یان لە لیستەکەدا هەیە مافی Citationیان هەیە.
