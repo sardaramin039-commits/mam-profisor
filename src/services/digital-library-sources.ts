@@ -462,5 +462,9 @@ const combinedSourcesMap = new Map<string, LibrarySource>();
   }
 });
 
-export const DIGITAL_LIBRARY_SOURCES: LibrarySource[] = Array.from(combinedSourcesMap.values());
+export const DIGITAL_LIBRARY_SOURCES: LibrarySource[] = Array.from(combinedSourcesMap.values()).map(source => ({
+  ...source,
+  status: 'idle',
+  lastSync: ''
+}));
 
