@@ -2805,13 +2805,10 @@
                           </button>
                         </div>
 
-                        <button 
-                          type="button" 
-                          (click)="verifyChunkSource(chunk)"
-                          class="px-3 py-1.5 bg-amber-900 hover:bg-amber-950 text-white text-[10.5px] font-bold font-serif rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-xs">
-                          <mat-icon class="!text-xs text-amber-300">verified</mat-icon>
-                          <span>پشتڕاستکردنەوەی سەرچاوە (Verify Source)</span>
-                        </button>
+                        <span class="px-3 py-1.5 bg-stone-100 text-stone-600 text-[10.5px] font-bold font-serif rounded-lg flex items-center gap-1 border border-stone-200" title="پشتڕاستکردنەوەی واقعی لە registry پێویستە">
+                          <mat-icon class="!text-xs text-stone-500">fact_check</mat-icon>
+                          <span>پشتڕاستکردنەوەی registry پێویستە</span>
+                        </span>
                       </div>
 
                     </div>
@@ -2868,7 +2865,7 @@
                       <div class="p-3 bg-stone-50 rounded-lg border border-stone-200 space-y-1">
                         <span class="text-[9.5px] font-bold text-stone-500 font-mono uppercase block">قواڵتەی سەرچاوەی APA:</span>
                         <p class="text-xs text-stone-900 font-serif leading-relaxed font-semibold">
-                          {{ chunk.author }} ({{ chunk.year }}). <em>{{ chunk.bookTitle }}</em>. کتێبخانەی مام، لاپەڕە {{ chunk.pageNumber }}.
+                          {{ chunk.author || 'نووسەر نادیارە' }}{{ chunk.year ? ' (' + chunk.year + ')' : '' }}. <em>{{ chunk.bookTitle }}</em>{{ chunk.publisher ? '. ' + chunk.publisher : '' }}{{ chunk.pageNumber ? ', لاپەڕە ' + chunk.pageNumber + '.' : '.' }}
                         </p>
                       </div>
 
@@ -2876,19 +2873,16 @@
                       <div class="flex items-center justify-between flex-wrap gap-2 pt-1 text-xs">
                         <button 
                           type="button"
-                          (click)="copyToClipboard(chunk.author + ' (' + chunk.year + '). ' + chunk.bookTitle + '. کتێبخانەی مام، لاپەڕە ' + chunk.pageNumber + '.')"
+                          (click)="copyToClipboard((chunk.author || 'نووسەر نادیارە') + (chunk.year ? ' (' + chunk.year + ')' : '') + '. ' + chunk.bookTitle + (chunk.publisher ? '. ' + chunk.publisher : '') + (chunk.pageNumber ? ', لاپەڕە ' + chunk.pageNumber + '.' : '.'))"
                           class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 text-[10.5px] font-bold font-serif rounded-lg transition-all flex items-center gap-1 cursor-pointer">
                           <mat-icon class="!text-xs">content_copy</mat-icon>
                           <span>کۆپیکردنی سەرچاوە (Copy Citation)</span>
                         </button>
 
-                        <button 
-                          type="button" 
-                          (click)="verifyChunkSource(chunk)"
-                          class="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white text-[10.5px] font-bold font-serif rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-xs">
-                          <mat-icon class="!text-xs text-emerald-300">fact_check</mat-icon>
-                          <span>بڕوانامەی پشکنین (Verify Source)</span>
-                        </button>
+                        <span class="px-3 py-1.5 bg-stone-100 text-stone-600 text-[10.5px] font-bold font-serif rounded-lg flex items-center gap-1 border border-stone-200" title="پشتڕاستکردنەوەی واقعی لە registry پێویستە">
+                          <mat-icon class="!text-xs text-stone-500">fact_check</mat-icon>
+                          <span>پشتڕاستکردنەوەی registry پێویستە</span>
+                        </span>
                       </div>
 
                     </div>
