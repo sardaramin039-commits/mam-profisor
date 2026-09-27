@@ -95,7 +95,9 @@ ${JSON.stringify(s2Results)}
             parsed.matchedArticles[idx].year = p.year || parsed.matchedArticles[idx].year;
             parsed.matchedArticles[idx].doi = p.externalIds?.DOI || parsed.matchedArticles[idx].doi;
             parsed.matchedArticles[idx].source = 'Semantic Scholar';
-            parsed.matchedArticles[idx].sourceVerified = true;
+            parsed.matchedArticles[idx].sourceVerified = false;
+            parsed.matchedArticles[idx].retrievedFromIndex = true;
+            parsed.matchedArticles[idx].verificationStatus = 'retrieved-not-verified';
           }
         });
       }
