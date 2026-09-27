@@ -35,7 +35,7 @@ class ApiConfigService {
         };
       }
       case 'openai': {
-        const key = process.env['OPENAI_API_KEY'] || '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';
+        const key = process.env['OPENAI_API_KEY'];
         const baseUrl = process.env['OPENAI_BASE_URL'] || 'https://api.openai.com/v1';
         return {
           provider: 'openai',
@@ -93,7 +93,7 @@ class ApiConfigService {
       case 'gemini':
         return process.env['GEMINI_API_KEY'];
       case 'openai':
-        return process.env['OPENAI_API_KEY'] || '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';
+        return process.env['OPENAI_API_KEY'];
       case 'claude':
         return process.env['ANTHROPIC_API_KEY'] || process.env['CLAUDE_API_KEY'];
       case 'perplexity':
