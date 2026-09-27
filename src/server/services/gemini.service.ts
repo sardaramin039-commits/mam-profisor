@@ -2,6 +2,47 @@ import { GoogleGenAI } from '@google/genai';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+function lowerErrorMessage(error: unknown): string {
+  return (error instanceof Error ? error.message : String(error || '')).toLowerCase();
+}
+
+const SUPPORTED_FALLBACK_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.7-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-2.5-flash',
+];
+
+function normalizeModelName(model: string): string {
+  return model === 'gemini-2.0-flash' ? 'gemini-3.8-flash' : model;
+}
+
+function normalizeGeminiParams(params: Record<string, unknown>, model: string): Record<string, unknown> {
+  const normalized = { ...params, model: normalizeModelName(model) };
+  if (!normalized.config || typeof normalized.config !== 'object') return normalized;
+
+  const config = { ...(normalized.config as Record<string, unknown>) };
+  if (model === 'gemini-3.8-flash') {
+    delete config['temperature'];
+    delete config['topP'];
+    delete config['topK'];
+    delete config['candidateCount'];
+
+    if (config['thinkingConfig'] && typeof config['thinkingConfig'] === 'object') {
+      const thinkingConfig = { ...(config['thinkingConfig'] as Record<string, unknown>) };
+      delete thinkingConfig['thinkingBudget'];
+      config['thinkingConfig'] = thinkingConfig;
+    }
+  }
+
+  if (Array.isArray(config['tools']) && (config['tools'] as unknown[]).length > 0) {
+    delete config['responseMimeType'];
+  }
+
+  return { ...normalized, config };
+}
+
 export function isTransientError(error: unknown): boolean {
   if (!error) return false;
   const msg = error instanceof Error ? error.message : String(error);
@@ -19,6 +60,7 @@ export function isTransientError(error: unknown): boolean {
 }
 
 let geminiClientsPool: GoogleGenAI[] = [];
+let geminiKeySignature = '';
 let nextClientIndex = 0;
 
 export function getGeminiClient(): GoogleGenAI {
@@ -45,7 +87,10 @@ export function getGeminiClient(): GoogleGenAI {
     } as unknown as GoogleGenAI;
   }
 
-  if (geminiClientsPool.length !== keys.length) {
+  const keySignature = keys.join('|');
+  if (geminiKeySignature !== keySignature) {
+    geminiKeySignature = keySignature;
+    nextClientIndex = 0;
     geminiClientsPool = keys.map((key, index) => {
       const client = new GoogleGenAI({
         apiKey: key,
@@ -69,30 +114,16 @@ export function getGeminiClient(): GoogleGenAI {
       
       robustClient.models.generateContent = async (params: unknown) => {
         let lastError: unknown = null;
-        const typedParams = params as { model?: string; config?: { thinkingConfig?: unknown; [key: string]: unknown }; [key: string]: unknown };
-        const originalModel = typedParams?.model || 'gemini-3.8-flash';
+        const typedParams = params as { model?: string; config?: Record<string, unknown>; [key: string]: unknown };
+        const originalModel = normalizeModelName(typedParams?.model || 'gemini-3.8-flash');
 
         const modelSequence = [originalModel];
-        const textModelsBackup = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'];
-        for (const m of textModelsBackup) {
-          if (!modelSequence.includes(m)) {
-            modelSequence.push(m);
-          }
+        for (const model of SUPPORTED_FALLBACK_MODELS) {
+          if (!modelSequence.includes(model)) modelSequence.push(model);
         }
 
         for (const targetModel of modelSequence) {
-          let currentParams = { ...typedParams, model: targetModel };
-          if (currentParams.config && typeof currentParams.config === 'object') {
-            const cleanedConfig = { ...currentParams.config } as Record<string, unknown>;
-            if (!targetModel.startsWith('gemini-3.8') && !targetModel.startsWith('gemini-3.5') && !targetModel.startsWith('gemini-3.1')) {
-              delete cleanedConfig['thinkingConfig'];
-            }
-            const tools = cleanedConfig['tools'];
-            if (tools && Array.isArray(tools) && tools.length > 0) {
-              delete cleanedConfig['responseMimeType'];
-            }
-            currentParams = { ...currentParams, config: cleanedConfig };
-          }
+          const currentParams = normalizeGeminiParams(typedParams, targetModel);
 
           for (let attempt = 0; attempt < keys.length; attempt++) {
             const activeIndex = (index + attempt) % keys.length;
@@ -120,6 +151,10 @@ export function getGeminiClient(): GoogleGenAI {
                 lastKeyError = error;
                 const errMsg = error instanceof Error ? error.message : String(error);
                 const isTransient = isTransientError(error);
+                const message = lowerErrorMessage(error);
+                                const isModelAvailabilityError =
+                  message.includes('not found') ||
+                  (message.includes('model') && message.includes('unsupported'));
                 
                 console.warn(`[GEMINI ATTEMPT FAIL] SDK call failed for key index ${activeIndex} with model ${targetModel} (Attempt ${retry + 1}/3). Error: ${errMsg}.`);
                 
@@ -135,9 +170,17 @@ export function getGeminiClient(): GoogleGenAI {
 
             if (success) {
               return result;
-            } else {
-              lastError = lastKeyError;
-              console.warn(`[GEMINI FAILOVER] Attempt exhausted for key index ${activeIndex} with model ${targetModel}. Trying next fallback options if available...`);
+            }
+
+            lastError = lastKeyError;
+            const message = lowerErrorMessage(lastKeyError);
+            const shouldTryNextModel =
+              isTransientError(lastKeyError) ||
+              message.includes('not found') ||
+              (message.includes('model') && message.includes('unsupported'));
+
+            if (!shouldTryNextModel) {
+              throw lastKeyError;
             }
           }
         }
