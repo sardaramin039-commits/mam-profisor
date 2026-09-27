@@ -17,7 +17,7 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
   /**
    * GET /api/research-memory/:projectId
    */
-  router.get('/:projectId', (req, res) => {
+  router.get('/:projectId', async (req, res) => {
     try {
       const userId = (req as any).user?.uid;
       if (!userId) {
@@ -29,7 +29,7 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
         res.status(400).json({ error: 'ناسنامەی پڕۆژە نادروستە.' });
         return;
       }
-      const projectState = researchMemoryService.getProjectMemory(userId, projectId);
+      const projectState = await researchMemoryService.hydrateProjectState(userId, projectId);
       res.json(projectState);
     } catch (err: unknown) {
       console.error('Research Memory Get Error:', err);
@@ -40,7 +40,7 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
   /**
    * POST /api/research-memory/:projectId/items
    */
-  router.post('/:projectId/items', (req, res) => {
+  router.post('/:projectId/items', async (req, res) => {
     try {
       const userId = (req as any).user?.uid;
       if (!userId) {
@@ -52,6 +52,7 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
         res.status(400).json({ error: 'ناسنامەی پڕۆژە نادروستە.' });
         return;
       }
+      await researchMemoryService.hydrateProjectState(userId, projectId);
       const parsed = memoryItemSchema.safeParse(req.body ?? {});
       if (!parsed.success) {
         res.status(400).json({ error: 'داتای بڕگەی یادگە نادروستە.', issues: parsed.error.issues });
