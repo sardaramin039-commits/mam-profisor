@@ -9,7 +9,7 @@ export class DigitalLibraryCrawlerEngine {
     {
       id: 'log-001',
       timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
-      status: 'success',
+      status: 'warning',
       recordsCrawled: 0,
       duplicatesRemoved: 0,
       sourcesProcessed: this.sources.length,
@@ -74,26 +74,23 @@ export class DigitalLibraryCrawlerEngine {
       .trim();
   }
 
-  // Auto Crawl & Sync trigger for all 40 digital libraries
+  // Sync status for the configured catalog; live crawling is not implemented here.
   public async triggerSync(): Promise<CrawlerSyncLog> {
     const startTime = Date.now();
-    let newlyCrawledCount = 0;
-
-    // Live crawling is not configured in this engine.
-    // Only locally available catalog records are deduplicated.
+    // Live crawling is not configured in this engine; do not report a false successful sync.
     const dedup = this.runDeduplication();
-    newlyCrawledCount = 0;
+    const newlyCrawledCount = 0;
     const durationMs = Date.now() - startTime;
 
     const log: CrawlerSyncLog = {
       id: `log-${Date.now()}`,
       timestamp: new Date().toISOString(),
-      status: 'success',
+      status: 'warning',
       recordsCrawled: newlyCrawledCount,
       duplicatesRemoved: dedup.removedCount,
       sourcesProcessed: this.sources.length,
       durationMs,
-      message: `گەڕان و تێکەڵکردنی ٤٠ کتێبخانەی دیجیتاڵی بەسەرکەوتوویی ئەنجامدرا. ${newlyCrawledCount} تۆماری نوێ ئیندێکسکران.`
+      message: `گەڕان و تێکەڵکردنی کەتەلۆگی ناوخۆیی ئەنجامدرا؛ crawling ـی زیندووی سەرچاوەکان configured نییە. ${newlyCrawledCount} تۆماری نوێ لەم نۆرەیەدا دۆزرایەوە.`
     };
 
     this.syncLogs.unshift(log);
@@ -134,12 +131,12 @@ export class DigitalLibraryCrawlerEngine {
       language: book.language || 'ckb',
       description: book.description || '',
       coverImage: book.coverImage || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600',
-      sourceUrl: book.sourceUrl || 'https://www.kurdipedia.org',
+      sourceUrl: book.sourceUrl || '',
       sourceName: book.sourceName || 'دەستکاری دروستکراو',
       sourceId: book.sourceId || 'kurdipedia',
       sourceCategory: book.sourceCategory || 'kurdish',
       documentType: book.documentType || 'book',
-      downloadUrl: book.downloadUrl || '#',
+      downloadUrl: book.downloadUrl || '',
       subjects: book.subjects || ['گشتی'],
       rating: 0,
       reviewCount: 0,
