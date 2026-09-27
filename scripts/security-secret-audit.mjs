@@ -6,6 +6,7 @@ const trackedFiles = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
 
 const secretPatterns = [
   /sk-(?:proj-)?[A-Za-z0-9_-]{20,}/,
+  /AIza[0-9A-Za-z_-]{20,}/,
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
   /gh[pousr]_[A-Za-z0-9_]{20,}/,
 ];
