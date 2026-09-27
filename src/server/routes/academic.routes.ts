@@ -18,6 +18,7 @@ import {
 } from '../../helpers/academic-integrations.js';
 import { resolveDoi, lookupIsbn, lookupIssn } from '../../helpers/extended-academic-tools.js';
 import { crawlerEngine } from '../../services/crawler-engine';
+import { academicSearchService } from '../../services/academic-search.service';
 
 export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -154,6 +155,126 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
         retrievalPolicy: 'fail-closed',
         verificationPolicy: 'no-source-on-provider-failure'
       });
+    }
+  });
+
+  // /api/deep_research_agent
+  router.post('/deep_research_agent', async (req: Request, res: Response) => {
+    try {
+      const { topic, discipline, documentTitle } = req.body || {};
+      if (!topic || typeof topic !== 'string' || topic.trim().length < 2) {
+        res.status(400).json({ error: 'بابەتی توێژینەوە پێویستە.' });
+        return;
+      }
+
+      const normalizedTopic = topic.trim().slice(0, 500);
+      const normalizedDiscipline = typeof discipline === 'string'
+        ? discipline.trim().slice(0, 200)
+        : 'گشتی';
+      const searchQuery = normalizedDiscipline && normalizedDiscipline !== 'گشتی'
+        ? `${normalizedTopic} ${normalizedDiscipline}`
+        : normalizedTopic;
+
+      const sources = await academicSearchService.searchAll(searchQuery, 10);
+      const sourceContext = sources.map((source, index) => ({
+        id: source.id,
+        title: source.title,
+        authors: source.authors,
+        publicationYear: source.publicationYear,
+        abstract: source.abstract || '',
+        source: source.source,
+        doi: source.doi || '',
+        url: source.url || ''
+      }));
+
+      if (sources.length === 0) {
+        res.json({
+          topic: normalizedTopic,
+          discipline: normalizedDiscipline,
+          documentTitle: typeof documentTitle === 'string' ? documentTitle.trim().slice(0, 500) : '',
+          executiveSummary: '',
+          keyFindings: [],
+          theoreticalFramework: '',
+          methodologicalInsights: '',
+          academicSources: [],
+          kurdishAcademicSynthesis: '',
+          futureAvenues: [],
+          sourceIntegrity: {
+            retrievalStatus: 'no-results',
+            sourceCount: 0,
+            verificationStatus: 'not-verified'
+          },
+          message: 'هیچ تۆمارێکی لە index ـە ئەکادیمییەکاندا بۆ ئەم بابەتە نەدۆزرایەوە؛ هیچ سەرچاوەی ساختە دروست نەکرا.'
+        });
+        return;
+      }
+
+      const ai = getGeminiClient();
+      const prompt = `توێژینەوەیەکی قووڵی ئەکادیمی بۆ بابەتی «${normalizedTopic}» بکە لە بواری «${normalizedDiscipline}».
+
+تەنها ئەم تۆمارە ڕاستەقینانەی خوارەوە بەکاربهێنە:
+${JSON.stringify(sourceContext, null, 2)}
+
+یاساکانی گرنگ:
+- هیچ نووسەر، ساڵ، DOI، ناونیشان، دەرئەنجام یان statistic ـێکی نوێ لە خۆتەوە دروست مەکە.
+- ئەگەر داتای سەرچاوە بۆ پشتگیری بانگەشەیەک کافی نییە، بە ڕوونی بڵێ «بەڵگەی بەس نییە».
+- جیاوازی بکە لەنێوان زانیارییەکانی source record و inference ـی شیکاری.
+- هیچ citation ـێک دروست مەکە کە لە sourceContext ـدا نییە.
+
+تەنها JSON:
+{
+  "executiveSummary": "پوختەی شیکاری",
+  "keyFindings": ["خاڵی یەکەم"],
+  "theoreticalFramework": "چوارچێوەی تیۆری؛ ئەگەر لە تۆمارەکاندا بەڵگە نییە، بنووسە بەڵگەی بەس نییە.",
+  "methodologicalInsights": "تێبینیی مێتۆدۆلۆژی لەسەر ئەو data ـی بەردەست",
+  "kurdishAcademicSynthesis": "سینتێزی ئەکادیمی بە سۆرانی",
+  "futureAvenues": ["ڕێگای داهاتوو"]
+}`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.15
+        }
+      });
+
+      const parsed = robustParseJson(response.text || '{}') as Record<string, unknown>;
+      const stringArray = (value: unknown): string[] =>
+        Array.isArray(value)
+          ? value.filter((item): item is string => typeof item === 'string').slice(0, 20)
+          : [];
+
+      res.json({
+        topic: normalizedTopic,
+        discipline: normalizedDiscipline,
+        documentTitle: typeof documentTitle === 'string' ? documentTitle.trim().slice(0, 500) : '',
+        executiveSummary: typeof parsed.executiveSummary === 'string' ? parsed.executiveSummary : '',
+        keyFindings: stringArray(parsed.keyFindings),
+        theoreticalFramework: typeof parsed.theoreticalFramework === 'string' ? parsed.theoreticalFramework : '',
+        methodologicalInsights: typeof parsed.methodologicalInsights === 'string' ? parsed.methodologicalInsights : '',
+        academicSources: sources.map(source => ({
+          title: source.title,
+          authors: source.authors.join(', '),
+          year: source.publicationYear > 0 ? String(source.publicationYear) : 'n.d.',
+          journal: source.source,
+          relevance: 'retrieved-from-index',
+          doi: source.doi || undefined,
+          url: source.url || undefined,
+          verificationStatus: 'not-verified'
+        })),
+        kurdishAcademicSynthesis: typeof parsed.kurdishAcademicSynthesis === 'string' ? parsed.kurdishAcademicSynthesis : '',
+        futureAvenues: stringArray(parsed.futureAvenues),
+        sourceIntegrity: {
+          retrievalStatus: 'index-results',
+          sourceCount: sources.length,
+          verificationStatus: 'not-verified'
+        }
+      });
+    } catch (error) {
+      console.error('Deep Research Agent error:', error);
+      res.status(500).json({ error: 'کێشەیەک لە توێژینەوەی قووڵ ڕوویدا؛ هیچ سەرچاوەی خەیاڵی دەرنەهێنرا.' });
     }
   });
 
