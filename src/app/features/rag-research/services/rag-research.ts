@@ -35,14 +35,22 @@ export class RagResearchService {
 
   toggleChunkInChapter(chunkId: string) {
     this.retrievedChunks.update(list =>
-      list.map(c => c.id === chunkId ? { ...c, isUsedInChapter: !c.isUsedInChapter } : c)
+      list.map(c => {
+        if (c.id !== chunkId) return c;
+        const nextUsed = !(c.isUsedInChapter ?? c.isUsed ?? false);
+        return {
+          ...c,
+          isUsedInChapter: nextUsed,
+          isUsed: nextUsed
+        };
+      })
     );
   }
 
   getSelectedChunksContent(): string {
     return this.retrievedChunks()
-      .filter(c => c.isUsedInChapter)
-      .map(c => `📖 کتێبی: ${c.bookTitle} (${c.bookAuthor})\n${c.content}`)
+      .filter(c => c.isUsedInChapter ?? c.isUsed ?? false)
+      .map(c => `📖 کتێبی: ${c.bookTitle} (${c.bookAuthor || c.author || 'نووسەری نەناسراو'})\n${c.content}`)
       .join('\n\n---\n\n');
   }
 
