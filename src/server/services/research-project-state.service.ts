@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { adminDb } from '../../lib/firebase-admin';
 import { researchMemoryService, ResearchProjectState } from './research-memory.service';
 import { multiAgentOrchestratorService } from './multi-agent-orchestrator.service';
 
@@ -15,6 +16,50 @@ export interface WorkspaceSession {
 
 class ResearchProjectStateService {
   private workspaces: Map<string, WorkspaceSession> = new Map();
+
+  private workspaceRef(userId: string, workspaceId: string) {
+    return adminDb.collection('research_workspaces').doc(userId).collection('items').doc(workspaceId);
+  }
+
+  public async hydrateWorkspace(
+    userId: string,
+    workspaceId: string,
+    projectName?: string
+  ): Promise<WorkspaceSession> {
+    const workspace = this.getOrCreateWorkspace(userId, workspaceId, projectName);
+    try {
+      const snapshot = await this.workspaceRef(userId, workspaceId).get();
+      if (snapshot.exists) {
+        const data = snapshot.data() || {};
+        workspace.projectName = typeof data.projectName === 'string' ? data.projectName : workspace.projectName;
+        workspace.activeChapter = typeof data.activeChapter === 'string' ? data.activeChapter : workspace.activeChapter;
+        workspace.draftContent = typeof data.draftContent === 'string' ? data.draftContent : workspace.draftContent;
+        workspace.citationsList = Array.isArray(data.citationsList) ? data.citationsList : workspace.citationsList;
+        workspace.integrityScore = Number.isFinite(Number(data.integrityScore))
+          ? Math.max(0, Math.min(100, Number(data.integrityScore)))
+          : workspace.integrityScore;
+        workspace.lastSavedAt = typeof data.lastSavedAt === 'string' ? data.lastSavedAt : workspace.lastSavedAt;
+      } else {
+        await this.persistWorkspace(workspace);
+      }
+    } catch (error) {
+      console.warn('[ResearchWorkspace Firestore hydrate unavailable]:', (error as Error)?.message || error);
+    }
+    return workspace;
+  }
+
+  public async persistWorkspace(workspace: WorkspaceSession): Promise<void> {
+    await this.workspaceRef(workspace.userId, workspace.workspaceId).set({
+      workspaceId: workspace.workspaceId,
+      userId: workspace.userId,
+      projectName: workspace.projectName,
+      activeChapter: workspace.activeChapter,
+      draftContent: workspace.draftContent.slice(0, 500_000),
+      citationsList: workspace.citationsList.slice(0, 500),
+      integrityScore: Math.max(0, Math.min(100, workspace.integrityScore)),
+      lastSavedAt: workspace.lastSavedAt
+    }, { merge: true });
+  }
 
   public getOrCreateWorkspace(userId: string, workspaceId: string, projectName?: string): WorkspaceSession {
     const key = `${userId}:${workspaceId}`;
@@ -48,6 +93,9 @@ class ResearchProjectStateService {
       tags: [ws.activeChapter, 'workspace_auto_save']
     });
 
+    void this.persistWorkspace(ws).catch(error => {
+      console.warn('[ResearchWorkspace Firestore persist unavailable]:', (error as Error)?.message || error);
+    });
     return ws;
   }
 
@@ -58,7 +106,7 @@ class ResearchProjectStateService {
     discipline: string,
     getGeminiClient: () => GoogleGenAI
   ): Promise<any> {
-    const ws = this.getOrCreateWorkspace(userId, workspaceId, topic);
+    const ws = await this.hydrateWorkspace(userId, workspaceId, topic);
     
     // Execute Multi-Agent Orchestration
     const orchestrationResult = await multiAgentOrchestratorService.executePipeline(
@@ -74,6 +122,8 @@ class ResearchProjectStateService {
     const qaBlocked = orchestrationResult.qaGateResult?.exportBlocked === true;
     ws.integrityScore = qaBlocked ? 0 : Math.max(0, Math.min(100, Number(orchestrationResult.qaGateResult?.overallQAScore) || 0));
     ws.lastSavedAt = new Date().toISOString();
+
+    await this.persistWorkspace(ws);
 
     return {
       workspace: ws,
