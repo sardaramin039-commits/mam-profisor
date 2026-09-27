@@ -9,6 +9,7 @@ export interface GroundedClaim {
   verificationStatus: 'verified' | 'partially_verified' | 'unverified';
   citationEligible: boolean;
   citationText?: string;
+  evidenceQuote?: string;
   confidence: number;
   gapDetected: boolean;
   warning?: string;
@@ -114,6 +115,7 @@ ${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceCh
           "verificationStatus": "verified",
           "citationEligible": true,
           "citationText": "(نووسەر، ساڵ)",
+          "evidenceQuote": "دەقی ڕاستەقینەی ناو chunk ـەکە",
           "confidence": 95,
           "gapDetected": false
         }
@@ -179,7 +181,7 @@ ${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceCh
             claim.sourceId &&
             claim.evidenceId &&
             eligibleBySourceId.has(String(claim.sourceId)) &&
-            hasGroundedEvidence(claim.sourceId, claim.citationText || claim.sentenceText)
+            hasGroundedEvidence(claim.sourceId, claim.evidenceQuote)
           );
 
           claim.citationEligible = grounded && claim.verificationStatus === 'verified';
@@ -189,6 +191,7 @@ ${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceCh
             eligibleClaims++;
           } else {
             claim.citationText = undefined;
+            claim.evidenceQuote = undefined;
             claim.gapDetected = true;
             claim.verificationStatus = claim.verificationStatus === 'verified'
               ? 'partially_verified'
