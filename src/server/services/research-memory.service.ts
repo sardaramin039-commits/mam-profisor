@@ -26,6 +26,7 @@ export interface ResearchProjectState {
 
 class ResearchMemoryService {
   private inMemoryStore: Map<string, ResearchProjectState> = new Map();
+  private memorySequence = 0;
 
   public getOrCreateProjectState(userId: string, projectId: string, title: string, discipline: string): ResearchProjectState {
     const key = `${userId}:${projectId}`;
@@ -49,7 +50,7 @@ class ResearchMemoryService {
     const project = this.getOrCreateProjectState(userId, projectId, '', '');
     const newItem: ResearchMemoryItem = {
       ...item,
-      id: `MEM-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: `MEM-${Date.now()}-${++this.memorySequence}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
