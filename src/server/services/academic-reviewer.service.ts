@@ -71,7 +71,7 @@ export class AcademicReviewerService {
 
       const parsed = JSON.parse(response.text || '{}');
       return {
-        overallScore: parsed.overallScore || 8.5,
+        overallScore: typeof parsed.overallScore === 'number' ? parsed.overallScore : 0,
         thesisDefenseSimulatedPassed: parsed.thesisDefenseSimulatedPassed ?? true,
         summaryCritiqueKurdish: parsed.summaryCritiqueKurdish || 'تێزەکە خاوەن ئاستێکی بەرزی زانستی و بونیادگەرییە.',
         criteria: parsed.criteria || []
