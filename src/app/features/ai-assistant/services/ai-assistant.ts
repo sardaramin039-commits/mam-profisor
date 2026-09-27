@@ -1,9 +1,12 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { AuthenticatedApiService } from '../../../core/services/authenticated-api.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AiAssistantService {
+  private readonly api = inject(AuthenticatedApiService);
+
   buildMasterAcademicPrompt(
     userQuery: string,
     contextData: string,
@@ -30,51 +33,19 @@ ${context_data_sanitized(contextData)}
   }
 
   async simulateViva(payload: { title: string; content: string; discipline: string; academicLevel: string; questions?: unknown[]; userDefense?: string }) {
-    const response = await fetch('/api/simulate_viva', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (!response.ok) {
-      throw new Error('پێوەندی لەگەڵ سێرڤەر نییە بۆ تاقیکردنەوەی بەرگری.');
-    }
-    return response.json();
+    return this.api.post('/api/simulate_viva', payload);
   }
 
   async checkPlagiarism(payload: { content: string; title?: string }) {
-    const response = await fetch('/api/plagiarism_check', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (!response.ok) {
-      throw new Error('پێوەندی لەگەڵ سێرڤەر نییە بۆ پشکنینی ڕەسەنایەتی.');
-    }
-    return response.json();
+    return this.api.post('/api/plagiarism_check', payload);
   }
 
   async runEliteAcademicAssessment(payload: { content: string; title: string; discipline: string; academicLevel: string }) {
-    const response = await fetch('/api/elite_academic_assessment', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (!response.ok) {
-      throw new Error('پێوەندی لەگەڵ سێرڤەر نییە بۆ هەڵسەنگاندنی ئەکادیمی.');
-    }
-    return response.json();
+    return this.api.post('/api/elite_academic_assessment', payload);
   }
 
   async runHarvardAcademicReview(payload: { title: string; content: string; discipline: string }) {
-    const response = await fetch('/api/harvard_academic_review', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (!response.ok) {
-      throw new Error('پێوەندی لەگەڵ سێرڤەر نییە بۆ پێداچوونەوەی هۆڵەندا / هارڤارد.');
-    }
-    return response.json();
+    return this.api.post('/api/harvard_academic_review', payload);
   }
 }
 
@@ -84,4 +55,3 @@ function context_data_sanitized(raw: string): string {
   }
   return raw;
 }
-
