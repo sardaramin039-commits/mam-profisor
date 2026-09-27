@@ -109,7 +109,7 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
       const all = results.flatMap(res => res.status === 'fulfilled' ? res.value : []);
       const seenTitles = new Set<string>();
       let deduplicated = all.filter(item => {
-        const key = item.title.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+        const key = item.title.toLowerCase().trim().replace(/[^\p{L}\p{N}]/gu, '');
         if (key && seenTitles.has(key)) return false;
         if (key) seenTitles.add(key);
         return true;
