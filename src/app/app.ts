@@ -116,7 +116,7 @@ import { buildAcademicThesisOutline } from './helpers/outline-structure';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App implements OnInit {
+export class AppComponent implements OnInit {
   readonly Math = Math;
   private startupService = inject(ApplicationStartupService);
   private fb = inject(FormBuilder);
