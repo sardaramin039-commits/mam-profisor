@@ -262,7 +262,7 @@ export class DigitalLibraryService {
         },
         error: (err) => {
           console.warn('OCR Server call fallback locally:', err);
-          this.ocrTextResult.set('دەقی دەرھێنراو لە بەڵگەنامەکە بە سەرکەوتوویی لێکدرایەوە:\n\n"ئەم بەڵگەنامەیە وەک سەرچاوەیەکی بێوێنەی مێژوویی و ژێدەرێکی زانستی بڵاوکراوەتەوە لە ئەرشیڤی ناوەندی کتێبخانەی دیجیتاڵیی کوردی."');
+          this.ocrTextResult.set('OCR بە شێوەی خۆکار سەرکەوتوو نەبوو. تکایە وێنەکە/بەڵگەنامەکە دووبارە بنێرە یان OCR لە سێرڤەر دووبارە هەوڵ بدەرەوە. هیچ دەقی ناو بەڵگەنامەکە بە fallback ـدا دانانرێت.');
           this.isOcrProcessing.set(false);
         }
       });
