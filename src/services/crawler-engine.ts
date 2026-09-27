@@ -10,11 +10,11 @@ export class DigitalLibraryCrawlerEngine {
       id: 'log-001',
       timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
       status: 'success',
-      recordsCrawled: 420,
-      duplicatesRemoved: 14,
-      sourcesProcessed: 40,
-      durationMs: 4250,
-      message: 'خوولگەی هاودەمکردنی ٢٤ کاتژمێریی سەرچاوەکان بەسەرکەوتوویی جێبەجێکرا'
+      recordsCrawled: 0,
+      duplicatesRemoved: 0,
+      sourcesProcessed: this.sources.length,
+      durationMs: 0,
+      message: 'کەتەلۆگی ناوخۆیی ئامادەکرا؛ crawling ـی زیندووی سەرچاوەکان لەم runtime ـەدا configured نییە.'
     }
   ];
 
@@ -79,18 +79,10 @@ export class DigitalLibraryCrawlerEngine {
     const startTime = Date.now();
     let newlyCrawledCount = 0;
 
-    // Simulate crawling active sources and fetching new metadata
-    for (const source of this.sources) {
-      source.status = 'syncing';
-      // Simulate indexing 2-5 new items per source
-      const added = Math.floor(Math.random() * 4) + 1;
-      source.totalItems += added;
-      source.lastSync = new Date().toISOString();
-      source.status = 'active';
-      newlyCrawledCount += added;
-    }
-
+    // Live crawling is not configured in this engine.
+    // Only locally available catalog records are deduplicated.
     const dedup = this.runDeduplication();
+    newlyCrawledCount = 0;
     const durationMs = Date.now() - startTime;
 
     const log: CrawlerSyncLog = {
@@ -124,9 +116,9 @@ export class DigitalLibraryCrawlerEngine {
       totalBooks: this.catalog.length,
       totalSources: this.sources.length,
       activeSources: this.sources.filter(s => s.status === 'active').length,
-      totalCrawled24h: 320,
-      duplicateCount: 18,
-      ocrQueueSize: 3,
+      totalCrawled24h: this.syncLogs.reduce((sum, log) => sum + log.recordsCrawled, 0),
+      duplicateCount: 0,
+      ocrQueueSize: 0,
       lastSyncTime: this.syncLogs[0]?.timestamp || new Date().toISOString(),
       languagesCount: langCounts as AdminStats['languagesCount']
     };
@@ -138,7 +130,7 @@ export class DigitalLibraryCrawlerEngine {
       id: `kb-custom-${Date.now()}`,
       title: book.title || 'کتێبی بێ ناونیشان',
       author: book.author || 'نادیار',
-      year: book.year || new Date().getFullYear(),
+      year: typeof book.year === 'number' ? book.year : 0,
       language: book.language || 'ckb',
       description: book.description || '',
       coverImage: book.coverImage || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600',
@@ -149,9 +141,9 @@ export class DigitalLibraryCrawlerEngine {
       documentType: book.documentType || 'book',
       downloadUrl: book.downloadUrl || '#',
       subjects: book.subjects || ['گشتی'],
-      rating: 5.0,
-      reviewCount: 1,
-      verified: true,
+      rating: 0,
+      reviewCount: 0,
+      verified: false,
       indexedAt: new Date().toISOString()
     };
 
