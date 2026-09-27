@@ -5,6 +5,7 @@ import { Data } from './data';
 import { ChapterItemModel as ChapterItem } from '../domain/models';
 import { ACADEMIC_GLOSSARY as GLOSSARY_PROMPT } from '../../prompts/academic-glossary';
 import { AuthenticatedApiService } from '../core/services/authenticated-api.service';
+import { RagResearchService } from '../features/rag-research/services/rag-research';
 import { encryptText, decryptText, verifyChapterIntegrity } from '../helpers/academic-vault';
 
 @Injectable({ providedIn: 'root' })
@@ -13,6 +14,7 @@ export class AppTemplateBridgeService {
   private data = inject(Data);
   private fb = inject(FormBuilder);
   private api = inject(AuthenticatedApiService);
+  private ragResearchService = inject(RagResearchService);
 
 
   /**
@@ -561,16 +563,57 @@ export class AppTemplateBridgeService {
     if (value) this.setRefineFormContext({ sizeMode: value });
   }
   closeQuickPreview() { this.isQuickPreviewVisible.set(false); }
-  applySourceSuggestion(s: any) {}
+  applySourceSuggestion(s: any) {
+    if (!s) return;
+    this.verifiedSourceForm.patchValue({
+      title: s.title || '',
+      author: s.author || '',
+      publisher: s.publisher || s.journal || '',
+      year: s.year || new Date().getFullYear(),
+      sourceType: s.sourceType || 'book',
+      doi: s.doi || s.DOI || '',
+      doiOrUrl: s.url || ''
+    });
+  }
   toggleAcademicSection(sec: string) {}
-  updateRagModel(model: string) {}
-  updateRagLimit(limit: number) {}
-  toggleRole(role: string) {}
-  toggleDialect(dialect: string) {}
+  updateRagModel(model: string) {
+    const value = String(model || '').trim();
+    if (value) this.ragResearchService.selectedModel.set(value);
+  }
+  updateRagLimit(limit: number) {
+    const value = Math.max(1, Math.min(50, Math.floor(Number(limit) || 1)));
+    this.ragResearchService.chunkLimit.set(value);
+  }
+  toggleRole(role: string) {
+    const key = role === 'author' ? 'roleAuthor'
+      : role === 'critic' ? 'roleCritic'
+      : role === 'reviewer' ? 'roleReviewer'
+      : '';
+    if (!key) return;
+    const current = this.refineFormContext()[key] === true;
+    this.setRefineFormContext({ [key]: !current });
+  }
+  toggleDialect(dialect: string) {
+    const key = dialect === 'thesis' ? 'dialectThesis'
+      : dialect === 'antithesis' ? 'dialectAntithesis'
+      : dialect === 'synthesis' ? 'dialectSynthesis'
+      : '';
+    if (!key) return;
+    const current = this.refineFormContext()[key] === true;
+    this.setRefineFormContext({ [key]: !current });
+  }
   onDragOver(e: Event, type: string) { e.preventDefault(); }
   onDragLeave(e: Event, type: string) { e.preventDefault(); }
   onFileDrop(e: DragEvent, type: string) { e.preventDefault(); }
-  onFileSelected(e: Event, type: string) {}
+  onFileSelected(e: Event, type: string) {
+    const input = e.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) return;
+    const value = file.name;
+    if (type === 'compare1') this.compareFile1Name.set(value);
+    else if (type === 'compare2') this.compareFile2Name.set(value);
+    else if (type === 'copyStyle') this.copyStyleFileName.set(value);
+  }
   onSendToSecondWindow() {}
   activateAllAcademicRules() {
     this.academicRules.update(rules => rules.map(rule => ({ ...rule, enabled: true })));
@@ -586,7 +629,36 @@ export class AppTemplateBridgeService {
     if (!result) return;
     this.globalSearchQuery.set(String(result.title || result.query || '').trim());
   }
-  onRegisterVerifiedSource() {}
+  async onRegisterVerifiedSource() {
+    if (this.verifiedSourceForm.invalid) {
+      this.verifiedSourceForm.markAllAsTouched();
+      return;
+    }
+    const value = this.verifiedSourceForm.getRawValue();
+    try {
+      await this.data.saveSourceToCloud({
+        author: String(value.author || ''),
+        title: String(value.title || ''),
+        year: Number(value.year),
+        publisher: String(value.publisher || ''),
+        sourceType: value.sourceType || 'book',
+        doi: String(value.doi || ''),
+        isbn: '',
+        url: String(value.doiOrUrl || ''),
+        isVerified: false
+      });
+      this.sourceMessage.set({
+        type: 'success',
+        text: 'سەرچاوەکە تۆمارکرا و هێشتا پشتڕاستنەکراوەتەوە.'
+      });
+    } catch (error) {
+      console.error('Source registration failed:', error);
+      this.sourceMessage.set({
+        type: 'error',
+        text: 'تۆمارکردنی سەرچاوە سەرکەوتوو نەبوو.'
+      });
+    }
+  }
   expandGlossaryTerm(entry: any) {
     if (!entry?.foreign) return;
     const key = String(entry.foreign);
@@ -650,7 +722,21 @@ export class AppTemplateBridgeService {
   insertAcademicHeading(textarea: HTMLTextAreaElement, level: string) {
     if (textarea) textarea.value += `\n### ناونیشانی ئەکادیمی\n`;
   }
-  applySoranispellFixInViewedChapter() {}
+  applySoranispellFixInViewedChapter() {
+    const chapter = this.getChapterById(this.editorService.activeChapterId() || 0);
+    const issues = this.viewedChapterSpellIssues();
+    if (!chapter || issues.length === 0) return;
+
+    let content = chapter.content || '';
+    for (const issue of issues) {
+      const original = String(issue.originalText || issue.original || '');
+      const suggested = String(issue.suggestedText || issue.suggested || '');
+      if (original && suggested) content = content.split(original).join(suggested);
+    }
+    if (content !== chapter.content) {
+      this.editorService.updateChapterContent(chapter.id, content, 'جێبەجێکردنی چاکسازیی ڕێنووسی سۆرانی');
+    }
+  }
   async encryptChapterInVault(c: any, pwd: any) {
     if (!c || c.isEncryptedInVault || !String(pwd || '').trim()) return;
     try {
@@ -699,7 +785,15 @@ export class AppTemplateBridgeService {
     if (!c || !sn || typeof sn.content !== 'string') return;
     this.editorService.updateChapterContent(c.id, sn.content, 'گەڕانەوە بۆ snapshot');
   }
-  scrollToSection(text: string, textarea: any) {}
+  scrollToSection(text: string, textarea: any) {
+    const query = String(text || '');
+    const area = textarea as HTMLTextAreaElement | null;
+    if (!query || !area) return;
+    const index = area.value.indexOf(query);
+    if (index < 0) return;
+    area.focus();
+    area.setSelectionRange(index, index + query.length);
+  }
   verifyCitationsLive(c: any) {}
   runAcademicConsultation() {
     const question = (this.consultationTopic() || this.consultationKeyConcept() || '').trim();
@@ -779,8 +873,28 @@ export class AppTemplateBridgeService {
     });
   }
   generateAcademicAdditions(chapter: any) {}
-  appendAdditionsToChapter(chapter: any, addition: any) {}
-  appendMethodologyLayoutToChapter(chapter: any) {}
+  appendAdditionsToChapter(chapter: any, addition: any) {
+    const text = typeof addition === 'string'
+      ? addition
+      : addition?.text || addition?.content || addition?.paragraph || '';
+    if (!chapter || !String(text).trim()) return;
+    this.editorService.updateChapterContent(
+      chapter.id,
+      (chapter.content || '') + '\n\n' + String(text).trim(),
+      'زیادکردنی بڕگەی ئەکادیمی'
+    );
+  }
+  appendMethodologyLayoutToChapter(chapter: any) {
+    const result = this.methodologyResult();
+    if (!chapter || !result) return;
+    const text = result.layout || result.methodologyText || result.text || '';
+    if (!String(text).trim()) return;
+    this.editorService.updateChapterContent(
+      chapter.id,
+      (chapter.content || '') + '\n\n' + String(text).trim(),
+      'زیادکردنی ڕێکخستنی مێتۆدۆلۆژی'
+    );
+  }
   analyzeSoraniPhoneticsAndDialect(chapter: any) {}
   constructMethodologyAndHypotheses(chapter: any) {
     if (!chapter) return;
@@ -801,7 +915,17 @@ export class AppTemplateBridgeService {
       this.isConstructingMethodology.set(false);
     });
   }
-  appendStatsExplanationToChapter(chapter: any) {}
+  appendStatsExplanationToChapter(chapter: any) {
+    const result = this.empiricalStatsResult();
+    if (!chapter || !result) return;
+    const text = result.explanation || result.interpretation || result.text || '';
+    if (!String(text).trim()) return;
+    this.editorService.updateChapterContent(
+      chapter.id,
+      (chapter.content || '') + '\n\n' + String(text).trim(),
+      'زیادکردنی ڕوونکردنەوەی ئامار'
+    );
+  }
   simulateEmpiricalStats(chapter: any) {}
   generateMultiStyleCitation() {}
   checkChapterPlagiarism(chapter: any) {
@@ -822,7 +946,16 @@ export class AppTemplateBridgeService {
     });
   }
   exportSandboxPDF() {}
-  appendPythonSandboxOutputToChapter(chapter: any) {}
+  appendPythonSandboxOutputToChapter(chapter: any) {
+    const result = this.pythonSandboxResult();
+    const text = result?.stdout || '';
+    if (!chapter || !String(text).trim()) return;
+    this.editorService.updateChapterContent(
+      chapter.id,
+      (chapter.content || '') + '\n\n' + String(text).trim(),
+      'زیادکردنی ئەنجامی Python Sandbox'
+    );
+  }
   executePythonDatasetInterpreter(chapter: any) {}
   copyLatexCode(code: string) {
     if (code) navigator.clipboard.writeText(code);
@@ -849,7 +982,15 @@ export class AppTemplateBridgeService {
   copyCitationsToClipboard(txt: string) {
     if (txt) navigator.clipboard.writeText(txt);
   }
-  appendCitationToChapter(chapter: any) {}
+  appendCitationToChapter(chapter: any) {
+    const citation = String(this.citationResult() || '').trim();
+    if (!chapter || !citation) return;
+    this.editorService.updateChapterContent(
+      chapter.id,
+      (chapter.content || '') + ` ${citation}`,
+      'زیادکردنی citation'
+    );
+  }
 
   toggleAcademicRule(id: string) {
     this.academicRules.update(list => list.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
@@ -861,14 +1002,30 @@ export class AppTemplateBridgeService {
     const val = (event.target as HTMLInputElement).value;
     this.globalSearchQuery.set(val);
   }
-  searchOpenChapter(result: any) {}
-  searchUseGlossary(result: any) {}
+  searchOpenChapter(result: any) {
+    const item = result?.originalItem || result;
+    const id = Number(item?.id);
+    if (!Number.isFinite(id)) return;
+    this.editorService.activeChapterId.set(id);
+  }
+  searchUseGlossary(result: any) {
+    const entry = result?.originalItem || result;
+    if (entry?.foreign || entry?.sorani || entry?.kurdish) {
+      this.useGlossaryTerm(entry);
+    }
+  }
   searchCopyGlossary(result: any) {
     if (result?.text) navigator.clipboard.writeText(result.text);
   }
   clearComparison() { this.comparedResult.set(null); }
   getOriginalComparisonText(res: any): string { return res?.text || ''; }
-  copyAllSearchResults() {}
+  async copyAllSearchResults() {
+    const text = this.searchResults()
+      .map(r => [r.title, r.snippet].filter(Boolean).join('\n'))
+      .join('\n\n');
+    if (!text || !globalThis.navigator?.clipboard) return;
+    await navigator.clipboard.writeText(text);
+  }
   sendFilteredReportToEmail() {}
   runRecentSearch(term: string) { this.globalSearchQuery.set(term); }
   onBuildCitation() {
@@ -877,15 +1034,44 @@ export class AppTemplateBridgeService {
       this.citationResult.set(`${v.author} (${v.year}). ${v.title}. ${v.journalOrPublisher || ''}.`);
     }
   }
-  importPdf4KurdBookToForm(book: any) {}
-  importPdf4KurdBookToVerified(book: any) {}
-  deleteVerifiedSource(id: string) {}
+  importPdf4KurdBookToForm(book: any) {
+    if (!book) return;
+    this.setRefineFormContext({
+      selectedBook: book.id || book.url || '',
+      title: book.title || this.refineFormContext().title
+    });
+  }
+  importPdf4KurdBookToVerified(book: any) {
+    if (!book) return;
+    this.verifiedSourceForm.patchValue({
+      title: book.title || '',
+      author: book.author || '',
+      publisher: book.publisher || '',
+      year: book.year || new Date().getFullYear(),
+      sourceType: book.sourceType || 'book',
+      doi: book.doi || '',
+      doiOrUrl: book.url || ''
+    });
+  }
+  async deleteVerifiedSource(id: string) {
+    if (!id) return;
+    await this.data.deleteSource(id);
+  }
   onSearchChange(event: Event) {
     const val = (event.target as HTMLInputElement).value;
     this.glossarySearchQuery.set(val);
   }
   onFilterCategory(cat: string) { this.glossaryCategoryFilter.set(cat); }
-  useGlossaryTerm(entry: any) {}
+  useGlossaryTerm(entry: any) {
+    const text = String(entry?.kurdish || entry?.sorani || entry?.foreign || '').trim();
+    const chapter = this.getChapterById(this.editorService.activeChapterId() || 0);
+    if (!chapter || !text) return;
+    this.editorService.updateChapterContent(
+      chapter.id,
+      (chapter.content || '') + ` ${text}`,
+      'زیادکردنی زاراوەی ئەکادیمی'
+    );
+  }
   analyzeChapterRigor(c: ChapterItem) {
     if (!c?.content?.trim()) return;
     this.isAnalyzingRigorForChapterId.set(c.id);
