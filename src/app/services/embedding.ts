@@ -10,7 +10,7 @@ export class Embedding {
    */
   async generateEmbedding(text: string): Promise<number[]> {
     try {
-      const response = await fetch('/api/generate_embedding', {
+      const response = await fetch('/api/rag/generate-embedding', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
