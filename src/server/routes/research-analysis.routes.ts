@@ -177,7 +177,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
         code: 'MULTI_AGENT_UNAVAILABLE'
       });
     }
-  });;
+  });
 
   return router;
 }
