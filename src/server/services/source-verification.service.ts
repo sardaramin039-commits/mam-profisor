@@ -64,6 +64,89 @@ function authorMatches(input: string | undefined, registry: any): boolean {
   return !!authors && (authors.includes(wanted) || wanted.split(/\s+/).some(part => part.length > 2 && authors.includes(part)));
 }
 
+async function verifyAgainstBookRegistry(source: SourceInput): Promise<RegistryMatch> {
+  const isbn = (source.isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase();
+  if (!isbn) {
+    return {
+      verified: false,
+      titleScore: 0,
+      authorMatched: false,
+      yearMatched: false,
+      detail: 'ISBN بەردەست نییە.'
+    };
+  }
+
+  const headers = {
+    Accept: 'application/json',
+    'User-Agent': 'Mam-Professor-Academic-Platform/1.0'
+  };
+
+  const verifyBook = (book: any, registryName: string): RegistryMatch => {
+    const info = book?.volumeInfo || book?.details || book || {};
+    const canonicalTitle = String(info.title || '');
+    const authors = Array.isArray(info.authors)
+      ? info.authors.join(', ')
+      : Array.isArray(info.by_statement)
+        ? info.by_statement.join(', ')
+        : String(info.author || '');
+    const titleScore = titleSimilarity(source.title, canonicalTitle);
+    const wantedAuthor = normalize(source.author);
+    const authorMatched = !wantedAuthor || normalize(authors).includes(wantedAuthor);
+    const publishedYear = Number(String(info.publishedDate || info.publish_date || '').slice(0, 4));
+    const inputYear = Number(source.year);
+    const yearMatched = !inputYear || !publishedYear || Math.abs(inputYear - publishedYear) <= 1;
+
+    return {
+      verified: titleScore >= 0.75 && authorMatched && yearMatched,
+      titleScore,
+      authorMatched,
+      yearMatched,
+      canonicalTitle,
+      canonicalAuthor: authors,
+      detail: titleScore >= 0.75 && authorMatched && yearMatched
+        ? `ISBN لە ${registryName} دۆزرایەوە و metadata ـی سەرچاوەکە هاوتا بوو.`
+        : `ISBN لە ${registryName} دۆزرایەوە، بەڵام metadata ـی سەرچاوەکە بە تەواوی نەگونجا.`
+    };
+  };
+
+  const requests = await Promise.allSettled([
+    fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}&maxResults=5`, {
+      headers
+    }).then(async response => {
+      if (!response.ok) return null;
+      const body = await response.json() as any;
+      return Array.isArray(body?.items) ? body.items[0] : null;
+    }),
+    fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(isbn)}&jscmd=data&format=json`, {
+      headers
+    }).then(async response => {
+      if (!response.ok) return null;
+      const body = await response.json() as any;
+      return body[`ISBN:${isbn}`] || null;
+    })
+  ]);
+
+  const matches: RegistryMatch[] = [];
+  const googleBook = requests[0].status === 'fulfilled' ? requests[0].value : null;
+  const openLibraryBook = requests[1].status === 'fulfilled' ? requests[1].value : null;
+
+  if (googleBook) matches.push(verifyBook(googleBook, 'Google Books'));
+  if (openLibraryBook) matches.push(verifyBook(openLibraryBook, 'Open Library'));
+
+  const verified = matches.filter(match => match.verified);
+  if (verified.length) {
+    return verified.sort((a, b) => b.titleScore - a.titleScore)[0];
+  }
+
+  return matches[0] || {
+    verified: false,
+    titleScore: 0,
+    authorMatched: false,
+    yearMatched: false,
+    detail: 'ISBN لە registry ـەکانی کتێبدا نەدۆزرایەوە.'
+  };
+}
+
 async function verifyAgainstCrossref(source: SourceInput): Promise<RegistryMatch> {
   const title = normalize(source.title);
   if (!title) {
@@ -168,23 +251,6 @@ async function verifyAgainstCrossref(source: SourceInput): Promise<RegistryMatch
   }
 }
 
-function buildUnverifiedReport(source: SourceInput, detail: string): SourceVerificationReport {
-  return {
-    sourceTitle: source.title,
-    author: source.author || 'نادیار',
-    publisher: source.publisher || '',
-    doiOrIsbn: source.doi || source.isbn || '',
-    integrityScore: 0,
-    trustLevel: 'D',
-    existenceVerified: false,
-    metadataAccuracy: 0,
-    peerReviewed: false,
-    rejectedAsFabricated: false,
-    rejectionReasonKurdish: 'سەرچاوەکە پشتڕاست نەکراوەتەوە؛ نابێت وەک سەرچاوەی دڵنیابەخش بەکاربهێنرێت.',
-    kurdishVerificationDetails: detail
-  };
-}
-
 export class SourceVerificationService {
   public async verifySources(
     sources: SourceInput[],
@@ -195,7 +261,13 @@ export class SourceVerificationService {
     }
 
     const registryMatches = await Promise.all(
-      sources.map(source => verifyAgainstCrossref(source))
+      sources.map(source =>
+        source.isbn
+          ? verifyAgainstBookRegistry(source).then(bookMatch =>
+              bookMatch.verified ? bookMatch : verifyAgainstCrossref(source)
+            )
+          : verifyAgainstCrossref(source)
+      )
     );
 
     const verifiedSources: SourceVerificationReport[] = [];
