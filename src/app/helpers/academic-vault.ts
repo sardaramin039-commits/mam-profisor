@@ -67,7 +67,8 @@ export function verifyChapterIntegrity(chapter: ChapterItem): { isValid: boolean
   if (!chapter.snapshots || chapter.snapshots.length === 0) {
     return { isValid: true, currentHash, expectedHash: currentHash };
   }
-  const lastSnapshot = chapter.snapshots[chapter.snapshots.length - 1];
+  // EditorService prepends the newest snapshot, so index 0 is the latest recorded state.
+  const lastSnapshot = chapter.snapshots[0];
   const expectedHash = calculateIntegrityHash(lastSnapshot.content || '');
   return {
     isValid: currentHash === expectedHash,
