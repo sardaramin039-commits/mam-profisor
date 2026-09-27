@@ -346,6 +346,13 @@ export class App implements OnInit {
 
   ngOnInit(): void {
     this.startupService.init();
+
+    // Keep the feature bridge synchronized with the component-owned form without
+    // exposing the FormGroup itself to the service layer.
+    this.bridge.setRefineFormContext(this.refineForm.getRawValue());
+    this.refineForm.valueChanges.subscribe(value => {
+      this.bridge.setRefineFormContext(value);
+    });
   }
 
   updateActiveChapterContent(newContent: string) {
