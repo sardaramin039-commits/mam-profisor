@@ -60,7 +60,10 @@ export function rateLimiterMiddleware(req: Request, res: Response, next: NextFun
     }
   }
 
-  const rateKey = `${clientIp}:${isAiPath(req.path) ? 'ai' : 'default'}:${req.path}`;
+  const aiRequest = isAiPath(req.path);
+  const rateKey = aiRequest
+    ? `${clientIp}:ai-global`
+    : `${clientIp}:default:${req.path}`;
   let rateInfo = rateLimitMap.get(rateKey);
 
   if (!rateInfo || now - rateInfo.lastReset > RATE_LIMIT_WINDOW_MS) {
