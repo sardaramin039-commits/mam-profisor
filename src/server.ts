@@ -34,7 +34,8 @@ import { errorMiddleware } from './middleware/error.middleware';
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
-app.set('trust proxy', true);
+const trustProxyHops = Number.parseInt(process.env['TRUST_PROXY_HOPS'] || '1', 10);
+app.set('trust proxy', Number.isFinite(trustProxyHops) && trustProxyHops >= 0 ? trustProxyHops : 1);
 app.disable('x-powered-by');
 
 // Security headers & strict CORS enforcement middleware
