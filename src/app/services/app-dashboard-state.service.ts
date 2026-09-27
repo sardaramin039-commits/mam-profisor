@@ -132,8 +132,8 @@ export class AppDashboardStateService {
     const chs = this.editorService.chapters();
     if (!chs || chs.length === 0) {
       return {
-        names: ['بەشی ١: پێشەکی', 'بەشی ٢: مێتۆدۆلۆژی', 'بەشی ٣: داتا', 'سەرچاوەی Harvard'],
-        matrix: [[0, 15, 20, 25], [15, 0, 30, 10], [20, 30, 0, 18], [25, 10, 18, 0]]
+        names: [],
+        matrix: []
       };
     }
     const names = chs.map(c => c.title || `بەشی ${c.id}`);
