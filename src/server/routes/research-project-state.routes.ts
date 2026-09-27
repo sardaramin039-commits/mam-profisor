@@ -46,7 +46,7 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
       const { draftContent, activeChapter } = req.body;
       await researchProjectStateService.hydrateWorkspace(userId, workspaceId);
 
-      const updated = researchProjectStateService.updateWorkspaceContent(userId, workspaceId, draftContent || '', activeChapter);
+      const updated = await researchProjectStateService.updateWorkspaceContent(userId, workspaceId, draftContent || '', activeChapter);
       await researchProjectStateService.persistWorkspace(updated);
       res.json(updated);
     } catch (err: unknown) {
