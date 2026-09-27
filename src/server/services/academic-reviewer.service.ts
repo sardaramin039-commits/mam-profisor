@@ -79,19 +79,10 @@ export class AcademicReviewerService {
     } catch (err: any) {
       console.error('Error in AcademicReviewerService:', err);
       return {
-        overallScore: 8.2,
-        thesisDefenseSimulatedPassed: true,
-        summaryCritiqueKurdish: 'هەڵسەنگاندنی پاشەکەوتی ئەکادیمی بۆ نووسینەکە بەردەستە.',
-        criteria: [
-          {
-            category: 'Academic Language',
-            score: 8.5,
-            severity: 'low',
-            findingKurdish: 'زمانی ئەکادیمی و ڕستەسازی ڕەوانە.',
-            evidenceQuoteKurdish: 'بەشەکانی تێکستەکە پەیڕەوی زمانی زانستی دەکەن.',
-            recommendationKurdish: 'جێبەجێکردنی زیاتری زاراوە تایبەتەکان.'
-          }
-        ]
+        overallScore: 0,
+        thesisDefenseSimulatedPassed: false,
+        summaryCritiqueKurdish: 'هەڵسەنگاندنی AI سەرکەوتوو نەبوو؛ هیچ نمرەیەکی ساختە بۆ بەڵگەکردنی کوالێتی کارەکە دانەنرا.',
+        criteria: []
       };
     }
   }
