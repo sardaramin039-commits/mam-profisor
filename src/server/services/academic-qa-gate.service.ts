@@ -87,19 +87,20 @@ export class AcademicQAGateService {
     } catch (err: any) {
       console.error('Error in AcademicQAGateService:', err);
       return {
-        exportBlocked: false,
-        overallQAScore: 88,
-        criticalViolationsCount: 0,
+        // Fail closed: export must remain blocked when the QA engine itself could not run.
+        exportBlocked: true,
+        overallQAScore: 0,
+        criticalViolationsCount: 1,
         checks: [
           {
-            ruleName: 'Citation Integrity',
-            passed: true,
-            severity: 'warning',
-            detailsKurdish: 'پشکنینی بنەڕەتی سەرچاوەنامە بە سەرکەوتوویی تێپەڕی.',
-            recommendedActionKurdish: 'دەتوانیت تێکستەکە داونلۆد بکەیت.'
+            ruleName: 'QA Engine Availability',
+            passed: false,
+            severity: 'critical',
+            detailsKurdish: 'پشکنینی کوالێتی ئەکادیمی بەهۆی هەڵەی سێرڤەرەوە تەواو نەبوو.',
+            recommendedActionKurdish: 'دووبارە پشکنینی QA جێبەجێ بکە پێش Export.'
           }
         ],
-        kurdishSummaryStatus: 'پشکنینی پاراستنی ئەکادیمی تێپەڕێنرا.'
+        kurdishSummaryStatus: 'بەڵگەنامەکە ناتوانرێت پێش Export پەسەند بکرێت تا QA بە سەرکەوتوویی تەواو نەبێت.'
       };
     }
   }
