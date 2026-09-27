@@ -80,11 +80,15 @@ export class EvidenceGroundingService {
   ): Promise<GroundedGenerationResult> {
     const ai = getGeminiClient();
 
-    // Filter evidence chunks through Citation Eligibility Gate
-    const eligibleChunks = verifiedEvidenceChunks.filter(c => {
-      const gate = this.evaluateCitationEligibility(c.verificationStatus, !!c.chunkText);
-      return gate.eligible;
+    // Only verified chunks with real text may reach the model.
+    const eligibleChunks = verifiedEvidenceChunks.filter(chunk => {
+      const gate = this.evaluateCitationEligibility(chunk.verificationStatus, !!chunk.chunkText?.trim());
+      return gate.eligible && !!chunk.sourceId && !!chunk.sourceTitle;
     });
+
+    if (eligibleChunks.length === 0) {
+      return this.createFallbackGroundedResult(topic, []);
+    }
 
     const prompt = `تۆ سەرنووسەرێکی ئەکادیمی باڵای زانکۆی هارفەردیت و بەرپرسی بزوێنەری Evidence Intelligence یت.
 ئەرکی تۆ: دروستکردنی دەقێکی زانستیی فەرمی بە کوردی بۆ:
@@ -92,7 +96,7 @@ export class EvidenceGroundingService {
 داواکاری: ${promptText}
 
 بەڵگە بڕواپێکراوەکان (VERIFIED EVIDENCE):
-${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceChunks, null, 2)}
+${JSON.stringify(eligibleChunks, null, 2)}
 
 یاسای نەگۆڕی Citation Eligibility Gate:
 1. تەنها ئەو ادعانەی (Claims) کە بەڵگەی سەلمێنراوی VERIFIED یان لە لیستەکەدا هەیە مافی Citationیان هەیە.
@@ -150,33 +154,65 @@ ${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceCh
       });
 
       const parsed = JSON.parse(response.text || '{}');
-      const paragraphs: GroundedParagraph[] = parsed.paragraphs || [];
-      const verifiedCitations = (parsed.verifiedCitations || []).filter((c: { verified: boolean }) => c.verified);
-      const evidenceGaps = parsed.evidenceGaps || [];
+      const paragraphs: GroundedParagraph[] = Array.isArray(parsed?.paragraphs) ? parsed.paragraphs : [];
+      const evidenceGaps = Array.isArray(parsed?.evidenceGaps) ? parsed.evidenceGaps : [];
+
+      const allowedEvidence = new Map(
+        eligibleChunks.map(chunk => [chunk.sourceId + '::' + chunk.sourceTitle, chunk])
+      );
+      const evidenceIds = new Set(
+        eligibleChunks.map((chunk, index) => chunk.sourceId + '::' + (chunk.pageNumber || index))
+      );
 
       let totalClaims = 0;
       let verifiedClaims = 0;
       let eligibleClaims = 0;
       let blockedSynthetic = 0;
 
-      paragraphs.forEach(p => {
-        (p.claims || []).forEach(c => {
+      paragraphs.forEach(paragraph => {
+        paragraph.claims = Array.isArray(paragraph.claims) ? paragraph.claims : [];
+        paragraph.claims.forEach(claim => {
           totalClaims++;
-          // Re-enforce eligibility gate programmatically
-          const gate = this.evaluateCitationEligibility(c.verificationStatus, !!c.evidenceId);
-          c.citationEligible = gate.eligible;
+          const sourceMatch = eligibleChunks.find(chunk => chunk.sourceId === claim.sourceId);
+          const sourceKey = sourceMatch
+            ? sourceMatch.sourceId + '::' + sourceMatch.sourceTitle
+            : '';
+          const linkedSource = sourceKey ? allowedEvidence.get(sourceKey) : undefined;
+          const hasEvidence = !!linkedSource && !!claim.evidenceId;
+          const gate = this.evaluateCitationEligibility(claim.verificationStatus, hasEvidence);
+          claim.citationEligible = gate.eligible;
 
           if (gate.eligible) {
             verifiedClaims++;
             eligibleClaims++;
           } else {
-            c.citationText = undefined;
-            c.gapDetected = true;
-            c.warning = 'Synthetic or unverified citation blocked by Citation Eligibility Gate';
+            claim.citationText = undefined;
+            claim.gapDetected = true;
+            claim.warning = 'Synthetic or unverified citation blocked by Citation Eligibility Gate';
             blockedSynthetic++;
           }
         });
-      });
+      }
+
+      const verifiedCitations = (Array.isArray(parsed?.verifiedCitations) ? parsed.verifiedCitations : [])
+        .filter((citation: { verified: boolean; sourceId?: string; evidenceQuote?: string }) => {
+          if (!citation.verified || !citation.sourceId || !citation.evidenceQuote?.trim()) return false;
+          const sourceChunks = eligibleChunks.filter(chunk => chunk.sourceId === citation.sourceId);
+          return sourceChunks.some(chunk =>
+            chunk.chunkText.toLowerCase().includes(citation.evidenceQuote!.trim().toLowerCase())
+          );
+        });
+
+      // Avoid carrying an AI-generated citation unless its evidence can be tied to input text.
+      for (const paragraph of paragraphs) {
+        paragraph.claims = paragraph.claims.filter(claim =>
+          !claim.citationEligible || eligibleChunks.some(chunk =>
+            chunk.sourceId === claim.sourceId &&
+            !!claim.evidenceId &&
+            chunk.chunkText.trim().length > 0
+          )
+        );
+      }
 
       const coverageRatio = totalClaims > 0 ? Math.round((verifiedClaims / totalClaims) * 100) : 100;
       const status = coverageRatio >= 80 ? 'PASS' : coverageRatio >= 50 ? 'WARN_GAPS' : 'FAIL';
@@ -211,7 +247,7 @@ ${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceCh
 
   private createFallbackGroundedResult(
     topic: string,
-    evidenceChunks: Array<{
+    _evidenceChunks: Array<{
       sourceId: string;
       sourceTitle: string;
       chunkText: string;
@@ -221,56 +257,25 @@ ${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceCh
       year?: string;
     }>
   ): GroundedGenerationResult {
-    const verifiedSources = evidenceChunks.filter(e => e.verificationStatus === 'verified');
-    const hasVerified = verifiedSources.length > 0;
-
     return {
-      paragraphs: [
+      paragraphs: [],
+      verifiedCitations: [],
+      evidenceGaps: [
         {
-          paragraphIndex: 1,
-          text: `بابەتی "${topic}" شیکاری زانستیی بۆ دەکرێت. سەرچاوەکان لە باری پشکنیندان.`,
-          claims: [
-            {
-              claimId: 'CLM-FALLBACK-1',
-              sentenceText: `بابەتی ${topic} پێویستی بە بەڵگەی سەلمێنراو هەیە.`,
-              verificationStatus: hasVerified ? 'verified' : 'unverified',
-              citationEligible: hasVerified,
-              confidence: hasVerified ? 85 : 50,
-              gapDetected: !hasVerified,
-              warning: hasVerified ? undefined : 'Evidence Required: No verified sources present'
-            }
-          ]
+          claimId: 'CLM-UNAVAILABLE-1',
+          claimText: topic,
+          warning: 'Evidence-based generation بەردەست نەبوو؛ هیچ citation یان دەقی ساختە بەرهەم نەهێنرا.'
         }
       ],
-      verifiedCitations: hasVerified
-        ? [
-            {
-              citationId: 'CIT-FALLBACK-1',
-              sourceId: verifiedSources[0]?.sourceId || 'SRC-1',
-              inTextCitation: `(${verifiedSources[0]?.author || 'سەرچاوە'}, ${verifiedSources[0]?.year || '2024'})`,
-              evidenceQuote: verifiedSources[0]?.chunkText || 'بەڵگەی تەواو لە سەرچاوەکەدا هەیە.',
-              verified: true
-            }
-          ]
-        : [],
-      evidenceGaps: hasVerified
-        ? []
-        : [
-            {
-              claimId: 'CLM-FALLBACK-1',
-              claimText: `بابەتی ${topic} پێویستی بە بەڵگەی سەلمێنراو هەیە.`,
-              warning: 'Evidence Required'
-            }
-          ],
       integrityMetrics: {
-        totalClaims: 1,
-        verifiedClaims: hasVerified ? 1 : 0,
-        citationEligibleClaims: hasVerified ? 1 : 0,
-        blockedSyntheticCitations: hasVerified ? 0 : 1,
-        evidenceCoveragePercentage: hasVerified ? 100 : 0,
-        eligibilityGateStatus: hasVerified ? 'PASS' : 'WARN_GAPS'
+        totalClaims: 0,
+        verifiedClaims: 0,
+        citationEligibleClaims: 0,
+        blockedSyntheticCitations: 0,
+        evidenceCoveragePercentage: 0,
+        eligibilityGateStatus: 'FAIL'
       },
-      kurdishSummary: 'دەقی پاشەکەوت بە سەرکەوتوویی لەسەر بنەمای یاساکانی ڕاستیی ئەکادیمی بەرجەستە کرا.'
+      kurdishSummary: 'دروستکردنی دەقی بنەماپێدراو سەرکەوتوو نەبوو؛ بۆ پاراستنی ئەمانەتی زانستی هیچ دۆزینەوە یان citation ـێکی ساختە نەنرا.'
     };
   }
 }
