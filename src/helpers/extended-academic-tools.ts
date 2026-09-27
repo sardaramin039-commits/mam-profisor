@@ -71,9 +71,9 @@ export interface IssnLookupResult {
   journalTitle: string;
   publisher: string;
   country: string;
-  quartile: 'Q1' | 'Q2' | 'Q3' | 'Q4';
-  impactFactor: number;
-  openAccess: boolean;
+  quartile: 'Q1' | 'Q2' | 'Q3' | 'Q4' | null;
+  impactFactor: number | null;
+  openAccess: boolean | null;
   subjects: string[];
 }
 
@@ -161,10 +161,10 @@ export async function resolveDoi(doi: string): Promise<DoiResolutionResult> {
       const data = await res.json() as { message?: { title?: string[]; author?: { given?: string; family?: string }[]; publisher?: string; 'container-title'?: string[]; created?: { 'date-parts'?: number[][] }; volume?: string; issue?: string; page?: string; URL?: string } };
       const msg = data.message || {};
       const title = msg.title?.[0] || `Publication (${cleanDoi})`;
-      const authors = msg.author?.map(a => `${a.given || ''} ${a.family || ''}`.trim()) || ['Unknown Author'];
-      const year = String(msg.created?.['date-parts']?.[0]?.[0] || '2023');
-      const journal = msg['container-title']?.[0] || 'Peer Reviewed Journal';
-      const publisher = msg.publisher || 'Academic Press';
+      const authors = msg.author?.map(a => `${a.given || ''} ${a.family || ''}`.trim()).filter(Boolean) || [];
+      const year = String(msg.created?.['date-parts']?.[0]?.[0] || 'n.d.');
+      const journal = msg['container-title']?.[0] || 'Unknown journal';
+      const publisher = msg.publisher || 'Unknown publisher';
 
       const apa = `${authors.join(', ')} (${year}). ${title}. ${journal}, ${msg.volume || ''}(${msg.issue || ''}), ${msg.page || ''}. https://doi.org/${cleanDoi}`;
 
@@ -193,7 +193,10 @@ export async function resolveDoi(doi: string): Promise<DoiResolutionResult> {
  * Fetch book details by ISBN via Open Library API
  */
 export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
-  const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
+  const cleanIsbn = isbn.replace(/[^0-9X]/gi, '').toUpperCase();
+  if (![10, 13].includes(cleanIsbn.length) || !/^\d{9}[\dX]$|^\d{13}$/.test(cleanIsbn)) {
+    throw new Error(`ISBN شێوەی دروستی نییە: ${cleanIsbn}`);
+  }
   try {
     const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -205,10 +208,10 @@ export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
         return {
           isbn: cleanIsbn,
           title: item.title || `Book (ISBN: ${cleanIsbn})`,
-          authors: item.authors?.map(a => a.name || '') || ['Library Author'],
-          publisher: item.publishers?.[0]?.name || 'Academic Publishing House',
-          publishDate: item.publish_date || '2022',
-          pages: item.number_of_pages || 320,
+          authors: item.authors?.map(a => a.name || '').filter(Boolean) || [],
+          publisher: item.publishers?.[0]?.name || 'Unknown publisher',
+          publishDate: item.publish_date || 'n.d.',
+          pages: item.number_of_pages,
           coverUrl: item.cover?.medium,
           description: `کتێبی ئەکادیمی تۆمارکراو لە سەرچاوەی ژمارەیی OpenLibrary بۆ ISBN ${cleanIsbn}`
         };
@@ -226,13 +229,52 @@ export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
  */
 export async function lookupIssn(issn: string): Promise<IssnLookupResult> {
   const cleanIssn = issn.trim();
-  if (!/^\\d{4}-?\\d{3}[\\dXx]$/.test(cleanIssn)) {
+  const compact = cleanIssn.replace(/-/g, '').toUpperCase();
+  if (!/^\d{7}[\dX]$/.test(compact)) {
     throw new Error(`ISSN شێوەی دروستی نییە: ${cleanIssn}`);
   }
 
-  // Do not fabricate journal title, publisher, quartile, impact factor, or OA status.
-  // A future integration may resolve ISSN against an authoritative registry.
-  throw new Error(`ISSN پشکنینەکە هێشتا بە سەرچاوەی ڕەسەن پەیوەست نییە: ${cleanIssn}`);
+  const checksum = compact
+    .slice(0, 7)
+    .split('')
+    .reduce((sum, digit, index) => sum + Number(digit) * (8 - index), 0);
+  const remainder = checksum % 11;
+  const expected = remainder === 0 ? '0' : remainder === 1 ? 'X' : String(11 - remainder);
+  if (compact[7] !== expected) {
+    throw new Error(`ISSN check digit دروست نییە: ${cleanIssn}`);
+  }
+
+  const normalizedIssn = `${compact.slice(0, 4)}-${compact.slice(4)}`;
+  const res = await fetch(`https://api.crossref.org/journals/${encodeURIComponent(normalizedIssn)}`, {
+    headers: { 'Accept': 'application/json', 'User-Agent': 'AcademicKurdishPlatform/1.0' },
+    signal: AbortSignal.timeout(5000)
+  });
+
+  if (!res.ok) {
+    throw new Error(`ISSN لە Crossref نەدۆزرایەوە: ${normalizedIssn}`);
+  }
+
+  const data = await res.json() as {
+    message?: {
+      title?: string;
+      publisher?: string;
+    };
+  };
+  const message = data.message;
+  if (!message?.title && !message?.publisher) {
+    throw new Error(`Crossref تۆماری تەواوی ISSN نەگەڕاندەوە: ${normalizedIssn}`);
+  }
+
+  return {
+    issn: normalizedIssn,
+    journalTitle: message.title || 'Unknown journal',
+    publisher: message.publisher || 'Unknown publisher',
+    country: 'Unknown',
+    quartile: null,
+    impactFactor: null,
+    openAccess: null,
+    subjects: []
+  };
 }
 
 /**
