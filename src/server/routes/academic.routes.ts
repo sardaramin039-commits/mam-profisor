@@ -116,38 +116,44 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
       });
 
       if (deduplicated.length === 0) {
-        // Dynamic fallback to local catalog
+        // Local catalog is retrieval-only evidence. It must never be presented as externally verified.
         const catalog = crawlerEngine.getCatalog();
-        const q = query.toLowerCase();
+        const q = query.toLocaleLowerCase().trim();
         const matched = catalog.filter((b: any) =>
-          b.title.toLowerCase().includes(q) ||
-          b.author.toLowerCase().includes(q) ||
-          (Array.isArray(b.subjects) && b.subjects.some((sub: any) => String(sub).toLowerCase().includes(q)))
+          String(b.title || '').toLocaleLowerCase().includes(q) ||
+          String(b.author || '').toLocaleLowerCase().includes(q) ||
+          (Array.isArray(b.subjects) && b.subjects.some((sub: any) =>
+            String(sub).toLocaleLowerCase().includes(q)
+          ))
         );
-        const fallbackItems = (matched.length > 0 ? matched : catalog.slice(0, 10)).map((b: any) => ({
+
+        deduplicated = matched.map((b: any) => ({
           title: b.title,
-          authors: [b.author],
-          year: b.year,
-          sourceName: b.sourceName || 'ئەرشیڤی ٤٠ کتێبخانە دیجیتاڵییەکە',
-          url: b.sourceUrl || '#',
-          snippet: `کتێبی ساغکراوە لە ئەرشیڤی ${b.sourceName}: ${b.title} لە نووسینی ${b.author} (${b.year}).`
-        }));
-        deduplicated = fallbackItems as unknown as typeof deduplicated;
+          authors: b.author ? [b.author] : [],
+          year: b.year ?? 0,
+          sourceName: b.sourceName || 'ئەرشیڤی ناوخۆیی',
+          url: b.sourceUrl || undefined,
+          snippet: b.description || '',
+          verificationStatus: 'unverified',
+          retrievedFrom: 'local-catalog'
+        })) as unknown as typeof deduplicated;
       }
 
-      res.json({ sources: deduplicated, totalFound: deduplicated.length });
+      res.json({
+        sources: deduplicated,
+        totalFound: deduplicated.length,
+        retrievalPolicy: 'relevance-match-only',
+        verificationPolicy: 'retrieval-does-not-imply-verification'
+      });
     } catch (err: unknown) {
       console.warn('External sources search error (falling back to local catalog):', err);
-      const catalog = crawlerEngine.getCatalog();
-      const fallbackItems = catalog.slice(0, 10).map((b: any) => ({
-        title: b.title,
-        authors: [b.author],
-        year: b.year,
-        sourceName: b.sourceName || 'ئەرشیڤی ٤٠ کتێبخانە دیجیتاڵییەکە',
-        url: b.sourceUrl || '#',
-        snippet: `کتێبی ساغکراوە لە ئەرشیڤی ${b.sourceName}: ${b.title} لە نووسینی ${b.author} (${b.year}).`
-      }));
-      res.json({ sources: fallbackItems, totalFound: fallbackItems.length, isFallback: true });
+      res.json({
+        sources: [],
+        totalFound: 0,
+        isFallback: true,
+        retrievalPolicy: 'fail-closed',
+        verificationPolicy: 'no-source-on-provider-failure'
+      });
     }
   });
 
