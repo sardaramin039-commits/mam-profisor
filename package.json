@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "ng": "ng",
-    "dev": "node --max-old-space-size=1536 node_modules/@angular/cli/bin/ng.js serve",
+    "dev": "node --max-old-space-size=2048 node_modules/@angular/cli/bin/ng.js serve",
     "start": "node dist/app/server/server.mjs",
-    "build": "node --max-old-space-size=1536 node_modules/@angular/cli/bin/ng.js build",
+    "build": "node --max-old-space-size=4096 node_modules/@angular/cli/bin/ng.js build",
     "watch": "ng build --watch --configuration development",
     "lint": "ng lint"
   },
