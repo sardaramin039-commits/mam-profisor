@@ -26,7 +26,7 @@ class ResearchProjectStateService {
         activeChapter: 'دەروازە و پێشەکی',
         draftContent: '',
         citationsList: [],
-        integrityScore: 100,
+        integrityScore: 0,
         lastSavedAt: new Date().toISOString()
       });
     }
