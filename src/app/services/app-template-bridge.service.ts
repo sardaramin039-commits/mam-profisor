@@ -1041,7 +1041,7 @@ export class AppTemplateBridgeService {
       'زیادکردنی ڕوونکردنەوەی ئامار'
     );
   }
-  simulateEmpiricalStats(chapter: any) {
+  simulateEmpiricalStats(_chapter: any) {
     const csv = this.datasetInputCsv().trim();
     if (!csv) {
       this.statsError.set('بۆ شیکاریی ئاماری واقعی، داتای CSV پێویستە. هیچ داتای ساختە دروست ناکرێت.');
@@ -1049,21 +1049,57 @@ export class AppTemplateBridgeService {
       return;
     }
 
-    this.statsError.set(null);
     this.isSimulatingStats.set(true);
-    this.api.post<any>('/api/dataset_sandbox_run', {
-      code: this.pythonInterpreterCode().trim() || 'print("Dataset provided; statistical code not supplied.")',
-      datasetName: chapter?.title || 'dataset'
-    }).then(result => {
+    this.statsError.set(null);
+
+    try {
+      const rows = csv.split(/\r?\n/).map(row => row.trim()).filter(Boolean);
+      if (rows.length < 2) throw new Error('CSV needs a header and at least one row.');
+
+      const delimiter = rows[0].includes('\t') ? '\t' : rows[0].includes(';') ? ';' : ',';
+      const headers = rows[0].split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
+      const records = rows.slice(1).map(row => row.split(delimiter).map(v => v.trim().replace(/^"|"$/g, '')));
+
+      const columns = headers.map((header, index) => {
+        const values = records
+          .map(row => Number(String(row[index] ?? '').replace(/,/g, '')))
+          .filter(value => Number.isFinite(value));
+
+        if (values.length === 0) return null;
+
+        const sorted = [...values].sort((a, b) => a - b);
+        const sum = values.reduce((total, value) => total + value, 0);
+        const mean = sum / values.length;
+        const median = sorted.length % 2
+          ? sorted[Math.floor(sorted.length / 2)]
+          : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
+        const variance = values.reduce((total, value) => total + ((value - mean) ** 2), 0) / values.length;
+
+        return {
+          column: header,
+          count: values.length,
+          mean,
+          median,
+          min: sorted[0],
+          max: sorted[sorted.length - 1],
+          standardDeviation: Math.sqrt(variance)
+        };
+      }).filter(Boolean);
+
+      if (columns.length === 0) throw new Error('No numeric columns were found.');
+
       this.empiricalStatsResult.set({
-        ...result,
-        note: 'ئەم ئەنجامە تەنها لەسەر داتای پێشکەشکراوە؛ هیچ داتای ساختە بەکارنەهێنرا.'
+        rowCount: records.length,
+        numericColumns: columns,
+        note: 'ئەم ئەنجامە تەنها لەسەر داتای CSV ـی پێشکەشکراوە و هیچ داتای ساختەی تێدا نییە.'
       });
-    }).catch(error => {
-      console.error('Empirical statistics execution failed:', error);
+    } catch (error) {
+      console.error('Empirical statistics parsing failed:', error);
       this.empiricalStatsResult.set(null);
-      this.statsError.set('شیکاریی ئاماری لەم کاتەدا بەردەست نییە.');
-    }).finally(() => this.isSimulatingStats.set(false));
+      this.statsError.set('CSV ـەکە نەبوو بە داتای ئاماری خوێندنەوەکراو.');
+    } finally {
+      this.isSimulatingStats.set(false);
+    }
   }
   generateMultiStyleCitation() {
     if (this.citationForm.invalid) {
@@ -1120,25 +1156,11 @@ export class AppTemplateBridgeService {
       'زیادکردنی ئەنجامی Python Sandbox'
     );
   }
-  executePythonDatasetInterpreter(chapter: any) {
-    const code = this.pythonInterpreterCode().trim();
-    if (!code) {
-      this.pythonSandboxError.set('کۆدی Python پێویستە.');
-      return;
-    }
-
-    this.isExecutingPythonSandbox.set(true);
-    this.pythonSandboxError.set(null);
-    this.api.post<any>('/api/dataset_sandbox_run', {
-      code,
-      datasetName: chapter?.title || 'academic-dataset'
-    }).then(result => {
-      this.pythonSandboxResult.set(result);
-    }).catch(error => {
-      console.error('Python dataset execution failed:', error);
-      this.pythonSandboxResult.set(null);
-      this.pythonSandboxError.set('جێبەجێکردنی Python لەم کاتەدا بەردەست نییە.');
-    }).finally(() => this.isExecutingPythonSandbox.set(false));
+  executePythonDatasetInterpreter(_chapter: any) {
+    this.pythonSandboxResult.set(null);
+    this.pythonSandboxError.set(
+      'جێبەجێکردنی Python لەم وەشاندنەدا چالاک نییە، چونکە sandbox ـی isolated بۆ پاراستنی سیستەم دانەنراوە.'
+    );
   }
   copyLatexCode(code: string) {
     if (code) navigator.clipboard.writeText(code);
