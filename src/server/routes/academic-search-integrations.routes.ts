@@ -60,8 +60,21 @@ export function createAcademicSearchIntegrationsRouter(getGeminiClient: () => Go
         console.error('Semantic Scholar API error:', s2Error);
       }
 
-      const systemPrompt = `تۆ پسپۆڕی بەدواداچوون و لێکۆڵینەوەیت لە بنکەدراوە زانستییە جیهانییەکان. وەڵام تەنها بە JSON بدەرەوە.`;
-      const prompt = `دۆزینەوەی سەرچاوەی متمانەپێکراو بۆ: ${title || concept} (دیۆسپلین: ${discipline || 'گشتی'})`;
+      // AI may classify/match retrieved records, but it must never invent new scholarly records.
+      if (s2Results.length === 0) {
+        return res.json({
+          matchedArticles: [],
+          query: englishQuery,
+          message: 'هیچ تۆمارێکی Semantic Scholar بۆ ئەم گەڕانە نەدۆزرایەوە؛ هیچ سەرچاوەی ساختە دروست نەکرا.'
+        });
+      }
+
+      const systemPrompt = `تۆ پسپۆڕی بەدواداچوون و لێکۆڵینەوەیت. تەنها ئەو تۆمارانە هەڵبژێرە و پۆلێن بکە کە لە لیستی داتای پشکنراوەدا هەن؛ بە هیچ شێوەیەک نووسەر، ساڵ، DOI، ناونیشان یان سەرچاوەی نوێ مەخە.`;
+      const prompt = `ئەم تۆمارانەی Semantic Scholar هەمان داتای ڕاستەوخۆی بنکەدراون:
+${JSON.stringify(s2Results)}
+
+بابەت: ${title || concept} (دیسیپلین: ${discipline || 'گشتی'})
+تەنها تۆمارەکانی لیستی سەرەوە بۆ پۆلێنکردن بەکاربهێنە.`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
@@ -70,13 +83,18 @@ export function createAcademicSearchIntegrationsRouter(getGeminiClient: () => Go
       });
 
       const parsed = robustParseJson(response.text || '{}');
-      if (s2Results.length > 0 && Array.isArray(parsed.matchedArticles)) {
+      if (Array.isArray(parsed.matchedArticles)) {
+        // Hard cap AI output to retrieved records, then replace citation-critical fields
+        // with values returned by the authoritative upstream index.
+        parsed.matchedArticles = parsed.matchedArticles.slice(0, s2Results.length);
         s2Results.forEach((p, idx) => {
           if (parsed.matchedArticles[idx]) {
             parsed.matchedArticles[idx].title = p.title || parsed.matchedArticles[idx].title;
             parsed.matchedArticles[idx].authors = p.authors?.map((a: any) => a.name).join(', ') || parsed.matchedArticles[idx].authors;
             parsed.matchedArticles[idx].year = p.year || parsed.matchedArticles[idx].year;
             parsed.matchedArticles[idx].doi = p.externalIds?.DOI || parsed.matchedArticles[idx].doi;
+            parsed.matchedArticles[idx].source = 'Semantic Scholar';
+            parsed.matchedArticles[idx].sourceVerified = true;
           }
         });
       }
