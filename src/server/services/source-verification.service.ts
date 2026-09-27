@@ -39,6 +39,25 @@ function titleTokens(value: string): Set<string> {
   return new Set(normalizeTitle(value).split(' ').filter(token => token.length > 2));
 }
 
+function authorOverlap(inputAuthor: string | undefined, externalAuthors: string[]): number {
+  const inputTokens = new Set(
+    normalize(inputAuthor || '')
+      .split(' ')
+      .filter(token => token.length > 2)
+  );
+  const externalTokens = new Set(
+    normalize(externalAuthors.join(' '))
+      .split(' ')
+      .filter(token => token.length > 2)
+  );
+  if (inputTokens.size === 0 || externalTokens.size === 0) return 0;
+  let overlap = 0;
+  for (const token of inputTokens) {
+    if (externalTokens.has(token)) overlap++;
+  }
+  return overlap / inputTokens.size;
+}
+
 function titleSimilarity(a: string, b: string): number {
   const left = titleTokens(a);
   const right = titleTokens(b);
@@ -92,7 +111,17 @@ export class SourceVerificationService {
       const external = inputDoi ? externallyResolved.get(inputDoi) : undefined;
 
       if (external) {
-        const matches = titleSimilarity(source.title, external.title) >= 0.72;
+        const titleMatch = titleSimilarity(source.title, external.title) >= 0.72;
+        const inputAuthor = (source.author || '').trim();
+        const authorMatch = !inputAuthor || external.authors.length === 0
+          ? true
+          : authorOverlap(inputAuthor, external.authors) >= 0.5;
+        const inputYear = Number(source.year);
+        const externalYear = Number(external.publishedYear);
+        const yearMatch = !Number.isFinite(inputYear) || !Number.isFinite(externalYear) || inputYear === 0
+          ? true
+          : Math.abs(inputYear - externalYear) <= 1;
+        const matches = titleMatch && authorMatch && yearMatch;
         if (!matches) {
           return {
             sourceTitle: source.title,
@@ -102,10 +131,10 @@ export class SourceVerificationService {
             integrityScore: 0,
             trustLevel: 'F',
             existenceVerified: true,
-            metadataAccuracy: 0,
+            metadataAccuracy: Math.round((Number(titleMatch) + Number(authorMatch) + Number(yearMatch)) / 3 * 100),
             peerReviewed: false,
             rejectedAsFabricated: true,
-            rejectionReasonKurdish: 'ناونیشانی سەرچاوە لەگەڵ تۆماری DOI لە Crossref هاوتا نییە؛ تۆمارەکە بۆ Citation ڕەتکرایەوە.',
+            rejectionReasonKurdish: 'metadata ـی سەرچاوە لەگەڵ تۆماری DOI لە Crossref بە تەواوی هاوتا نییە؛ تۆمارەکە بۆ Citation ڕەتکرایەوە.',
             kurdishVerificationDetails: 'DOI بە شێوەی دەرەکی دۆزرایەوە، بەڵام ناسنامەی سەرچاوەکە لەگەڵ metadata ـی Crossref ناگونجێت.'
           };
         }
@@ -141,9 +170,23 @@ export class SourceVerificationService {
       };
     });
 
+    const verifiedSources = reports.filter(report =>
+      report.existenceVerified === true &&
+      report.rejectedAsFabricated !== true &&
+      report.trustLevel !== 'D' &&
+      report.trustLevel !== 'F'
+    );
+    const rejectedSources = reports.filter(report => report.rejectedAsFabricated);
+    const unverifiedSources = reports.filter(report =>
+      !report.existenceVerified && !report.rejectedAsFabricated
+    );
+
     return {
-      verifiedSources: reports,
-      rejectedSourcesCount: reports.filter(report => report.rejectedAsFabricated).length
+      verifiedSources,
+      rejectedSources,
+      unverifiedSources,
+      allReports: reports,
+      rejectedSourcesCount: rejectedSources.length
     };
   }
 }
