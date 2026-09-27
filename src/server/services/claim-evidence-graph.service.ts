@@ -54,6 +54,7 @@ function containsGroundedQuote(source: any, evidence: any): boolean {
     source?.fullText ??
     source?.text ??
     source?.rawText ??
+    source?.chunkText ??
     ''
   ).trim();
 
@@ -127,7 +128,10 @@ export class ClaimEvidenceGraphService {
       const rawEvidences: any[] = Array.isArray(parsed.evidences) ? parsed.evidences : [];
 
       const safeSources = (Array.isArray(sources) ? sources : []).filter(
-        source => source?.existenceVerified === true && source?.rejectedAsFabricated !== true
+        source => (source?.existenceVerified === true || source?.verificationStatus === 'verified') &&
+          source?.rejectedAsFabricated !== true &&
+          source?.trustLevel !== 'F' &&
+          source?.trustLevel !== 'D'
       );
 
       const evidenceMap = new Map<string, EvidenceNode>();
