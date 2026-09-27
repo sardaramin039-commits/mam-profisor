@@ -32,7 +32,8 @@ function isAiPath(path: string): boolean {
     normalized.startsWith('/analyze_') ||
     normalized.startsWith('/harvard_') ||
     normalized.startsWith('/simulate_') ||
-    normalized.startsWith('/export_')
+    normalized.startsWith('/export_') ||
+    normalized.startsWith('/external-integrations/test-')
   );
 }
 
