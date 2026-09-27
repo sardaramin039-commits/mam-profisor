@@ -53,7 +53,7 @@ service cloud.firestore {
         && data.userId == request.auth.uid
         && data.title is string && data.title.size() >= 5
         && data.author is string && data.author.size() >= 3
-        && data.year is int && data.year >= 1000 && data.year <= 2027
+        && data.year is int && data.year >= 1000 && data.year <= 2100
         && data.publisher is string
         && data.sourceType in ['book', 'journal', 'thesis', 'manuscript']
         && data.isVerified == true;
@@ -106,8 +106,8 @@ service cloud.firestore {
 
     // Match sources collection
     match /sources/{sourceId} {
-      allow get: if isVerifiedUser() && isValidId(sourceId);
-      allow list: if isVerifiedUser();
+      allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId);
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
       allow create: if isVerifiedUser() && isValidId(sourceId) && isValidSource(request.resource.data);
       allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId);
       allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId) && isValidSource(request.resource.data);
