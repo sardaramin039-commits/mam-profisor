@@ -4,12 +4,15 @@ import { EditorService } from '../features/editor/services/editor';
 import { Data } from './data';
 import { ChapterItemModel as ChapterItem } from '../domain/models';
 import { ACADEMIC_GLOSSARY as GLOSSARY_PROMPT } from '../../prompts/academic-glossary';
+import { AuthenticatedApiService } from '../core/services/authenticated-api.service';
+import { verifyChapterIntegrity } from '../helpers/academic-vault';
 
 @Injectable({ providedIn: 'root' })
 export class AppTemplateBridgeService {
   private editorService = inject(EditorService);
   private data = inject(Data);
   private fb = inject(FormBuilder);
+  private api = inject(AuthenticatedApiService);
 
   ACADEMIC_GLOSSARY: Array<{ sorani: string; foreign: string; category: string; kurdish: string; english: string; desc: string; sourceLang: string; translation: string; definition: string }> = [
     { sorani: 'میتۆدۆلۆژی', foreign: 'Methodology', category: 'research', kurdish: 'میتۆدۆلۆژی', english: 'Methodology', desc: 'زانستی ڕێبازەکانی توێژینەوەی زانستی', sourceLang: 'یۆنانی', translation: 'Methodology', definition: 'تەواوی ڕێکارە میتۆدییەکانی توێژینەوە' },
@@ -239,16 +242,185 @@ export class AppTemplateBridgeService {
   paraphraseResult = signal<{ paraphrasedText?: string; academicTermsUsed?: Array<{ term: string; meaning: string }>; linguisticImprovements?: string[] } | null>(null);
   isCopying = signal<boolean>(false);
 
-  applyHarvardActionableImprovement(c: any, item?: any) {}
-  runHarvardAcademicReview(c: any) {}
-  appendLiteratureGapParagraphToChapter(c: any, text?: any) {}
-  analyzeLiteratureGap(c: any) {}
-  applyEliteCoAuthorMitigatedText(c: any) {}
-  analyzeEliteCoAuthorHub(c: any) {}
-  applyParaphrasedAlternativeToChapter(c: any, alt?: any) {}
-  applyParaphrasedText(c: any) {}
-  runAcademicParaphrase() {}
-  writeSingleChapter(id: number) {}
+  applyHarvardActionableImprovement(c: any, item?: any) {
+    if (!c || !item) return;
+    const text = typeof item === 'string' ? item : item.improvedText || item.replacement || item.text || '';
+    if (!text) return;
+    this.editorService.updateChapterContent(
+      c.id,
+      text,
+      'جێبەجێکردنی چاکسازیی پێداچوونەوەی ئەکادیمی'
+    );
+  }
+
+  runHarvardAcademicReview(c: any) {
+    if (!c?.content?.trim()) return;
+    this.isAnalyzingHarvardReview.set(true);
+    this.harvardReviewError.set(null);
+    this.api.post<any>('/api/harvard_academic_review', {
+      title: c.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
+      text: c.content,
+      discipline: this.refineForm.get('discipline')?.value || 'گشتی'
+    }).then(result => {
+      this.harvardReviewResult.set(result);
+    }).catch(error => {
+      console.error('Harvard review request failed:', error);
+      this.harvardReviewError.set('پێداچوونەوەی هارڤەرد سەرکەوتوو نەبوو.');
+    }).finally(() => {
+      this.isAnalyzingHarvardReview.set(false);
+    });
+  }
+
+  appendLiteratureGapParagraphToChapter(c: any, text?: any) {
+    if (!c || !text || !String(text).trim()) return;
+    this.editorService.updateChapterContent(
+      c.id,
+      (c.content || '') + '\n\n' + String(text).trim(),
+      'زیادکردنی پەرەگرافی بۆشایی ئەدەبیات'
+    );
+  }
+
+  analyzeLiteratureGap(c: any) {
+    if (!c?.content?.trim()) return;
+    this.isAnalyzingLiteratureGap.set(true);
+    this.literatureGapError.set(null);
+    this.api.post<any>('/api/analyze_literature_gap', {
+      topic: c.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
+      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
+      existingLiterature: this.refineForm.get('customSourcesText')?.value || ''
+    }).then(result => {
+      this.literatureGapResult.set(result);
+    }).catch(error => {
+      console.error('Literature gap request failed:', error);
+      this.literatureGapError.set('شیکاریی بۆشایی ئەدەبیات سەرکەوتوو نەبوو.');
+    }).finally(() => {
+      this.isAnalyzingLiteratureGap.set(false);
+    });
+  }
+
+  applyEliteCoAuthorMitigatedText(c: any) {
+    const result = this.eliteCoAuthorResult();
+    const text = result?.mitigatedText || result?.revisedText || result?.content;
+    if (!c || !text) return;
+    this.editorService.updateChapterContent(c.id, String(text), 'جێبەجێکردنی دەقی چاککراوی هاونوسەر');
+  }
+
+  analyzeEliteCoAuthorHub(c: any) {
+    if (!c?.content?.trim()) return;
+    this.isAnalyzingEliteCoAuthor.set(true);
+    this.eliteCoAuthorError.set(null);
+    this.api.post<any>('/api/ai_peer_review', {
+      title: c.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
+      text: c.content,
+      discipline: this.refineForm.get('discipline')?.value || 'گشتی'
+    }).then(result => {
+      this.eliteCoAuthorResult.set(result);
+    }).catch(error => {
+      console.error('Peer review request failed:', error);
+      this.eliteCoAuthorError.set('پێداچوونەوەی هاونوسەر سەرکەوتوو نەبوو.');
+    }).finally(() => {
+      this.isAnalyzingEliteCoAuthor.set(false);
+    });
+  }
+
+  applyParaphrasedAlternativeToChapter(c: any, alt?: any) {
+    const text = typeof alt === 'string' ? alt : alt?.paraphrasedText || alt?.text;
+    if (!c || !text) return;
+    this.editorService.updateChapterContent(c.id, String(text), 'جێبەجێکردنی هەڵبژاردەی پارافرەیز');
+  }
+
+  applyParaphrasedText(c: any) {
+    const text = this.paraphraseResult()?.paraphrasedText;
+    if (!c || !text) return;
+    this.editorService.updateChapterContent(c.id, text, 'جێبەجێکردنی پارافرەیزی ئەکادیمی');
+  }
+
+  runAcademicParaphrase() {
+    const chapter = this.getChapterById(this.editorService.activeChapterId());
+    const content = chapter?.content?.trim();
+    if (!content) return;
+    this.isCopying.set(true);
+    this.paraphraseResult.set(null);
+    this.api.post<any>('/api/refine', {
+      text: content,
+      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
+      tone: 'academic',
+      goal: 'پارافرەیزی زانستی'
+    }).then(result => {
+      this.paraphraseResult.set({
+        paraphrasedText: result?.refinedText || result?.content || '',
+        academicTermsUsed: result?.terminology || [],
+        linguisticImprovements: result?.academicNotes || []
+      });
+    }).catch(error => {
+      console.error('Academic paraphrase request failed:', error);
+      this.paraphraseResult.set(null);
+    }).finally(() => {
+      this.isCopying.set(false);
+    });
+  }
+
+  writeSingleChapter(id: number) {
+    const chapter = this.editorService.chapters().find(c => c.id === id);
+    if (!chapter) return;
+    const value = this.refineForm.value;
+    this.editorService.activeChapterId.set(id);
+    this.isWritingProgressForChapter(id, true);
+    this.api.post<any>('/api/generate_chapter', {
+      title: value.title,
+      discipline: value.discipline,
+      writingType: value.writingType,
+      academicLevel: value.academicLevel,
+      pages: value.size,
+      sizeMode: value.sizeMode,
+      minPages: value.minPages,
+      maxPages: value.maxPages,
+      targetPages: value.targetPages,
+      totalWordsCount: value.targetPages * 350,
+      minWordsCount: value.minPages * 350,
+      maxWordsCount: value.maxPages * 350,
+      targetWordsPerChapter: this.editorService.calculateChapterTargetWords(
+        chapter.title,
+        value.targetPages * 350,
+        this.editorService.chapters().length
+      ),
+      currentChapterIndex: Math.max(0, this.editorService.chapters().findIndex(c => c.id === id)),
+      chapterTitle: chapter.title,
+      previousChapterContent: '',
+      role: 'scholar',
+      dialect: value.dialectThesis ? 'sorani' : 'standard',
+      copyStyleText: value.copyStyleText,
+      temperature: value.temperature,
+      thesisDefense: value.thesisDefense,
+      thinkingTokens: value.thinkingTokens,
+      writingTokens: value.writingTokens,
+      humanizeMode: false,
+      compareAspect: value.compareAspect,
+      compareFile1: value.compareFile1,
+      compareFile2: value.compareFile2,
+      activeRules: this.academicRules().filter(r => r.enabled).map(r => r.name),
+      academicStyle: value.academicStyle,
+      customSourcesOn: value.customSourcesOn,
+      customSourcesText: value.customSourcesText,
+      customTOCOn: value.customTOCOn,
+      customTOCText: value.customTOCText,
+      fieldWorkOn: value.fieldWorkOn,
+      fieldWorkText: value.fieldWorkText,
+      selectedBook: value.selectedBook
+    }).then(result => {
+      const content = String(result?.content || '').trim();
+      if (!content) throw new Error('هیچ ناوەڕۆکێک لەلایەن سێرڤەرەوە نەگەڕێندرایەوە.');
+      this.editorService.updateChapterContent(
+        id,
+        content,
+        'نووسینی ڕاستەوخۆی بەش لە سێرڤەر'
+      );
+    }).catch(error => {
+      console.error('Single chapter generation failed:', error);
+    }).finally(() => {
+      this.isWritingProgressForChapter(id, false);
+    });
+  }
 
   // Viva Simulation
   vivaErrorMessage = signal<string | null>(null);
