@@ -22,6 +22,7 @@ const academicReviewSchema = z.object({ draftText: textField(250_000), topic: te
 const qaGateSchema = z.object({ documentText: textField(250_000), sources: sourceArray.default([]) }).strict();
 const kurdishLanguageSchema = z.object({ text: textField(250_000) }).strict();
 const knowledgeGraphSchema = z.object({ query: textField(500) }).strict();
+const argumentBuilderSchema = z.object({ topic: textField(500), discipline: textField(200) }).strict();
 const orchestrationSchema = z.object({
   topic: textField(500),
   discipline: textField(200),
@@ -73,7 +74,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
   // 3. Argument Architecture Generator
   router.post('/argument-builder', async (req: ExtendedAuthRequest, res: Response): Promise<void> => {
     try {
-      const { topic, discipline } = req.body;
+      const argumentBuilderSchemaParsed = argumentBuilderSchema.safeParse(req.body ?? {});
+      if (!argumentBuilderSchemaParsed.success) {
+        res.status(400).json({ error: 'داتای ناردراو بۆ دروستکردنی ئارگومێنت نادروستە.', details: argumentBuilderSchemaParsed.error.issues });
+        return;
+      }
+      const { topic, discipline } = argumentBuilderSchemaParsed.data;
       const plan = await academicWritingEngineService.generateArgumentArchitecture(
         topic || 'بابەتی زانستی',
         discipline || 'توێژینەوەی گشتی',
@@ -187,8 +193,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
 
   // 10. AI Model Router Config API
   router.post('/model-router', (req: ExtendedAuthRequest, res: Response): void => {
-    const { taskType, textLength } = req.body;
-    const config = aiModelRouterService.selectModelForTask(taskType || 'fast', textLength || 0);
+    const parsed = modelRouterSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: 'داتای model-router نادروستە.', details: parsed.error.issues });
+      return;
+    }
+    const config = aiModelRouterService.selectModelForTask(parsed.data.taskType, parsed.data.textLength);
     res.json({ success: true, config });
   });
 
