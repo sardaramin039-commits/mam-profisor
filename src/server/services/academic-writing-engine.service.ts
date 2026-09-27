@@ -76,19 +76,19 @@ export class AcademicWritingEngineService {
     } catch (err: any) {
       console.error('Error in AcademicWritingEngineService:', err);
       return {
-        researchQuestion: `پرسیاری سەرەکی توێژینەوە لەسەر ${topic}`,
-        thesisStatement: `فرزیەی زانستی دەربارەی ${topic}`,
+        researchQuestion: `پرسیاری سەرەکی بۆ توێژینەوەی "${topic}" (پێویستی بە پشکنینی توێژەر هەیە)`,
+        thesisStatement: `فرزیەی کارییەتی بۆ "${topic}"؛ ئەمە نموونەی داڕشتنە و نابێت وەک دەرئەنجامی سەلمێنراو وەربگیرێت.`,
         arguments: [
           {
-            id: 'ARG-01',
-            claim: 'پایەی سەرەکی توێژینەوەکە پشتیوانکراوە بە بەڵگەی ئەکادیمی.',
-            subArguments: ['خاڵی شیکاری یەکەم'],
-            evidenceQuotes: ['بەڵگەی سەرچاوەی زانستی'],
-            counterArguments: ['تێبینی پێداچوونەوەکار'],
-            synthesisKurdish: 'وەڵامدانەوەی ئەکادیمیانە و بەهێزکردنی تێزەکە.'
+            id: 'ARG-DRAFT-01',
+            claim: `خاڵی شیکاری بۆ "${topic}" پێویستی بە بەڵگەی ڕەسەن هەیە.`,
+            subArguments: ['خاڵی شیکاری یەکەم', 'خاڵی شیکاری دووەم'],
+            evidenceQuotes: [],
+            counterArguments: ['دژە-ئارگومێنتێک دیاری بکە لە دوای پشکنینی ئەدەبیات.'],
+            synthesisKurdish: 'ئەم بونیادە تەنها scaffold ـە؛ پێویستە Claim و Evidence ـەکان لە سەرچاوەی ڕەسەنەوە پشتڕاست بکرێن.'
           }
         ],
-        overallConclusion: 'دەرئەنجامی زانستی تێزەکە.'
+        overallConclusion: 'دەرئەنجامی کۆتایی نابێت لە fallback ـدا دروست بکرێت؛ دوای کۆکردنەوەی Evidence و پشکنینی توێژەر پڕ دەکرێتەوە.'
       };
     }
   }
