@@ -620,27 +620,105 @@ export class AppTemplateBridgeService {
   scrollToSection(text: string, textarea: any) {}
   verifyCitationsLive(c: any) {}
   runAcademicConsultation() {
+    const question = (this.consultationTopic() || this.consultationKeyConcept() || '').trim();
+    if (!question) return;
+
     this.isConsulting.set(true);
-    setTimeout(() => {
-      this.consultationResult.set('ئامۆژگاری و دەرئەنجامی ڕاوێژکاری ئەکادیمی');
+    this.consultationError.set(null);
+    this.api.post<any>('/api/academic_consultation', {
+      userQuestion: question,
+      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
+      academicLevel: this.refineForm.get('academicLevel')?.value || 'ماستەر',
+      currentThesisContext: this.consultationTextToProofread()
+    }).then(result => {
+      this.consultationResult.set(result);
+    }).catch(error => {
+      console.error('Academic consultation failed:', error);
+      this.consultationError.set('ڕاوێژکاریی ئەکادیمی لەم کاتەدا بەردەست نییە.');
+      this.consultationResult.set(null);
+    }).finally(() => {
       this.isConsulting.set(false);
-    }, 800);
+    });
   }
   appendConsultationToActiveChapter(chapter: any, text: string = '') {
     if (chapter) {
       this.editorService.updateChapterContent(chapter.id, (chapter.content || '') + '\n\n' + text, 'زیادکردنی سەرنجی ڕاوێژکاری');
     }
   }
-  auditAIIntegrity(chapter: any) {}
+  auditAIIntegrity(chapter: any) {
+    if (!chapter?.content?.trim()) return;
+    this.isAuditingIntegrity.set(true);
+    this.integrityAuditError.set(null);
+    this.api.post<any>('/api/ai_integrity_audit', {
+      text: chapter.content
+    }).then(result => {
+      this.integrityAuditResult.set(result);
+    }).catch(error => {
+      console.error('AI integrity audit failed:', error);
+      this.integrityAuditError.set('پشکنینی AI Integrity لەم کاتەدا بەردەست نییە.');
+      this.integrityAuditResult.set(null);
+    }).finally(() => {
+      this.isAuditingIntegrity.set(false);
+    });
+  }
   summarizeThesisContext() {}
-  anonymizeActiveChapterData(chapter: any) {}
+  anonymizeActiveChapterData(chapter: any) {
+    if (!chapter?.content?.trim()) return;
+    this.isAnonymizingData.set(true);
+    this.anonymizationError.set(null);
+    this.api.post<any>('/api/anonymize_data', {
+      text: chapter.content
+    }).then(result => {
+      this.anonymizationResult.set(result);
+    }).catch(error => {
+      console.error('Anonymize data failed:', error);
+      this.anonymizationError.set('شاردنەوەی زانیاریی کەسی لەم کاتەدا بەردەست نییە.');
+      this.anonymizationResult.set(null);
+    }).finally(() => {
+      this.isAnonymizingData.set(false);
+    });
+  }
   recalibrateWithIntuition(chapter: any) {}
-  generateVivaQuestions(chapter: any) {}
+  generateVivaQuestions(chapter: any) {
+    if (!chapter?.content?.trim()) return;
+    this.isSimulatingViva.set(true);
+    this.vivaErrorMessage.set(null);
+    this.api.post<any>('/api/simulate_viva', {
+      thesisTitle: chapter.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
+      abstract: chapter.content.slice(0, 5000)
+    }).then(result => {
+      this.vivaQuestions.set(result?.questions || result?.vivaQuestions || result);
+    }).catch(error => {
+      console.error('Viva generation failed:', error);
+      this.vivaErrorMessage.set('دروستکردنی پرسیارەکانی Viva لەم کاتەدا بەردەست نییە.');
+      this.vivaQuestions.set(null);
+    }).finally(() => {
+      this.isSimulatingViva.set(false);
+    });
+  }
   generateAcademicAdditions(chapter: any) {}
   appendAdditionsToChapter(chapter: any, addition: any) {}
   appendMethodologyLayoutToChapter(chapter: any) {}
   analyzeSoraniPhoneticsAndDialect(chapter: any) {}
-  constructMethodologyAndHypotheses(chapter: any) {}
+  constructMethodologyAndHypotheses(chapter: any) {
+    if (!chapter) return;
+    this.isConstructingMethodology.set(true);
+    this.methodologyError.set(null);
+    this.api.post<any>('/api/construct_methodology', {
+      title: chapter.title || this.refineForm.get('title')?.value || 'توێژینەوە',
+      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
+      researchType: this.methodologyType(),
+      sampleSize: this.hypothesesInput().trim() || undefined
+    }).then(result => {
+      this.methodologyResult.set(result);
+    }).catch(error => {
+      console.error('Methodology construction failed:', error);
+      this.methodologyError.set('بونیادنانی مێتۆدۆلۆژی لەم کاتەدا بەردەست نییە.');
+      this.methodologyResult.set(null);
+    }).finally(() => {
+      this.isConstructingMethodology.set(false);
+    });
+  }
   appendStatsExplanationToChapter(chapter: any) {}
   simulateEmpiricalStats(chapter: any) {}
   generateMultiStyleCitation() {}
