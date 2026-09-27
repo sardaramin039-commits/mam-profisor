@@ -22,6 +22,12 @@ service cloud.firestore {
         && (request.auth.token.role == 'admin' || request.auth.token.role == 'professor');
     }
 
+    function isSubmissionOwner(submissionId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/peer_submissions/$(submissionId))
+        && get(/databases/$(database)/documents/peer_submissions/$(submissionId)).data.userId == request.auth.uid;
+    }
+
     function isValidId(id) {
       return id is string && id.size() <= 128;
     }
@@ -126,9 +132,17 @@ service cloud.firestore {
     match /peer_reviews/{reviewId} {
       allow get: if isVerifiedUser()
         && isValidId(reviewId)
-        && (resource.data.reviewerId == request.auth.uid || isAdminOrProfessor());
+        && (
+          resource.data.reviewerId == request.auth.uid ||
+          isSubmissionOwner(resource.data.submissionId) ||
+          isAdminOrProfessor()
+        );
       allow list: if isVerifiedUser()
-        && (resource.data.reviewerId == request.auth.uid || isAdminOrProfessor());
+        && (
+          resource.data.reviewerId == request.auth.uid ||
+          isSubmissionOwner(resource.data.submissionId) ||
+          isAdminOrProfessor()
+        );
       allow create: if isVerifiedUser()
         && isValidId(reviewId)
         && isValidReview(request.resource.data);
