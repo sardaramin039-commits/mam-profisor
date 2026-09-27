@@ -77,18 +77,9 @@ export class AcademicWritingEngineService {
       console.error('Error in AcademicWritingEngineService:', err);
       return {
         researchQuestion: `پرسیاری سەرەکی توێژینەوە لەسەر ${topic}`,
-        thesisStatement: `فرزیەی زانستی دەربارەی ${topic}`,
-        arguments: [
-          {
-            id: 'ARG-01',
-            claim: 'پایەی سەرەکی توێژینەوەکە پشتیوانکراوە بە بەڵگەی ئەکادیمی.',
-            subArguments: ['خاڵی شیکاری یەکەم'],
-            evidenceQuotes: ['بەڵگەی سەرچاوەی زانستی'],
-            counterArguments: ['تێبینی پێداچوونەوەکار'],
-            synthesisKurdish: 'وەڵامدانەوەی ئەکادیمیانە و بەهێزکردنی تێزەکە.'
-          }
-        ],
-        overallConclusion: 'دەرئەنجامی زانستی تێزەکە.'
+        thesisStatement: `فرزیەی پێویستی بە پشتڕاستکردنەوە دەربارەی ${topic}`,
+        arguments: [],
+        overallConclusion: 'پشکنینی AI بەردەست نەبوو؛ هیچ ئارگومێنت یان بەڵگەی ساختە بۆ نووسین زیاد نەکرا.'
       };
     }
   }
