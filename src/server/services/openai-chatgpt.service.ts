@@ -201,14 +201,29 @@ ${JSON.stringify(retrievalContext)}`;
    * ڕێکخستن، ستانداردکردن و پۆلێنکردنی سەرچاوەکان بەپێی شێوازە ئەکادیمییەکان
    */
   public async organizeAndFormatReferences(request: OrganizeReferencesRequest): Promise<OrganizeReferencesResponse> {
+    const style = request.citationStyle || 'harvard';
+    const rawReferences = request.rawReferences?.trim();
+
+    if (!rawReferences) {
+      return {
+        success: false,
+        topic: request.topic,
+        citationStyle: style,
+        sortedReferences: [],
+        curatedBibliography: '',
+        inTextCitationGuide: '',
+        methodologyNotes: 'هیچ سەرچاوەیەکی خاو لە داواکارییەکەدا دابین نەکراوە؛ ئەم operation ـە سەرچاوەی نوێ دروست ناکات.',
+        provider: 'provenance-safe formatter'
+      };
+    }
+
     const apiKey = this.getApiKey();
     const baseUrl = this.getBaseUrl();
-    const style = request.citationStyle || 'harvard';
 
     const systemPrompt = `تۆ پسپۆڕی بەڕێوەبردن و ڕێکخستنی بەیبلۆگرافی و ژێدەرە ئەکادیمییەکانیت بە ستانداردەکانی (APA 7th, Harvard, MLA 9th, Chicago).
 ⚠️ **یاسای نەگۆڕی ئەکادیمی بۆ نەهێشتنی سەرچاوەی هەڵبەستراو (Zero-Hallucination & Provenance Audit)**:
 ١. تەنها ئەو سەرچاوانە ڕێکبخە و پەسەند بکە کە ڕاستەقینەن یان بەکارهێنەر لە تێکستە خاوەکەدا دابینی کردوون.
-٢. ئەگەر بەکارهێنەر داوای هێنانی سەرچاوەی زیاتری کردبوو، تەنها و تەنها وتاری باوەڕپێکراوی گۆڤارە نێودەوڵەتییەکان، کتێبی چاپکراوی زانکۆکان و سەرچاوەی ساغکراوە دابنێ بە ناونیشانی دەقاودەق، ناوی نووسەران و ساڵی ڕاستەقینە.
+٢. سەرچاوەی نوێ مەدۆزەوە و هیچ تۆمارێکی bibliographic زیاد مەکە؛ تەنها ئەو سەرچاوانە ڕێکبخە کە لە `rawReferences` ـدا هاتوون.
 ٣. هەر سەرچاوەیەک کە بوونی زانستی نەبێت یان گوماناوی بێت دەبێت لە بەشی 'methodologyNotes' هۆشداری دەربارەی بدرێت.
 ٤. ڕێزبەندکردنی ئەلفوبێیی (Alphabetical Order) بەپێی پاشناوی نووسەران جێبەجێ بکە.
 ٥. ئاماژەدانی ناو دەق (In-text citations) بە شێوازی یاسایی (وەک: (Smith, 2021) یان (حەمە، ٢٠٢٢)) دابنێ.
@@ -239,7 +254,7 @@ ${JSON.stringify(retrievalContext)}`;
     const userPrompt = `بابەتی توێژینەوە: "${request.topic}"
 شێوازی داواکراو بۆ سەرچاوەکان: "${style.toUpperCase()}"
 سەرچاوە خاوەکان / تێکست بۆ ڕێکخستن:
-${request.rawReferences || 'تکایە بەپێی بابەتە سەرەکییەکە گشتگیرترین و کاریگەرترین سەرچاوە زانستییەکان ڕێکبخە و فۆرمات بکە.'}`;
+${rawReferences}`;
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
