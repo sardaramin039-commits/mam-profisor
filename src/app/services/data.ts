@@ -371,7 +371,8 @@ export class Data {
           sourceType: source.sourceType,
           doi: source.doi || '',
           isbn: source.isbn || '',
-          isVerified: source.isVerified,
+          // Client cannot self-promote a source to verified status.
+          isVerified: false,
           createdAt: serverTimestamp()
         };
         await setDoc(docRef, payload);
