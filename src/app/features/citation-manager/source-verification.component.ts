@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, computed, input, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, input, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -50,6 +50,15 @@ export class SourceVerificationComponent {
   rerankedResults = signal<RerankedEvidenceChunk[]>([]);
 
   records = signal<VerifiedCitationRecord[]>([]);
+
+  constructor() {
+    effect(() => {
+      const incoming = this.initialRecords();
+      if (this.records().length === 0 && incoming.length > 0) {
+        this.records.set(incoming);
+      }
+    });
+  }
 
   auditReport = computed<VerificationAuditReport>(() => {
     return SourceVerificationEngine.generateAuditReport(this.records());
