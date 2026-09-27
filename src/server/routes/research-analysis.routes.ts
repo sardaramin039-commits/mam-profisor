@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { SYSTEM_PROMPT_ANALYZE_RIGOR } from '../../prompts/system-prompts';
 import { robustParseJson } from '../utils/json-repair';
+import { multiAgentOrchestratorService } from '../services/multi-agent-orchestrator.service';
 
 export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -43,45 +44,11 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
       res.json(robustParseJson(response.text || ''));
     } catch (error) {
       console.error('Analyze academic rigor error:', error);
-      const reqTitle = req.body.title || 'کارێکی ئەکادیمی';
-      const reqContent = req.body.content || '';
-      
-      const length = reqContent.length;
-      const approximatePlagiarism = Math.min(25, Math.ceil((length % 17) + 5));
-      const approximateScore = Math.max(65, Math.min(95, 90 - (approximatePlagiarism / 2)));
-
-      const fallbackResponse = {
-        academicScore: approximateScore,
-        toneEvaluation: `بەرنامەکە لەسەر ئاستی لۆکاڵ شیکاریی کرد بۆ بابەتەکەمان (${reqTitle}): زمانەکە فەرمی و گونجاوە بەڵام پێداچوونەوەی وردی لۆکاڵی پێویست بێت بۆ زمانپاراوی.`,
-        citationSuggestions: "پێشنیار دەکرێت سەرچاوەی زیاتری فیزیایی یان دەستنووس لە کتێبخانە بپشکنرێت تا پاڵپشتی لۆژیکی گریمانەکان بکەن.",
-        plagiarismSimilarity: approximatePlagiarism,
-        vocabularyComplexity: "ئاستی ئاڵۆزیی وشەکان مامناوەندە و لەگەڵ فۆرمی تێزدا دەگونجێت.",
-        sentencesReform: [
-          {
-            original: reqContent.slice(0, Math.min(80, reqContent.length)) + "...",
-            improved: "بەستنەوە چاکتر دەبێت ئەگەر تێبینییەکانی مرۆیی ڕاستەوخۆ تێکەڵ بکرێن."
-          }
-        ],
-        honestyCapExplanation: "سیستەم بە شێوەیەکی ئۆفلاین شیکاری کرد.",
-        requiredHumanActions: [
-          "پێشنیاری یەکەم: بەستنەوەی دەقی ئەم سەرچاوەیە بە گۆرانکارییە مەیدانییەکانی هاوچەرخ",
-          "پێشنیاری دووەم: کەم کردنەوەی ڕوانگە وەسفییە سادەکان بە لۆژیکی بەڵگەکاری ئەکادیمی"
-        ],
-        fallacies: [],
-        hedgingChecks: [],
-        theoreticalConsistency: {
-          frameworkUsed: req.body.theoreticalFramework || 'critical_theory',
-          status: 'matching',
-          notes: 'شیکردنەوەی پەیوەندی و یەکگرتنی دەق لەگەڵ ئەم تیۆرییەدا'
-        },
-        crossReferenceStatus: {
-          citationCount: 2,
-          matchedCount: 2,
-          mismatches: []
-        }
-      };
-      res.json(fallbackResponse);
-    }
+      res.status(503).json({
+        error: 'پشکنینی وردی کوالێتیی ئەکادیمی لەم کاتەدا بەردەست نییە؛ هیچ نمرە یان دۆخی ساختە دروست نەکرا.',
+        code: 'ACADEMIC_RIGOR_UNAVAILABLE'
+      });
+    }}
   });
 
   /**
@@ -166,60 +133,51 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
    */
   router.post('/multi_agent_pipeline', async (req, res) => {
     try {
-      const { topic, professorMode = 'ماستەر', researchMemory } = req.body;
-      if (!topic) {
+      const {
+        topic,
+        professorMode = 'ماستەر',
+        researchMemory,
+        discipline = 'گشتی',
+        draftText = '',
+        rawSources = []
+      } = req.body;
+
+      if (!topic || typeof topic !== 'string' || !topic.trim()) {
         res.status(400).json({ error: 'بابەت یان پرسیاری توێژینەوە پێویستە' });
         return;
       }
 
-      const ai = getGeminiClient();
+      const result = await multiAgentOrchestratorService.executePipeline(
+        {
+          topic: topic.trim(),
+          discipline,
+          draftText: draftText || JSON.stringify(researchMemory || {}),
+          rawSources: Array.isArray(rawSources) ? rawSources : []
+        },
+        getGeminiClient
+      );
 
-      const researchPrompt = `تۆ سەرپەرشتیاری تیمی Multi-Agent هەڵسەنگاندن و نووسینی ئەکادیمیت بۆ زانکۆی هارفارد.
-تکایە زنجیرە شیکاریی فرە-ئەجێنت (Research -> Evidence -> Writer -> Citation -> Reviewer) ئەنجام بدە بۆ بابەتی: "${topic}"
-ئاستی پرۆفیسۆر: ${professorMode}
-پاشخانی بیرگەی توێژینەوە: ${JSON.stringify(researchMemory || {})}
-
-پێویستە وەڵامەکە بە JSON و بە تەنها ئەم شێوازە بێت:
-{
-  "topic": "${topic}",
-  "academicLevel": "${professorMode}",
-  "pipelineSteps": [
-    { "agentName": "Research Agent", "status": "completed", "summary": "دەستنیشانکردنی کێشە، چەمکەکان و ڕەوتی مێژوویی بابەتەکە" },
-    { "agentName": "Evidence Agent", "status": "completed", "summary": "کۆکردنەوەی بەڵگە و هەڵسەنگاندنی هێزی سەرچاوە زانستییەکان" },
-    { "agentName": "Writer Agent", "status": "completed", "summary": "داڕشتنی دەقی چڕی زانستی بێ لایەن و فەرمی" },
-    { "agentName": "Citation Agent", "status": "completed", "summary": "هاوسازکردنی بەڵگەکان لەگەڵ سەرچاوە ڕاستەقینەکاندا" },
-    { "agentName": "Reviewer Agent", "status": "completed", "summary": "پێداچوونەوەی ڕەخنەیی، متمانە و نمرەی کۆتایی" }
-  ],
-  "synthesizedProse": "دەقی ئەکادیمیی سەرەکیی داڕێژراو بە کوردیی سۆرانیی فەرمی، بێ لایەن و زانستی بەپێی پێوەری ${professorMode}.",
-  "keyEvidencePoints": [
-    "خاڵی بەڵگەی یەکەم بە پشتیوانی سەرچاوەی ساغکراوە",
-    "خاڵی بەڵگەی دووەم"
-  ],
-  "verifiedCitations": [
-    { "citationKey": "(Smith, 2022)", "supportedClaim": "ادعای زانستی پشتیوانیکراو" }
-  ],
-  "peerReviewAudit": {
-    "scholarlyScore": 92,
-    "rigorGrade": "A+",
-    "criticalFeedback": "پێداچوونەوەی ڕەخنەیی و ئامۆژگاری زانستی بۆ توێژەر"
-  }
-}`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: researchPrompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.3
-        }
+      res.json({
+        topic: topic.trim(),
+        academicLevel: professorMode,
+        pipelineSteps: result.executionPipelineLog,
+        verifiedSourcesCount: result.verifiedSourcesCount,
+        keyEvidencePoints: result.claimEvidenceGraphIntegrity > 0
+          ? ['Claim-Evidence Graph بە پشتگیری سەرچاوەی دەقییەوە دروست کرا.']
+          : [],
+        verifiedCitations: [],
+        peerReviewAudit: result.reviewerReport,
+        synthesizedProse: result.finalThesisDraftKurdish,
+        qaGateResult: result.qaGateResult
       });
-
-      res.json(robustParseJson(response.text || '{}'));
     } catch (err) {
       console.error('Multi-agent pipeline error:', err);
-      res.status(500).json({ error: 'کێشەیەک لە ڕاکێشانی پڕۆسەی Multi-Agent دا ڕوویدا' });
+      res.status(503).json({
+        error: 'پڕۆسەی Multi-Agent لەم کاتەدا بەردەست نییە؛ هیچ دۆخی تەواوبوون یان سەرچاوەی ساختە نێردراوە نییە.',
+        code: 'MULTI_AGENT_UNAVAILABLE'
+      });
     }
-  });
+  });;
 
   return router;
 }
