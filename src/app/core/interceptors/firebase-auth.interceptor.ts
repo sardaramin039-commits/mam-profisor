@@ -32,7 +32,7 @@ export function isInternalApiUrl(url: string): boolean {
  * Rules:
  * 1. Omitted for all third-party endpoints (OpenAlex, Crossref, Google Books, etc.).
  * 2. Avoids browser-side APIs during SSR (Server-Side Rendering).
- * 3. Gracefully preserves dev preview tokens in non-production environments when offline or unauthenticated.
+ * 3. Leaves unauthenticated requests untouched so the server can enforce authorization.
  */
 export const firebaseAuthInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
