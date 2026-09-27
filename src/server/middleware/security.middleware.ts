@@ -70,7 +70,7 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Kurdish-Library-Sanitized, X-RAG-Pipeline-Access, X-Dev-Guest-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Kurdish-Library-Sanitized, X-RAG-Pipeline-Access');
 
   if (req.method === 'OPTIONS') {
     res.sendStatus(204);
@@ -81,7 +81,7 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
 
 /**
  * Prompt Injection Protection Middleware
- * Sanitizes untrusted inputs to prevent prompt injection attacks (e.g., "Ignore previous instructions")
+ * Sanitizes untrusted inputs to reduce common prompt injection patterns before AI processing.
  */
 export function promptSanitizerMiddleware(req: Request, res: Response, next: NextFunction) {
   if (req.body && typeof req.body === 'object') {
