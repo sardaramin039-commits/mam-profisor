@@ -72,46 +72,23 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   next();
 }
 
-/**
- * Prompt Injection Protection Middleware
- * Sanitizes untrusted inputs to prevent prompt injection attacks (e.g., "Ignore previous instructions")
+/** 
+ * Prompt Injection Protection Middleware.
+ * AI-boundary protections belong in the orchestration layer; request text is not mutated here.
  */
-export function promptSanitizerMiddleware(req: Request, res: Response, next: NextFunction) {
-  if (req.body && typeof req.body === 'object') {
-    const sanitizeValue = (val: any): any => {
-      if (typeof val === 'string') {
-        // Strip common prompt injection control characters and aggressive prompt overrides
-        return val
-          .replace(/ignore\s+all\s+previous\s+instructions/gi, '[ sanitized instruction override ]')
-          .replace(/system\s+prompt\s+reveal/gi, '[ sanitized prompt reveal ]')
-          .replace(/you\s+are\s+now\s+a\s+DAN/gi, '[ sanitized DAN override ]');
-      }
-      if (Array.isArray(val)) {
-        return val.map(sanitizeValue);
-      }
-      if (val && typeof val === 'object') {
-        const sanitizedObj: Record<string, any> = {};
-        for (const [k, v] of Object.entries(val)) {
-          sanitizedObj[k] = sanitizeValue(v);
-        }
-        return sanitizedObj;
-      }
-      return val;
-    };
-
-    req.body = sanitizeValue(req.body);
-  }
+export function promptSanitizerMiddleware(_req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
-export function geminiApiKeyCheckMiddleware(req: Request, res: Response, next: NextFunction) {
+export function geminiApiKeyCheckMiddleware(_req: Request, res: Response, next: NextFunction) {
   const keysEnv = process.env['GEMINI_API_KEY'];
+
   if (!keysEnv || keysEnv.trim() === '') {
     res.status(500).json({
-      error: 'کۆدی سەرچاوەی نەخۆش: کلیلەکانی Gemini API (GEMINI_API_KEY) لە ژینگەی سێرڤەردا دەستنیشان نەکراون. تکایە کلیلەکان لە پانێڵی Secrets زیاد بکە پێش ئەوەی بەردەوام بیت.'
+      error: 'کلیلەکانی Gemini API (GEMINI_API_KEY) لە ژینگەی سێرڤەردا دانەنراون.'
     });
     return;
   }
+
   next();
 }
-
