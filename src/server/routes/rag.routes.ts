@@ -6,6 +6,44 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
 
   /**
+   * POST /api/rag/generate-embedding
+   * Generates server-side Gemini Embedding 2 vectors for authenticated clients.
+   */
+  router.post('/generate-embedding', async (req, res) => {
+    try {
+      const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+
+      if (!text) {
+        res.status(400).json({ error: 'دەقی embedding پێویستە.' });
+        return;
+      }
+
+      if (text.length > 50_000) {
+        res.status(413).json({ error: 'دەقەکە زۆر گەورەیە بۆ embedding؛ تکایە بەش بەش بنێرە.' });
+        return;
+      }
+
+      const ai = _getGeminiClient();
+      const response = await ai.models.embedContent({
+        model: 'gemini-embedding-2',
+        contents: text,
+        config: { outputDimensionality: 768 }
+      });
+
+      const embedding = response.embeddings?.[0]?.values || [];
+      if (embedding.length !== 768) {
+        res.status(502).json({ error: 'ژمارەی dimension ـەکانی embedding چاوەڕوانکراو نەبوو.' });
+        return;
+      }
+
+      res.json({ embedding, dimensions: embedding.length, model: 'gemini-embedding-2' });
+    } catch (err: unknown) {
+      console.error('Embedding generation error:', err);
+      res.status(500).json({ error: 'نەتوانرا embedding ـی دەق دروست بکرێت.' });
+    }
+  });
+
+  /**
    * POST /api/rag/hybrid-retrieve
    * Real retrieval endpoint. It never fabricates source records.
    */
