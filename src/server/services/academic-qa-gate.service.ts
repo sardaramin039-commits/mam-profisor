@@ -79,7 +79,7 @@ export class AcademicQAGateService {
 
       return {
         exportBlocked: parsed.exportBlocked ?? (criticalCount > 0),
-        overallQAScore: parsed.overallQAScore || 90,
+        overallQAScore: typeof parsed.overallQAScore === 'number' ? parsed.overallQAScore : 0,
         criticalViolationsCount: criticalCount,
         checks,
         kurdishSummaryStatus: parsed.kurdishSummaryStatus || 'تێپەڕاندنی قۆناغی QA زانستی.'
