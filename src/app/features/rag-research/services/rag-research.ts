@@ -26,7 +26,7 @@ export class RagResearchService {
   private http = inject(HttpClient);
 
   readonly retrievedChunks = signal<RetrievedChunkModel[]>([]);
-  readonly selectedModel = signal<string>('gemini-1.5-pro');
+  readonly selectedModel = signal<string>('gemini-3.8-flash');
   readonly chunkLimit = signal<number>(5);
 
   readonly isResearching = signal<boolean>(false);
