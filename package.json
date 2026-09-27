@@ -10,7 +10,8 @@
     "build": "node --max-old-space-size=1536 ./node_modules/@angular/cli/bin/ng.js build",
     "watch": "ng build --watch --configuration development",
     "lint": "ng lint",
-    "security:audit": "node scripts/security-secret-audit.mjs"
+    "security:audit": "node scripts/security-secret-audit.mjs",
+    "test": "ng test --watch=false"
   },
   "dependencies": {
     "@angular/cdk": "^19.1.0",
@@ -61,6 +62,8 @@
     "drizzle-kit": "^0.30.2",
     "eslint": "^10.9.1",
     "typescript": "~5.7.2",
-    "typescript-eslint": "^8.69.0"
+    "typescript-eslint": "^8.69.0",
+    "vitest": "^3.2.4",
+    "jsdom": "^26.1.0"
   }
 }
