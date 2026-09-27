@@ -794,7 +794,39 @@ export class AppTemplateBridgeService {
     area.focus();
     area.setSelectionRange(index, index + query.length);
   }
-  verifyCitationsLive(c: any) {}
+  verifyCitationsLive(c: any) {
+    if (!c?.content?.trim()) return;
+
+    const candidates = this.data.sourcesList().filter(source =>
+      c.content.includes(source.title)
+    );
+
+    this.isVerifyingCitations.set(true);
+    this.citationVerificationError.set(null);
+    this.api.post<any>('/api/platform/source-verification', {
+      sources: candidates.map(source => ({
+        title: source.title,
+        author: source.author,
+        year: String(source.year),
+        publisher: source.publisher,
+        doi: source.doi,
+        isbn: source.isbn
+      }))
+    }).then(result => {
+      this.citationVerificationResult.set({
+        chapterId: c.id,
+        matchedSourceCount: candidates.length,
+        verifiedSources: result?.verifiedSources || [],
+        rejectedSourcesCount: result?.rejectedSourcesCount || 0
+      });
+    }).catch(error => {
+      console.error('Live citation verification failed:', error);
+      this.citationVerificationResult.set(null);
+      this.citationVerificationError.set('پشکنینی ڕاستەوخۆی سەرچاوەکان لەم کاتەدا بەردەست نییە.');
+    }).finally(() => {
+      this.isVerifyingCitations.set(false);
+    });
+  }
   runAcademicConsultation() {
     const question = (this.consultationTopic() || this.consultationKeyConcept() || '').trim();
     if (!question) return;
