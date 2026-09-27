@@ -160,11 +160,14 @@ export async function resolveDoi(doi: string): Promise<DoiResolutionResult> {
     if (res.ok) {
       const data = await res.json() as { message?: { title?: string[]; author?: { given?: string; family?: string }[]; publisher?: string; 'container-title'?: string[]; created?: { 'date-parts'?: number[][] }; volume?: string; issue?: string; page?: string; URL?: string } };
       const msg = data.message || {};
-      const title = msg.title?.[0] || `Publication (${cleanDoi})`;
+      const title = msg.title?.[0]?.trim() || '';
       const authors = msg.author?.map(a => `${a.given || ''} ${a.family || ''}`.trim()).filter(Boolean) || [];
-      const year = String(msg.created?.['date-parts']?.[0]?.[0] || 'n.d.');
-      const journal = msg['container-title']?.[0] || 'Unknown journal';
-      const publisher = msg.publisher || 'Unknown publisher';
+      const year = String(msg.created?.['date-parts']?.[0]?.[0] || '');
+      const journal = msg['container-title']?.[0]?.trim() || '';
+      const publisher = msg.publisher?.trim() || '';
+      if (!title) {
+        throw new Error(`Crossref record has no authoritative title for DOI: ${cleanDoi}`);
+      }
 
       const apa = `${authors.join(', ')} (${year}). ${title}. ${journal}, ${msg.volume || ''}(${msg.issue || ''}), ${msg.page || ''}. https://doi.org/${cleanDoi}`;
 
