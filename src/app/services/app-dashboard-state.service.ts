@@ -247,6 +247,10 @@ export class AppDashboardStateService {
   }
 
   verifyChunkSource(chunk: RetrievedChunk) {
-    chunk.isVerified = true;
+    if (!chunk) return;
+    // Verification is registry-backed; a local UI action must never assert provenance.
+    if (!chunk.isVerified) {
+      return;
+    }
   }
 }
