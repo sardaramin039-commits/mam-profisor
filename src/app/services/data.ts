@@ -112,9 +112,14 @@ export class Data {
   loadLocalSourcesFallback() {
     try {
       const localSources = JSON.parse(localStorage.getItem('local_sources_backup') || '[]');
-      this.sourcesList.set(localSources);
+      const safeSources = Array.isArray(localSources)
+        ? localSources.map((source: AcademicSource) => ({ ...source, isVerified: false }))
+        : [];
+      // LocalStorage is client-controlled and cannot be treated as proof of verification.
+      this.sourcesList.set(safeSources);
     } catch (err) {
       console.warn('Failed to load local sources from storage:', err);
+      this.sourcesList.set([]);
     }
   }
 
