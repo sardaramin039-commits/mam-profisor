@@ -71,7 +71,10 @@ class ResearchProjectStateService {
     );
 
     ws.draftContent = orchestrationResult.finalThesisDraftKurdish || ws.draftContent;
-    ws.integrityScore = orchestrationResult.qaGateResult?.passed ? 100 : 75;
+    const qaScore = Number(orchestrationResult.qaGateResult?.overallQAScore);
+    ws.integrityScore = Number.isFinite(qaScore)
+      ? Math.max(0, Math.min(100, qaScore))
+      : 0;
     ws.lastSavedAt = new Date().toISOString();
 
     return {
