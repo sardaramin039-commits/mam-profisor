@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router } from 'express';
 import { AuthRequest } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { researchMemoryService } from '../services/research-memory.service';
