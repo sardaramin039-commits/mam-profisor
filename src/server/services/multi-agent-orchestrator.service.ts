@@ -93,16 +93,18 @@ export class MultiAgentOrchestratorService {
       getGeminiClient
     );
 
-    addLog('10', 'Orchestration Complete', 'Academic pipeline successfully executed with full evidence backing');
+    addLog('10', 'Orchestration Complete', qaResult.exportBlocked
+      ? 'Pipeline completed with export blocked by academic integrity gate'
+      : 'Pipeline completed with evidence and QA gates passed');
 
     // Record observability telemetry
     observabilityService.logEvent({
       endpoint: '/api/platform/multi-agent-orchestrate',
       modelUsed: 'gemini-3.8-flash',
       latencyMs: Date.now() - startTime,
-      tokensPrompt: 2500,
-      tokensCompletion: 1800,
-      estimatedCostUsd: 0.0035,
+      tokensPrompt: 0,
+      tokensCompletion: 0,
+      estimatedCostUsd: 0,
       success: !qaResult.exportBlocked,
       citationFailuresCount: graph.syntheticCitationsBlockedCount,
       ragQualityScore: graph.graphIntegrityScore
@@ -110,7 +112,12 @@ export class MultiAgentOrchestratorService {
 
     return {
       executionPipelineLog: pipelineLog,
-      verifiedSourcesCount: verification.verifiedSources.length,
+      verifiedSourcesCount: verification.verifiedSources.filter(source =>
+        source.existenceVerified === true &&
+        source.rejectedAsFabricated !== true &&
+        source.trustLevel !== 'D' &&
+        source.trustLevel !== 'F'
+      ).length,
       claimEvidenceGraphIntegrity: graph.graphIntegrityScore,
       thesisStructurePlan: structure,
       reviewerReport: reviewReport,
