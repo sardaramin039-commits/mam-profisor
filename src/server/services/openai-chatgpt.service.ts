@@ -75,6 +75,7 @@ export class OpenAiChatGptService {
   public async discoverAcademicSources(request: DiscoverSourcesRequest): Promise<DiscoverSourcesResponse> {
     const apiKey = this.getApiKey();
     const baseUrl = this.getBaseUrl();
+    const model = process.env['OPENAI_MODEL']?.trim() || 'gpt-5.6-luna';
     const limit = Math.min(request.limit || 8, 15);
 
     const retrievedSources = await academicSearchService.searchAll(request.query, limit);
@@ -131,13 +132,12 @@ ${JSON.stringify(retrievalContext)}`;
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        response_format: { type: 'json_object' },
-        temperature: 0.1
+        response_format: { type: 'json_object' }
       })
     });
 
@@ -219,6 +219,7 @@ ${JSON.stringify(retrievalContext)}`;
 
     const apiKey = this.getApiKey();
     const baseUrl = this.getBaseUrl();
+    const model = process.env['OPENAI_MODEL']?.trim() || 'gpt-5.6-luna';
 
     const systemPrompt = `تۆ پسپۆڕی بەڕێوەبردن و ڕێکخستنی بەیبلۆگرافی و ژێدەرە ئەکادیمییەکانیت بە ستانداردەکانی (APA 7th, Harvard, MLA 9th, Chicago).
 ⚠️ **یاسای نەگۆڕی ئەکادیمی بۆ نەهێشتنی سەرچاوەی هەڵبەستراو (Zero-Hallucination & Provenance Audit)**:
@@ -268,8 +269,7 @@ ${rawReferences}`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        response_format: { type: 'json_object' },
-        temperature: 0.2
+        response_format: { type: 'json_object' }
       })
     });
 
