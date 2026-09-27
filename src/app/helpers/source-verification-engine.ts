@@ -114,7 +114,7 @@ export class SourceVerificationEngine {
         return {
           tier: 'Tier 1',
           tierName: `Academic / Primary (${kw.toUpperCase()})`,
-          score: 90 + Math.floor(Math.random() * 9) // 90-98
+          score: 90
         };
       }
     }
@@ -124,7 +124,7 @@ export class SourceVerificationEngine {
         return {
           tier: 'Tier 2',
           tierName: `Digital Library / Archive (${kw})`,
-          score: 70 + Math.floor(Math.random() * 15) // 70-84
+          score: 75
         };
       }
     }
@@ -133,7 +133,7 @@ export class SourceVerificationEngine {
     return {
       tier: 'Tier 3',
       tierName: 'General Web Source / Blog',
-      score: 40 + Math.floor(Math.random() * 20) // 40-59
+      score: 50
     };
   }
 
@@ -153,6 +153,7 @@ export class SourceVerificationEngine {
       pageNumber?: number | string | null;
       retrievedTextSnippet?: string;
       sourceUrl?: string;
+      externallyVerified?: boolean;
     }
   ): VerifiedCitationRecord {
     const id = `verif_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -187,25 +188,37 @@ export class SourceVerificationEngine {
       const normalizedClaim = rawClaim.toLowerCase().trim();
       const normalizedSnippet = snippet.toLowerCase().trim();
 
-      const directMatch = normalizedSnippet.includes(normalizedClaim) || normalizedClaim.includes(normalizedSnippet);
-      const isDoiValid = !candidateSource.doiOrUrl || candidateSource.doiOrUrl.startsWith('http') || candidateSource.doiOrUrl.includes('10.');
+      const directMatch =
+        Boolean(normalizedClaim) &&
+        Boolean(normalizedSnippet) &&
+        (normalizedSnippet.includes(normalizedClaim) || normalizedClaim.includes(normalizedSnippet));
 
-      if (directMatch && isDoiValid && candidateSource.pageNumber) {
+      const isDoiOrUrlPlausible =
+        !candidateSource.doiOrUrl ||
+        candidateSource.doiOrUrl.startsWith('http') ||
+        candidateSource.doiOrUrl.includes('10.');
+
+      if (candidateSource.externallyVerified && directMatch && isDoiOrUrlPlausible && candidateSource.pageNumber) {
         status = 'VERIFIED';
-        notes = 'سەرچاوەکە بە تەواوی خوێندرایەوە و بەڵگەی تەواو لەگەڵ ژمارەی لاپەڕە پشتڕاستکرایەوە.';
+        notes = 'بوونی سەرچاوەکە لە دەرەوە پشتڕاستکراوەتەوە و بەڵگەی دەقی لەگەڵ ژمارەی لاپەڕە هاوتاکراوە.';
+      } else if (candidateSource.externallyVerified && snippet.length > 15) {
+        status = 'PARTIALLY_VERIFIED';
+        notes = 'سەرچاوەکە لە دەرەوە پشتڕاستکراوەتەوە، بەڵام بەڵگەی بڕبڕەیی یان ژمارەی لاپەڕە تەواو نییە.';
       } else if (snippet.length > 15) {
         status = 'PARTIALLY_VERIFIED';
-        notes = 'دەقی سەرچاوەکە خوێندرایەوە، بەڵام ژمارەی لاپەڕە یان بەڵگەی سەلمێنەری بڕبڕەیی پێویستی بە پشتڕاستکردنەوەی زیاترە.';
+        notes = 'دەقی سەرچاوەکە بەردەستە، بەڵام بوونی سەرچاوەکە لە registry ـی دەرەوە پشتڕاست نەکراوەتەوە.';
       } else {
         status = 'UNVERIFIED';
-        notes = 'بەڵگە لەگەڵ دەقی داواکراو تەبا نییە.';
+        notes = 'هیچ بەڵگەی بەسەلمێنراو بۆ پشتڕاستکردنەوەی ئەم سەرچاوەیە بەردەست نییە.';
       }
     }
 
     // Adjust Reliability Score based on verification
-    let finalScore = tierInfo.score;
-    if (status === 'VERIFIED') finalScore = Math.min(100, finalScore + 5);
-    else if (status === 'UNVERIFIED') finalScore = Math.max(10, finalScore - 30);
+    const finalScore = status === 'VERIFIED'
+      ? Math.min(100, tierInfo.score + 5)
+      : status === 'PARTIALLY_VERIFIED'
+        ? tierInfo.score
+        : 0;
 
     // Step 5: Cite (ONLY allowed if VERIFIED)
     const cited = status === 'VERIFIED';
