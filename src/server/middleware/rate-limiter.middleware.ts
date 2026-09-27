@@ -1,29 +1,115 @@
 import { Request, Response, NextFunction } from 'express';
 
-// Simple In-Memory Rate Limiter to protect Gemini API from abuse
-const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 60; // 60 requests per minute
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
 
-export function rateLimiterMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'anonymous';
-  const clientIp = Array.isArray(ip) ? ip[0] : ip;
-  const now = Date.now();
-  
-  let rateInfo = rateLimitMap.get(clientIp);
-  if (!rateInfo || (now - rateInfo.lastReset) > RATE_LIMIT_WINDOW_MS) {
-    rateInfo = { count: 1, lastReset: now };
-    rateLimitMap.set(clientIp, rateInfo);
-    return next();
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const IP_MAX_REQUESTS = 120;
+const AUTH_MAX_REQUESTS = 60;
+const MAX_TRACKED_KEYS = 10_000;
+
+const ipRateLimitMap = new Map<string, RateLimitEntry>();
+const authRateLimitMap = new Map<string, RateLimitEntry>();
+
+function pruneExpired(map: Map<string, RateLimitEntry>, now: number): void {
+  if (map.size === 0) return;
+
+  for (const [key, entry] of map) {
+    if (entry.resetAt <= now) {
+      map.delete(key);
+    }
+    if (map.size <= MAX_TRACKED_KEYS) break;
   }
-  
-  if (rateInfo.count >= MAX_REQUESTS_PER_WINDOW) {
-    res.status(429).json({ 
-      error: 'داواکارییەکانت زۆرن. تکایە چەند خولەکێک چاوەڕوان بە پێش ناردنەوەی دەق.' 
+}
+
+function enforceRateLimit(
+  map: Map<string, RateLimitEntry>,
+  key: string,
+  maxRequests: number,
+  now: number
+): { allowed: boolean; remaining: number; retryAfterSeconds: number } {
+  pruneExpired(map, now);
+
+  let entry = map.get(key);
+  if (!entry || entry.resetAt <= now) {
+    entry = { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS };
+    map.set(key, entry);
+  }
+
+  entry.count += 1;
+  const allowed = entry.count <= maxRequests;
+  const remaining = Math.max(0, maxRequests - entry.count);
+  const retryAfterSeconds = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+
+  if (map.size > MAX_TRACKED_KEYS) {
+    const firstKey = map.keys().next().value;
+    if (firstKey) map.delete(firstKey);
+  }
+
+  return { allowed, remaining, retryAfterSeconds };
+}
+
+export function rateLimiterMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  if (req.method === 'OPTIONS') {
+    next();
+    return;
+  }
+
+  // Deliberately use the direct socket address here. The application currently
+  // trusts reverse-proxy headers, so x-forwarded-for is not safe as a limiter key.
+  const key = req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const result = enforceRateLimit(ipRateLimitMap, key, IP_MAX_REQUESTS, now);
+
+  res.setHeader('RateLimit-Limit', String(IP_MAX_REQUESTS));
+  res.setHeader('RateLimit-Remaining', String(result.remaining));
+
+  if (!result.allowed) {
+    res.setHeader('Retry-After', String(result.retryAfterSeconds));
+    res.status(429).json({
+      success: false,
+      error: 'داواکارییە زۆرەکان لەم ناونیشانەوە هەن. تکایە دوای چەند چرکەیەک دووبارە هەوڵ بدەرەوە.',
+      retryAfterSeconds: result.retryAfterSeconds,
     });
     return;
   }
-  
-  rateInfo.count++;
+
+  next();
+}
+
+export function authenticatedRateLimiterMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  if (req.method === 'OPTIONS') {
+    next();
+    return;
+  }
+
+  const uid = (req as Request & { user?: { uid?: string } }).user?.uid;
+  const key = uid ? `uid:${uid}` : `ip:${req.socket.remoteAddress || 'unknown'}`;
+  const now = Date.now();
+  const result = enforceRateLimit(authRateLimitMap, key, AUTH_MAX_REQUESTS, now);
+
+  res.setHeader('RateLimit-Limit-User', String(AUTH_MAX_REQUESTS));
+  res.setHeader('RateLimit-Remaining-User', String(result.remaining));
+
+  if (!result.allowed) {
+    res.setHeader('Retry-After', String(result.retryAfterSeconds));
+    res.status(429).json({
+      success: false,
+      error: 'داواکارییەکانت لەم ئەکاونتەوە زۆرن. تکایە کەمێک چاوەڕێ بکە و پاشان دووبارە هەوڵ بدەرەوە.',
+      retryAfterSeconds: result.retryAfterSeconds,
+    });
+    return;
+  }
+
   next();
 }
