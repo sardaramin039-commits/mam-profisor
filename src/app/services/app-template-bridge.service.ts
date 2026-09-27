@@ -14,6 +14,40 @@ export class AppTemplateBridgeService {
   private fb = inject(FormBuilder);
   private api = inject(AuthenticatedApiService);
 
+
+  /**
+   * Mirror of the App form state. App owns the FormGroup; this bridge only receives
+   * a serializable snapshot so feature actions do not depend on component internals.
+   */
+  refineFormContext = signal<Record<string, any>>({
+    title: '',
+    discipline: 'gشتی',
+    academicLevel: 'ماستەر',
+    writingType: 'book',
+    writingStyle: 'academic',
+    academicStyle: 'chicago',
+    sizeMode: 'target',
+    size: 10,
+    targetPages: 10,
+    minPages: 9,
+    maxPages: 11,
+    dialectThesis: true,
+    customSourcesText: '',
+    compareFile1: '',
+    compareFile2: '',
+    compareAspect: '',
+    selectedBook: '',
+    copyStyleText: '',
+    thesisDefense: '',
+    thinkingTokens: 0,
+    writingTokens: 0,
+    temperature: 0.2
+  });
+
+  setRefineFormContext(value: Record<string, any> | null | undefined): void {
+    this.refineFormContext()Context.set({ ...this.refineFormContext()Context(), ...(value || {}) });
+  }
+
   ACADEMIC_GLOSSARY: Array<{ sorani: string; foreign: string; category: string; kurdish: string; english: string; desc: string; sourceLang: string; translation: string; definition: string }> = [
     { sorani: 'میتۆدۆلۆژی', foreign: 'Methodology', category: 'research', kurdish: 'میتۆدۆلۆژی', english: 'Methodology', desc: 'زانستی ڕێبازەکانی توێژینەوەی زانستی', sourceLang: 'یۆنانی', translation: 'Methodology', definition: 'تەواوی ڕێکارە میتۆدییەکانی توێژینەوە' },
     { sorani: 'ئەپistemology', foreign: 'Epistemology', category: 'philosophy', kurdish: 'ناسینناسی', english: 'Epistemology', desc: 'تیۆری زانین و فەلسەفەی زانست', sourceLang: 'یۆنانی', translation: 'Epistemology', definition: 'تیۆری زانین و زانیاری ئەکادیمی' },
@@ -258,9 +292,9 @@ export class AppTemplateBridgeService {
     this.isAnalyzingHarvardReview.set(true);
     this.harvardReviewError.set(null);
     this.api.post<any>('/api/harvard_academic_review', {
-      title: c.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
+      title: c.title || this.refineFormContext().title || 'تێزی ئەکادیمی',
       text: c.content,
-      discipline: this.refineForm.get('discipline')?.value || 'گشتی'
+      discipline: this.refineFormContext().discipline || 'گشتی'
     }).then(result => {
       this.harvardReviewResult.set(result);
     }).catch(error => {
@@ -285,9 +319,9 @@ export class AppTemplateBridgeService {
     this.isAnalyzingLiteratureGap.set(true);
     this.literatureGapError.set(null);
     this.api.post<any>('/api/analyze_literature_gap', {
-      topic: c.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
-      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
-      existingLiterature: this.refineForm.get('customSourcesText')?.value || ''
+      topic: c.title || this.refineFormContext().title || 'تێزی ئەکادیمی',
+      discipline: this.refineFormContext().discipline || 'گشتی',
+      existingLiterature: this.refineFormContext().customSourcesText || ''
     }).then(result => {
       this.literatureGapResult.set(result);
     }).catch(error => {
@@ -310,9 +344,9 @@ export class AppTemplateBridgeService {
     this.isAnalyzingEliteCoAuthor.set(true);
     this.eliteCoAuthorError.set(null);
     this.api.post<any>('/api/ai_peer_review', {
-      title: c.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
+      title: c.title || this.refineFormContext().title || 'تێزی ئەکادیمی',
       text: c.content,
-      discipline: this.refineForm.get('discipline')?.value || 'گشتی'
+      discipline: this.refineFormContext().discipline || 'گشتی'
     }).then(result => {
       this.eliteCoAuthorResult.set(result);
     }).catch(error => {
@@ -343,7 +377,7 @@ export class AppTemplateBridgeService {
     this.paraphraseResult.set(null);
     this.api.post<any>('/api/refine', {
       text: content,
-      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
+      discipline: this.refineFormContext().discipline || 'گشتی',
       tone: 'academic',
       goal: 'پارافرەیزی زانستی'
     }).then(result => {
@@ -363,7 +397,7 @@ export class AppTemplateBridgeService {
   writeSingleChapter(id: number) {
     const chapter = this.editorService.chapters().find(c => c.id === id);
     if (!chapter) return;
-    const value = this.refineForm.value;
+    const value = this.refineFormContext().value;
     this.editorService.activeChapterId.set(id);
     this.api.post<any>('/api/generate_chapter', {
       title: value.title,
@@ -436,7 +470,7 @@ export class AppTemplateBridgeService {
 
     this.api.post<any>('/api/multi-agent/orchestrate', {
       topic,
-      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
+      discipline: this.refineFormContext().discipline || 'گشتی',
       draftText: chapter?.content || this.copilotExtraInfo().trim(),
       rawSources: this.data.sourcesList().map(source => ({
         title: source.title,
@@ -511,7 +545,7 @@ export class AppTemplateBridgeService {
 
   applyGeneratedTitle(title: string) {
     const value = String(title || '').trim();
-    if (value) this.refineForm.patchValue({ title: value });
+    if (value) this.setRefineFormContext({ title: value });
   }
 
   copyTitleSummary(summary: string) {
@@ -524,7 +558,7 @@ export class AppTemplateBridgeService {
 
   setPageSizeMode(mode: string) {
     const value = String(mode || '').trim();
-    if (value) this.refineForm.patchValue({ sizeMode: value });
+    if (value) this.setRefineFormContext({ sizeMode: value });
   }
   closeQuickPreview() { this.isQuickPreviewVisible.set(false); }
   applySourceSuggestion(s: any) {}
@@ -675,8 +709,8 @@ export class AppTemplateBridgeService {
     this.consultationError.set(null);
     this.api.post<any>('/api/academic_consultation', {
       userQuestion: question,
-      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
-      academicLevel: this.refineForm.get('academicLevel')?.value || 'ماستەر',
+      discipline: this.refineFormContext().discipline || 'گشتی',
+      academicLevel: this.refineFormContext().academicLevel || 'ماستەر',
       currentThesisContext: this.consultationTextToProofread()
     }).then(result => {
       this.consultationResult.set(result);
@@ -732,7 +766,7 @@ export class AppTemplateBridgeService {
     this.isSimulatingViva.set(true);
     this.vivaErrorMessage.set(null);
     this.api.post<any>('/api/simulate_viva', {
-      thesisTitle: chapter.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
+      thesisTitle: chapter.title || this.refineFormContext().title || 'تێزی ئەکادیمی',
       abstract: chapter.content.slice(0, 5000)
     }).then(result => {
       this.vivaQuestions.set(result?.questions || result?.vivaQuestions || result);
@@ -753,8 +787,8 @@ export class AppTemplateBridgeService {
     this.isConstructingMethodology.set(true);
     this.methodologyError.set(null);
     this.api.post<any>('/api/construct_methodology', {
-      title: chapter.title || this.refineForm.get('title')?.value || 'توێژینەوە',
-      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
+      title: chapter.title || this.refineFormContext().title || 'توێژینەوە',
+      discipline: this.refineFormContext().discipline || 'گشتی',
       researchType: this.methodologyType(),
       sampleSize: this.hypothesesInput().trim() || undefined
     }).then(result => {
@@ -798,10 +832,10 @@ export class AppTemplateBridgeService {
     this.isAnalyzingEliteRigor.set(true);
     this.eliteRigorError.set(null);
     this.api.post<any>('/api/elite_academic_assessment', {
-      title: chapter.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
+      title: chapter.title || this.refineFormContext().title || 'تێزی ئەکادیمی',
       content: chapter.content,
-      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
-      academicLevel: this.refineForm.get('academicLevel')?.value || 'ماستەر'
+      discipline: this.refineFormContext().discipline || 'گشتی',
+      academicLevel: this.refineFormContext().academicLevel || 'ماستەر'
     }).then(result => {
       this.eliteRigorScorecard.set(result);
     }).catch(error => {
@@ -858,9 +892,9 @@ export class AppTemplateBridgeService {
     this.api.post<any>('/api/analyze_academic_rigor', {
       title: c.title,
       content: c.content,
-      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
-      theoreticalFramework: this.refineForm.get('theoreticalFramework')?.value || 'critical_theory',
-      academicStyle: this.refineForm.get('academicStyle')?.value || 'harvard'
+      discipline: this.refineFormContext().discipline || 'گشتی',
+      theoreticalFramework: this.refineFormContext().theoreticalFramework || 'critical_theory',
+      academicStyle: this.refineFormContext().academicStyle || 'harvard'
     }).then(result => {
       this.activeAcademicDiagnostic.set(result);
     }).catch(error => {
@@ -892,11 +926,11 @@ export class AppTemplateBridgeService {
     this.isEvaluatingDefense.set(true);
     this.vivaErrorMessage.set(null);
     this.api.post<any>('/api/evaluate_viva_defense', {
-      thesisTitle: c.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
+      thesisTitle: c.title || this.refineFormContext().title || 'تێزی ئەکادیمی',
       chapterContext: c.content || '',
       question,
       answer,
-      academicLevel: this.refineForm.get('academicLevel')?.value || 'ماستەر'
+      academicLevel: this.refineFormContext().academicLevel || 'ماستەر'
     }).then(result => {
       this.vivaEvaluationResult.set(result);
     }).catch(error => {
