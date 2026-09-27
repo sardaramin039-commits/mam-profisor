@@ -10,10 +10,12 @@ const DEFAULT_MAX_REQUESTS = 120;
 const AI_MAX_REQUESTS = 20;
 const MAX_TRACKED_CLIENTS = 10_000;
 
+function isAiPath(path: string): boolean {
+  return path.startsWith('/ai-tools/') || path.startsWith('/platform/multi-agent-orchestrate');
+}
+
 function getLimit(path: string): number {
-  return path.startsWith('/ai-tools/') || path.startsWith('/platform/multi-agent-orchestrate')
-    ? AI_MAX_REQUESTS
-    : DEFAULT_MAX_REQUESTS;
+  return isAiPath(path) ? AI_MAX_REQUESTS : DEFAULT_MAX_REQUESTS;
 }
 
 export function rateLimiterMiddleware(req: Request, res: Response, next: NextFunction): void {
@@ -27,9 +29,16 @@ export function rateLimiterMiddleware(req: Request, res: Response, next: NextFun
         rateLimitMap.delete(key);
       }
     }
+    if (rateLimitMap.size >= MAX_TRACKED_CLIENTS) {
+      res.status(503).json({
+        success: false,
+        error: 'خزمەتگوزاری کاتییەکەی rate limiter ـەکە پڕە؛ تکایە دواتر هەوڵ بدەرەوە.'
+      });
+      return;
+    }
   }
 
-  const rateKey = `${clientIp}:${req.path.startsWith('/ai-tools/') ? 'ai' : 'default'}`;
+  const rateKey = `${clientIp}:${isAiPath(req.path) ? 'ai' : 'default'}:${req.path}`;
   let rateInfo = rateLimitMap.get(rateKey);
 
   if (!rateInfo || now - rateInfo.lastReset > RATE_LIMIT_WINDOW_MS) {
