@@ -22,8 +22,8 @@ export function createExternalApiRouter(): Router {
         abTestReport: abReport
       });
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ success: false, error: errorMsg });
+      console.error('External integration config status failed:', err);
+      res.status(500).json({ success: false, error: 'دۆخی پەیوەندییەکان لەم کاتەدا بەردەست نییە.' });
     }
   });
 
@@ -42,8 +42,8 @@ export function createExternalApiRouter(): Router {
         result
       });
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ success: false, error: errorMsg });
+      console.error('External integration single-provider test failed:', err);
+      res.status(500).json({ success: false, error: 'پشکنینی پڕۆڤایدەر سەرکەوتوو نەبوو.' });
     }
   });
 
@@ -60,8 +60,8 @@ export function createExternalApiRouter(): Router {
         results
       });
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ success: false, error: errorMsg });
+      console.error('External integration all-provider test failed:', err);
+      res.status(500).json({ success: false, error: 'پشکنینی پڕۆڤایدەرەکان سەرکەوتوو نەبوو.' });
     }
   });
 
@@ -80,8 +80,8 @@ export function createExternalApiRouter(): Router {
         currentReport: centralizedPromptsManager.getABTestReport()
       });
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ success: false, error: errorMsg });
+      console.error('External integration A/B update failed:', err);
+      res.status(500).json({ success: false, error: 'گۆڕینی شێوازی A/B سەرکەوتوو نەبوو.' });
     }
   });
 
