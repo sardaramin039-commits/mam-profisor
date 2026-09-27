@@ -23,11 +23,7 @@ export class AppDashboardStateService {
   d3ComplexityBars = computed(() => {
     const list = this.editorService.chapters();
     if (!list || list.length === 0) {
-      return [
-        { chapterId: 1, x: 80, y: 10, width: 220, height: 18, score: 65 },
-        { chapterId: 2, x: 80, y: 50, width: 280, height: 18, score: 82 },
-        { chapterId: 3, x: 80, y: 90, width: 190, height: 18, score: 55 }
-      ];
+      return [];
     }
     return list.map((ch, idx) => {
       const len = (ch.content || '').length;
