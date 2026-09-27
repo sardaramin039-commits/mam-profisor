@@ -5,7 +5,7 @@ import { Data } from './data';
 import { ChapterItemModel as ChapterItem } from '../domain/models';
 import { ACADEMIC_GLOSSARY as GLOSSARY_PROMPT } from '../../prompts/academic-glossary';
 import { AuthenticatedApiService } from '../core/services/authenticated-api.service';
-import { verifyChapterIntegrity } from '../helpers/academic-vault';
+import { encryptText, decryptText, verifyChapterIntegrity } from '../helpers/academic-vault';
 
 @Injectable({ providedIn: 'root' })
 export class AppTemplateBridgeService {
@@ -617,8 +617,34 @@ export class AppTemplateBridgeService {
     if (textarea) textarea.value += `\n### ناونیشانی ئەکادیمی\n`;
   }
   applySoranispellFixInViewedChapter() {}
-  encryptChapterInVault(c: any, pwd: any) {}
-  decryptChapterInVault(c: any, pwd: any) {}
+  async encryptChapterInVault(c: any, pwd: any) {
+    if (!c || c.isEncryptedInVault || !String(pwd || '').trim()) return;
+    try {
+      const encrypted = await encryptText(String(c.content || ''), String(pwd));
+      this.editorService.updateChapterContent(c.id, encrypted, 'شەپۆلی AES-GCM بۆ Vault');
+      this.editorService.chapters.update(list =>
+        list.map(ch => ch.id === c.id ? { ...ch, isEncryptedInVault: true } : ch)
+      );
+      this.sourceMessage.set({ type: 'success', text: 'ناوەڕۆکی بەش بە AES-GCM پارێزرا.' });
+    } catch (error) {
+      console.error('Vault encryption failed:', error);
+      this.sourceMessage.set({ type: 'error', text: 'پاراستنی Vault سەرکەوتوو نەبوو.' });
+    }
+  }
+  async decryptChapterInVault(c: any, pwd: any) {
+    if (!c || !c.isEncryptedInVault || !String(pwd || '').trim()) return;
+    try {
+      const decrypted = await decryptText(String(c.content || ''), String(pwd));
+      this.editorService.updateChapterContent(c.id, decrypted, 'کردنەوەی AES-GCM لە Vault');
+      this.editorService.chapters.update(list =>
+        list.map(ch => ch.id === c.id ? { ...ch, isEncryptedInVault: false } : ch)
+      );
+      this.sourceMessage.set({ type: 'success', text: 'ناوەڕۆکی Vault بە سەرکەوتوویی کرایەوە.' });
+    } catch (error) {
+      console.error('Vault decryption failed:', error);
+      this.sourceMessage.set({ type: 'error', text: 'وشەی نهێنی هەڵەیە یان داتاکە دەستکاری کراوە.' });
+    }
+  }
   createManualSnapshot(c: any) {
     if (!c) return;
     const content = String(c.content || '');
