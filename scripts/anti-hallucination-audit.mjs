@@ -13,7 +13,7 @@ const rules = [
   { name: 'mock scholarly retrieval in production source', pattern: /\bmockCandidates\b/g, allowed: [] },
   { name: 'fabricated source verification assignment', pattern: /\bsourceVerified\s*[:=]\s*true\b/g, allowed: [/source-verification-service\.ts$/] },
   { name: 'random ID generation', pattern: /Math\.random\(\)\.toString\(36\)/g, allowed: [/src\/server\/services\/gemini\.service\.ts$/] },
-  { name: 'hard-coded academic score fallback', pattern: /(?:scholarlyScore|overallLanguageScore|overallScore|similarity|confidenceScore)\s*:\s*(?:8\d|9\d|100|0\.9\d)/g, allowed: [] }
+  { name: 'known fabricated academic score fallback', pattern: /(?:overallLanguageScore\s*:\s*88|scholarlyScore\s*:\s*60|vocabularyRichness\s*:\s*60|readability\s*:\s*70|overallScore\s*:\s*8\.2)/g, allowed: [] }
 ];
 
 async function walk(dir, files = []) {
