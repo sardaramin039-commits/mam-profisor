@@ -221,8 +221,14 @@ ${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceCh
       year?: string;
     }>
   ): GroundedGenerationResult {
-    const verifiedSources = evidenceChunks.filter(e => e.verificationStatus === 'verified');
+    const verifiedSources = evidenceChunks.filter(
+      e => e.verificationStatus === 'verified' && e.chunkText.trim().length > 0
+    );
+    const citableSource = verifiedSources.find(
+      e => Boolean(e.author?.trim()) && Boolean(e.year?.trim())
+    );
     const hasVerified = verifiedSources.length > 0;
+    const hasCitableSource = Boolean(citableSource);
 
     return {
       paragraphs: [
@@ -234,21 +240,22 @@ ${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceCh
               claimId: 'CLM-FALLBACK-1',
               sentenceText: `بابەتی ${topic} پێویستی بە بەڵگەی سەلمێنراو هەیە.`,
               verificationStatus: hasVerified ? 'verified' : 'unverified',
-              citationEligible: hasVerified,
-              confidence: hasVerified ? 85 : 50,
+              citationEligible: hasCitableSource,
+              confidence: hasCitableSource ? 90 : hasVerified ? 80 : 50,
               gapDetected: !hasVerified,
+              evidenceId: hasVerified ? verifiedSources[0]?.sourceId : undefined,
               warning: hasVerified ? undefined : 'Evidence Required: No verified sources present'
             }
           ]
         }
       ],
-      verifiedCitations: hasVerified
+      verifiedCitations: citableSource
         ? [
             {
               citationId: 'CIT-FALLBACK-1',
-              sourceId: verifiedSources[0]?.sourceId || 'SRC-1',
-              inTextCitation: `(${verifiedSources[0]?.author || 'سەرچاوە'}, ${verifiedSources[0]?.year || '2024'})`,
-              evidenceQuote: verifiedSources[0]?.chunkText || 'بەڵگەی تەواو لە سەرچاوەکەدا هەیە.',
+              sourceId: citableSource.sourceId,
+              inTextCitation: `(${citableSource.author}, ${citableSource.year})`,
+              evidenceQuote: citableSource.chunkText,
               verified: true
             }
           ]
