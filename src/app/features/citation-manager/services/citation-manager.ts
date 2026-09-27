@@ -25,7 +25,7 @@ export class CitationManagerService {
       doi: source.doi,
       url: source.url,
       journal: source.journal,
-      isVerified: source.isVerified ?? true,
+      isVerified: source.isVerified ?? false,
       createdAt: { seconds: Math.floor(Date.now() / 1000) }
     };
 
