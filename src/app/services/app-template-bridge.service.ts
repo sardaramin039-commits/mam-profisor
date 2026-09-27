@@ -532,24 +532,32 @@ export class AppTemplateBridgeService {
   }
   onRegisterVerifiedSource() {}
   expandGlossaryTerm(entry: any) {
-    if (!entry) return;
-    const current = this.expandedTerms();
-    const isExp = current[entry.foreign];
-    if (isExp) {
-      this.expandedTerms.set({ ...current, [entry.foreign]: null });
-    } else {
-      this.expandedTerms.set({
-        ...current,
-        [entry.foreign]: {
-          explanation: entry.sorani,
-          academicDefinition: entry.foreign,
-          scientificExample: entry.sorani,
-          history: 'مێژووی سەرهەڵدانی زاراوەکە لە ئەکادیمیادا',
-          importance: 'گرنگی لە دارشتنی تێز',
-          related: []
-        }
-      });
+    if (!entry?.foreign) return;
+    const key = String(entry.foreign);
+
+    if (this.expandedTerms()[key]) {
+      const current = { ...this.expandedTerms() };
+      delete current[key];
+      this.expandedTerms.set(current);
+      return;
     }
+
+    this.isExpandingTerm.set(key);
+    this.api.post<any>('/api/expand_glossary_term', {
+      term: key,
+      definition: entry.definition || entry.desc || '',
+      category: entry.category || 'گشتی'
+    }).then(result => {
+      this.expandedTerms.set({ ...this.expandedTerms(), [key]: result });
+    }).catch(error => {
+      console.error('Glossary expansion failed:', error);
+      this.expandedTerms.set({
+        ...this.expandedTerms(),
+        [key]: { error: 'فراوانکردنی زاراوە لەم کاتەدا بەردەست نییە.' }
+      });
+    }).finally(() => {
+      this.isExpandingTerm.set(null);
+    });
   }
   applyGlossaryRealtimeFix(orig: string, fix: string) {
     const chapter = this.getChapterById(this.editorService.activeChapterId() || 0);
