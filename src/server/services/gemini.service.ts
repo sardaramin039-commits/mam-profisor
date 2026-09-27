@@ -152,9 +152,6 @@ export function getGeminiClient(): GoogleGenAI {
                 const errMsg = error instanceof Error ? error.message : String(error);
                 const isTransient = isTransientError(error);
                 const message = lowerErrorMessage(error);
-                                const isModelAvailabilityError =
-                  message.includes('not found') ||
-                  (message.includes('model') && message.includes('unsupported'));
                 
                 console.warn(`[GEMINI ATTEMPT FAIL] SDK call failed for key index ${activeIndex} with model ${targetModel} (Attempt ${retry + 1}/3). Error: ${errMsg}.`);
                 
