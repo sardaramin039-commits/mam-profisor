@@ -8,7 +8,7 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
   /**
    * GET /api/workspace/:workspaceId
    */
-  router.get('/:workspaceId', (req, res) => {
+  router.get('/:workspaceId', async (req, res) => {
     try {
       const userId = (req as any).user?.uid;
       if (!userId) {
@@ -20,7 +20,7 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
         res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
         return;
       }
-      const ws = researchProjectStateService.getOrCreateWorkspace(userId, workspaceId);
+      const ws = await researchProjectStateService.hydrateWorkspace(userId, workspaceId);
       res.json(ws);
     } catch (err: unknown) {
       console.error('Workspace Get Error:', err);
@@ -31,7 +31,7 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
   /**
    * POST /api/workspace/:workspaceId/save
    */
-  router.post('/:workspaceId/save', (req, res) => {
+  router.post('/:workspaceId/save', async (req, res) => {
     try {
       const userId = (req as any).user?.uid;
       if (!userId) {
@@ -44,8 +44,10 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
         return;
       }
       const { draftContent, activeChapter } = req.body;
+      await researchProjectStateService.hydrateWorkspace(userId, workspaceId);
 
       const updated = researchProjectStateService.updateWorkspaceContent(userId, workspaceId, draftContent || '', activeChapter);
+      await researchProjectStateService.persistWorkspace(updated);
       res.json(updated);
     } catch (err: unknown) {
       console.error('Workspace Save Error:', err);
