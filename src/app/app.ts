@@ -537,8 +537,43 @@ export class App implements OnInit {
     const val = this.refineForm.get(feat)?.value;
     this.refineForm.patchValue({ [feat]: !val });
   }
-  onCustomSourcesInput(event: Event, element: HTMLElement) {}
-  onCustomSourcesClick(element: HTMLElement) {}
+  onCustomSourcesInput(event: Event, element: HTMLElement) {
+    const value = String((event.target as HTMLTextAreaElement | null)?.value || '').trim().toLowerCase();
+    this.bridge.quickPreviewError.set(null);
+
+    if (!value) {
+      this.bridge.quickPreviewSuggestions.set([]);
+      this.bridge.isQuickPreviewVisible.set(false);
+      return;
+    }
+
+    const suggestions = this.data.sourcesList()
+      .filter(source => {
+        const haystack = [source.title, source.author, source.publisher]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(value) || value.split(/[,;\n]+/).some(token => token.trim() && haystack.includes(token.trim()));
+      })
+      .slice(0, 8)
+      .map(source => source.title);
+
+    this.bridge.quickPreviewSuggestions.set(suggestions);
+    this.bridge.isQuickPreviewVisible.set(true);
+    this.onCustomSourcesClick(element);
+  }
+
+  onCustomSourcesClick(element: HTMLElement) {
+    if (!element) return;
+    const rect = element.getBoundingClientRect();
+    this.bridge.quickPreviewPos.set({
+      top: Math.max(8, rect.bottom + window.scrollY),
+      left: Math.max(8, rect.left + window.scrollX),
+      x: rect.left,
+      y: rect.top
+    });
+    this.bridge.isQuickPreviewVisible.set(true);
+  }
   addCustomRule(input: HTMLInputElement) { if (input) input.value = ''; }
   loadHistoryItem(item: any) {
     if (!item) return;
