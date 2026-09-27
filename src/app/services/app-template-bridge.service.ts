@@ -570,7 +570,22 @@ export class AppTemplateBridgeService {
       'چاککردنی ڕێنووسی زاراوە'
     );
   }
-  injectAcademicSourceCitation(source: any, mode: 'inline' | 'bibliography' = 'inline') {}
+  injectAcademicSourceCitation(source: any, mode: 'inline' | 'bibliography' = 'inline') {
+    if (!source?.title) return;
+    const author = String(source.author || 'نادیار').trim();
+    const year = source.year ? String(source.year).trim() : '';
+    const title = String(source.title).trim();
+    const citation = mode === 'bibliography'
+      ? `${author}. (${year}). ${title}. ${source.publisher || ''}.`
+      : `(${author}, ${year})`;
+    const chapter = this.getChapterById(this.editorService.activeChapterId() || 0);
+    if (!chapter) return;
+    this.editorService.updateChapterContent(
+      chapter.id,
+      (chapter.content || '') + ` ${citation}`,
+      'زیادکردنی ئاماژەی سەرچاوە'
+    );
+  }
   toggleFaq(index: number) {
     this.expandedFaqIndex.set(this.expandedFaqIndex() === index ? null : index);
   }
@@ -582,9 +597,26 @@ export class AppTemplateBridgeService {
   applySoranispellFixInViewedChapter() {}
   encryptChapterInVault(c: any, pwd: any) {}
   decryptChapterInVault(c: any, pwd: any) {}
-  createManualSnapshot(c: any) {}
-  verifyChapterIntegrityAgainstLastSnapshot(c: any) { return { isValid: true }; }
-  rollbackToSnapshot(c: any, sn: any) {}
+  createManualSnapshot(c: any) {
+    if (!c) return;
+    const content = String(c.content || '');
+    const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+    const snapshot = {
+      timestamp: new Date().toISOString(),
+      content,
+      wordCount,
+      trigger: 'Manual Snapshot'
+    };
+    this.editorService.updateChapterSnapshots(c.id, [snapshot, ...(c.snapshots || []).slice(0, 19)]);
+  }
+  verifyChapterIntegrityAgainstLastSnapshot(c: any) {
+    if (!c) return { isValid: false, currentHash: '', expectedHash: '' };
+    return verifyChapterIntegrity(c);
+  }
+  rollbackToSnapshot(c: any, sn: any) {
+    if (!c || !sn || typeof sn.content !== 'string') return;
+    this.editorService.updateChapterContent(c.id, sn.content, 'گەڕانەوە بۆ snapshot');
+  }
   scrollToSection(text: string, textarea: any) {}
   verifyCitationsLive(c: any) {}
   runAcademicConsultation() {
