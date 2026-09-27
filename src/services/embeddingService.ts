@@ -24,7 +24,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     }
 
     // Client-side/standard fallback: Invoke the secure Express backend proxy
-    const response = await fetch('/api/generate_embedding', {
+    const response = await fetch('/api/rag/generate-embedding', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
