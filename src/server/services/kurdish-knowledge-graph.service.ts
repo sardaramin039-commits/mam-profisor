@@ -5,7 +5,7 @@ export interface KurdishKnowledgeEntry {
   id: string;
   title: string;
   author: string;
-  type: 'book' | 'journal' | 'thesis' | 'article' | 'encyclopedia' | 'archive';
+  type: 'book' | 'journal' | 'thesis' | 'article' | 'encyclopedia' | 'archive' | 'unknown';
   discipline: string;
   period: string;
   dialect: 'Sorani' | 'Kurmanji' | 'Hawrami' | 'Unknown';
@@ -36,8 +36,8 @@ export class KurdishKnowledgeGraphService {
         id: source.id,
         title: source.title,
         author: source.authors.join(', '),
-        type: source.source.toLocaleLowerCase().includes('book') ? 'book' : 'article',
-        discipline: normalizedQuery,
+        type: 'unknown',
+        discipline: 'Unknown',
         period: source.publicationYear > 0 ? String(source.publicationYear) : 'Unknown',
         dialect: 'Unknown',
         isbnOrDoi: source.doi || undefined,
