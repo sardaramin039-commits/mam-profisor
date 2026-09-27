@@ -160,20 +160,20 @@ export async function resolveDoi(doi: string): Promise<DoiResolutionResult | nul
     if (res.ok) {
       const data = await res.json() as { message?: { title?: string[]; author?: { given?: string; family?: string }[]; publisher?: string; 'container-title'?: string[]; created?: { 'date-parts'?: number[][] }; volume?: string; issue?: string; page?: string; URL?: string } };
       const msg = data.message || {};
-      const title = msg.title?.[0] || `Publication (${cleanDoi})`;
-      const authors = msg.author?.map(a => `${a.given || ''} ${a.family || ''}`.trim()) || ['Unknown Author'];
-      const year = String(msg.created?.['date-parts']?.[0]?.[0] || '2023');
-      const journal = msg['container-title']?.[0] || 'Peer Reviewed Journal';
-      const publisher = msg.publisher || 'Academic Press';
+      const title = msg.title?.[0]?.trim();
+      const authors = msg.author?.map(a => `${a.given || ''} ${a.family || ''}`.trim()).filter(Boolean) || [];
+      const year = String(msg.created?.['date-parts']?.[0]?.[0] || '');
+      const journal = msg['container-title']?.[0]?.trim() || '';
+      const publisher = msg.publisher?.trim() || '';
 
-      const apa = `${authors.join(', ')} (${year}). ${title}. ${journal}, ${msg.volume || ''}(${msg.issue || ''}), ${msg.page || ''}. https://doi.org/${cleanDoi}`;
+      const apa = `${authors.join(', ')}${year ? ` (${year})` : ''}. ${title || `DOI ${cleanDoi}`}.${journal ? ` ${journal}.` : ''}${msg.volume ? ` ${msg.volume}` : ''}${msg.issue ? `(${msg.issue})` : ''}${msg.page ? `, ${msg.page}` : ''}. https://doi.org/${cleanDoi}`;
 
       return {
         doi: cleanDoi,
-        title,
+        title: title || `DOI ${cleanDoi}`,
         authors,
-        publisher,
-        journal,
+        publisher: publisher || 'نادیار',
+        journal: journal || 'نادیار',
         publishedYear: year,
         volume: msg.volume,
         issue: msg.issue,
@@ -204,11 +204,11 @@ export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult | null>
         const item = data[key];
         return {
           isbn: cleanIsbn,
-          title: item.title || `Book (ISBN: ${cleanIsbn})`,
-          authors: item.authors?.map(a => a.name || '') || ['Library Author'],
-          publisher: item.publishers?.[0]?.name || 'Academic Publishing House',
-          publishDate: item.publish_date || '2022',
-          pages: item.number_of_pages || 320,
+          title: item.title || `ISBN ${cleanIsbn}`,
+          authors: item.authors?.map(a => a.name || '').filter(Boolean) || [],
+          publisher: item.publishers?.[0]?.name || 'نادیار',
+          publishDate: item.publish_date || 'نادیار',
+          pages: item.number_of_pages,
           coverUrl: item.cover?.medium,
           description: `کتێبی ئەکادیمی تۆمارکراو لە سەرچاوەی ژمارەیی OpenLibrary بۆ ISBN ${cleanIsbn}`
         };
