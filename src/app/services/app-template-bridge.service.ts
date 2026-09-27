@@ -427,17 +427,39 @@ export class AppTemplateBridgeService {
   isEvaluatingDefense = signal<boolean>(false);
 
   runCognitiveCopilot() {
-    if (!this.copilotInputText().trim()) return;
+    const topic = this.copilotInputText().trim();
+    if (!topic) return;
+
     this.isCopilotRunning.set(true);
     this.copilotError.set(null);
-    setTimeout(() => {
+    const chapter = this.getChapterById(this.editorService.activeChapterId() || 0);
+
+    this.api.post<any>('/api/multi-agent/orchestrate', {
+      topic,
+      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
+      draftText: chapter?.content || this.copilotExtraInfo().trim(),
+      rawSources: this.data.sourcesList().map(source => ({
+        title: source.title,
+        author: source.author,
+        year: String(source.year),
+        publisher: source.publisher,
+        doi: source.doi,
+        isbn: source.isbn
+      }))
+    }).then(result => {
       this.copilotDebateResult.set({
-        thesisText: 'دەقی پێشنیارکراوی ئەکادیمی',
-        criticText: 'ڕەخنەی بونیادی لەسەر مێتۆدۆلۆژیا',
-        synthesisText: 'سینتێزی دروستکراو بۆ بەشەکە'
+        thesisText: result?.thesisStructurePlan?.thesisStatement || '',
+        criticText: result?.reviewerReport?.summaryCritiqueKurdish || '',
+        synthesisText: result?.finalThesisDraftKurdish || ''
       });
+      this.copilotGapResult.set(result?.qaGateResult || null);
+    }).catch(error => {
+      console.error('Cognitive Copilot request failed:', error);
+      this.copilotError.set('کۆپایڵۆتی زانستی لەم کاتەدا بەردەست نییە.');
+      this.copilotDebateResult.set(null);
+    }).finally(() => {
       this.isCopilotRunning.set(false);
-    }, 1000);
+    });
   }
 
   getChapterById(id: any): ChapterItem | null {
