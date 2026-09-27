@@ -881,7 +881,25 @@ export class AppTemplateBridgeService {
       this.isAuditingIntegrity.set(false);
     });
   }
-  summarizeThesisContext() {}
+  summarizeThesisContext() {
+    const chapters = this.editorService.chapters();
+    const text = chapters.map(chapter => `### ${chapter.title}\n${chapter.content || ''}`).join('\n\n').trim();
+    if (!text) {
+      this.thesisSummaryError.set('هیچ دەقێکی تێز بۆ پوختەکردنەوە نییە.');
+      return;
+    }
+
+    this.isSummarizingContext.set(true);
+    this.thesisSummaryError.set(null);
+    this.api.post<any>('/api/summarize_thesis_context', { text: text.slice(0, 40000) })
+      .then(result => this.thesisSummaryContext.set(result))
+      .catch(error => {
+        console.error('Thesis context summary failed:', error);
+        this.thesisSummaryContext.set(null);
+        this.thesisSummaryError.set('نوێکردنەوەی کۆنتێکستی تێز لەم کاتەدا بەردەست نییە.');
+      })
+      .finally(() => this.isSummarizingContext.set(false));
+  }
   anonymizeActiveChapterData(chapter: any) {
     if (!chapter?.content?.trim()) return;
     this.isAnonymizingData.set(true);
@@ -898,7 +916,25 @@ export class AppTemplateBridgeService {
       this.isAnonymizingData.set(false);
     });
   }
-  recalibrateWithIntuition(chapter: any) {}
+  recalibrateWithIntuition(chapter: any) {
+    const text = String(chapter?.content || '').trim();
+    const intuition = this.userIntuitionText().trim();
+    if (!text) return;
+
+    this.isRecalibratingRigor.set(true);
+    this.recalibrationFeedback.set(null);
+    this.api.post<any>('/api/recalibrate_rigor', {
+      text,
+      intuition,
+      discipline: this.refineFormContext().discipline || 'گشتی',
+      academicLevel: this.refineFormContext().academicLevel || 'ماستەر'
+    }).then(result => {
+      this.recalibrationFeedback.set(result?.feedbackText || result?.summary || JSON.stringify(result));
+    }).catch(error => {
+      console.error('Rigor recalibration failed:', error);
+      this.recalibrationFeedback.set('دووبارە هەڵسەنگاندن لەم کاتەدا بەردەست نییە.');
+    }).finally(() => this.isRecalibratingRigor.set(false));
+  }
   generateVivaQuestions(chapter: any) {
     if (!chapter?.content?.trim()) return;
     this.isSimulatingViva.set(true);
@@ -916,7 +952,25 @@ export class AppTemplateBridgeService {
       this.isSimulatingViva.set(false);
     });
   }
-  generateAcademicAdditions(chapter: any) {}
+  generateAcademicAdditions(chapter: any) {
+    const text = String(chapter?.content || '').trim();
+    if (!text) return;
+
+    this.isGeneratingAdditions.set(true);
+    this.additionsError.set(null);
+    this.api.post<any>('/api/academic_additions', {
+      chapterTitle: chapter.title || '',
+      chapterText: text,
+      discipline: this.refineFormContext().discipline || 'گشتی',
+      academicLevel: this.refineFormContext().academicLevel || 'ماستەر'
+    }).then(result => {
+      this.academicAdditions.set(result);
+    }).catch(error => {
+      console.error('Academic additions failed:', error);
+      this.academicAdditions.set(null);
+      this.additionsError.set('زیادکردنی بڕگەی ئەکادیمی لەم کاتەدا بەردەست نییە.');
+    }).finally(() => this.isGeneratingAdditions.set(false));
+  }
   appendAdditionsToChapter(chapter: any, addition: any) {
     const text = typeof addition === 'string'
       ? addition
@@ -939,7 +993,24 @@ export class AppTemplateBridgeService {
       'زیادکردنی ڕێکخستنی مێتۆدۆلۆژی'
     );
   }
-  analyzeSoraniPhoneticsAndDialect(chapter: any) {}
+  analyzeSoraniPhoneticsAndDialect(chapter: any) {
+    const text = String(chapter?.content || '').trim();
+    if (!text) return;
+
+    this.isAnalyzingPhonetics.set(true);
+    this.phoneticsError.set(null);
+    this.api.post<any>('/api/sorani_phonetics', {
+      text,
+      subDialect: this.soraniSubDialect(),
+      scope: this.phoneticScope()
+    }).then(result => {
+      this.phoneticsResult.set(result);
+    }).catch(error => {
+      console.error('Sorani phonetics analysis failed:', error);
+      this.phoneticsResult.set(null);
+      this.phoneticsError.set('شیکاریی فۆنێتیک و شێوەزار لەم کاتەدا بەردەست نییە.');
+    }).finally(() => this.isAnalyzingPhonetics.set(false));
+  }
   constructMethodologyAndHypotheses(chapter: any) {
     if (!chapter) return;
     this.isConstructingMethodology.set(true);
@@ -970,8 +1041,54 @@ export class AppTemplateBridgeService {
       'زیادکردنی ڕوونکردنەوەی ئامار'
     );
   }
-  simulateEmpiricalStats(chapter: any) {}
-  generateMultiStyleCitation() {}
+  simulateEmpiricalStats(chapter: any) {
+    const csv = this.datasetInputCsv().trim();
+    if (!csv) {
+      this.statsError.set('بۆ شیکاریی ئاماری واقعی، داتای CSV پێویستە. هیچ داتای ساختە دروست ناکرێت.');
+      this.empiricalStatsResult.set(null);
+      return;
+    }
+
+    this.statsError.set(null);
+    this.isSimulatingStats.set(true);
+    this.api.post<any>('/api/dataset_sandbox_run', {
+      code: this.pythonInterpreterCode().trim() || 'print("Dataset provided; statistical code not supplied.")',
+      datasetName: chapter?.title || 'dataset'
+    }).then(result => {
+      this.empiricalStatsResult.set({
+        ...result,
+        note: 'ئەم ئەنجامە تەنها لەسەر داتای پێشکەشکراوە؛ هیچ داتای ساختە بەکارنەهێنرا.'
+      });
+    }).catch(error => {
+      console.error('Empirical statistics execution failed:', error);
+      this.empiricalStatsResult.set(null);
+      this.statsError.set('شیکاریی ئاماری لەم کاتەدا بەردەست نییە.');
+    }).finally(() => this.isSimulatingStats.set(false));
+  }
+  generateMultiStyleCitation() {
+    if (this.citationForm.invalid) {
+      this.citationForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.citationForm.getRawValue();
+    const author = String(value.author || 'نادیار').trim();
+    const title = String(value.title || '').trim();
+    const year = String(value.year || '').trim();
+    const publisher = String(value.publisher || value.journalOrPublisher || '').trim();
+    const doi = String(value.doi || '').trim();
+    const pages = String(value.pages || '').trim();
+    if (!title) return;
+
+    const authorFamily = author.split(',')[0].trim();
+    const apa = `${author}. (${year}). ${title}.${publisher ? ` ${publisher}.` : ''}${doi ? ` https://doi.org/${doi.replace(/^https?:\/\/(dx\.)?doi.org\//i, '')}` : ''}`;
+    const mla = `${authorFamily}. "${title}." ${publisher}${year ? `, ${year}` : ''}${pages ? `, pp. ${pages}` : ''}.`;
+    const chicago = `${author}. "${title}."${publisher ? ` ${publisher}` : ''}${year ? `, ${year}` : ''}.`;
+    const harvard = `${author} (${year}) ${title}${publisher ? `, ${publisher}` : ''}.`;
+    const ieee = `${author}, "${title}"${publisher ? `, ${publisher}` : ''}, ${year}.`;
+    this.formattedMultiStyle.set({ APA: apa, MLA9: mla, Chicago: chicago, Harvard: harvard, IEEE: ieee });
+    this.citationError.set(null);
+  }
   checkChapterPlagiarism(chapter: any) {
     if (!chapter?.content?.trim()) return;
     this.isPlagiarismChecking.set(true);
@@ -989,7 +1106,10 @@ export class AppTemplateBridgeService {
       this.isPlagiarismChecking.set(false);
     });
   }
-  exportSandboxPDF() {}
+  exportSandboxPDF() {
+    if (typeof window === 'undefined') return;
+    window.print();
+  }
   appendPythonSandboxOutputToChapter(chapter: any) {
     const result = this.pythonSandboxResult();
     const text = result?.stdout || '';
@@ -1000,7 +1120,26 @@ export class AppTemplateBridgeService {
       'زیادکردنی ئەنجامی Python Sandbox'
     );
   }
-  executePythonDatasetInterpreter(chapter: any) {}
+  executePythonDatasetInterpreter(chapter: any) {
+    const code = this.pythonInterpreterCode().trim();
+    if (!code) {
+      this.pythonSandboxError.set('کۆدی Python پێویستە.');
+      return;
+    }
+
+    this.isExecutingPythonSandbox.set(true);
+    this.pythonSandboxError.set(null);
+    this.api.post<any>('/api/dataset_sandbox_run', {
+      code,
+      datasetName: chapter?.title || 'academic-dataset'
+    }).then(result => {
+      this.pythonSandboxResult.set(result);
+    }).catch(error => {
+      console.error('Python dataset execution failed:', error);
+      this.pythonSandboxResult.set(null);
+      this.pythonSandboxError.set('جێبەجێکردنی Python لەم کاتەدا بەردەست نییە.');
+    }).finally(() => this.isExecutingPythonSandbox.set(false));
+  }
   copyLatexCode(code: string) {
     if (code) navigator.clipboard.writeText(code);
   }
@@ -1070,7 +1209,22 @@ export class AppTemplateBridgeService {
     if (!text || !globalThis.navigator?.clipboard) return;
     await navigator.clipboard.writeText(text);
   }
-  sendFilteredReportToEmail() {}
+  sendFilteredReportToEmail() {
+    const report = this.searchResults()
+      .map(r => [r.title, r.snippet].filter(Boolean).join('\n'))
+      .join('\n\n');
+    if (!report) {
+      this.sourceMessage.set({ type: 'error', text: 'هیچ ڕاپۆرتێک بۆ ناردن نییە.' });
+      return;
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(report).then(() => {
+        this.sourceMessage.set({ type: 'success', text: 'ڕاپۆرتەکە کۆپی کرا؛ ئێستا دەتوانیت لە Gmail یان email ـی خۆت دایبنێیت.' });
+      }).catch(() => {
+        this.sourceMessage.set({ type: 'error', text: 'کۆپیکردنی ڕاپۆرت سەرکەوتوو نەبوو.' });
+      });
+    }
+  }
   runRecentSearch(term: string) { this.globalSearchQuery.set(term); }
   onBuildCitation() {
     if (this.citationForm.valid) {
