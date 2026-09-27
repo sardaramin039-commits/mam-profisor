@@ -108,9 +108,10 @@ export class MultiAgentOrchestratorService {
       endpoint: '/api/platform/multi-agent-orchestrate',
       modelUsed: 'gemini-3.8-flash',
       latencyMs: Date.now() - startTime,
-      tokensPrompt: 2500,
-      tokensCompletion: 1800,
-      estimatedCostUsd: 0.0035,
+      // Usage metadata is not aggregated across the multi-agent pipeline yet; do not invent values.
+      tokensPrompt: 0,
+      tokensCompletion: 0,
+      estimatedCostUsd: 0,
       success: !qaResult.exportBlocked,
       citationFailuresCount: graph.syntheticCitationsBlockedCount,
       ragQualityScore: graph.graphIntegrityScore
