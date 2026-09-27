@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { AuthRequest } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { researchProjectStateService } from '../services/research-project-state.service';
 
@@ -10,7 +11,11 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
    */
   router.get('/:workspaceId', (req, res) => {
     try {
-      const userId = (req as any).user?.uid || 'default_user';
+      const userId = (req as AuthRequest).user?.uid;
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر پشتڕاست نەکراوەتەوە.' });
+        return;
+      }
       const { workspaceId } = req.params;
       const ws = researchProjectStateService.getOrCreateWorkspace(userId, workspaceId);
       res.json(ws);
@@ -25,7 +30,11 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
    */
   router.post('/:workspaceId/save', (req, res) => {
     try {
-      const userId = (req as any).user?.uid || 'default_user';
+      const userId = (req as AuthRequest).user?.uid;
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر پشتڕاست نەکراوەتەوە.' });
+        return;
+      }
       const { workspaceId } = req.params;
       const { draftContent, activeChapter } = req.body;
 
@@ -42,7 +51,11 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
    */
   router.post('/:workspaceId/orchestrate', async (req, res) => {
     try {
-      const userId = (req as any).user?.uid || 'default_user';
+      const userId = (req as AuthRequest).user?.uid;
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر پشتڕاست نەکراوەتەوە.' });
+        return;
+      }
       const { workspaceId } = req.params;
       const { topic, discipline } = req.body;
 
