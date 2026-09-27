@@ -83,7 +83,7 @@ export class AcademicWritingEngineService {
             id: 'ARG-01',
             claim: 'پایەی سەرەکی توێژینەوەکە پشتیوانکراوە بە بەڵگەی ئەکادیمی.',
             subArguments: ['خاڵی شیکاری یەکەم'],
-            evidenceQuotes: ['بەڵگەی سەرچاوەی زانستی'],
+            evidenceQuotes: [],
             counterArguments: ['تێبینی پێداچوونەوەکار'],
             synthesisKurdish: 'وەڵامدانەوەی ئەکادیمیانە و بەهێزکردنی تێزەکە.'
           }
