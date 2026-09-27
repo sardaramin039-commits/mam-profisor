@@ -95,7 +95,7 @@ export class ExternalApiTester {
 
       } else if (provider === 'openai') {
         const apiKey = apiConfigService.getApiKey('openai')!;
-        const url = `${config.baseUrl}/chat/completions`;
+        const url = `${config.baseUrl}/responses`;
 
         const res = await fetch(url, {
           method: 'POST',
@@ -104,9 +104,9 @@ export class ExternalApiTester {
             'Authorization': `Bearer ${apiKey}`
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: testPrompt }],
-            max_tokens: 50
+            model: config.defaultModel,
+            input: testPrompt,
+            max_output_tokens: 50
           })
         });
 
@@ -139,8 +139,12 @@ export class ExternalApiTester {
           };
         }
 
-        const data = await res.json() as { choices?: { message?: { content?: string } }[] };
-        const text = data.choices?.[0]?.message?.content || 'وەڵامی دروست گەڕایەوە.';
+        const data = await res.json() as { output_text?: string; output?: { content?: { type?: string; text?: string }[] }[] };
+        const text = data.output_text
+          || data.output?.flatMap(item => item.content || [])
+            .filter(item => item.type === 'output_text' && typeof item.text === 'string')
+            .map(item => item.text || '').join('')
+          || 'وەڵامی دروست گەڕایەوە.';
 
         return {
           provider,
@@ -166,7 +170,7 @@ export class ExternalApiTester {
             'anthropic-version': '2023-06-01'
           },
           body: JSON.stringify({
-            model: 'claude-3-5-haiku-20241022',
+            model: config.defaultModel,
             messages: [{ role: 'user', content: testPrompt }],
             max_tokens: 50
           })
