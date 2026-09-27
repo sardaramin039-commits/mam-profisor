@@ -44,8 +44,8 @@ class ApiConfigService {
           hasKey: Boolean(key && key.trim() !== ''),
           maskedKey: this.maskKey(key),
           baseUrl,
-          defaultModel: 'gpt-5.6-terra',
-          supportedModels: ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.6']
+          defaultModel: 'gpt-6-sol',
+          supportedModels: ['gpt-6-astra', 'gpt-6-sol', 'gpt-6-luna']
         };
       }
       case 'claude': {
