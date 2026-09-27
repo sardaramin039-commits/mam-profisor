@@ -82,6 +82,16 @@ export class AcademicQAGateService {
       const checks: QACheckItem[] = Array.isArray(parsed.checks) ? parsed.checks : [];
       const safeSources = Array.isArray(sources) ? sources : [];
       const unverifiedCount = safeSources.filter(source => !hasVerifiedSource(source)).length;
+      if (safeSources.length === 0) {
+        checks.push({
+          ruleName: 'Source Availability',
+          passed: false,
+          severity: 'critical',
+          detailsKurdish: 'هیچ سەرچاوەیەکی دەرەکیی پشتڕاستکراو بۆ بەڵگەنامەکە نەدابین کراوە.',
+          recommendedActionKurdish: 'سەرچاوەی ڕاستەقینە بدۆزەوە و پێش Export پشتڕاستی بکەوە.'
+        });
+      }
+
 
       if (unverifiedCount > 0) {
         checks.push({
