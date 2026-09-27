@@ -171,12 +171,13 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         academicLevel: options?.academicLevel
       });
 
-      res.json({
-        success: true,
+      res.status(503).json({
+        success: false,
         toolId,
         variantUsed: selectedVariant,
         output: fallbackOutput,
-        isFallback: true
+        isFallback: true,
+        error: 'AI provider unavailable; fallback output is not a verified research result.'
       });
     }
   });
