@@ -13,6 +13,7 @@ import {
 } from '../../helpers/academic-integrations';
 import { resolveDoi, lookupIsbn, lookupIssn } from '../../helpers/extended-academic-tools';
 import { robustParseJson } from '../utils/json-repair';
+import { academicSearchService } from '../../services/academic-search.service';
 
 export function createAcademicSearchIntegrationsRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -194,45 +195,50 @@ ${JSON.stringify(s2Results)}
   });
 
   /**
-   * Quick & Suggest Sources Endpoint
+   * Suggest sources from real academic indexes.
+   * This endpoint never asks an LLM to invent bibliographic records.
    */
   router.post('/suggest_sources', async (req: Request, res: Response) => {
     try {
-      const { topic, discipline } = req.body;
-      const ai = getGeminiClient();
-      const prompt = `پێشنیاری سەرچاوەی متمانەپێکراوی زانستی و ژێدەر بکە بۆ تێزی: ${topic} (بواری: ${discipline || 'گشتی'}) بە زمانی کوردی. وەڵام بە JSON.`;
+      const { topic, discipline } = req.body || {};
+      if (!topic || typeof topic !== 'string' || topic.trim().length < 2) {
+        return res.status(400).json({ error: 'بابەتێکی دروستی توێژینەوە پێویستە.' });
+      }
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: { responseMimeType: 'application/json', temperature: 0.3 }
+      const query = discipline ? `${topic.trim()} ${String(discipline).trim()}` : topic.trim();
+      const sources = await academicSearchService.searchAll(query, 10);
+      return res.json({
+        success: true,
+        query,
+        sources,
+        total: sources.length,
+        sourcePolicy: 'real-index-records-only'
       });
-
-      return res.json(robustParseJson(response.text || '{}'));
     } catch (error) {
       console.error('Suggest sources error:', error);
-      return res.status(500).json({ error: 'کێشەیەک لە پێشنیارکردنی سەرچاوەکان ڕوویدا.' });
+      return res.status(500).json({ error: 'کێشەیەک لە گەڕانی سەرچاوەکان ڕوویدا.' });
     }
   });
 
   router.post('/quick_suggest_sources', async (req: Request, res: Response) => {
     try {
-      const { topic } = req.body;
-      const ai = getGeminiClient();
-      const prompt = `پێشنیاری خێرای ٥ سەرچاوەی ئەکادیمی بکە بۆ: ${topic}. وەڵام بە JSON بە شێوەی { "sources": [...] }`;
+      const { topic } = req.body || {};
+      if (!topic || typeof topic !== 'string' || topic.trim().length < 2) {
+        return res.status(400).json({ error: 'بابەتێکی دروستی توێژینەوە پێویستە.' });
+      }
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: { responseMimeType: 'application/json', temperature: 0.2 }
+      const sources = await academicSearchService.searchAll(topic.trim(), 5);
+      return res.json({
+        success: true,
+        query: topic.trim(),
+        sources,
+        total: sources.length,
+        sourcePolicy: 'real-index-records-only'
       });
-
-      return res.json(robustParseJson(response.text || '{ "sources": [] }'));
     } catch (error) {
       console.error('Quick suggest sources error:', error);
-      return res.status(500).json({ error: 'کێشەیەک لە پێشنیاری خێرادا ڕوویدا.' });
+      return res.status(500).json({ error: 'کێشەیەک لە گەڕانی خێرای سەرچاوەکان ڕوویدا.' });
     }
   });
-
   return router;
 }
