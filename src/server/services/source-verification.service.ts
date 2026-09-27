@@ -19,6 +19,42 @@ export interface SourceVerificationReport {
 }
 
 export class SourceVerificationService {
+
+  private normalizeText(value?: string): string {
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFKC')
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private metadataMatches(
+    source: { title: string; author?: string },
+    external: { title?: string; authors?: string[] }
+  ): boolean {
+    const sourceTitle = this.normalizeText(source.title);
+    const externalTitle = this.normalizeText(external.title);
+    if (!sourceTitle || !externalTitle) return false;
+
+    const sourceTerms = new Set(sourceTitle.split(' ').filter(term => term.length > 1));
+    const externalTerms = new Set(externalTitle.split(' ').filter(term => term.length > 1));
+    const overlap = [...sourceTerms].filter(term => externalTerms.has(term)).length;
+    const titleCoverage = overlap / Math.max(sourceTerms.size, 1);
+    if (titleCoverage < 0.8) return false;
+
+    const sourceAuthor = this.normalizeText(source.author);
+    if (!sourceAuthor) return true;
+
+    const externalAuthors = (external.authors || []).map(author => this.normalizeText(author)).filter(Boolean);
+    return externalAuthors.some(author => {
+      const sourceAuthorTerms = new Set(sourceAuthor.split(' ').filter(term => term.length > 1));
+      const externalAuthorTerms = new Set(author.split(' ').filter(term => term.length > 1));
+      const authorOverlap = [...sourceAuthorTerms].filter(term => externalAuthorTerms.has(term)).length;
+      return authorOverlap / Math.max(sourceAuthorTerms.size, 1) >= 0.5;
+    });
+  }
+
   /**
    * Verifies academic sources, computes integrity scores, assigns Trust Levels (A+ to F),
    * and automatically filters out fabricated/F sources.
@@ -108,20 +144,35 @@ ${JSON.stringify(sources.map((source, index) => ({ ...source, externalVerificati
         };
 
         const external = externalChecks[index];
-        const externallyVerified = Boolean(external.doiResult || external.isbnResult);
+        const externalRecord = external.doiResult || external.isbnResult;
+        const metadata = external.doiResult
+          ? { title: external.doiResult.title, authors: external.doiResult.authors }
+          : external.isbnResult
+            ? { title: external.isbnResult.title, authors: external.isbnResult.authors }
+            : null;
 
+        const externallyVerified = Boolean(externalRecord && metadata && this.metadataMatches(source, metadata));
         report.existenceVerified = externallyVerified;
-        if (!externallyVerified) {
+
+        if (externallyVerified) {
+          report.sourceTitle = external.doiResult?.title || external.isbnResult?.title || source.title;
+          report.author = external.doiResult?.authors?.[0] || external.isbnResult?.authors?.[0] || source.author || 'نادیار';
+          report.publisher = external.doiResult?.publisher || external.isbnResult?.publisher || source.publisher || 'نادیار';
+          report.metadataAccuracy = Math.max(report.metadataAccuracy || 0, 85);
+          // Peer review is not inferred from DOI/ISBN existence alone.
+          report.peerReviewed = false;
+          if (report.trustLevel === 'F' || report.integrityScore < 30) {
+            report.rejectedAsFabricated = true;
+            report.rejectionReasonKurdish = 'سەرچاوەکە لە هەڵسەنگاندنی ئەمانەتی زانستی ڕەتکرایەوە.';
+          }
+        } else {
           report.integrityScore = Math.min(report.integrityScore || 0, 29);
-          report.metadataAccuracy = Math.min(report.metadataAccuracy || 0, 29);
+          report.metadataAccuracy = 0;
           report.peerReviewed = false;
           report.trustLevel = 'D';
           report.rejectedAsFabricated = false;
-          report.rejectionReasonKurdish = 'بوونی سەرچاوەکە بە registry ـی دەرەکی پشتڕاست نەکراوەتەوە.';
-          report.kurdishVerificationDetails = 'سەرچاوەکە نەسەلمێنراوە؛ ئەنجامی LLM بە تەنیا بۆ پشتڕاستکردنەوە بەکارنەهێنرا.';
-        } else if (report.trustLevel === 'F' || report.integrityScore < 30) {
-          report.rejectedAsFabricated = true;
-          report.rejectionReasonKurdish = 'سەرچاوەکە لە پشکنینی ئەمانەتی زانستی ڕەتکرایەوە.';
+          report.rejectionReasonKurdish = 'ناونیشان یان نووسەر لە registry ـی دەرەکی لەگەڵ زانیاریی سەرچاوەکە هاوتا نەبوو، یان سەرچاوەکە نەدۆزرایەوە.';
+          report.kurdishVerificationDetails = 'سەرچاوەکە تەنها کاتێک پشتڕاست دەکرێتەوە کە metadata ـی دابینکراو لەگەڵ registry ـی پەیوەندیدار هاوتا بێت.';
         }
 
         return report;
