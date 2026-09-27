@@ -46,37 +46,28 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
       const reqTitle = req.body.title || 'کارێکی ئەکادیمی';
       const reqContent = req.body.content || '';
       
-      const length = reqContent.length;
-      const approximatePlagiarism = Math.min(25, Math.ceil((length % 17) + 5));
-      const approximateScore = Math.max(65, Math.min(95, 90 - (approximatePlagiarism / 2)));
-
       const fallbackResponse = {
-        academicScore: approximateScore,
-        toneEvaluation: `بەرنامەکە لەسەر ئاستی لۆکاڵ شیکاریی کرد بۆ بابەتەکەمان (${reqTitle}): زمانەکە فەرمی و گونجاوە بەڵام پێداچوونەوەی وردی لۆکاڵی پێویست بێت بۆ زمانپاراوی.`,
-        citationSuggestions: "پێشنیار دەکرێت سەرچاوەی زیاتری فیزیایی یان دەستنووس لە کتێبخانە بپشکنرێت تا پاڵپشتی لۆژیکی گریمانەکان بکەن.",
-        plagiarismSimilarity: approximatePlagiarism,
-        vocabularyComplexity: "ئاستی ئاڵۆزیی وشەکان مامناوەندە و لەگەڵ فۆرمی تێزدا دەگونجێت.",
-        sentencesReform: [
-          {
-            original: reqContent.slice(0, Math.min(80, reqContent.length)) + "...",
-            improved: "بەستنەوە چاکتر دەبێت ئەگەر تێبینییەکانی مرۆیی ڕاستەوخۆ تێکەڵ بکرێن."
-          }
-        ],
-        honestyCapExplanation: "سیستەم بە شێوەیەکی ئۆفلاین شیکاری کرد.",
+        academicScore: null,
+        toneEvaluation: 'هەڵسەنگاندنی خۆکار بەهۆی نەبوونی خزمەتگوزاریی ژیریی دەستکرد بەردەست نییە.',
+        citationSuggestions: 'هیچ citation ی نوێ بە شێوەی ئۆفلاین دروست نەکراوە؛ سەرچاوەکان دەبێت بە شێوەی دەرەکی پشتڕاست بکرێنەوە.',
+        plagiarismSimilarity: null,
+        vocabularyComplexity: 'نەپشکنراو',
+        sentencesReform: [],
+        honestyCapExplanation: 'سیستەم نمرە، ڕێژەی هاوشێوەیی یان پەیوەندییە تیۆرییەکان لە کاتی نەبوونی AI خەملاندن ناکات.',
         requiredHumanActions: [
-          "پێشنیاری یەکەم: بەستنەوەی دەقی ئەم سەرچاوەیە بە گۆرانکارییە مەیدانییەکانی هاوچەرخ",
-          "پێشنیاری دووەم: کەم کردنەوەی ڕوانگە وەسفییە سادەکان بە لۆژیکی بەڵگەکاری ئەکادیمی"
+          'پێداچوونەوەی دەقی سەرەکی و دیاریکردنی خاڵە پێویستەکان بە شێوەی مرۆیی',
+          'پشتڕاستکردنەوەی citation و بەڵگەکان لە سەرچاوە دەرەکییەکان'
         ],
         fallacies: [],
         hedgingChecks: [],
         theoreticalConsistency: {
-          frameworkUsed: req.body.theoreticalFramework || 'critical_theory',
-          status: 'matching',
-          notes: 'شیکردنەوەی پەیوەندی و یەکگرتنی دەق لەگەڵ ئەم تیۆرییەدا'
+          frameworkUsed: reqContent ? (req.body.theoreticalFramework || 'critical_theory') : 'critical_theory',
+          status: 'not_verified',
+          notes: 'هیچ پشتڕاستکردنەوەی تیۆری لە offline fallback ـدا نەکراوە.'
         },
         crossReferenceStatus: {
-          citationCount: 2,
-          matchedCount: 2,
+          citationCount: null,
+          matchedCount: null,
           mismatches: []
         }
       };
