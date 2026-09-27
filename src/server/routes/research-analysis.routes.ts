@@ -48,7 +48,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
         error: 'پشکنینی وردی کوالێتیی ئەکادیمی لەم کاتەدا بەردەست نییە؛ هیچ نمرە یان دۆخی ساختە دروست نەکرا.',
         code: 'ACADEMIC_RIGOR_UNAVAILABLE'
       });
-    }}
+    }
   });
 
   /**
