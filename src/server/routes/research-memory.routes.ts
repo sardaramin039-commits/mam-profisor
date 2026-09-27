@@ -42,8 +42,16 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
    */
   router.post('/:projectId/items', (req, res) => {
     try {
-      const userId = (req as any).user?.uid || 'default_user';
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
+        return;
+      }
       const { projectId } = req.params;
+      if (!projectId || projectId.length > 128) {
+        res.status(400).json({ error: 'ناسنامەی پڕۆژە نادروستە.' });
+        return;
+      }
       const parsed = memoryItemSchema.safeParse(req.body ?? {});
       if (!parsed.success) {
         res.status(400).json({ error: 'داتای بڕگەی یادگە نادروستە.', issues: parsed.error.issues });
@@ -73,6 +81,10 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
     try {
       const userId = (req as any).user?.uid || 'default_user';
       const { projectId } = req.params;
+      if (!projectId || projectId.length > 128) {
+        res.status(400).json({ error: 'ناسنامەی پڕۆژە نادروستە.' });
+        return;
+      }
       const summary = await researchMemoryService.summarizeMemoryWithAI(userId, projectId, getGeminiClient);
       res.json({ summary });
     } catch (err: unknown) {
