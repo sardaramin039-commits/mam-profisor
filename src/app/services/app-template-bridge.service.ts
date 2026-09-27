@@ -722,14 +722,48 @@ export class AppTemplateBridgeService {
   appendStatsExplanationToChapter(chapter: any) {}
   simulateEmpiricalStats(chapter: any) {}
   generateMultiStyleCitation() {}
-  checkChapterPlagiarism(chapter: any) {}
+  checkChapterPlagiarism(chapter: any) {
+    if (!chapter?.content?.trim()) return;
+    this.isPlagiarismChecking.set(true);
+    this.plagiarismError.set(null);
+    this.api.post<any>('/api/plagiarism_check', {
+      content: chapter.content,
+      title: chapter.title
+    }).then(result => {
+      this.plagiarismResult.set(result);
+    }).catch(error => {
+      console.error('Chapter plagiarism check failed:', error);
+      this.plagiarismError.set('پشکنینی هاوشێوەیی لەم کاتەدا بەردەست نییە.');
+      this.plagiarismResult.set(null);
+    }).finally(() => {
+      this.isPlagiarismChecking.set(false);
+    });
+  }
   exportSandboxPDF() {}
   appendPythonSandboxOutputToChapter(chapter: any) {}
   executePythonDatasetInterpreter(chapter: any) {}
   copyLatexCode(code: string) {
     if (code) navigator.clipboard.writeText(code);
   }
-  generateEliteAcademicAssessment(chapter: any) {}
+  generateEliteAcademicAssessment(chapter: any) {
+    if (!chapter?.content?.trim()) return;
+    this.isAnalyzingEliteRigor.set(true);
+    this.eliteRigorError.set(null);
+    this.api.post<any>('/api/elite_academic_assessment', {
+      title: chapter.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
+      content: chapter.content,
+      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
+      academicLevel: this.refineForm.get('academicLevel')?.value || 'ماستەر'
+    }).then(result => {
+      this.eliteRigorScorecard.set(result);
+    }).catch(error => {
+      console.error('Elite assessment failed:', error);
+      this.eliteRigorError.set('هەڵسەنگاندنی ئەکادیمی لەم کاتەدا بەردەست نییە.');
+      this.eliteRigorScorecard.set(null);
+    }).finally(() => {
+      this.isAnalyzingEliteRigor.set(false);
+    });
+  }
   copyCitationsToClipboard(txt: string) {
     if (txt) navigator.clipboard.writeText(txt);
   }
@@ -770,7 +804,26 @@ export class AppTemplateBridgeService {
   }
   onFilterCategory(cat: string) { this.glossaryCategoryFilter.set(cat); }
   useGlossaryTerm(entry: any) {}
-  analyzeChapterRigor(c: ChapterItem) {}
+  analyzeChapterRigor(c: ChapterItem) {
+    if (!c?.content?.trim()) return;
+    this.isAnalyzingRigorForChapterId.set(c.id);
+    this.api.post<any>('/api/analyze_academic_rigor', {
+      title: c.title,
+      content: c.content,
+      discipline: this.refineForm.get('discipline')?.value || 'گشتی',
+      theoreticalFramework: this.refineForm.get('theoreticalFramework')?.value || 'critical_theory',
+      academicStyle: this.refineForm.get('academicStyle')?.value || 'harvard'
+    }).then(result => {
+      this.activeAcademicDiagnostic.set(result);
+    }).catch(error => {
+      console.error('Chapter rigor analysis failed:', error);
+      this.activeAcademicDiagnostic.set({
+        error: 'پشکنینی قووڵی ئاستی ئەکادیمی لەم کاتەدا بەردەست نییە.'
+      });
+    }).finally(() => {
+      this.isAnalyzingRigorForChapterId.set(null);
+    });
+  }
   resetViva() {
     this.vivaQuestions.set(null);
     this.vivaEvaluationResult.set(null);
