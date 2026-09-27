@@ -45,7 +45,7 @@ export class AppTemplateBridgeService {
   });
 
   setRefineFormContext(value: Record<string, any> | null | undefined): void {
-    this.refineFormContext()Context.set({ ...this.refineFormContext()Context(), ...(value || {}) });
+    this.refineFormContext.set({ ...this.refineFormContext(), ...(value || {}) });
   }
 
   ACADEMIC_GLOSSARY: Array<{ sorani: string; foreign: string; category: string; kurdish: string; english: string; desc: string; sourceLang: string; translation: string; definition: string }> = [
@@ -397,7 +397,7 @@ export class AppTemplateBridgeService {
   writeSingleChapter(id: number) {
     const chapter = this.editorService.chapters().find(c => c.id === id);
     if (!chapter) return;
-    const value = this.refineFormContext().value;
+    const value = this.refineFormContext();
     this.editorService.activeChapterId.set(id);
     this.api.post<any>('/api/generate_chapter', {
       title: value.title,
