@@ -77,9 +77,12 @@ export class AcademicQAGateService {
       const checks: QACheckItem[] = parsed.checks || [];
       const criticalCount = checks.filter(c => !c.passed && c.severity === 'critical').length;
 
+      const parsedScore = Number(parsed.overallQAScore);
+      const exportBlocked = parsed.exportBlocked === true || criticalCount > 0;
+
       return {
-        exportBlocked: parsed.exportBlocked ?? (criticalCount > 0),
-        overallQAScore: parsed.overallQAScore || 90,
+        exportBlocked,
+        overallQAScore: Number.isFinite(parsedScore) ? Math.max(0, Math.min(100, parsedScore)) : 0,
         criticalViolationsCount: criticalCount,
         checks,
         kurdishSummaryStatus: parsed.kurdishSummaryStatus || 'تێپەڕاندنی قۆناغی QA زانستی.'
@@ -87,19 +90,19 @@ export class AcademicQAGateService {
     } catch (err: any) {
       console.error('Error in AcademicQAGateService:', err);
       return {
-        exportBlocked: false,
-        overallQAScore: 88,
-        criticalViolationsCount: 0,
+        exportBlocked: true,
+        overallQAScore: 0,
+        criticalViolationsCount: 1,
         checks: [
           {
-            ruleName: 'Citation Integrity',
-            passed: true,
-            severity: 'warning',
-            detailsKurdish: 'پشکنینی بنەڕەتی سەرچاوەنامە بە سەرکەوتوویی تێپەڕی.',
-            recommendedActionKurdish: 'دەتوانیت تێکستەکە داونلۆد بکەیت.'
+            ruleName: 'QA availability',
+            passed: false,
+            severity: 'critical',
+            detailsKurdish: 'پشکنینی QA بە سەرکەوتوویی ئەنجام نەدرا؛ بۆیە بەڵگەنامەکە ناتوانێت بە شێوەی ئەمانەتدار بەسەر قۆناغی Export تێپەڕێت.',
+            recommendedActionKurdish: 'دووبارە پشکنینی QA ئەنجام بدە پێش Export.'
           }
         ],
-        kurdishSummaryStatus: 'پشکنینی پاراستنی ئەکادیمی تێپەڕێنرا.'
+        kurdishSummaryStatus: 'QA بەردەست نەبوو؛ Export تا کاتی پشتڕاستکردنەوە بلۆک کراوە.'
       };
     }
   }
