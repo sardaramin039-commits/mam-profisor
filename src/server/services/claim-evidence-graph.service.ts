@@ -5,7 +5,7 @@ export interface ClaimNode {
   text: string;
   sourceId: string;
   evidenceId: string;
-  confidence: number; // 0-100
+  confidence: number;
   page?: string;
   quote: string;
   verificationStatus: 'verified' | 'unverified' | 'rejected' | 'synthetic_blocked';
@@ -30,9 +30,43 @@ export interface ClaimEvidenceGraph {
   kurdishSummary: string;
 }
 
+function normalize(value: unknown): string {
+  return String(value || '')
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeDoi(value: unknown): string {
+  return normalize(value).replace(/^https?:\/\/(dx\.)?doi\.org\//, '');
+}
+
+function titlesMatch(left: unknown, right: unknown): boolean {
+  const a = normalize(left);
+  const b = normalize(right);
+  return Boolean(a && b && (a === b || a.includes(b) || b.includes(a)));
+}
+
+function containsGroundedQuote(source: any, evidence: any): boolean {
+  const sourceText = String(
+    source?.content ??
+    source?.fullText ??
+    source?.text ??
+    source?.rawText ??
+    ''
+  ).trim();
+
+  const quote = String(evidence?.quote ?? evidence?.text ?? '').trim();
+  if (!sourceText || !quote) return false;
+
+  return normalize(sourceText).includes(normalize(quote));
+}
+
 export class ClaimEvidenceGraphService {
   /**
-   * Builds a strict Claim-Evidence Graph enforcing zero synthetic citations.
+   * Builds a candidate Claim-Evidence Graph, then applies deterministic grounding rules.
+   * An LLM response can propose a relationship, but cannot grant verification status by itself.
    */
   public async buildGraph(
     topic: string,
@@ -41,42 +75,41 @@ export class ClaimEvidenceGraphService {
     getGeminiClient: () => GoogleGenAI
   ): Promise<ClaimEvidenceGraph> {
     const ai = getGeminiClient();
-
-    const prompt = `تۆ سەرنووسەرێکی ئەکادیمی باڵای زانکۆی هارفەردیت. ئەرکت بونیادنانی Claim-Evidence Graph ێکی توندوتیژە بۆ ئەم تێکستە زانستییە:
+    const prompt = `بەڵگە و ادعاکان بۆ ئەم بابەتە پێشنیار بکە، بەڵام تەنها لەسەر تۆمارە سەرچاوەکانی لیستی خوارەوە.
 بابەت: ${topic}
-تێکست: ${draftText}
-سەرچاوە بەردەستەکان: ${JSON.stringify(sources.slice(0, 5))}
+دەق: ${draftText}
+سەرچاوەکان: ${JSON.stringify(sources.slice(0, 5))}
 
-یاسای زێڕین: هیچ citation یان ادعایەک (Claim) دروست مەکە ئەگەر بەڵگەیەکی ڕاستەقینە (Verified Evidence) لە سەرچاوەکاندا بۆی نەبێت. ئەگەر ئیدعایەک بێ بەڵگە بێت، دەبێت وەک unverified یان synthetic_blocked دیاری بکرێت.
+یاسای گرنگ:
+- هیچ سەرچاوەی نوێ، DOI، نووسەر یان citation دروست مەکە.
+- تەنها sourceTitle و doiOrIsbn ـی هەمان تۆمارە بەکاربهێنە.
+- ئەگەر quote لە دەقی سەرچاوەدا نییە، claim ـەکە پشتڕاستکراو نییە.
+- verificationStatus لە وەڵامەکەت تەنها candidate status ـە؛ سیستەم دواتر خۆی verification دەکات.
 
-وەڵامەکەت تەنها بە JSON بێت لەسەر ئەم شێوازە:
+وەڵام تەنها JSON بێت:
 {
   "claims": [
     {
       "claimId": "CLAIM-001",
-      "text": "ئیدعای زانستی بە کوردی",
+      "text": "ادعای پێشنیارکراو",
       "sourceId": "SRC-001",
       "evidenceId": "EVI-001",
-      "confidence": 95,
-      "page": "127",
-      "quote": "ڕستەی ڕاستەقینەی سەرچاوەکە",
-      "verificationStatus": "verified",
-      "citationId": "CIT-001",
-      "syntheticCitationBlocked": false
+      "confidence": 0,
+      "page": "",
+      "quote": "quote ـی پێشنیارکراو",
+      "verificationStatus": "unverified",
+      "citationId": "CIT-001"
     }
   ],
   "evidences": [
     {
       "evidenceId": "EVI-001",
-      "text": "بەڵگەی ناو سەرچاوەکە",
-      "contextSnippet": "تێکستی دەوروبەری بەڵگەکە",
-      "sourceTitle": "ناوی سەرچاوە یان وتارەکە",
-      "doiOrIsbn": "10.1000/182",
-      "pageNumber": "127"
+      "text": "بەڵگەی پێشنیارکراو",
+      "contextSnippet": "",
+      "sourceTitle": "ناوی هەمان سەرچاوە",
+      "doiOrIsbn": ""
     }
-  ],
-  "graphIntegrityScore": 92,
-  "kurdishSummary": "شیکاری گراف و ئاستی ڕاستیی بەڵگەکان بە کوردی"
+  ]
 }`;
 
     try {
@@ -85,28 +118,81 @@ export class ClaimEvidenceGraphService {
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
-          temperature: 0.2
+          temperature: 0.1
         }
       });
 
       const parsed = JSON.parse(response.text || '{}');
-      const claims: ClaimNode[] = parsed.claims || [];
-      const evidences: EvidenceNode[] = parsed.evidences || [];
+      const rawClaims: any[] = Array.isArray(parsed.claims) ? parsed.claims : [];
+      const rawEvidences: any[] = Array.isArray(parsed.evidences) ? parsed.evidences : [];
 
-      let blockedCount = 0;
-      claims.forEach(c => {
-        if (c.verificationStatus !== 'verified') {
-          c.syntheticCitationBlocked = true;
-          blockedCount++;
-        }
+      const safeSources = (Array.isArray(sources) ? sources : []).filter(
+        source => source?.existenceVerified === true && source?.rejectedAsFabricated !== true
+      );
+
+      const evidenceMap = new Map<string, EvidenceNode>();
+      for (const raw of rawEvidences) {
+        const source = safeSources.find(
+          candidate =>
+            titlesMatch(candidate.title, raw.sourceTitle) ||
+            (normalizeDoi(candidate.doiOrIsbn) &&
+             normalizeDoi(candidate.doiOrIsbn) === normalizeDoi(raw.doiOrIsbn))
+        );
+
+        if (!source) continue;
+
+        evidenceMap.set(String(raw.evidenceId || `EVI-${evidenceMap.size + 1}`), {
+          evidenceId: String(raw.evidenceId || `EVI-${evidenceMap.size + 1}`),
+          text: String(raw.text || ''),
+          contextSnippet: String(raw.contextSnippet || ''),
+          sourceTitle: String(source.title || ''),
+          doiOrIsbn: source.doiOrIsbn || source.doi || undefined,
+          pageNumber: raw.pageNumber ? String(raw.pageNumber) : undefined
+        });
+      }
+
+      const claims: ClaimNode[] = rawClaims.map((raw, index) => {
+        const evidenceId = String(raw.evidenceId || '');
+        const evidence = evidenceMap.get(evidenceId);
+        const source = evidence
+          ? safeSources.find(
+              candidate =>
+                titlesMatch(candidate.title, evidence.sourceTitle) ||
+                normalizeDoi(candidate.doiOrIsbn) === normalizeDoi(evidence.doiOrIsbn)
+            )
+          : undefined;
+
+        const grounded = Boolean(source && evidence && containsGroundedQuote(source, raw));
+
+        return {
+          claimId: String(raw.claimId || `CLAIM-${String(index + 1).padStart(3, '0')}`),
+          text: String(raw.text || ''),
+          sourceId: String(raw.sourceId || ''),
+          evidenceId,
+          confidence: grounded ? Math.max(0, Math.min(100, Number(raw.confidence) || 0)) : 0,
+          page: raw.page ? String(raw.page) : undefined,
+          quote: String(raw.quote || ''),
+          verificationStatus: grounded ? 'verified' : 'unverified',
+          citationId: String(raw.citationId || ''),
+          syntheticCitationBlocked: !grounded
+        };
       });
+
+      const verifiedCount = claims.filter(claim => claim.verificationStatus === 'verified').length;
+      const graphIntegrityScore = claims.length > 0
+        ? Math.round((verifiedCount / claims.length) * 100)
+        : 0;
 
       return {
         claims,
-        evidences,
-        syntheticCitationsBlockedCount: blockedCount,
-        graphIntegrityScore: parsed.graphIntegrityScore || 85,
-        kurdishSummary: parsed.kurdishSummary || 'گرافی بەڵگە و ادعاکان بە سەرکەوتوویی بونیاد نرا.'
+        evidences: [...evidenceMap.values()],
+        syntheticCitationsBlockedCount: claims.filter(
+          claim => claim.verificationStatus !== 'verified'
+        ).length,
+        graphIntegrityScore,
+        kurdishSummary: claims.length === 0
+          ? 'هیچ Claim ـێکی بەڵگەدار پشتڕاست نەکرایەوە؛ هیچ citation ـێک Verified دانانرێت.'
+          : `${verifiedCount} لە ${claims.length} Claim بە quote ـی هەمان source پشتڕاست کرا؛ ئەوانەی تر بە شێوەی unverified دەمێنن.`
       };
     } catch (err: unknown) {
       console.error('Error building ClaimEvidenceGraph:', err);
@@ -115,7 +201,7 @@ export class ClaimEvidenceGraphService {
         evidences: [],
         syntheticCitationsBlockedCount: 1,
         graphIntegrityScore: 0,
-        kurdishSummary: 'نەتوانرا Claim-Evidence Graph بە پشتڕاستییەوە بونیاد بنرێت؛ هیچ Claim یان Citation ـێک Verified دانانرێت تا پشکنینی بەڵگەکان دووبارە بکرێتەوە.'
+        kurdishSummary: 'نەتوانرا Claim-Evidence Graph بە پشتڕاستییەوە بونیاد بنرێت؛ هیچ Claim یان Citation ـێک Verified دانانرێت.'
       };
     }
   }
