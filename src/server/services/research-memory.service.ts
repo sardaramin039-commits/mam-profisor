@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { adminDb } from '../../lib/firebase-admin';
 
 export interface ResearchMemoryItem {
   id: string;
@@ -27,6 +28,67 @@ export interface ResearchProjectState {
 class ResearchMemoryService {
   private inMemoryStore: Map<string, ResearchProjectState> = new Map();
   private memorySequence = 0;
+
+  private projectRef(userId: string, projectId: string) {
+    return adminDb.collection('research_memory').doc(userId).collection('projects').doc(projectId);
+  }
+
+  public async hydrateProjectState(
+    userId: string,
+    projectId: string
+  ): Promise<ResearchProjectState> {
+    const cached = this.getOrCreateProjectState(userId, projectId, '', '');
+    try {
+      const snapshot = await this.projectRef(userId, projectId).get();
+      if (snapshot.exists) {
+        const data = snapshot.data() || {};
+        cached.title = typeof data.title === 'string' ? data.title : cached.title;
+        cached.discipline = typeof data.discipline === 'string' ? data.discipline : cached.discipline;
+        cached.claimsCount = Number(data.claimsCount) || 0;
+        cached.sourcesCount = Number(data.sourcesCount) || 0;
+        cached.evidenceCoverage = Number(data.evidenceCoverage) || 0;
+        cached.lastUpdated = typeof data.lastUpdated === 'string' ? data.lastUpdated : cached.lastUpdated;
+
+        const itemsSnapshot = await this.projectRef(userId, projectId)
+          .collection('items')
+          .orderBy('createdAt', 'desc')
+          .limit(500)
+          .get();
+
+        cached.memoryItems = itemsSnapshot.docs
+          .map(doc => doc.data() as ResearchMemoryItem)
+          .reverse();
+
+        return cached;
+      }
+
+      await this.persistProjectState(cached);
+      return cached;
+    } catch (error) {
+      console.warn('[ResearchMemory Firestore hydrate unavailable]:', (error as Error)?.message || error);
+      return cached;
+    }
+  }
+
+  public async persistProjectState(project: ResearchProjectState): Promise<void> {
+    const projectRef = this.projectRef(project.userId, project.projectId);
+    await projectRef.set({
+      projectId: project.projectId,
+      userId: project.userId,
+      title: project.title,
+      discipline: project.discipline,
+      claimsCount: project.claimsCount,
+      sourcesCount: project.sourcesCount,
+      evidenceCoverage: project.evidenceCoverage,
+      lastUpdated: project.lastUpdated
+    }, { merge: true });
+
+    const batch = adminDb.batch();
+    for (const item of project.memoryItems.slice(-500)) {
+      batch.set(projectRef.collection('items').doc(item.id), item, { merge: true });
+    }
+    await batch.commit();
+  }
 
   public getOrCreateProjectState(userId: string, projectId: string, title: string, discipline: string): ResearchProjectState {
     const key = `${userId}:${projectId}`;
@@ -61,6 +123,9 @@ class ResearchMemoryService {
     if (item.type === 'claim') project.claimsCount++;
     if (item.type === 'source') project.sourcesCount++;
     
+    void this.persistProjectState(project).catch(error => {
+      console.warn('[ResearchMemory Firestore persist unavailable]:', (error as Error)?.message || error);
+    });
     return newItem;
   }
 
@@ -69,7 +134,7 @@ class ResearchMemoryService {
   }
 
   public async summarizeMemoryWithAI(userId: string, projectId: string, getGeminiClient: () => GoogleGenAI): Promise<string> {
-    const project = this.getProjectMemory(userId, projectId);
+    const project = await this.hydrateProjectState(userId, projectId);
     if (project.memoryItems.length === 0) {
       return 'هیچ زانیارییەک لە یادگەی توێژینەوەکەدا تۆمار نەکراوە.';
     }
