@@ -12,41 +12,46 @@ export interface VectorDocument {
   score?: number;
   similarity?: number;
   embedding?: number[];
+  retrievalStatus?: 'persisted-vector' | 'in-memory-index';
+  verificationStatus?: 'verified' | 'unverified';
+}
+
+function stableId(title: string, content: string): string {
+  let hash = 2166136261;
+  const value = `${title.normalize('NFKC')}::${content.normalize('NFKC')}`;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `vec-${(hash >>> 0).toString(36)}`;
+}
+
+function lexicalScore(query: string, text: string): number {
+  const queryTokens = new Set(
+    query.toLocaleLowerCase().split(/\s+/).filter(token => token.length > 2)
+  );
+  if (queryTokens.size === 0) return 0;
+
+  const normalizedText = text.toLocaleLowerCase();
+  let matched = 0;
+  for (const token of queryTokens) {
+    if (normalizedText.includes(token)) matched += 1;
+  }
+
+  return Math.round((matched / queryTokens.size) * 100) / 100;
 }
 
 export class VectorStoreService {
-  private inMemoryDocs: VectorDocument[] = [
-    {
-      id: 'doc-1',
-      title: 'مێژووی ئەدەبیاتی کوردی و دەستنووسە مێژووییەکان',
-      content: 'دەستنووسە کلاسیکییە کوردییەکان نوێنەرایەتی شاکاری ئەدەبی و کەلتووری گەلی کورد دەکەن لە سەدەکانی ناوەڕاست و سەردەمی نوێدا.',
-      author: 'عەلائەدین سەجادی',
-      year: 1952,
-    },
-    {
-      id: 'doc-2',
-      title: 'شێوازی ستانداردکردنی زمانی کوردیی سۆرانی لە زانکۆکاندا',
-      content: 'پێکهاتەی ڕێزمانی و دەستووری زمانی کوردیی سۆرانی لە چوارچێوەی بەکارهێنانی ئەکادیمی و توێژینەوەی زانستیدا.',
-      author: 'د. کمال فوئاد',
-      year: 1978,
-    },
-    {
-      id: 'doc-3',
-      title: 'میتۆدۆلۆژیای توێژینەوەی زانستی لە زانستە مرۆڤایەتییەکاندا',
-      content: 'هەنگاوەکانی نووسینی تێزی ئەکادیمی، دیاریکردنی پرسیار، گریمانە و شێوازی سەلماندنی زانستی بەپێی ستانداردەکانی زانکۆی هارڤارد.',
-      author: 'لێژنەی زانستی زانکۆ',
-      year: 2021,
-    },
-  ];
+  // Only real documents indexed during this process may exist in memory.
+  // No synthetic scholarly seed records are permitted.
+  private inMemoryDocs: VectorDocument[] = [];
 
-  /**
-   * گەڕانی سێمانتیک لەسەر فایلی کتێبخانە و دەقە کوردییەکان بە Drizzle ORM و pgvector
-   */
-  async searchSimilarContent(queryEmbedding: number[], limit = 5) {
+  async searchSimilarContent(queryEmbedding: number[], limit = 5): Promise<VectorDocument[]> {
+    const safeLimit = Math.max(1, Math.min(50, Math.round(limit)));
+    if (queryEmbedding.length !== 768) return [];
+
     try {
       const embeddingString = `[${queryEmbedding.join(',')}]`;
-
-      // بەکارهێنانی Cosine Distance بە SQL لە PostgreSQL pgvector
       const results = await db
         .select({
           id: libraryIndex.id,
@@ -56,97 +61,100 @@ export class VectorStoreService {
         })
         .from(libraryIndex)
         .orderBy(sql`${libraryIndex.embedding} <=> ${embeddingString}::vector`)
-        .limit(limit);
+        .limit(safeLimit);
 
-      if (results && results.length > 0) {
-        return results;
-      }
+      return results.map(result => ({
+        id: String(result.id),
+        title: result.title,
+        content: result.content,
+        similarity: Number.isFinite(result.similarity) ? result.similarity : 0,
+        score: Number.isFinite(result.similarity) ? result.similarity : 0,
+        retrievalStatus: 'persisted-vector',
+        verificationStatus: 'unverified'
+      }));
     } catch (error) {
-      console.warn('[VectorStore PostgreSQL fallback]:', (error as Error)?.message || error);
+      console.warn('[VectorStore PostgreSQL retrieval unavailable]:', (error as Error)?.message || error);
+      return [];
     }
-
-    // لە کاتی ناچالاکبوونی سێرڤەری SQL یان پاشەکەوتکردن بەبێ کێشە لە یادگەدا بەردەوام دەبێت
-    return this.inMemoryDocs.map((doc) => ({
-      id: doc.id,
-      title: doc.title,
-      content: doc.content,
-      similarity: 0.85,
-    })).slice(0, limit);
   }
 
-  /**
-   * ئیندێکسکردنی بەڵگەنامەی نوێ لە PostgreSQL و یادگەدا
-   */
   async indexDocument(doc: {
     title: string;
     content: string;
     author?: string;
     year?: number;
   }): Promise<VectorDocument> {
-    let embedding: number[] = [];
-    try {
-      embedding = await generateEmbedding(`${doc.title} ${doc.content}`);
-    } catch {
-      embedding = [];
+    const embedding = await generateEmbedding(`${doc.title} ${doc.content}`).catch(error => {
+      console.warn('[VectorStore embedding unavailable]:', (error as Error)?.message || error);
+      return [];
+    });
+
+    if (embedding.length > 0 && embedding.length !== 768) {
+      throw new Error(`Unexpected embedding dimension: ${embedding.length}; expected 768.`);
     }
 
-    // هەوڵی پاشەکەوتکردن لە PostgreSQL
-    try {
-      if (embedding.length > 0) {
+    let persisted = false;
+    if (embedding.length === 768) {
+      try {
         await db.insert(libraryIndex).values({
           title: doc.title,
           content: doc.content,
           language: 'ckb',
           embedding,
         });
+        persisted = true;
+      } catch (err) {
+        console.warn('[VectorStore PostgreSQL insert unavailable]:', (err as Error)?.message || err);
       }
-    } catch (err) {
-      console.warn('[VectorStore Insert SQL Fallback]:', (err as Error)?.message || err);
     }
 
     const newDoc: VectorDocument = {
-      id: `vec-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: stableId(doc.title, doc.content),
       title: doc.title,
       content: doc.content,
       author: doc.author,
       year: doc.year,
       embedding,
+      retrievalStatus: persisted ? 'persisted-vector' : 'in-memory-index',
+      verificationStatus: 'unverified'
     };
 
-    this.inMemoryDocs.push(newDoc);
+    // In-memory copy is only a cache of caller-provided content, never synthetic seed data.
+    this.inMemoryDocs = [
+      ...this.inMemoryDocs.filter(existing => existing.id !== newDoc.id),
+      newDoc
+    ];
+
     return newDoc;
   }
 
-  /**
-   * گەڕانی بەڵگەنامە هاوشێوەکان بە دەق یان وێکتۆر
-   */
   async searchSimilarDocuments(query: string, limit = 5): Promise<VectorDocument[]> {
-    if (!query || query.trim() === '') return [];
+    const normalizedQuery = query.trim();
+    const safeLimit = Math.max(1, Math.min(50, Math.round(limit)));
+    if (!normalizedQuery) return [];
 
     let queryVector: number[] = [];
     try {
-      queryVector = await generateEmbedding(query);
-    } catch {
-      queryVector = [];
+      queryVector = await generateEmbedding(normalizedQuery);
+    } catch (error) {
+      console.warn('[VectorStore query embedding unavailable]:', (error as Error)?.message || error);
     }
 
-    if (queryVector.length > 0) {
-      const dbResults = await this.searchSimilarContent(queryVector, limit);
-      if (dbResults && dbResults.length > 0) {
-        return dbResults.map((r) => ({
-          id: String(r.id),
-          title: r.title,
-          content: r.content,
-          score: Math.round((r.similarity || 0.8) * 100) / 100,
-          similarity: r.similarity,
-        }));
-      }
+    if (queryVector.length === 768) {
+      const dbResults = await this.searchSimilarContent(queryVector, safeLimit);
+      if (dbResults.length > 0) return dbResults;
     }
 
-    return this.inMemoryDocs.slice(0, limit).map((doc) => ({
-      ...doc,
-      score: 0.85,
-    }));
+    // Safe fallback: only rank real caller-provided documents already indexed in memory.
+    return this.inMemoryDocs
+      .map(doc => ({
+        ...doc,
+        score: lexicalScore(normalizedQuery, `${doc.title} ${doc.content}`),
+        similarity: undefined
+      }))
+      .filter(doc => (doc.score || 0) > 0)
+      .sort((left, right) => (right.score || 0) - (left.score || 0))
+      .slice(0, safeLimit);
   }
 }
 
