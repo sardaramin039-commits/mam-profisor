@@ -183,19 +183,10 @@ export async function resolveDoi(doi: string): Promise<DoiResolutionResult> {
       };
     }
   } catch (err) {
-    console.warn('DOI Resolver error, using fallback format:', err);
+    console.warn('DOI Resolver error:', err);
   }
 
-  return {
-    doi: cleanDoi,
-    title: `Resolved Academic Work for DOI: ${cleanDoi}`,
-    authors: ['Crossref Indexed Scholar'],
-    publisher: 'International Scientific Publisher',
-    journal: 'Journal of Advanced Research Studies',
-    publishedYear: '2023',
-    url: `https://doi.org/${cleanDoi}`,
-    citationFormattedAPA: `Crossref Indexed Scholar (2023). Resolved Academic Work for DOI: ${cleanDoi}. Journal of Advanced Research Studies.`
-  };
+  throw new Error(`DOI نەسەلمێنرا یان Crossref بەردەست نەبوو: ${cleanDoi}`);
 }
 
 /**
@@ -227,15 +218,7 @@ export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
     console.warn('ISBN Lookup error:', err);
   }
 
-  return {
-    isbn: cleanIsbn,
-    title: `Academic Treatise (ISBN: ${cleanIsbn})`,
-    authors: ['Global Library Cataloger'],
-    publisher: 'University Academic Press',
-    publishDate: '2021',
-    pages: 450,
-    description: 'کەتەلۆگی ئەکادیمی نێودەوڵەتی کتێب لە شێوازی بەرگی چاپکراو.'
-  };
+  throw new Error(`ISBN نەدۆزرایەوە یان Open Library بەردەست نەبوو: ${cleanIsbn}`);
 }
 
 /**
@@ -243,16 +226,13 @@ export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
  */
 export async function lookupIssn(issn: string): Promise<IssnLookupResult> {
   const cleanIssn = issn.trim();
-  return {
-    issn: cleanIssn,
-    journalTitle: `International Journal of Academic Studies (${cleanIssn})`,
-    publisher: 'Elsevier / Springer Nature',
-    country: 'United Kingdom / Netherlands',
-    quartile: 'Q1',
-    impactFactor: 4.85,
-    openAccess: true,
-    subjects: ['Computer Science', 'Data Analytics', 'Interdisciplinary Science']
-  };
+  if (!/^\\d{4}-?\\d{3}[\\dXx]$/.test(cleanIssn)) {
+    throw new Error(`ISSN شێوەی دروستی نییە: ${cleanIssn}`);
+  }
+
+  // Do not fabricate journal title, publisher, quartile, impact factor, or OA status.
+  // A future integration may resolve ISSN against an authoritative registry.
+  throw new Error(`ISSN پشکنینەکە هێشتا بە سەرچاوەی ڕەسەن پەیوەست نییە: ${cleanIssn}`);
 }
 
 /**
