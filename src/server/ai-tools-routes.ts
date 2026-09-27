@@ -35,6 +35,18 @@ const executeSchema = z.object({
   }).optional(),
 }).strict();
 
+function resolveProviderModel(
+  provider: 'gemini' | 'openai' | 'claude' | 'perplexity',
+  requestedModel: string | undefined
+): string {
+  const config = apiConfigService.getProviderConfig(provider);
+  const model = requestedModel?.trim() || config.defaultModel;
+  if (!config.supportedModels.includes(model)) {
+    throw new Error(`مۆدێلی ${model} بۆ ${provider} لەم پڕۆژەیەدا ڕێگەپێدراو نییە.`);
+  }
+  return model;
+}
+
 const fetchWithTimeout = async (url: string, init: RequestInit, timeoutMs = 45_000): Promise<globalThis.Response> => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -81,7 +93,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         apiConfigService.validateProvider('perplexity');
         const apiKey = apiConfigService.getApiKey('perplexity')!;
         const config = apiConfigService.getProviderConfig('perplexity');
-        const modelName = options?.model || config.defaultModel;
+        const modelName = resolveProviderModel('perplexity', options?.model);
 
         const pRes = await fetchWithTimeout(`${config.baseUrl}/chat/completions`, {
           method: 'POST',
@@ -111,7 +123,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         apiConfigService.validateProvider('openai');
         const apiKey = apiConfigService.getApiKey('openai')!;
         const config = apiConfigService.getProviderConfig('openai');
-        const modelName = options?.model || config.defaultModel;
+        const modelName = resolveProviderModel('openai', options?.model);
 
         const openAiRes = await fetchWithTimeout(`${config.baseUrl}/chat/completions`, {
           method: 'POST',
@@ -142,7 +154,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         apiConfigService.validateProvider('claude');
         const apiKey = apiConfigService.getApiKey('claude')!;
         const config = apiConfigService.getProviderConfig('claude');
-        const modelName = options?.model || config.defaultModel;
+        const modelName = resolveProviderModel('claude', options?.model);
 
         const claudeRes = await fetchWithTimeout(`${config.baseUrl}/messages`, {
           method: 'POST',
@@ -174,7 +186,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
       } else if (provider === 'auto' || provider === 'gemini') {
         const client = getGeminiClient();
         const response = await client.models.generateContent({
-          model: options?.model || 'gemini-3.8-flash',
+          model: resolveProviderModel('gemini', options?.model),
           contents: userPrompt,
           config: {
             systemInstruction: systemPrompt,
