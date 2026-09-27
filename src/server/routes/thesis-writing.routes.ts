@@ -111,17 +111,10 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
 
     } catch (error) {
       console.error('Refine endpoint error:', error);
-      const fallbackResponse = {
-        refinedText: text,
-        diffs: [],
-        metrics: { scholarlyScore: 60, vocabularyRichness: 60, readability: 70 },
-        terminology: [],
-        academicNotes: ["کێشەیەکی هونەری یان نەبوونی هێڵ ڕوویدا لە کاتی پەیوەندیکردن بە مۆدێلی ژیریی دەستکرد. بۆ پاراستنی ناوەڕۆکەکەت، دەقەکەت بەو شێوەیە نیشان دەدرێتەوە."],
-        citations: [],
-        bibliography: [],
-        visualizations: []
-      };
-      res.json(fallbackResponse);
+      res.status(503).json({
+        error: 'پاکنووسکردنی ئەکادیمی لەم کاتەدا بەردەست نییە؛ دەقی ساختە یان نمرەی ساختە نەنێردرا.',
+        code: 'REFINE_UNAVAILABLE'
+      });
     }
   });
 
@@ -319,17 +312,9 @@ ${comparisonPrompt}
       res.json(robustParseJson(text));
     } catch (error) {
       console.error('Generate chapter error:', error);
-      const fallbackTitle = req.body.chapterTitle || 'ناونیشانی بەشەکە';
-      const fallbackText = generateDynamicAcademicFallback({
-        toolId: 'academic_paraphrase',
-        inputText: fallbackTitle,
-        discipline: req.body.discipline || 'گشتی',
-        academicLevel: req.body.academicLevel || 'زانکۆ'
-      });
-      res.json({
-        content: fallbackText,
-        wordCount: fallbackText.trim().split(/\s+/).filter(Boolean).length,
-        academicNotes: 'دەقی بەشەکە بە ڕێگەی مۆدێلی ئۆفلاین دروستکرا.'
+      res.status(503).json({
+        error: 'نووسینی بەش لەم کاتەدا بەردەست نییە؛ هیچ دەقی ساختە بۆ بەشەکە نێردراو نییە.',
+        code: 'CHAPTER_GENERATION_UNAVAILABLE'
       });
     }
   });
