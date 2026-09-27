@@ -20,7 +20,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['ئەدەبیات', 'مێژوو', 'شیعری کلاسیک', 'کوردناسی'],
     rating: 4.9,
     reviewCount: 128,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -42,7 +42,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['مێژوو', 'کۆمەڵناسی', 'جوگرافیا'],
     rating: 4.8,
     reviewCount: 95,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -64,7 +64,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['مێژووی میرنشینەکان', 'دەستنووس', 'سیاسەت'],
     rating: 5.0,
     reviewCount: 210,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -86,7 +86,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['زمانەوانی', 'فەرهەنگ', 'زاراوەسازی'],
     rating: 4.9,
     reviewCount: 180,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -108,7 +108,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['Edebiyata Klasîk', 'Helbest', 'Kurmancî'],
     rating: 4.9,
     reviewCount: 142,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -130,7 +130,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['History', 'Anthropology', 'Kurdish Studies'],
     rating: 4.7,
     reviewCount: 88,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -152,7 +152,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['زمانەوانی', 'مۆرفۆلۆژی', 'ڕێزمان'],
     rating: 4.8,
     reviewCount: 76,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -174,7 +174,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['التاريخ الإسلامي', 'الدراسات الكردية', 'التراجم'],
     rating: 4.6,
     reviewCount: 52,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -196,7 +196,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['Sosyoloji', 'Etnografya', 'Tarih'],
     rating: 4.9,
     reviewCount: 115,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -218,7 +218,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['جامعه‌شناسی سیاسی', 'تاریخ معاصر', 'جنبش‌های اجتماعی'],
     rating: 4.8,
     reviewCount: 64,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -240,7 +240,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['یاسا', 'سیاسەت', 'بەڵگەنامەی فەرمی'],
     rating: 4.9,
     reviewCount: 45,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -262,7 +262,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     subjects: ['Linguistics', 'Syntax', 'Dialectology'],
     rating: 4.9,
     reviewCount: 38,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   }
 ];
