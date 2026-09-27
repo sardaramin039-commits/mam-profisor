@@ -40,12 +40,32 @@ export class ClaimEvidenceGraphService {
     sources: any[],
     getGeminiClient: () => GoogleGenAI
   ): Promise<ClaimEvidenceGraph> {
+    const groundedSources = (Array.isArray(sources) ? sources : []).filter(
+      (source: any) =>
+        typeof source?.content === 'string' && source.content.trim().length > 0
+    );
+
+    // Source metadata alone cannot prove a quotation or evidence. Fail closed
+    // instead of allowing the language model to invent evidence text.
+    if (groundedSources.length === 0) {
+      return {
+        claims: [],
+        evidences: [],
+        syntheticCitationsBlockedCount: 0,
+        graphIntegrityScore: 0,
+        kurdishSummary: 'هیچ بەڵگەی دەقیی پشتڕاستکراوە بۆ بونیادنانەوەی Claim-Evidence Graph بەردەست نییە.'
+      };
+    }
+
     const ai = getGeminiClient();
 
     const prompt = `تۆ سەرنووسەرێکی ئەکادیمی باڵای زانکۆی هارفەردیت. ئەرکت بونیادنانی Claim-Evidence Graph ێکی توندوتیژە بۆ ئەم تێکستە زانستییە:
 بابەت: ${topic}
 تێکست: ${draftText}
-سەرچاوە بەردەستەکان: ${JSON.stringify(sources.slice(0, 5))}
+سەرچاوە و بەڵگەی دەقیی پشتڕاستکراوە:
+${JSON.stringify(groundedSources.slice(0, 5))}
+
+گرنگ: quote و evidence تەنها دەبێت لە ناو content ـی سەرچاوەکانی سەرەوە وەربگیرێت؛ هیچ دەقێکی نوێ یان خەیاڵی دروست مەکە.
 
 یاسای زێڕین: هیچ citation یان ادعایەک (Claim) دروست مەکە ئەگەر بەڵگەیەکی ڕاستەقینە (Verified Evidence) لە سەرچاوەکاندا بۆی نەبێت. ئەگەر ئیدعایەک بێ بەڵگە بێت، دەبێت وەک unverified یان synthetic_blocked دیاری بکرێت.
 
@@ -90,44 +110,44 @@ export class ClaimEvidenceGraphService {
       });
 
       const parsed = JSON.parse(response.text || '{}');
-      const claims: ClaimNode[] = parsed.claims || [];
-      const evidences: EvidenceNode[] = parsed.evidences || [];
+      const parsedEvidences: EvidenceNode[] = Array.isArray(parsed?.evidences) ? parsed.evidences : [];
+      const allowedTitles = new Set(
+        groundedSources.map((source: any) => String(source.title || '').trim())
+      );
 
+      const evidences = parsedEvidences.filter(evidence =>
+        allowedTitles.has(String(evidence?.sourceTitle || '').trim())
+      );
+
+      const evidenceById = new Set(evidences.map(evidence => evidence.evidenceId));
       let blockedCount = 0;
-      claims.forEach(c => {
-        if (c.verificationStatus !== 'verified') {
-          c.syntheticCitationBlocked = true;
+
+      const claims: ClaimNode[] = (Array.isArray(parsed?.claims) ? parsed.claims : []).filter((claim: ClaimNode) => {
+        const allowed = evidenceById.has(claim.evidenceId) && claim.verificationStatus === 'verified';
+        if (!allowed) {
           blockedCount++;
+          return false;
         }
+        return true;
       });
 
       return {
         claims,
         evidences,
         syntheticCitationsBlockedCount: blockedCount,
-        graphIntegrityScore: parsed.graphIntegrityScore || 85,
-        kurdishSummary: parsed.kurdishSummary || 'گرافی بەڵگە و ادعاکان بە سەرکەوتوویی بونیاد نرا.'
+        graphIntegrityScore: claims.length > 0 ? Math.min(100, Number(parsed.graphIntegrityScore) || 0) : 0,
+        kurdishSummary: claims.length > 0
+          ? (parsed.kurdishSummary || 'گرافی بەڵگە و ادعاکان بونیاد نرا.')
+          : 'هیچ Claim ـێکی پشتڕاستکراو بە بەڵگەی دەقییەوە نەدۆزرایەوە.'
       };
     } catch (err: any) {
       console.error('Error building ClaimEvidenceGraph:', err);
       return {
-        claims: [
-          {
-            claimId: 'CLAIM-001',
-            text: 'تەوەرەی سەرەکی توێژینەوەکە پێویستی بە پشتڕاستکردنەوەی بەڵگەیی هەیە.',
-            sourceId: 'SRC-FALLBACK',
-            evidenceId: 'EVI-FALLBACK',
-            confidence: 80,
-            quote: 'سەرچاوەی بڕواپێکراو لە فەرهەنگی دیجیتاڵیی زانکۆکاندا هەیە.',
-            verificationStatus: 'verified',
-            citationId: 'CIT-001',
-            syntheticCitationBlocked: false
-          }
-        ],
+        claims: [],
         evidences: [],
         syntheticCitationsBlockedCount: 0,
-        graphIntegrityScore: 80,
-        kurdishSummary: 'گرافی پاشەکەوتی ئەکادیمی بۆ پاراستنی بونیادی بەڵگەکان.'
+        graphIntegrityScore: 0,
+        kurdishSummary: 'پشکنینی بەڵگەکان بەهۆی هەڵەی سێرڤەرەوە تەواو نەبوو؛ هیچ Claim ـێک پشتڕاستکراو نەنرا.'
       };
     }
   }
