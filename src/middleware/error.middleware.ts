@@ -4,6 +4,7 @@ export interface AppHttpError extends Error {
   status?: number;
   statusCode?: number;
   code?: string;
+  expose?: boolean;
 }
 
 /**
@@ -17,14 +18,16 @@ export function errorMiddleware(
   _next: NextFunction
 ): void {
   const statusCode = err.status || err.statusCode || 500;
+  const isClientError = statusCode >= 400 && statusCode < 500;
   const message = err.message || 'هەڵەیەکی نەزانراو لە سێرڤەر ڕوویدا';
+  const safeMessage = isClientError || err.expose ? message : 'هەڵەیەکی ناوخۆیی لە سێرڤەر ڕوویدا';
 
   console.error(`[Server Error] [${req.method} ${req.originalUrl || req.url}] status: ${statusCode}:`, err);
 
   res.status(statusCode).json({
     success: false,
-    error: message,
-    code: err.code || 'INTERNAL_ERROR',
+    error: safeMessage,
+    code: err.code || (isClientError ? 'REQUEST_ERROR' : 'INTERNAL_ERROR'),
     timestamp: new Date().toISOString(),
   });
 }
