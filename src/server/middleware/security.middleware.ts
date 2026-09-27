@@ -1,21 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 
 // Strict ALLOWED_ORIGINS allowlist validation
-const DEFAULT_ALLOWED_DOMAINS = [
-  'localhost',
-  '127.0.0.1',
-  'google.com',
-  'ai.studio',
-  'run.app',
-  'googleusercontent.com'
-];
+const DEFAULT_ALLOWED_ORIGINS = new Set([
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+]);
 
 export function securityHeadersMiddleware(req: Request, res: Response, next: NextFunction) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  if (process.env['NODE_ENV'] === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
   res.setHeader(
     'Content-Security-Policy',
@@ -36,16 +34,11 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
     isAllowed = true;
   } else {
     try {
-      const urlObj = new URL(originHeader);
-      const hostname = urlObj.hostname;
-
-      if (envAllowedOrigins.length > 0) {
-        isAllowed = envAllowedOrigins.some(allowed => {
-          if (allowed === originHeader) return true;
-          try {
-            const allowedUrl = new URL(allowed.startsWith('http') ? allowed : `https://${allowed}`);
-            return hostname === allowedUrl.hostname || hostname.endsWith('.' + allowedUrl.hostname);
-          } catch {
+      const normalizeOrigin = (origin: string): string => origin.trim().replace(/\\/$/, '');
+      const allowedOrigins = envAllowedOrigins.map(normalizeOrigin);
+      isAllowed = allowedOrigins.length > 0
+        ? allowedOrigins.includes(normalizeOrigin(originHeader))
+        : DEFAULT_ALLOWED_ORIGINS.has(normalizeOrigin(originHeader)); catch {
             return hostname === allowed || hostname.endsWith('.' + allowed);
           }
         });
@@ -70,7 +63,7 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Kurdish-Library-Sanitized, X-RAG-Pipeline-Access, X-Dev-Guest-Token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Kurdish-Library-Sanitized, X-RAG-Pipeline-Access');
 
   if (req.method === 'OPTIONS') {
     res.sendStatus(204);
