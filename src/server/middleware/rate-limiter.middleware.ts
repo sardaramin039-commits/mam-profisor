@@ -11,7 +11,29 @@ const AI_MAX_REQUESTS = 20;
 const MAX_TRACKED_CLIENTS = 10_000;
 
 function isAiPath(path: string): boolean {
-  return path.startsWith('/ai-tools/') || path.startsWith('/platform/multi-agent-orchestrate');
+  const normalized = path.toLocaleLowerCase();
+
+  return (
+    normalized.startsWith('/ai-tools/') ||
+    normalized.startsWith('/platform/multi-agent-orchestrate') ||
+    normalized === '/generate_chapter' ||
+    normalized === '/deep_research_agent' ||
+    normalized === '/multi_agent_pipeline' ||
+    normalized === '/grounded_generate' ||
+    normalized === '/semantic_database_search' ||
+    normalized === '/multi_academic_search' ||
+    normalized.startsWith('/ai_') ||
+    normalized.startsWith('/research_') ||
+    normalized.startsWith('/citation_') ||
+    normalized.startsWith('/fact_') ||
+    normalized.startsWith('/plagiarism_') ||
+    normalized.startsWith('/kurdish_') ||
+    normalized.startsWith('/construct_') ||
+    normalized.startsWith('/analyze_') ||
+    normalized.startsWith('/harvard_') ||
+    normalized.startsWith('/simulate_') ||
+    normalized.startsWith('/export_')
+  );
 }
 
 function getLimit(path: string): number {
