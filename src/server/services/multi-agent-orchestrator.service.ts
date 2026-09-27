@@ -78,7 +78,7 @@ export class MultiAgentOrchestratorService {
     const langAnalysis = await kurdishAcademicLanguageService.analyzeAndRefineLanguage(textToAnalyze, getGeminiClient);
 
     // Agent 9: Reviewer Agent
-    addLog('08', 'Reviewer Agent (AI Professor)', 'Evaluating thesis across 9 Harvard criteria');
+    addLog('08', 'Reviewer Agent (AI Professor)', 'Evaluating thesis across 9 internal academic criteria');
     const reviewReport = await academicReviewerService.evaluateThesis(
       langAnalysis.refinedTextKurdish,
       request.topic,
