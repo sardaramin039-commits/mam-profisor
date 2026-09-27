@@ -150,41 +150,87 @@ ${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceCh
       });
 
       const parsed = JSON.parse(response.text || '{}');
-      const paragraphs: GroundedParagraph[] = parsed.paragraphs || [];
-      const verifiedCitations = (parsed.verifiedCitations || []).filter((c: { verified: boolean }) => c.verified);
-      const evidenceGaps = parsed.evidenceGaps || [];
+      const paragraphs: GroundedParagraph[] = Array.isArray(parsed.paragraphs) ? parsed.paragraphs : [];
+      const evidenceGaps = Array.isArray(parsed.evidenceGaps) ? parsed.evidenceGaps : [];
+
+      const eligibleBySourceId = new Map(
+        eligibleChunks.map(chunk => [String(chunk.sourceId), chunk])
+      );
+
+      const normalized = (value: string) => value.normalize('NFKC').toLocaleLowerCase().trim();
+
+      const hasGroundedEvidence = (sourceId: unknown, evidenceQuote: unknown): boolean => {
+        const chunk = eligibleBySourceId.get(String(sourceId || ''));
+        const quote = String(evidenceQuote || '').trim();
+        if (!chunk || !quote) return false;
+        return normalized(chunk.chunkText).includes(normalized(quote));
+      };
 
       let totalClaims = 0;
       let verifiedClaims = 0;
       let eligibleClaims = 0;
       let blockedSynthetic = 0;
 
-      paragraphs.forEach(p => {
-        (p.claims || []).forEach(c => {
+      paragraphs.forEach(paragraph => {
+        (paragraph.claims || []).forEach(claim => {
           totalClaims++;
-          // Re-enforce eligibility gate programmatically
-          const gate = this.evaluateCitationEligibility(c.verificationStatus, !!c.evidenceId);
-          c.citationEligible = gate.eligible;
 
-          if (gate.eligible) {
+          const grounded = Boolean(
+            claim.sourceId &&
+            claim.evidenceId &&
+            eligibleBySourceId.has(String(claim.sourceId)) &&
+            hasGroundedEvidence(claim.sourceId, claim.citationText || claim.sentenceText)
+          );
+
+          claim.citationEligible = grounded && claim.verificationStatus === 'verified';
+
+          if (claim.citationEligible) {
             verifiedClaims++;
             eligibleClaims++;
           } else {
-            c.citationText = undefined;
-            c.gapDetected = true;
-            c.warning = 'Synthetic or unverified citation blocked by Citation Eligibility Gate';
+            claim.citationText = undefined;
+            claim.gapDetected = true;
+            claim.verificationStatus = claim.verificationStatus === 'verified'
+              ? 'partially_verified'
+              : 'unverified';
+            claim.confidence = 0;
+            claim.warning = 'Citation eligibility requires source-bound evidence that was not deterministically confirmed.';
             blockedSynthetic++;
           }
         });
       });
 
-      const coverageRatio = totalClaims > 0 ? Math.round((verifiedClaims / totalClaims) * 100) : 100;
-      const status = coverageRatio >= 80 ? 'PASS' : coverageRatio >= 50 ? 'WARN_GAPS' : 'FAIL';
+      const rawVerifiedCitations = Array.isArray(parsed.verifiedCitations)
+        ? parsed.verifiedCitations
+        : [];
+      const verifiedCitations = rawVerifiedCitations.filter((citation: any) =>
+        citation?.verified === true &&
+        eligibleBySourceId.has(String(citation?.sourceId || '')) &&
+        hasGroundedEvidence(citation?.sourceId, citation?.evidenceQuote)
+      ).map((citation: any) => ({
+        citationId: String(citation.citationId || ''),
+        sourceId: String(citation.sourceId || ''),
+        inTextCitation: String(citation.inTextCitation || ''),
+        evidenceQuote: String(citation.evidenceQuote || ''),
+        verified: true
+      }));
 
-      // Sync with Claim-Evidence Graph
+      const coverageRatio = totalClaims > 0
+        ? Math.round((verifiedClaims / totalClaims) * 100)
+        : 0;
+      const status: GroundedGenerationResult['integrityMetrics']['eligibilityGateStatus'] =
+        totalClaims === 0
+          ? 'FAIL'
+          : coverageRatio >= 80
+            ? 'PASS'
+            : coverageRatio >= 50
+              ? 'WARN_GAPS'
+              : 'FAIL';
+
+      // Re-run the strict graph only against chunks that are already source-eligible.
       await claimEvidenceGraphService.buildGraph(
         topic,
-        paragraphs.map(p => p.text).join('\n\n'),
+        paragraphs.map(paragraph => paragraph.text).join('\\n\\n'),
         eligibleChunks,
         getGeminiClient
       );
