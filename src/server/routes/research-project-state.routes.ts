@@ -10,8 +10,16 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
    */
   router.get('/:workspaceId', (req, res) => {
     try {
-      const userId = (req as any).user?.uid || 'default_user';
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
+        return;
+      }
       const { workspaceId } = req.params;
+      if (!workspaceId || workspaceId.length > 128) {
+        res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
+        return;
+      }
       const ws = researchProjectStateService.getOrCreateWorkspace(userId, workspaceId);
       res.json(ws);
     } catch (err: unknown) {
@@ -25,8 +33,16 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
    */
   router.post('/:workspaceId/save', (req, res) => {
     try {
-      const userId = (req as any).user?.uid || 'default_user';
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
+        return;
+      }
       const { workspaceId } = req.params;
+      if (!workspaceId || workspaceId.length > 128) {
+        res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
+        return;
+      }
       const { draftContent, activeChapter } = req.body;
 
       const updated = researchProjectStateService.updateWorkspaceContent(userId, workspaceId, draftContent || '', activeChapter);
@@ -42,8 +58,16 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
    */
   router.post('/:workspaceId/orchestrate', async (req, res) => {
     try {
-      const userId = (req as any).user?.uid || 'default_user';
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
+        return;
+      }
       const { workspaceId } = req.params;
+      if (!workspaceId || workspaceId.length > 128) {
+        res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
+        return;
+      }
       const { topic, discipline } = req.body;
 
       if (!topic) {
