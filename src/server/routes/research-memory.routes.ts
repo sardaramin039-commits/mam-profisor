@@ -68,9 +68,6 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
         metadata: parsed.data.metadata
       });
 
-      await researchMemoryService.persistProjectState(
-        researchMemoryService.getProjectMemory(userId, projectId)
-      );
       res.json(newItem);
     } catch (err: unknown) {
       console.error('Research Memory Add Item Error:', err);
