@@ -139,7 +139,10 @@ export function createAcademicSearchIntegrationsRouter(getGeminiClient: () => Go
       const { doi } = req.body;
       if (!doi) return res.status(400).json({ error: 'کۆدی DOI پێویستە' });
       const result = await resolveDoi(doi);
-      return res.json(result);
+      if (!result) {
+        return res.status(404).json({ error: 'DOI ـەکە لە Crossref نەدۆزرایەوە یان پشتڕاست نەکراوەتەوە.', verified: false });
+      }
+      return res.json({ ...result, verified: true });
     } catch (error) {
       console.error('DOI resolver error:', error);
       return res.status(500).json({ error: 'کێشەیەک لە ڕەچاوکردنی DOI ڕوویدا.' });
@@ -154,7 +157,10 @@ export function createAcademicSearchIntegrationsRouter(getGeminiClient: () => Go
       const { isbn } = req.body;
       if (!isbn) return res.status(400).json({ error: 'ژمارەی ISBN پێویستە' });
       const result = await lookupIsbn(isbn);
-      return res.json(result);
+      if (!result) {
+        return res.status(404).json({ error: 'ISBN ـەکە لە Open Library نەدۆزرایەوە یان پشتڕاست نەکراوەتەوە.', verified: false });
+      }
+      return res.json({ ...result, verified: true });
     } catch (error) {
       console.error('ISBN lookup error:', error);
       return res.status(500).json({ error: 'کێشەیەک لە بەدواداچوونی ISBN ڕوویدا.' });
@@ -169,7 +175,10 @@ export function createAcademicSearchIntegrationsRouter(getGeminiClient: () => Go
       const { issn } = req.body;
       if (!issn) return res.status(400).json({ error: 'ژمارەی ISSN پێویستە' });
       const result = await lookupIssn(issn);
-      return res.json(result);
+      if (!result) {
+        return res.status(404).json({ error: 'ISSN ـەکە لە Crossref نەدۆزرایەوە یان پشتڕاست نەکراوەتەوە.', verified: false });
+      }
+      return res.json({ ...result, verified: true });
     } catch (error) {
       console.error('ISSN lookup error:', error);
       return res.status(500).json({ error: 'کێشەیەک لە بەدواداچوونی ISSN ڕوویدا.' });
