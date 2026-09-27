@@ -1,7 +1,9 @@
 /**
- * Dynamic Academic Fallback Service
- * Provides robust, intelligent local fallback outputs whenever external LLM API providers
- * (Gemini, Claude, OpenAI, Perplexity) fail due to network timeouts, rate-limits (429), or missing credentials.
+ * Safe academic fallback.
+ *
+ * The fallback is a continuity scaffold only. It deliberately does not invent:
+ * citations, authors, study findings, statistics, literature gaps, peer-review status,
+ * plagiarism scores, or factual claims that require external evidence.
  */
 
 export interface FallbackOptions {
@@ -11,53 +13,99 @@ export interface FallbackOptions {
   academicLevel?: string;
 }
 
+function previewText(inputText: string): string {
+  const value = inputText.trim();
+  return value.length > 800 ? value.slice(0, 800) + '…' : value;
+}
+
 export function generateDynamicAcademicFallback(options: FallbackOptions): string {
-  const { toolId = 'general', inputText = '', discipline = 'گشتی', academicLevel = 'ماستەر' } = options;
-  const trimmed = inputText.trim();
-  const preview = trimmed.length > 200 ? trimmed.slice(0, 200) + '...' : trimmed;
+  const {
+    toolId = 'general',
+    inputText = '',
+    discipline = 'گشتی',
+    academicLevel = 'ماستەر'
+  } = options;
+
+  const preview = previewText(inputText);
 
   switch (toolId) {
     case 'paraphrase':
     case 'academic_paraphrase':
-      return `پۆلێنکاری و داڕشتنەوەی ئەکادیمی (شێوازی خودکار):
-${trimmed ? `«${trimmed}»` : 'دەقی ئامانج'}
+      return `[OFFLINE FALLBACK — citation/claim safe]
+ئەمە تەنها ڕەشنووسی پڕۆسەییە و نابێت وەک دەقی زانستیی کۆتایی دابنرێت.
 
-شێوازی پێشنیارکراوی ئەکادیمی بۆ بەرزکردنەوەی ئاستی زانستی (${academicLevel}):
-ئەم دەقە بە لەبەرچاوگرتنی جێگیریی چەمکەکان لە کایەی ${discipline}دا، بەکارهێنانی زاراوەی هاوچەرخ و پاراستنی سەربەخۆیی فیکری توێژەر ڕێکخرایەوە تاوەکو دوور بێت لە سادەیی زمانەوانی.
-[تێبینی: سیستەمی ئۆفلاین بۆ پاراستنی ڕەوتی کارەکەت ئەم پۆلێنکارییەی بە شێوەی خۆکار پێشنیار کرد].`;
+ئاستی خوێندن: ${academicLevel}
+کایە: ${discipline}
+
+دەقی سەرەتایی:
+${preview || 'دەقی سەرەتایی بەردەست نییە.'}
+
+کارە پێشنیارکراوەکان:
+١. پاراستنی واتای سەرەکیی دەق.
+٢. ڕێکخستنی زاراوە و ڕستەسازی بەبێ زیادکردنی زانیاریی نوێ.
+٣. دوای گەڕانەوەی AI، citation و هەر بانگەشەیەکی زانستی بە سەرچاوەی ڕاستەقینە پشتڕاست بکرێتەوە.`;
 
     case 'summarize':
     case 'abstract_generator':
-      return `پوختەی ئەکادیمی (شێوازی خۆکار):
-• بابەت و ئامانج: شەن و کەوکردنی زانستی بۆ دەقی پێشکەشکراو لە کایەی ${discipline}.
-• سەرنجی سەرەکی: ${preview || 'دیاریکردنی گۆڕاوە سەرەکییەکان و جێگیرکردنی مێتۆدۆلۆژی'}.
-• دەرئەنجام: جەختکردنەوە لەسەر دەرئەنجامە مەعریفییەکان و ڕاسپاردنی هەنگاوی دواتر بۆ توێژەران.`;
+      return `[OFFLINE FALLBACK — summary scaffold]
+هیچ خاڵێکی نوێ یان دەرئەنجامێکی زانستی لە offline mode ـدا خەملێنراوە نییە.
+
+بابەت: ${preview || 'دیارینەکراو'}
+کایە: ${discipline}
+ئاست: ${academicLevel}
+
+پێکهاتەی پێشنیارکراوی پوختە:
+١. کێشە/بابەت: لەسەر دەقی سەرەکی بنووسە.
+٢. ئامانج: تەنها ئەوەی لە توێژینەوەکەدا هەیە.
+٣. مێتۆد: مێتۆدی بەڕاستی بەکارهاتوو تۆمار بکە.
+٤. داتا/دەرئەنجام: تەنها داتای پشتڕاستکراو.
+٥. کۆتایی: تەنها ئەو دەرئەنجامانەی بەڵگەیان هەیە.`;
 
     case 'literature_gap':
-      return `شیکاری کەلەبەری زانستی (Literature Gap Analysis):
-١. لایەنی مێتۆدۆلۆژی: توێژینەوەکانی پێشوو زیاتر تەرکیزیان لەسەر کایەی تیۆری بووە؛ پێویستیی بە داتای تاقیکاری هەست پێدەکرێت.
-٢. لایەنی جۆغرافی/زمانەوانی: کەلەبەرێک لە بڵاوکراوەکانی شێوەزاری سۆرانی و سەرچاوە ناوچەیییەکاندا بەدی دەکرێت.
-٣. پێشنیاری توێژینەوە: بەستنەوەی چەمکە مۆدێرنەکان بە ئەرشیڤی ٤٠ کتێبخانە دیجیتاڵییەکەوە.`;
+      return `[OFFLINE FALLBACK — literature-gap scaffold]
+ئەم mode ـە ناتوانێت کەلێنی ئەدەبیات پشتڕاست بکات، چونکە بۆ ئەمە پێویستی بە گەڕانی سەرچاوە و کۆمەڵە توێژینەوەی ڕاستەقینە هەیە.
+
+بابەت: ${preview || 'دیارینەکراو'}
+کایە: ${discipline}
+
+خانە پڕنەکراوەکان:
+١. کەلێنی تیۆری: ____________________
+٢. کەلێنی مێتۆدۆلۆژی: ____________________
+٣. کەلێنی داتا/نمونە: ____________________
+٤. کەلێنی جۆغرافی یان زمانەوانی: ____________________
+٥. بەڵگەی پشتگیریکەر: ____________________`;
 
     case 'peer_review':
-      return `پێداچوونەوەی ئەکادیمی (AI Peer Review Summary):
-- ئاستی زانستی: گونجاوە بۆ ڕەشنووسی ئاستی ${academicLevel}.
-- خاڵە بەهێزەکان: داڕشتنی ڕاستەقینەی بیرۆکەکان و ئاڕاستەی ڕوونی بابەتیی.
-- پێشنیاری چاکسازی: زیادکردنی ئاماژەدانی ئین-تێکست (In-text citations) بە پێوەری APA-7 یان Harvard و فرەچەشنکردنی سەرچاوەکان.`;
+      return `[OFFLINE FALLBACK — peer-review scaffold]
+هیچ نمرە، verdict یان پێداچوونەوەی ئەکادیمی لە offline mode ـدا خەملێنراوە نییە.
+
+بۆ پێداچوونەوەی ${academicLevel}:
+• بەستەری بانگەشەکان بە بەڵگەکان بپشکنە.
+• مێتۆد، داتا و سنووردارییەکان جیا بکەرەوە.
+• citation ـەکان بە سەرچاوە دەرەکییەکان هاوتا بکە.
+• هەر دەرئەنجامێک کە بەڵگەی نییە وەک «پێویستی بە پشتڕاستکردنەوە» نیشانە بکە.`;
 
     case 'citation_checker':
-      return `پشکنینی ئاماژەدان و سەرچاوەکان:
-- بەستەرەکان: [NO CITATION] هیچ سەرچاوەیەکی دەستکرد یان ناوەستاو دروست ناکرێت.
-- شێوازی پێشنیارکراو: جێگیرکردنی فۆڕماتی فەرمیی (نووسەر، ساڵ) لە سەرانسەری تێزەکەدا.`;
+      return `[OFFLINE FALLBACK — citation audit scaffold]
+هیچ citation ـێکی نوێ دروست نەکراوە و هیچ سەرچاوەیەک Verified دانەنراوە.
+
+پشکنین:
+١. هەر بانگەشەیەکی زانستی → سەرچاوەی دیاریکراو.
+٢. ناوی نووسەر/ساڵ/ناونیشان → هاوتایی لە بنکەدراوەی سەرچاوە.
+٣. DOI/ISBN/ISSN → پشتڕاستکردنەوەی دەرەکی.
+٤. دڵنیابوون لەوەی citation ـەکە بە بانگەشەکە دەگونجێت.`;
 
     default:
-      return `شیکاری ئەکادیمی و وەڵامی ئۆفلاین (Dynamic Academic Fallback):
-بۆ دەقی داواکراو لە کایەی «${discipline}»:
-${preview ? `«${preview}»` : 'دەقی پێشکەشکراو'}
+      return `[OFFLINE FALLBACK — evidence-safe scaffold]
+کایە: ${discipline}
+ئاست: ${academicLevel}
+ئامراز: ${toolId}
 
-پێشنیاری مێتۆدۆلۆژی:
-١. ڕێکخستنی دەقەکە بەپێی شێوازی زانستیی هاوچەرخ.
-٢. دەوڵەمەندکردنی چەمکەکان بە زاراوەی ئەکادیمیی کوردیی پاراو.
-٣. پشکنینی سەرچاوەکان لە کتێبخانە دیجیتاڵییە ساغکراوەکاندا (دۆخی سەرچاوە: NO CITATION - هیچ سەرچاوەیەکی دەستکرد دروست ناکرێت بۆ پاراستنی ئەمانەتی زانستی).`;
+دەقی پێشکەشکراو:
+${preview || 'دەقی پێشکەشکراو بەردەست نییە.'}
+
+تێبینیی گرنگ:
+ئەم وەڵامە هیچ سەرچاوە، ئامار، citation، دەرئەنجام یان بانگەشەیەکی نوێ دروست ناکات.
+بۆ بەرهەمی کۆتایی، سەرچاوە ڕاستەقینەکان دەبێت بگەڕێنرێنەوە، پشتڕاست بکرێنەوە و پاشان دەقەکە synthesis بکرێت.`;
   }
 }
