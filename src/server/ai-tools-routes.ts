@@ -35,7 +35,7 @@ const executeSchema = z.object({
   }).optional(),
 }).strict();
 
-const fetchWithTimeout = async (url: string, init: RequestInit, timeoutMs = 45_000): Promise<Response> => {
+const fetchWithTimeout = async (url: string, init: RequestInit, timeoutMs = 45_000): Promise<globalThis.Response> => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
