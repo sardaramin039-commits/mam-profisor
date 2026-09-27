@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
+import { AuthRequest } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { researchMemoryService } from '../services/research-memory.service';
 
@@ -10,7 +11,11 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
    */
   router.get('/:projectId', (req, res) => {
     try {
-      const userId = (req as any).user?.uid || 'default_user';
+      const userId = (req as AuthRequest).user?.uid;
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر پشتڕاست نەکراوەتەوە.' });
+        return;
+      }
       const { projectId } = req.params;
       const projectState = researchMemoryService.getProjectMemory(userId, projectId);
       res.json(projectState);
@@ -24,8 +29,12 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
    * POST /api/research-memory/:projectId/items
    */
   router.post('/:projectId/items', (req, res) => {
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر پشتڕاست نەکراوەتەوە.' });
+        return;
+      }
     try {
-      const userId = (req as any).user?.uid || 'default_user';
+      const userId = (req as AuthRequest).user?.uid;
       const { projectId } = req.params;
       const { topic, type, content, tags, metadata } = req.body;
 
@@ -54,8 +63,12 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
    * POST /api/research-memory/:projectId/summarize
    */
   router.post('/:projectId/summarize', async (req, res) => {
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر پشتڕاست نەکراوەتەوە.' });
+        return;
+      }
     try {
-      const userId = (req as any).user?.uid || 'default_user';
+      const userId = (req as AuthRequest).user?.uid;
       const { projectId } = req.params;
       const summary = await researchMemoryService.summarizeMemoryWithAI(userId, projectId, getGeminiClient);
       res.json({ summary });
