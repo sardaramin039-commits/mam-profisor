@@ -46,7 +46,7 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
 
 تکایە بە شێوازی JSON وەڵام بدەرەوە بە تەواوی بەم پێکهاتەیە:
 {
-  "refinedText": "دەقی ئەکادیمی پاکنووسکراو بە زمانی کوردیی فەرمی و زانستی، کە کۆدی سەرچاوەی ناوەکی وەک (کاوان، ٢٠٢٣) یان (Smith, 2021) تێدا بەرجەستەیە",
+  "refinedText": "تەنها دەقی پاکنووسکراو؛ هیچ citation یان ناوی سەرچاوە زیاد مەکە ئەگەر لە دەقی سەرەتایی یان سەرچاوەی دابینکراو پشتگیری نەکراوە.",
   "diffs": [
     {
       "original": "بەشە کۆن یان ناڕێکەکەی ناو دەقەکە",
@@ -55,9 +55,10 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
     }
   ],
   "metrics": {
-    "scholarlyScore": 85,
-    "vocabularyRichness": 90,
-    "readability": 75
+    "scholarlyScore": null,
+    "vocabularyRichness": null,
+    "readability": null,
+    "status": "requires-grounded-evaluation"
   },
   "terminology": [
     {
@@ -69,13 +70,7 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
   "academicNotes": [
     "تێبینی و ئامۆژگاری زانستی پێویست بۆ توێژەرەکە سەبارەت بە لۆژیکی بابەتەکە"
   ],
-  "citations": [
-    {
-      "key": "کۆدی سەرچاوەکە وەک (کاوان، ٢٠٢٣) یان (Smith, 2021)",
-      "inText": "وەک لە دەقدا هاتووە (کاوان، ٢٠٢٣)",
-      "supportedClaim": "ئەو لێکۆڵینەوە یان ڕاستییەی کە پاڵپشتی لێ دەکرێت"
-    }
-  ],
+  "citations": [] ,
   "visualizations": [
     {
       "type": "bar یان line یان pie یان comparison",
@@ -114,9 +109,16 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
       const fallbackResponse = {
         refinedText: text,
         diffs: [],
-        metrics: { scholarlyScore: 60, vocabularyRichness: 60, readability: 70 },
+        metrics: {
+          scholarlyScore: null,
+          vocabularyRichness: null,
+          readability: null,
+          status: 'unavailable'
+        },
         terminology: [],
-        academicNotes: ["کێشەیەکی هونەری یان نەبوونی هێڵ ڕوویدا لە کاتی پەیوەندیکردن بە مۆدێلی ژیریی دەستکرد. بۆ پاراستنی ناوەڕۆکەکەت، دەقەکەت بەو شێوەیە نیشان دەدرێتەوە."],
+        academicNotes: [
+          'AI نەبوو بەردەست؛ دەقی سەرەتایی بەبێ زیادکردنی بانگەشە یان citation ـی نوێ پارێزرا.'
+        ],
         citations: [],
         bibliography: [],
         visualizations: []
