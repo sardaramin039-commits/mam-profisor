@@ -70,11 +70,11 @@ export interface IssnLookupResult {
   issn: string;
   journalTitle: string;
   publisher: string;
-  country: string;
-  quartile: 'Q1' | 'Q2' | 'Q3' | 'Q4';
-  impactFactor: number;
-  openAccess: boolean;
-  subjects: string[];
+  country?: string;
+  quartile?: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+  impactFactor?: number;
+  openAccess?: boolean;
+  subjects?: string[];
 }
 
 export interface ResearchTimelineNode {
@@ -152,7 +152,7 @@ export interface WritingTemplateItem {
 /**
  * Fetch publication details by DOI via Crossref API
  */
-export async function resolveDoi(doi: string): Promise<DoiResolutionResult> {
+export async function resolveDoi(doi: string): Promise<DoiResolutionResult | null> {
   const cleanDoi = doi.trim().replace(/^https?:\/\/(dx\.)?doi\.org\//, '');
   try {
     const url = `https://api.crossref.org/works/${encodeURIComponent(cleanDoi)}`;
@@ -183,26 +183,17 @@ export async function resolveDoi(doi: string): Promise<DoiResolutionResult> {
       };
     }
   } catch (err) {
-    console.warn('DOI Resolver error, using fallback format:', err);
+    console.warn('DOI Resolver error:', err);
   }
 
-  return {
-    doi: cleanDoi,
-    title: `Resolved Academic Work for DOI: ${cleanDoi}`,
-    authors: ['Crossref Indexed Scholar'],
-    publisher: 'International Scientific Publisher',
-    journal: 'Journal of Advanced Research Studies',
-    publishedYear: '2023',
-    url: `https://doi.org/${cleanDoi}`,
-    citationFormattedAPA: `Crossref Indexed Scholar (2023). Resolved Academic Work for DOI: ${cleanDoi}. Journal of Advanced Research Studies.`
-  };
+  return null;
 }
 
 /**
  * Fetch book details by ISBN via Open Library API
  */
-export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
-  const cleanIsbn = isbn.replace(/[^0-[9X]/gi, '');
+export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult | null> {
+  const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
   try {
     const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -227,32 +218,46 @@ export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
     console.warn('ISBN Lookup error:', err);
   }
 
-  return {
-    isbn: cleanIsbn,
-    title: `Academic Treatise (ISBN: ${cleanIsbn})`,
-    authors: ['Global Library Cataloger'],
-    publisher: 'University Academic Press',
-    publishDate: '2021',
-    pages: 450,
-    description: 'کەتەلۆگی ئەکادیمی نێودەوڵەتی کتێب لە شێوازی بەرگی چاپکراو.'
-  };
+  return null;
 }
 
 /**
  * Lookup ISSN metrics and journal data
  */
-export async function lookupIssn(issn: string): Promise<IssnLookupResult> {
+export async function lookupIssn(issn: string): Promise<IssnLookupResult | null> {
   const cleanIssn = issn.trim();
-  return {
-    issn: cleanIssn,
-    journalTitle: `International Journal of Academic Studies (${cleanIssn})`,
-    publisher: 'Elsevier / Springer Nature',
-    country: 'United Kingdom / Netherlands',
-    quartile: 'Q1',
-    impactFactor: 4.85,
-    openAccess: true,
-    subjects: ['Computer Science', 'Data Analytics', 'Interdisciplinary Science']
-  };
+
+  if (!/^\\d{4}-\\d{3}[\\dX]$/i.test(cleanIssn)) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.crossref.org/journals/${encodeURIComponent(cleanIssn)}`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json() as {
+      message?: {
+        title?: string;
+        publisher?: string;
+      };
+    };
+
+    const message = data.message;
+    if (!message?.title) return null;
+
+    return {
+      issn: cleanIssn,
+      journalTitle: message.title,
+      publisher: message.publisher || 'نادیار'
+    };
+  } catch (err) {
+    console.warn('ISSN Lookup error:', err);
+    return null;
+  }
 }
 
 /**
