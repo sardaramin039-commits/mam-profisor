@@ -45,9 +45,8 @@ export class MultiAgentOrchestratorService {
 
     // Agent 2 & 3: Source & Knowledge Agent
     addLog('02', 'Source & Knowledge Agent', 'Discovering literature and indexing Kurdish knowledge graph');
-    const sources = request.rawSources || [
-      { title: `توێژینەوە لەسەر ${request.topic}`, author: 'د. ڕێبوار کەریم', publisher: 'چاپخانەی زانکۆی هارفەرد', year: '2024' }
-    ];
+    // Never synthesize a source when the caller did not provide one.
+    const sources = Array.isArray(request.rawSources) ? request.rawSources : [];
 
     // Agent 4: Verification Agent
     addLog('03', 'Verification Agent', 'Evaluating source integrity and filtering out F-graded sources');
