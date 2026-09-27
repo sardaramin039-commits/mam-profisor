@@ -67,11 +67,11 @@ export class KurdishAcademicLanguageService {
     } catch (err: any) {
       console.error('Error in KurdishAcademicLanguageService:', err);
       return {
-        overallLanguageScore: 88,
-        academicTonePassed: true,
+        overallLanguageScore: 0,
+        academicTonePassed: false,
         issues: [],
         refinedTextKurdish: text,
-        kurdishSummary: 'دەقی کوردی لە ڕووی ڕێزمان و زاراوەسازییەوە پەسەندکراوە.'
+        kurdishSummary: 'پشکنینی زمانی کوردی بەهۆی هەڵەی سێرڤەرەوە تەواو نەبوو؛ هیچ پەسەندکردنێکی ساختە نەکرا.'
       };
     }
   }
