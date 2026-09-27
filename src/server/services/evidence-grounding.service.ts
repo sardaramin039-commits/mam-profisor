@@ -211,7 +211,7 @@ ${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceCh
 
   private createFallbackGroundedResult(
     topic: string,
-    evidenceChunks: Array<{
+    _evidenceChunks: Array<{
       sourceId: string;
       sourceTitle: string;
       chunkText: string;
@@ -221,56 +221,41 @@ ${JSON.stringify(eligibleChunks.length > 0 ? eligibleChunks : verifiedEvidenceCh
       year?: string;
     }>
   ): GroundedGenerationResult {
-    const verifiedSources = evidenceChunks.filter(e => e.verificationStatus === 'verified');
-    const hasVerified = verifiedSources.length > 0;
-
     return {
       paragraphs: [
         {
           paragraphIndex: 1,
-          text: `بابەتی "${topic}" شیکاری زانستیی بۆ دەکرێت. سەرچاوەکان لە باری پشکنیندان.`,
+          text: `نەتوانرا دەقی ئەکادیمیی پشتڕاستکراو بۆ "${topic}" بەرهەم بهێنرێت، چونکە پشکنینی بەڵگەکان بەردەست نەبوو.`,
           claims: [
             {
               claimId: 'CLM-FALLBACK-1',
-              sentenceText: `بابەتی ${topic} پێویستی بە بەڵگەی سەلمێنراو هەیە.`,
-              verificationStatus: hasVerified ? 'verified' : 'unverified',
-              citationEligible: hasVerified,
-              confidence: hasVerified ? 85 : 50,
-              gapDetected: !hasVerified,
-              warning: hasVerified ? undefined : 'Evidence Required: No verified sources present'
+              sentenceText: 'هیچ Claim ـێک لە کاتی fallback ـدا Verified دانانرێت.',
+              verificationStatus: 'unverified',
+              citationEligible: false,
+              confidence: 0,
+              gapDetected: true,
+              warning: 'Evidence verification unavailable; citation generation is blocked.'
             }
           ]
         }
       ],
-      verifiedCitations: hasVerified
-        ? [
-            {
-              citationId: 'CIT-FALLBACK-1',
-              sourceId: verifiedSources[0]?.sourceId || 'SRC-1',
-              inTextCitation: `(${verifiedSources[0]?.author || 'سەرچاوە'}, ${verifiedSources[0]?.year || '2024'})`,
-              evidenceQuote: verifiedSources[0]?.chunkText || 'بەڵگەی تەواو لە سەرچاوەکەدا هەیە.',
-              verified: true
-            }
-          ]
-        : [],
-      evidenceGaps: hasVerified
-        ? []
-        : [
-            {
-              claimId: 'CLM-FALLBACK-1',
-              claimText: `بابەتی ${topic} پێویستی بە بەڵگەی سەلمێنراو هەیە.`,
-              warning: 'Evidence Required'
-            }
-          ],
+      verifiedCitations: [],
+      evidenceGaps: [
+        {
+          claimId: 'CLM-FALLBACK-1',
+          claimText: `بابەتی ${topic} پێویستی بە پشکنینی بەڵگەی دووبارە هەیە.`,
+          warning: 'Evidence verification unavailable'
+        }
+      ],
       integrityMetrics: {
         totalClaims: 1,
-        verifiedClaims: hasVerified ? 1 : 0,
-        citationEligibleClaims: hasVerified ? 1 : 0,
-        blockedSyntheticCitations: hasVerified ? 0 : 1,
-        evidenceCoveragePercentage: hasVerified ? 100 : 0,
-        eligibilityGateStatus: hasVerified ? 'PASS' : 'WARN_GAPS'
+        verifiedClaims: 0,
+        citationEligibleClaims: 0,
+        blockedSyntheticCitations: 1,
+        evidenceCoveragePercentage: 0,
+        eligibilityGateStatus: 'FAIL'
       },
-      kurdishSummary: 'دەقی پاشەکەوت بە سەرکەوتوویی لەسەر بنەمای یاساکانی ڕاستیی ئەکادیمی بەرجەستە کرا.'
+      kurdishSummary: 'Fallback بەکارهاتووە؛ هیچ Citation یان Verified Claim ـێک بەرهەم نەهاتووە.'
     };
   }
 }
