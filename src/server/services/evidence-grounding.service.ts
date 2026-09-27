@@ -90,13 +90,18 @@ export class EvidenceGroundingService {
       return this.createFallbackGroundedResult(topic, []);
     }
 
+    const preparedChunks = eligibleChunks.map((chunk, index) => ({
+      ...chunk,
+      evidenceId: `EVI-${index + 1}`
+    }));
+
     const prompt = `تۆ سەرنووسەرێکی ئەکادیمی باڵای زانکۆی هارفەردیت و بەرپرسی بزوێنەری Evidence Intelligence یت.
 ئەرکی تۆ: دروستکردنی دەقێکی زانستیی فەرمی بە کوردی بۆ:
 تەوەرە: ${topic}
 داواکاری: ${promptText}
 
 بەڵگە بڕواپێکراوەکان (VERIFIED EVIDENCE):
-${JSON.stringify(eligibleChunks, null, 2)}
+${JSON.stringify(preparedChunks, null, 2)}
 
 یاسای نەگۆڕی Citation Eligibility Gate:
 1. تەنها ئەو ادعانەی (Claims) کە بەڵگەی سەلمێنراوی VERIFIED یان لە لیستەکەدا هەیە مافی Citationیان هەیە.
@@ -158,11 +163,9 @@ ${JSON.stringify(eligibleChunks, null, 2)}
       const evidenceGaps = Array.isArray(parsed?.evidenceGaps) ? parsed.evidenceGaps : [];
 
       const allowedEvidence = new Map(
-        eligibleChunks.map(chunk => [chunk.sourceId + '::' + chunk.sourceTitle, chunk])
+        preparedChunks.map(chunk => [chunk.sourceId + '::' + chunk.sourceTitle, chunk])
       );
-      const evidenceIds = new Set(
-        eligibleChunks.map((chunk, index) => chunk.sourceId + '::' + (chunk.pageNumber || index))
-      );
+      const evidenceIds = new Set(preparedChunks.map(chunk => chunk.evidenceId));
 
       let totalClaims = 0;
       let verifiedClaims = 0;
@@ -178,7 +181,7 @@ ${JSON.stringify(eligibleChunks, null, 2)}
             ? sourceMatch.sourceId + '::' + sourceMatch.sourceTitle
             : '';
           const linkedSource = sourceKey ? allowedEvidence.get(sourceKey) : undefined;
-          const hasEvidence = !!linkedSource && !!claim.evidenceId;
+          const hasEvidence = !!linkedSource && !!claim.evidenceId && evidenceIds.has(claim.evidenceId);
           const gate = this.evaluateCitationEligibility(claim.verificationStatus, hasEvidence);
           claim.citationEligible = gate.eligible;
 
@@ -206,15 +209,15 @@ ${JSON.stringify(eligibleChunks, null, 2)}
       // Avoid carrying an AI-generated citation unless its evidence can be tied to input text.
       for (const paragraph of paragraphs) {
         paragraph.claims = paragraph.claims.filter(claim =>
-          !claim.citationEligible || eligibleChunks.some(chunk =>
+          !claim.citationEligible || preparedChunks.some(chunk =>
             chunk.sourceId === claim.sourceId &&
-            !!claim.evidenceId &&
+            chunk.evidenceId === claim.evidenceId &&
             chunk.chunkText.trim().length > 0
           )
         );
       }
 
-      const coverageRatio = totalClaims > 0 ? Math.round((verifiedClaims / totalClaims) * 100) : 100;
+      const coverageRatio = totalClaims > 0 ? Math.round((verifiedClaims / totalClaims) * 100) : 0;
       const status = coverageRatio >= 80 ? 'PASS' : coverageRatio >= 50 ? 'WARN_GAPS' : 'FAIL';
 
       // Sync with Claim-Evidence Graph
