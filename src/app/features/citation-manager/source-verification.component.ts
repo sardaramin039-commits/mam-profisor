@@ -64,28 +64,9 @@ export class SourceVerificationComponent {
   });
 
   linkedClaims = computed<EvidenceLinkedClaim[]>(() => {
-    const dedup = this.deduplicatedSources();
-    if (dedup.length === 0) return [];
-
-    const claim1 = SourceVerificationEngine.createLinkedClaim(
-      'پەرەسەندنی ڕێزمانی سۆرانی لە سەدەی بیستەمدا لە سلێمانی',
-      dedup[0],
-      'SOURCE-BASED'
-    );
-
-    const claim2 = SourceVerificationEngine.createLinkedClaim(
-      'بەراوردکاری ڕێزمانی شێوەزارە کوردییەکان لە گۆڤارە ئەکادیمییەکان',
-      dedup[0],
-      'SYNTHESIS'
-    );
-
-    const claim3 = SourceVerificationEngine.createLinkedClaim(
-      'پێشبینیی نوێی ئەی ئای بۆ گەشەی زمانی کوردی تا ساڵی 2050',
-      dedup[0],
-      'AI-INFERENCE'
-    );
-
-    return [claim1, claim2, claim3];
+    // Claims must come from an explicit user/research pipeline input.
+    // Do not manufacture claims merely because a source record exists.
+    return [];
   });
 
   researchGateAudit = computed<ResearchGateAuditResult>(() => {
@@ -99,7 +80,7 @@ export class SourceVerificationComponent {
       title: this.titleInput.trim(),
       author: this.authorInput.trim(),
       publicationYear: this.yearInput,
-      publisherOrJournal: 'چاپکراوی ئەکادیمی',
+      publisherOrJournal: '',
       pageNumber: this.pageInput.trim() || null,
       retrievedTextSnippet: this.snippetInput.trim()
     });
