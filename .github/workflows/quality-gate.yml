@@ -35,5 +35,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Academic integrity audit
+        run: npm run integrity:audit
+
       - name: Production build
         run: npm run build
