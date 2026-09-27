@@ -487,7 +487,10 @@ export class AppTemplateBridgeService {
     }, 1000);
   }
 
-  applyGeneratedTitle(title: string) {}
+  applyGeneratedTitle(title: string) {
+    const value = String(title || '').trim();
+    if (value) this.refineForm.patchValue({ title: value });
+  }
 
   copyTitleSummary(summary: string) {
     if (summary) {
@@ -497,7 +500,10 @@ export class AppTemplateBridgeService {
     }
   }
 
-  setPageSizeMode(mode: string) {}
+  setPageSizeMode(mode: string) {
+    const value = String(mode || '').trim();
+    if (value) this.refineForm.patchValue({ sizeMode: value });
+  }
   closeQuickPreview() { this.isQuickPreviewVisible.set(false); }
   applySourceSuggestion(s: any) {}
   toggleAcademicSection(sec: string) {}
@@ -510,10 +516,20 @@ export class AppTemplateBridgeService {
   onFileDrop(e: DragEvent, type: string) { e.preventDefault(); }
   onFileSelected(e: Event, type: string) {}
   onSendToSecondWindow() {}
-  activateAllAcademicRules() {}
-  deactivateAllAcademicRules() {}
-  triggerComparison(result: any) {}
-  searchLoadHistory(result: any) {}
+  activateAllAcademicRules() {
+    this.academicRules.update(rules => rules.map(rule => ({ ...rule, enabled: true })));
+  }
+  deactivateAllAcademicRules() {
+    this.academicRules.update(rules => rules.map(rule => ({ ...rule, enabled: false })));
+  }
+  triggerComparison(result: any) {
+    this.comparedResult.set(result || null);
+    this.isComparisonModeActive.set(!!result);
+  }
+  searchLoadHistory(result: any) {
+    if (!result) return;
+    this.globalSearchQuery.set(String(result.title || result.query || '').trim());
+  }
   onRegisterVerifiedSource() {}
   expandGlossaryTerm(entry: any) {
     if (!entry) return;
@@ -535,7 +551,17 @@ export class AppTemplateBridgeService {
       });
     }
   }
-  applyGlossaryRealtimeFix(orig: string, fix: string) {}
+  applyGlossaryRealtimeFix(orig: string, fix: string) {
+    const chapter = this.getChapterById(this.editorService.activeChapterId() || 0);
+    const from = String(orig || '');
+    const to = String(fix || '');
+    if (!chapter || !from || !to) return;
+    this.editorService.updateChapterContent(
+      chapter.id,
+      (chapter.content || '').split(from).join(to),
+      'چاککردنی ڕێنووسی زاراوە'
+    );
+  }
   injectAcademicSourceCitation(source: any, mode: 'inline' | 'bibliography' = 'inline') {}
   toggleFaq(index: number) {
     this.expandedFaqIndex.set(this.expandedFaqIndex() === index ? null : index);
