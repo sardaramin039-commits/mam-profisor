@@ -15,6 +15,11 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
   router.post('/hybrid-retrieve', async (req, res) => {
     try {
       const { query, documentId, verifiedOnly = false, limit = 5 } = req.body || {};
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
+        return;
+      }
 
       if (!query || typeof query !== 'string' || query.trim().length < 2) {
         res.status(400).json({ error: 'داواکاری گەڕان (query) پێویستە.' });
@@ -22,7 +27,7 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
       }
 
       const safeLimit = Math.max(1, Math.min(20, Number.isFinite(Number(limit)) ? Math.round(Number(limit)) : 5));
-      const results = await vectorStoreService.searchSimilarDocuments(query.trim(), safeLimit);
+      const results = await vectorStoreService.searchSimilarDocuments(query.trim(), userId, safeLimit);
 
       const candidates = results
         .filter(result => !verifiedOnly || result.verificationStatus === 'verified')
