@@ -5,7 +5,7 @@ You are the Antigravity Agent powered by Gemini. To prevent any network, process
 ---
 
 ## 1. Zero-Toleration for Full-File Rewrites (No Bulk Overwrites)
-* **CONTEXT**: The file `/src/app/app.ts` is over 2,400 lines (~102KB) and `/src/server.ts` is over 1,700 lines (~102KB). Replacing these entire files in a single session is a high-risk operation that will trigger timeouts, network disconnection midway, or token exhaustion, immediately wiping out the user's application.
+* **CONTEXT**: The current repository has `/src/app/app.ts` at roughly 694 lines, `/src/app/app.html` at roughly 7,247 lines, and `/src/server.ts` at roughly 129 lines. `app.ts` and especially `app.html` require modularization, but whole-file rewrites remain forbidden because they are high-risk and can delete active features.
 * **MANDATE**: You are absolutely FORBIDDEN from generating or overwriting whole files or making changes exceeding **1,000,000 lines** in a single block.
 * **ACTION PATTERN**: Split all changes into highly targeted `edit_file` blocks. Keep your targeted replace boundaries extremely small and precise.
 
