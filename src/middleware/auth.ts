@@ -6,6 +6,28 @@ export interface AuthRequest extends Request {
   user?: DecodedIdToken;
 }
 
+function isDevPreviewEnabled(): boolean {
+  return (
+    process.env['NODE_ENV'] === 'development' &&
+    process.env['ALLOW_DEV_PREVIEW'] === 'true'
+  );
+}
+
+function extractBearerToken(req: Request): string | null {
+  const header = req.headers.authorization;
+  if (!header) return null;
+
+  const match = /^Bearer\s+(.+)$/i.exec(header.trim());
+  return match?.[1]?.trim() || null;
+}
+
+function applyDevPreviewIdentity(req: AuthRequest): void {
+  req.user = {
+    uid: 'dev-guest-user',
+    email: 'dev@aistudio.local',
+  } as DecodedIdToken;
+}
+
 export const requireAuth = async (
   req: AuthRequest,
   res: Response,
@@ -16,50 +38,55 @@ export const requireAuth = async (
     return;
   }
 
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // In dev / preview mode without user session, allow session preview header or return 401
-    if (process.env['NODE_ENV'] !== 'production' && req.headers['x-dev-guest-token'] === 'allow-dev-preview') {
-      req.user = { uid: 'dev-guest-user', email: 'dev@aistudio.local' } as any;
+  const token = extractBearerToken(req);
+
+  if (!token) {
+    if (isDevPreviewEnabled() && req.headers['x-dev-guest-token'] === 'allow-dev-preview') {
+      applyDevPreviewIdentity(req);
       next();
       return;
     }
-    res.status(401).json({ error: 'Unauthorized: Missing or invalid authorization token' });
+
+    res.status(401).json({
+      success: false,
+      error: 'Unauthorized: Missing or invalid authorization token',
+    });
     return;
   }
 
-  const token = authHeader.split('Bearer ')[1];
   try {
     const decodedToken = await adminAuth.verifyIdToken(token);
     req.user = decodedToken;
     next();
   } catch (error) {
-    if (process.env['NODE_ENV'] !== 'production' && (token === 'dev-token' || token === 'allow-dev-preview')) {
-      req.user = { uid: 'dev-guest-user', email: 'dev@aistudio.local' } as any;
+    if (isDevPreviewEnabled() && token === 'allow-dev-preview') {
+      applyDevPreviewIdentity(req);
       next();
       return;
     }
+
     console.error('Error verifying Firebase ID token:', error);
-    res.status(401).json({ error: 'Unauthorized: Invalid token signature or expired session' });
-    return;
+    res.status(401).json({
+      success: false,
+      error: 'Unauthorized: Invalid token signature or expired session',
+    });
   }
 };
 
 export const optionalAuth = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split('Bearer ')[1];
+  const token = extractBearerToken(req);
+
+  if (token) {
     try {
-      const decodedToken = await adminAuth.verifyIdToken(token);
-      req.user = decodedToken;
+      req.user = await adminAuth.verifyIdToken(token);
     } catch {
-      // Ignore token decode errors for optional auth
+      // Optional authentication deliberately continues as anonymous.
     }
   }
+
   next();
 };
-
