@@ -44,8 +44,8 @@ class ApiConfigService {
           hasKey: Boolean(key && key.trim() !== ''),
           maskedKey: this.maskKey(key),
           baseUrl,
-          defaultModel: 'gpt-4o',
-          supportedModels: ['gpt-4o', 'gpt-4o-mini', 'o1-preview', 'gpt-3.5-turbo']
+          defaultModel: process.env['OPENAI_MODEL']?.trim() || 'gpt-5.6-luna',
+          supportedModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol']
         };
       }
       case 'claude': {
@@ -58,8 +58,8 @@ class ApiConfigService {
           hasKey: Boolean(key && key.trim() !== ''),
           maskedKey: this.maskKey(key),
           baseUrl,
-          defaultModel: 'claude-3-5-sonnet-20241022',
-          supportedModels: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229']
+          defaultModel: process.env['ANTHROPIC_MODEL']?.trim() || 'claude-sonnet-4-6',
+          supportedModels: ['claude-sonnet-4-6', 'claude-sonnet-5', 'claude-opus-5', 'claude-opus-4-8', 'claude-haiku-4-5-20251001']
         };
       }
       case 'perplexity': {
