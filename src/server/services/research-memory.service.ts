@@ -53,7 +53,22 @@ class ResearchMemoryService {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+    const existingDraft = item.type === 'draft_chapter'
+      ? project.memoryItems.find(memory => memory.type === 'draft_chapter' && memory.tags.includes('workspace_auto_save'))
+      : undefined;
+
+    if (existingDraft) {
+      existingDraft.content = item.content;
+      existingDraft.tags = item.tags;
+      existingDraft.metadata = item.metadata;
+      existingDraft.updatedAt = newItem.updatedAt;
+      return existingDraft;
+    }
+
     project.memoryItems.push(newItem);
+    if (project.memoryItems.length > 500) {
+      project.memoryItems.splice(0, project.memoryItems.length - 500);
+    }
     project.lastUpdated = new Date().toISOString();
     
     // Update stats
