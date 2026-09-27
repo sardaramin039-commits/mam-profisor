@@ -14,6 +14,17 @@ interface OpenAiOrPerplexityResponse {
   }[];
 }
 
+interface OpenAiResponsesResponse {
+  output_text?: string;
+  output?: {
+    type?: string;
+    content?: {
+      type?: string;
+      text?: string;
+    }[];
+  }[];
+}
+
 interface ClaudeResponse {
   content?: {
     text?: string;
@@ -89,7 +100,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
       let outputText = '';
 
       // Perplexity AI provider execution
-      if (provider === 'perplexity' || provider === 'pplx' || (provider === 'auto' && (process.env['PERPLEXITY_API_KEY'] || req.body?.perplexityApiKey))) {
+      if (provider === 'perplexity' || provider === 'pplx' || (provider === 'auto' && process.env['PERPLEXITY_API_KEY'])) {
         apiConfigService.validateProvider('perplexity');
         const apiKey = apiConfigService.getApiKey('perplexity')!;
         const config = apiConfigService.getProviderConfig('perplexity');
@@ -125,7 +136,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         const config = apiConfigService.getProviderConfig('openai');
         const modelName = resolveProviderModel('openai', options?.model);
 
-        const openAiRes = await fetchWithTimeout(`${config.baseUrl}/chat/completions`, {
+        const openAiRes = await fetchWithTimeout(`${config.baseUrl}/responses`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -133,21 +144,25 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
           },
           body: JSON.stringify({
             model: modelName,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt }
-            ],
-            temperature: 0.3
+            instructions: systemPrompt,
+            input: userPrompt,
+            max_output_tokens: 4096
           })
         });
 
         if (!openAiRes.ok) {
           const errText = await openAiRes.text();
-          throw new Error(`پەیوەندی بە OpenAI سەرکەوتوو نەبوو (${openAiRes.status}): ${errText}`);
+          throw new Error(`پەیوەندی بە OpenAI Responses API سەرکەوتوو نەبوو (${openAiRes.status}): ${errText}`);
         }
 
-        const openAiData = (await openAiRes.json()) as OpenAiOrPerplexityResponse;
-        outputText = openAiData.choices?.[0]?.message?.content || 'هیچ وەڵامێک لە OpenAI سەرچاوە نەگرت.';
+        const openAiData = (await openAiRes.json()) as OpenAiResponsesResponse;
+        outputText = openAiData.output_text
+          || openAiData.output
+            ?.flatMap(item => item.content || [])
+            .filter(item => item.type === 'output_text' && typeof item.text === 'string')
+            .map(item => item.text || '')
+            .join('')
+          || 'هیچ وەڵامێک لە OpenAI وەرنەگیرا.';
 
       // Anthropic / Claude provider execution
       } else if (provider === 'claude' || provider === 'anthropic' || (provider === 'auto' && (process.env['ANTHROPIC_API_KEY'] || process.env['CLAUDE_API_KEY']) && !process.env['GEMINI_API_KEY'])) {
@@ -169,8 +184,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
             messages: [
               { role: 'user', content: userPrompt }
             ],
-            max_tokens: 4096,
-            temperature: 0.3
+            max_tokens: 4096
           })
         });
 
