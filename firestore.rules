@@ -13,7 +13,13 @@ service cloud.firestore {
     }
 
     function isVerifiedUser() {
-      return isSignedIn();
+      return isSignedIn()
+        && request.auth.token.email_verified == true;
+    }
+
+    function isAdminOrProfessor() {
+      return isSignedIn()
+        && (request.auth.token.role == 'admin' || request.auth.token.role == 'professor');
     }
 
     function isValidId(id) {
@@ -86,22 +92,43 @@ service cloud.firestore {
       allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(reportId) && request.resource.data.userId == request.auth.uid;
     }
 
-    // Match peer_submissions collection
+    // Peer submissions are private to their author, with reviewer/admin access
+    // handled through explicit claims. Do not expose the whole collection to users.
     match /peer_submissions/{submissionId} {
-      allow get: if isVerifiedUser() && isValidId(submissionId);
-      allow list: if isVerifiedUser();
-      allow create: if isVerifiedUser() && isValidId(submissionId) && isValidSubmission(request.resource.data);
-      allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(submissionId);
-      allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(submissionId) && isValidSubmission(request.resource.data);
+      allow get: if isVerifiedUser()
+        && isValidId(submissionId)
+        && (resource.data.userId == request.auth.uid || isAdminOrProfessor());
+      allow list: if isVerifiedUser()
+        && (resource.data.userId == request.auth.uid || isAdminOrProfessor());
+      allow create: if isVerifiedUser()
+        && isValidId(submissionId)
+        && isValidSubmission(request.resource.data);
+      allow delete: if isVerifiedUser()
+        && resource.data.userId == request.auth.uid
+        && isValidId(submissionId);
+      allow update: if isVerifiedUser()
+        && resource.data.userId == request.auth.uid
+        && isValidId(submissionId)
+        && isValidSubmission(request.resource.data);
     }
 
-    // Match peer_reviews collection
+    // Peer reviews are private to the reviewer and visible to the submission owner.
     match /peer_reviews/{reviewId} {
-      allow get: if isVerifiedUser() && isValidId(reviewId);
-      allow list: if isVerifiedUser();
-      allow create: if isVerifiedUser() && isValidId(reviewId) && isValidReview(request.resource.data);
-      allow delete: if isVerifiedUser() && resource.data.reviewerId == request.auth.uid && isValidId(reviewId);
-      allow update: if isVerifiedUser() && resource.data.reviewerId == request.auth.uid && isValidId(reviewId) && isValidReview(request.resource.data);
+      allow get: if isVerifiedUser()
+        && isValidId(reviewId)
+        && (resource.data.reviewerId == request.auth.uid || isAdminOrProfessor());
+      allow list: if isVerifiedUser()
+        && (resource.data.reviewerId == request.auth.uid || isAdminOrProfessor());
+      allow create: if isVerifiedUser()
+        && isValidId(reviewId)
+        && isValidReview(request.resource.data);
+      allow delete: if isVerifiedUser()
+        && resource.data.reviewerId == request.auth.uid
+        && isValidId(reviewId);
+      allow update: if isVerifiedUser()
+        && resource.data.reviewerId == request.auth.uid
+        && isValidId(reviewId)
+        && isValidReview(request.resource.data);
     }
 
     // Match sources collection: sources are private to their owner.
