@@ -48,10 +48,10 @@ export function isTransientError(error: unknown): boolean {
     lowerMsg.includes('429') ||
     lowerMsg.includes('unavailable') ||
     lowerMsg.includes('resource_exhausted') ||
-    lowerMsg.includes('limit') ||
+    lowerMsg.includes('rate limit') ||
     lowerMsg.includes('overloaded') ||
-    lowerMsg.includes('demand') ||
-    lowerMsg.includes('temporary')
+    lowerMsg.includes('high demand') ||
+    lowerMsg.includes('temporarily unavailable')
   );
 }
 
