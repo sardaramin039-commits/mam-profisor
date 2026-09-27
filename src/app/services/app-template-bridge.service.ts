@@ -365,7 +365,6 @@ export class AppTemplateBridgeService {
     if (!chapter) return;
     const value = this.refineForm.value;
     this.editorService.activeChapterId.set(id);
-    this.isWritingProgressForChapter(id, true);
     this.api.post<any>('/api/generate_chapter', {
       title: value.title,
       discipline: value.discipline,
@@ -417,8 +416,6 @@ export class AppTemplateBridgeService {
       );
     }).catch(error => {
       console.error('Single chapter generation failed:', error);
-    }).finally(() => {
-      this.isWritingProgressForChapter(id, false);
     });
   }
 
