@@ -1,0 +1,429 @@
+<div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-5 font-sans text-right text-slate-100" dir="rtl">
+  
+  <!-- Top Title & Controls Header -->
+  <div class="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold shadow-md">
+        <mat-icon class="!text-xl">shield</mat-icon>
+      </div>
+      <div>
+        <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2 font-serif">
+          سیستەمی توندی پشتڕاستکردنەوە و ڕیزبەندی سەرچاوەکان (Research Integrity Suite)
+          <span class="text-[9.5px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono font-bold">
+            Anti-Hallucination Active
+          </span>
+        </h3>
+        <p class="text-[10.5px] text-slate-400 font-serif">
+          پەیڕەوکردنی ڕێکاری زانستی: Search ➔ Retrieve ➔ Read ➔ Verify ➔ Cite
+        </p>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      (click)="copyAuditReport()"
+      class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+      <mat-icon class="!text-xs text-amber-400">content_copy</mat-icon>
+      <span>{{ copiedReport() ? 'کۆپی کرا!' : 'کۆپیکردنی ڕاپۆرتی Audit' }}</span>
+    </button>
+  </div>
+
+  <!-- Navigation Tabs for the Subsystems -->
+  <div class="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-800 text-xs font-serif">
+    <button
+      type="button"
+      (click)="activeTab.set('INTEGRITY_DASHBOARD')"
+      [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
+        (activeTab() === 'INTEGRITY_DASHBOARD' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
+      <mat-icon class="!text-sm text-emerald-300">analytics</mat-icon>
+      <span>📊 Thesis Integrity Dashboard</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('RERANKING')"
+      [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
+        (activeTab() === 'RERANKING' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
+      <mat-icon class="!text-sm text-indigo-300">swap_vert</mat-icon>
+      <span>🎯 Cross-Encoder Reranking</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('VERIFICATION')"
+      [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
+        (activeTab() === 'VERIFICATION' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
+      <mat-icon class="!text-sm">fact_check</mat-icon>
+      <span>1. Workflow & Verification</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('RANKING')"
+      [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
+        (activeTab() === 'RANKING' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
+      <mat-icon class="!text-sm">leaderboard</mat-icon>
+      <span>2. Source Ranking (Tiers)</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('DEDUPLICATION')"
+      [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
+        (activeTab() === 'DEDUPLICATION' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
+      <mat-icon class="!text-sm">filter_alt</mat-icon>
+      <span>3. Deduplication (Canonical)</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('EVIDENCE_LINK')"
+      [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
+        (activeTab() === 'EVIDENCE_LINK' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
+      <mat-icon class="!text-sm">link</mat-icon>
+      <span>4. Evidence Linking & AI Label</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="activeTab.set('RESEARCH_GATE')"
+      [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
+        (activeTab() === 'RESEARCH_GATE' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
+      <mat-icon class="!text-sm">gavel</mat-icon>
+      <span>5. Pre-Writing Research Gate</span>
+    </button>
+  </div>
+
+  <!-- TAB: INTEGRITY DASHBOARD -->
+  @if (activeTab() === 'INTEGRITY_DASHBOARD') {
+    <app-integrity-dashboard></app-integrity-dashboard>
+  }
+
+  <!-- TAB: CROSS-ENCODER RERANKING -->
+  @if (activeTab() === 'RERANKING') {
+    <div class="space-y-4 font-serif text-xs">
+      <div class="p-4 bg-indigo-950/30 border border-indigo-800/60 rounded-xl space-y-2">
+        <h4 class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+          <mat-icon class="!text-sm text-indigo-400">psychology</mat-icon>
+          Cross-Encoder Reranking Engine (HybridRagClientService):
+        </h4>
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          ئەم ئامرازە بە شێوازی Cross-Encoder هەڵسەنگاندنی ڕاستەوخۆ بۆ پەیوەندی بەڵگە ڕاکێشراوەکان بەرامبەر بانگەشە ئەکادیمییە دیاریکراوەکە (Claim) دەکات تاوەکو وردیی ڕیزبەندی سەرچاوەکان بەرز بکاتەوە.
+        </p>
+      </div>
+
+      <div class="p-4 bg-slate-800/80 border border-slate-700/80 rounded-xl space-y-3">
+        <label class="block text-xs font-bold text-slate-200">بانگەشەی ئەکادیمی (Target Academic Claim for Reranking):</label>
+        <div class="flex items-center gap-2">
+          <input
+            type="text"
+            [ngModel]="rerankQuery()"
+            (ngModelChange)="rerankQuery.set($event)"
+            placeholder="بانگەشەکە لێرەدا بنووسە..."
+            class="flex-1 p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 text-xs focus:outline-none focus:border-indigo-500 font-serif" />
+          <button
+            type="button"
+            (click)="executeCrossEncoderRerank()"
+            class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-md">
+            <mat-icon class="!text-sm">swap_vert</mat-icon>
+            <span>داوای Rerank بکه</span>
+          </button>
+        </div>
+      </div>
+
+      @if (rerankedResults().length > 0) {
+        <div class="space-y-3 pt-2">
+          <h4 class="font-bold text-slate-200 flex items-center gap-1.5">
+            <mat-icon class="!text-sm text-emerald-400">task_alt</mat-icon>
+            ئەنجامی ڕیزبەندی بەپێی Cross-Encoder Score:
+          </h4>
+
+          @for (item of rerankedResults(); track item.chunkId) {
+            <div class="p-4 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
+              <div class="flex items-center justify-between border-b pb-2 border-white/10 flex-wrap gap-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-full bg-indigo-600 text-white font-extrabold font-mono flex items-center justify-center text-[10px]">
+                    #{{ item.rankPosition }}
+                  </span>
+                  <span class="font-bold text-slate-100 text-xs">{{ item.sourceTitle }}</span>
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] border border-emerald-500/30">
+                    {{ item.verificationStatus }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 font-mono text-[10.5px]">
+                  <span class="text-indigo-400 font-bold bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">
+                    Cross-Encoder Score: {{ item.crossEncoderScore }}
+                  </span>
+                  <span class="text-slate-400">Lexical: {{ item.lexicalMatchRatio }}</span>
+                </div>
+              </div>
+
+              <p class="text-[11.5px] text-slate-300 leading-relaxed bg-slate-900/80 p-2.5 rounded border border-slate-800">
+                "{{ item.text }}"
+              </p>
+
+              @if (item.provenance) {
+                <div class="text-[10.5px] text-slate-400 flex items-center gap-3">
+                  <span>نووسەر: {{ item.provenance.author || 'نادیار' }}</span>
+                  <span>ساڵ: {{ item.provenance.year || 'N/A' }}</span>
+                  <span>لاپەڕە: {{ item.provenance.pageNumber || 'N/A' }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB 1: Workflow & Verification -->
+  @if (activeTab() === 'VERIFICATION') {
+    <div class="space-y-4">
+      <!-- 5-Step Pipeline Visualizer Ribbon -->
+      <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl grid grid-cols-5 gap-1 text-center text-[10.5px] font-bold font-serif">
+        <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
+          <span class="text-indigo-400 block font-mono">1. Search</span>
+          <span class="text-slate-300">گەڕان لە گەنجینە</span>
+        </div>
+        <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
+          <span class="text-indigo-400 block font-mono">2. Retrieve</span>
+          <span class="text-slate-300">دۆزینەوەی دەق</span>
+        </div>
+        <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
+          <span class="text-indigo-400 block font-mono">3. Read</span>
+          <span class="text-slate-300">خوێندنەوەی بەڵگە</span>
+        </div>
+        <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
+          <span class="text-amber-400 block font-mono">4. Verify</span>
+          <span class="text-slate-300">تەبایی لۆژیکی</span>
+        </div>
+        <div class="p-2 rounded-lg bg-emerald-950/60 border border-emerald-800/80 space-y-0.5">
+          <span class="text-emerald-400 block font-mono">5. Cite</span>
+          <span class="text-emerald-300">Citationی کۆتایی</span>
+        </div>
+      </div>
+
+      <!-- Quick Tester Form -->
+      <div class="p-4 bg-slate-800/50 border border-slate-700/80 rounded-xl space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-200 font-serif flex items-center gap-1.5">
+            <mat-icon class="!text-sm text-indigo-400">add_task</mat-icon>
+            تاقیکردنەوەی پشتڕاستکردنەوە بۆ سەرچاوەیەکی نوێ (Audit Test):
+          </span>
+          <span class="text-[10px] text-slate-400 font-serif">💡 هیچی خەیاڵی (Hallucinated) وەرناگیرێت</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="block text-[10.5px] font-bold text-slate-300 mb-1">بانگەشە / داواکاری توێژینەوە (Research Claim):</label>
+            <input
+              type="text"
+              [(ngModel)]="claimInput"
+              placeholder="بۆ نموونە: زمانی سۆرانی ڕێزمانی ستاندارد لە سەدەی بیستەم وەرگرتووە..."
+              class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-serif" />
+          </div>
+
+          <div>
+            <label class="block text-[10.5px] font-bold text-slate-300 mb-1">ناوی کتێب / گۆڤار (Title):</label>
+            <input
+              type="text"
+              [(ngModel)]="titleInput"
+              placeholder="ڕێزمانی سۆرانیی ئەکادیمی (Google Books)"
+              class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-serif" />
+          </div>
+
+          <div>
+            <label class="block text-[10.5px] font-bold text-slate-300 mb-1">نووسەر (Author):</label>
+            <input
+              type="text"
+              [(ngModel)]="authorInput"
+              placeholder="د. ئەحمەد ڕەزا"
+              class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-serif" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10.5px] font-bold text-slate-300 mb-1">ساڵی چاپ:</label>
+              <input
+                type="number"
+                [(ngModel)]="yearInput"
+                placeholder="2022"
+                class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-mono" />
+            </div>
+            <div>
+              <label class="block text-[10.5px] font-bold text-slate-300 mb-1">ژمارەی لاپەڕە (تەنها ئەگەر تەواوە):</label>
+              <input
+                type="text"
+                [(ngModel)]="pageInput"
+                placeholder="ل 45"
+                class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-mono" />
+            </div>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-[10.5px] font-bold text-slate-300 mb-1">
+              دەقی ڕاستەقینەی بەڵگە لە کتێبەکەوە (Exact Evidence Snippet - mandatory for VERIFIED):
+            </label>
+            <textarea
+              [(ngModel)]="snippetInput"
+              rows="2"
+              placeholder="دەقی ڕاستەقینە کە لە سەرچاوەکەوە خوێندراوەتەوە لێرەدا بنووسە..."
+              class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-serif leading-relaxed"></textarea>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="runVerificationTest()"
+            [disabled]="!claimInput.trim()"
+            class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-md">
+            <mat-icon class="!text-sm">verified</mat-icon>
+            <span>ئەنجامدانی پشتڕاستکردنەوە لە لایەن سیستەمەکەوە</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Records List Categorized -->
+      <div class="space-y-3">
+        @for (item of filteredRecords(); track item.id) {
+          <div [class]="'p-4 rounded-xl border space-y-2 transition-all font-serif text-xs ' + 
+            (item.verificationStatus === 'VERIFIED' ? 'bg-emerald-950/20 border-emerald-800/80' : 
+             item.verificationStatus === 'PARTIALLY_VERIFIED' ? 'bg-amber-950/20 border-amber-800/80' : 'bg-rose-950/20 border-rose-800/80')">
+            
+            <div class="flex items-center justify-between border-b pb-2 border-white/10">
+              <div class="flex items-center gap-2">
+                @if (item.verificationStatus === 'VERIFIED') {
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[10px] border border-emerald-500/40">
+                    🟢 VERIFIED (پشتڕاستکراوەتەوە)
+                  </span>
+                } @else if (item.verificationStatus === 'PARTIALLY_VERIFIED') {
+                  <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold text-[10px] border border-amber-500/40">
+                    🟡 PARTIALLY VERIFIED (بەشێکی)
+                  </span>
+                } @else {
+                  <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono font-bold text-[10px] border border-rose-500/40">
+                    🔴 UNVERIFIED (پشتڕاستنەکراوە)
+                  </span>
+                }
+                <span class="text-[10px] text-indigo-300 bg-indigo-950/80 border border-indigo-800 px-2 py-0.5 rounded font-mono">
+                  {{ item.tier }} | Score: {{ item.reliabilityScore }}/100
+                </span>
+              </div>
+
+              @if (item.verificationStatus === 'VERIFIED') {
+                <span class="text-[10.5px] text-emerald-400 font-bold flex items-center gap-1">
+                  <mat-icon class="!text-xs">check_circle</mat-icon>
+                  ڕێگەپێدراو بۆ Citationی کۆتایی
+                </span>
+              } @else {
+                <span class="text-[10.5px] text-rose-400 font-bold flex items-center gap-1">
+                  <mat-icon class="!text-xs">block</mat-icon>
+                  Citation قەدەغەیە
+                </span>
+              }
+            </div>
+
+            <div>
+              <h4 class="font-bold text-slate-100 text-sm">{{ item.title }}</h4>
+              <p class="text-slate-400 text-[11px] mt-0.5">
+                نووسەر: {{ item.author }} {{ item.publicationYear ? '(' + item.publicationYear + ')' : '' }} — {{ item.publisherOrJournal }}
+                @if (item.pageNumber) {
+                  <strong class="text-amber-300 font-mono">| {{ item.pageNumber }}</strong>
+                }
+              </p>
+            </div>
+
+            <div class="p-2.5 bg-black/40 border border-slate-800 rounded-lg text-slate-300 text-[11px] leading-relaxed">
+              <strong class="text-slate-400 text-[10px] block mb-0.5">بەڵگەی خوێندراوەوە (Exact Evidence Snippet):</strong>
+              "{{ item.exactEvidenceSnippet }}"
+            </div>
+
+            @if (item.verificationNotes) {
+              <p class="text-[10.5px] text-slate-400 italic">
+                💬 تێبینی: {{ item.verificationNotes }}
+              </p>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- TAB 2: Source Ranking (Tiers) -->
+  @if (activeTab() === 'RANKING') {
+    <div class="space-y-4">
+      <div class="p-4 bg-indigo-950/30 border border-indigo-800/60 rounded-xl space-y-2">
+        <h4 class="text-xs font-bold text-indigo-300 flex items-center gap-1.5 font-serif">
+          <mat-icon class="!text-sm text-indigo-400">workspace_premium</mat-icon>
+          سیستەمی ڕیزبەندی سەرچاوەکان (Source Tier Ranking Hierarchy):
+        </h4>
+        <p class="text-[11px] text-slate-300 leading-relaxed font-serif">
+          سیستەم هەمیشە سەرچاوەکانی Tier 1 پێش Tier 2 و Tier 2 پێش Tier 3 هەڵدەبژێرێت. سەرچاوەی Tier 3 بەتەنها بۆ ئیدیعای ئەکادیمی بەکارناهێنرێت.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 font-serif">
+        <div class="p-3.5 bg-emerald-950/30 border border-emerald-800/80 rounded-xl space-y-2">
+          <span class="text-xs font-bold text-emerald-300 bg-emerald-500/20 px-2.5 py-0.5 rounded border border-emerald-500/40 inline-block font-mono">
+            Tier 1 — Academic / Primary
+          </span>
+          <p class="text-[10.5px] text-slate-300">Google Books, OpenAlex, Crossref, Semantic Scholar, DOAJ, PubMed, Library of Congress, WorldCat</p>
+          <div class="text-[10px] text-emerald-400 font-mono font-bold">Reliability Score: 85-100 / 100</div>
+        </div>
+
+        <div class="p-3.5 bg-amber-950/30 border border-amber-800/80 rounded-xl space-y-2">
+          <span class="text-xs font-bold text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded border border-amber-500/40 inline-block font-mono">
+            Tier 2 — Digital Libraries / Archives
+          </span>
+          <p class="text-[10.5px] text-slate-300">Internet Archive, Open Library, Europeana, University repositories, Digital archives</p>
+          <div class="text-[10px] text-amber-400 font-mono font-bold">Reliability Score: 70-84 / 100</div>
+        </div>
+
+        <div class="p-3.5 bg-slate-800/60 border border-slate-700/80 rounded-xl space-y-2">
+          <span class="text-xs font-bold text-slate-300 bg-slate-700 px-2.5 py-0.5 rounded border border-slate-600 inline-block font-mono">
+            Tier 3 — General Web Sources
+          </span>
+          <p class="text-[10.5px] text-slate-300">Websites, Blogs, General online pages (Used strictly as secondary fallback)</p>
+          <div class="text-[10px] text-slate-400 font-mono font-bold">Reliability Score: 40-69 / 100</div>
+        </div>
+      </div>
+
+      <!-- Ranked List View -->
+      <div class="space-y-2 pt-2">
+        <h4 class="text-xs font-bold text-slate-200 font-serif">ڕیزبەندی سەرچاوە دۆزراوەکان بەپێی باوەڕپێکراوی:</h4>
+        @for (src of deduplicatedSources(); track src.id) {
+          <div class="p-3 bg-slate-800/80 border border-slate-700/80 rounded-xl flex items-center justify-between gap-3 text-xs font-serif">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-100">{{ src.title }}</span>
+                <span class="text-[10px] text-indigo-300 bg-indigo-950 border border-indigo-800 px-2 py-0.5 rounded font-mono">
+                  {{ src.tier }} ({{ src.tierName }})
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-400">{{ src.author }} ({{ src.publicationYear || 'نادیار' }}) — {{ src.publisherOrJournal }}</p>
+            </div>
+
+            <div class="text-left font-mono">
+              <span class="text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded border border-emerald-800/80 block">
+                Score: {{ src.reliabilityScore }}/100
+              </span>
+              <span class="text-[10px] text-slate-400 mt-0.5 block">Status: {{ src.verificationStatus }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- TABS 3, 4, 5: Deduplication, Evidence Linking, Research Gate -->
+  <app-source-evidence-tabs
+    [activeTab]="activeTab()"
+    [deduplicatedSources]="deduplicatedSources()"
+    [linkedClaims]="linkedClaims()"
+    [researchGateAudit]="researchGateAudit()"
+    [forceWriteAnyway]="forceWriteAnyway()"
+    (forceWriteAnywayChange)="forceWriteAnyway.set($event)">
+  </app-source-evidence-tabs>
+
+</div>

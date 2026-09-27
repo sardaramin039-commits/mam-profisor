@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable, hardened global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn();
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    function isValidRefinement(data) {
+      return data.userId is string 
+        && data.userId == request.auth.uid
+        && (data.get('title', null) == null || data.title is string)
+        && (data.get('discipline', null) == null || data.discipline is string)
+        && (data.get('academicLevel', null) == null || data.academicLevel is string)
+        && (data.get('pages', null) == null || data.pages is number || data.pages is string)
+        && (data.get('chapters', null) == null || data.chapters is list);
+    }
+
+    function isValidSubmission(data) {
+      return data.userId is string
+        && data.userId == request.auth.uid
+        && data.title is string && data.title.size() <= 200
+        && data.content is string && data.content.size() <= 200000;
+    }
+
+    function isValidReview(data) {
+      return data.submissionId is string
+        && data.reviewerId is string
+        && data.reviewerId == request.auth.uid
+        && data.isAnonymous is bool
+        && data.clarityScore is number && data.clarityScore >= 1 && data.clarityScore <= 5
+        && data.argumentationScore is number && data.argumentationScore >= 1 && data.argumentationScore <= 5
+        && data.academicStandardsScore is number && data.academicStandardsScore >= 1 && data.academicStandardsScore <= 5
+        && data.generalComments is string && data.generalComments.size() <= 10000;
+    }
+
+    function isValidSource(data) {
+      return data.userId is string
+        && data.userId == request.auth.uid
+        && data.title is string && data.title.size() >= 5
+        && data.author is string && data.author.size() >= 3
+        && data.year is int && data.year >= 1000 && data.year <= 2027
+        && data.publisher is string
+        && data.sourceType in ['book', 'journal', 'thesis', 'manuscript']
+        && data.isVerified == true;
+    }
+
+    function isValidLibraryIndex(data) {
+      return data.userId is string
+        && data.userId == request.auth.uid
+        && data.title is string && data.title.size() <= 200
+        && data.content is string && data.content.size() <= 200000
+        && data.embedding is list
+        && data.processedAt is string;
+    }
+
+    // Match refinements collection
+    match /refinements/{refinementId} {
+      allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(refinementId);
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(refinementId) && isValidRefinement(request.resource.data);
+      allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(refinementId);
+      allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(refinementId) && isValidRefinement(request.resource.data);
+    }
+
+    // Match elite_reports collection
+    match /elite_reports/{reportId} {
+      allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(reportId);
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(reportId) && request.resource.data.userId == request.auth.uid;
+      allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(reportId);
+      allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(reportId) && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Match peer_submissions collection
+    match /peer_submissions/{submissionId} {
+      allow get: if isVerifiedUser() && isValidId(submissionId);
+      allow list: if isVerifiedUser();
+      allow create: if isVerifiedUser() && isValidId(submissionId) && isValidSubmission(request.resource.data);
+      allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(submissionId);
+      allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(submissionId) && isValidSubmission(request.resource.data);
+    }
+
+    // Match peer_reviews collection
+    match /peer_reviews/{reviewId} {
+      allow get: if isVerifiedUser() && isValidId(reviewId);
+      allow list: if isVerifiedUser();
+      allow create: if isVerifiedUser() && isValidId(reviewId) && isValidReview(request.resource.data);
+      allow delete: if isVerifiedUser() && resource.data.reviewerId == request.auth.uid && isValidId(reviewId);
+      allow update: if isVerifiedUser() && resource.data.reviewerId == request.auth.uid && isValidId(reviewId) && isValidReview(request.resource.data);
+    }
+
+    // Match sources collection
+    match /sources/{sourceId} {
+      allow get: if isVerifiedUser() && isValidId(sourceId);
+      allow list: if isVerifiedUser();
+      allow create: if isVerifiedUser() && isValidId(sourceId) && isValidSource(request.resource.data);
+      allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId);
+      allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId) && isValidSource(request.resource.data);
+    }
+
+    // Match library_index collection
+    match /library_index/{indexId} {
+      allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(indexId);
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(indexId) && isValidLibraryIndex(request.resource.data);
+      allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(indexId);
+      allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(indexId) && isValidLibraryIndex(request.resource.data);
+    }
+  }
+}

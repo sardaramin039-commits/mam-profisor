@@ -1,0 +1,11 @@
+{
+  "name": "کتێبخانەی دیجیتاڵیی کوردی",
+  "description": "Enterprise Platform Edition (1-160) - A Harvard-standard Kurdish digital library and AI research suite indexing 40 archives with 160 dedicated AI research and platform tools.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

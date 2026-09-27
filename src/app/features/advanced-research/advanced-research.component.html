@@ -1,0 +1,848 @@
+<div class="flex flex-col h-full bg-slate-950 text-slate-100 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden dir-rtl">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-slate-900/90 border-b border-slate-800 gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-cyan-500/20">
+        <mat-icon class="text-2xl">auto_awesome</mat-icon>
+      </div>
+      <div>
+        <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          تەکنەلۆژیای فرە-ئەجێنت و گەڕانی جیهانی
+          <span class="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800/80 px-2 py-0.5 rounded-full">v3.0 Advanced</span>
+        </h2>
+        <p class="text-xs text-slate-400">Multi-Agent, Knowledge Graph, Fact Checker, PubMed & Semantic Scholar APIs</p>
+      </div>
+    </div>
+
+    <!-- Professor Mode Selector -->
+    <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+      <span class="text-xs font-semibold text-cyan-400 px-2 flex items-center gap-1">
+        <mat-icon class="text-sm">school</mat-icon>
+        Professor Mode:
+      </span>
+      @for (mode of professorModes; track mode.level) {
+        <button
+          (click)="multiAgent.setProfessorMode(mode.level)"
+          [class]="multiAgent.professorMode() === mode.level ? mode.activeClass : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'"
+          class="px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1"
+        >
+          <span>{{ mode.icon }}</span>
+          <span>{{ mode.level }}</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="flex items-center border-b border-slate-800 bg-slate-900/50 px-4 gap-2 overflow-x-auto">
+    <button
+      (click)="activeTab.set('orchestrator')"
+      [class.border-cyan-500]="activeTab() === 'orchestrator'"
+      [class.text-cyan-400]="activeTab() === 'orchestrator'"
+      [class.border-transparent]="activeTab() !== 'orchestrator'"
+      [class.text-slate-400]="activeTab() !== 'orchestrator'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base">hub</mat-icon>
+      سەرپەرشتیاری فرە-ئەجێنت (Multi-Agent)
+    </button>
+
+    <button
+      (click)="activeTab.set('factchecker')"
+      [class.border-cyan-500]="activeTab() === 'factchecker'"
+      [class.text-cyan-400]="activeTab() === 'factchecker'"
+      [class.border-transparent]="activeTab() !== 'factchecker'"
+      [class.text-slate-400]="activeTab() !== 'factchecker'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base">verified_user</mat-icon>
+      پشکنەری ڕاستییەکان (Fact Checker)
+    </button>
+
+    <button
+      (click)="activeTab.set('multiapi')"
+      [class.border-cyan-500]="activeTab() === 'multiapi'"
+      [class.text-cyan-400]="activeTab() === 'multiapi'"
+      [class.border-transparent]="activeTab() !== 'multiapi'"
+      [class.text-slate-400]="activeTab() !== 'multiapi'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base">dataset</mat-icon>
+      9 Global APIs (Semantic, PubMed, DOAJ, WorldCat...)
+    </button>
+
+    <button
+      (click)="activeTab.set('ocr')"
+      [class.border-cyan-500]="activeTab() === 'ocr'"
+      [class.text-cyan-400]="activeTab() === 'ocr'"
+      [class.border-transparent]="activeTab() !== 'ocr'"
+      [class.text-slate-400]="activeTab() !== 'ocr'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base">document_scanner</mat-icon>
+      OCR خوێندنەوەی PDF و وێنە
+    </button>
+
+    <button
+      (click)="activeTab.set('peer_review')"
+      [class.border-cyan-500]="activeTab() === 'peer_review'"
+      [class.text-cyan-400]="activeTab() === 'peer_review'"
+      [class.border-transparent]="activeTab() !== 'peer_review'"
+      [class.text-slate-400]="activeTab() !== 'peer_review'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base">rate_review</mat-icon>
+      AI Peer Review & Plagiarism
+    </button>
+
+    <button
+      (click)="activeTab.set('citation_export')"
+      [class.border-cyan-500]="activeTab() === 'citation_export'"
+      [class.text-cyan-400]="activeTab() === 'citation_export'"
+      [class.border-transparent]="activeTab() !== 'citation_export'"
+      [class.text-slate-400]="activeTab() !== 'citation_export'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base">file_download</mat-icon>
+      Citation & Export
+    </button>
+
+    <button
+      (click)="activeTab.set('extended_tools')"
+      [class.border-cyan-500]="activeTab() === 'extended_tools'"
+      [class.text-cyan-400]="activeTab() === 'extended_tools'"
+      [class.border-transparent]="activeTab() !== 'extended_tools'"
+      [class.text-slate-400]="activeTab() !== 'extended_tools'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base">auto_awesome</mat-icon>
+      Zotero/Mendeley/ORCID/DOI/Outline/MindMap
+    </button>
+
+    <button
+      (click)="activeTab.set('journal_metrics')"
+      [class.border-cyan-500]="activeTab() === 'journal_metrics'"
+      [class.text-cyan-400]="activeTab() === 'journal_metrics'"
+      [class.border-transparent]="activeTab() !== 'journal_metrics'"
+      [class.text-slate-400]="activeTab() !== 'journal_metrics'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base">stars</mat-icon>
+      Journal Finder, Q1-Q4, Impact Factor & H-Index
+    </button>
+
+    <button
+      (click)="activeTab.set('ultimate_ai')"
+      [class.border-purple-500]="activeTab() === 'ultimate_ai'"
+      [class.text-purple-400]="activeTab() === 'ultimate_ai'"
+      [class.border-transparent]="activeTab() !== 'ultimate_ai'"
+      [class.text-slate-400]="activeTab() !== 'ultimate_ai'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base">psychology</mat-icon>
+      AI Academic Suite (دیبایت، تێز، هەڵسەنگاندن، PDF Chat, Quiz)
+    </button>
+
+    <button
+      (click)="activeTab.set('knowledgegraph')"
+      [class.border-cyan-500]="activeTab() === 'knowledgegraph'"
+      [class.text-cyan-400]="activeTab() === 'knowledgegraph'"
+      [class.border-transparent]="activeTab() !== 'knowledgegraph'"
+      [class.text-slate-400]="activeTab() !== 'knowledgegraph'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base">account_tree</mat-icon>
+      نەخشەی زانیاری (Knowledge Graph)
+    </button>
+
+    <button
+      (click)="activeTab.set('myth_synthesis')"
+      [class.border-amber-500]="activeTab() === 'myth_synthesis'"
+      [class.text-amber-400]="activeTab() === 'myth_synthesis'"
+      [class.border-transparent]="activeTab() !== 'myth_synthesis'"
+      [class.text-slate-400]="activeTab() !== 'myth_synthesis'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base text-amber-400">auto_awesome_motion</mat-icon>
+      تەکنەلۆژیای سێنتێزی مێژوویی و ئەفسانەیی
+    </button>
+
+    <button
+      (click)="activeTab.set('memory')"
+      [class.border-cyan-500]="activeTab() === 'memory'"
+      [class.text-cyan-400]="activeTab() === 'memory'"
+      [class.border-transparent]="activeTab() !== 'memory'"
+      [class.text-slate-400]="activeTab() !== 'memory'"
+      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
+    >
+      <mat-icon class="text-base">psychology</mat-icon>
+      بیرگەی پرۆژە (Research Memory)
+    </button>
+  </div>
+
+  <!-- Tab Content Area -->
+  <div class="flex-1 overflow-y-auto p-5">
+    <!-- Tab 1: Multi-Agent Orchestrator -->
+    @if (activeTab() === 'orchestrator') {
+      <div class="space-y-6">
+        <!-- Search Control -->
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <span class="block text-xs font-bold text-slate-300">تەوەرە یان ناونیشانی توێژینەوەی ئەکادیمی:</span>
+          <div class="flex gap-2">
+            <input
+              #orchestratorInput
+              type="text"
+              placeholder="بۆ نموونە: شیکاری کاریگەری ژیری دەستکرد و مۆدێلە گەورەکانی زمان لەسەر ڕەسەنایەتی توێژینەوە..."
+              (keyup.enter)="runOrchestrator(orchestratorInput.value)"
+              class="flex-1 bg-slate-950 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 transition-all"
+            />
+            <button
+              (click)="runOrchestrator(orchestratorInput.value)"
+              [disabled]="multiAgent.isLoadingPipeline()"
+              class="bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:opacity-90 text-slate-950 font-bold px-6 py-3 rounded-xl text-xs flex items-center gap-2 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50"
+            >
+              @if (multiAgent.isLoadingPipeline()) {
+                <mat-icon class="animate-spin text-sm">sync</mat-icon>
+                کارکردنی 5 ئەجێنت...
+              } @else {
+                <mat-icon class="text-sm">rocket_launch</mat-icon>
+                دەستپێکردنی Multi-Agent
+              }
+            </button>
+          </div>
+        </div>
+
+        <!-- Pipeline Output Display -->
+        @if (multiAgent.isLoadingPipeline()) {
+          <div class="flex flex-col items-center justify-center py-16 text-center space-y-4">
+            <div class="relative w-16 h-16 flex items-center justify-center">
+              <div class="absolute inset-0 rounded-full border-4 border-cyan-500/20 border-t-cyan-400 animate-spin"></div>
+              <mat-icon class="text-cyan-400 text-2xl">hub</mat-icon>
+            </div>
+            <div class="space-y-1">
+              <h4 class="text-sm font-bold text-cyan-300 animate-pulse">ئەجێنتەکان لە کارکردندان...</h4>
+              <p class="text-xs text-slate-400">Research Agent, Writer Agent, Citation Agent, Reviewer Agent & Fact Checker Agent</p>
+            </div>
+          </div>
+        } @else {
+          @if (multiAgent.pipelineResult(); as res) {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Research Agent Card -->
+            <div class="p-4 bg-slate-900/80 border border-slate-800 rounded-2xl space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                  <mat-icon class="text-base">travel_explore</mat-icon>
+                  1. Research Agent Output
+                </span>
+                <span class="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded-full">
+                  سەرچاوە: {{ res.researchAgentOutput.sources.length }}
+                </span>
+              </div>
+              <div class="space-y-2">
+                @for (src of res.researchAgentOutput.sources; track src.id) {
+                  <div class="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl space-y-1 text-xs">
+                    <div class="flex items-center justify-between font-semibold text-slate-200">
+                      <span>{{ src.title }} ({{ src.year }})</span>
+                      <span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800/80 px-2 py-0.5 rounded-full">
+                        Confidence: {{ src.confidenceScore }}%
+                      </span>
+                    </div>
+                    <div class="text-[11px] text-slate-400">نووسەران: {{ src.authors.join(', ') }} | {{ src.sourceType }}</div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Writer Agent Card -->
+            <div class="p-4 bg-slate-900/80 border border-slate-800 rounded-2xl space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+                  <mat-icon class="text-base">edit_note</mat-icon>
+                  2. Writer Agent Output (ئاستی: {{ res.professorMode }})
+                </span>
+              </div>
+              <h4 class="text-xs font-bold text-slate-200">{{ res.writerAgentOutput.title }}</h4>
+              <p class="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800 max-h-48 overflow-y-auto">
+                {{ res.writerAgentOutput.academicProse }}
+              </p>
+            </div>
+
+            <!-- Citation Agent Card -->
+            <div class="p-4 bg-slate-900/80 border border-slate-800 rounded-2xl space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                  <mat-icon class="text-base">format_quote</mat-icon>
+                  3. Citation Agent Output (APA 7th)
+                </span>
+                <span class="text-[10px] bg-amber-950 text-amber-300 px-2 py-0.5 rounded-full">
+                  تێکڕای باوەڕپێکراوی: {{ res.sourceConfidenceAverage }}%
+                </span>
+              </div>
+              <ul class="space-y-2 text-xs text-slate-300">
+                @for (cit of res.citationAgentOutput.formattedCitationsAPA; track $index) {
+                  <li class="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl font-mono text-[11px]">
+                    {{ cit }}
+                  </li>
+                }
+              </ul>
+            </div>
+
+            <!-- Reviewer & Fact Checker Card -->
+            <div class="p-4 bg-slate-900/80 border border-slate-800 rounded-2xl space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <mat-icon class="text-base">verified</mat-icon>
+                  4 & 5. Reviewer & Fact Checker Output
+                </span>
+                <span class="text-[10px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded-full">
+                  Factuality: {{ res.factCheckerAgentOutput.factualityScore }}%
+                </span>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div class="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl">
+                  <span class="font-bold text-slate-300">کەلێنە زانستییەکان (Literature Gap):</span>
+                  <p class="text-slate-400 mt-1">{{ res.reviewerAgentOutput.literatureGaps.join(' • ') }}</p>
+                </div>
+                <div class="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl">
+                  <span class="font-bold text-slate-300">ڕەخنەی مێتۆدۆلۆژی:</span>
+                  <p class="text-slate-400 mt-1">{{ res.reviewerAgentOutput.methodologyCritique }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          } @else {
+            <div class="flex flex-col items-center justify-center py-16 text-center text-slate-500 space-y-2">
+              <mat-icon class="text-4xl text-cyan-500/50">hub</mat-icon>
+              <p class="text-xs">تەوەرەیەک بنووسە بۆ چالاککردنی سەرپەرشتیاری Multi-Agent (Research, Writer, Citation, Reviewer & Fact Checker).</p>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    <!-- Tab 2: Fact Checker -->
+    @if (activeTab() === 'factchecker') {
+      <div class="space-y-6">
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <span class="block text-xs font-bold text-slate-300">دەق یان بانگەشەی زانستی بۆ پشکنین (Fact Check):</span>
+          <div class="flex gap-2">
+            <textarea
+              #factInput
+              rows="3"
+              placeholder="بۆ نموونە: بیردۆزی کوانتەم و ژیری دەستکرد هەمان لۆژیکی بنەڕەتی ماتماتیکی بەکاردەهێنن..."
+              class="flex-1 bg-slate-950 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-all"
+            ></textarea>
+          </div>
+          <button
+            (click)="multiAgent.runFactCheck(factInput.value)"
+            [disabled]="multiAgent.isFactChecking()"
+            class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md shadow-cyan-500/20 disabled:opacity-50"
+          >
+            @if (multiAgent.isFactChecking()) {
+              <mat-icon class="animate-spin text-sm">sync</mat-icon>
+              لە پشکنیندایە...
+            } @else {
+              <mat-icon class="text-sm">verified</mat-icon>
+              پشتڕاستکردنەوە لە جیهانی زانستی
+            }
+          </button>
+        </div>
+
+        <!-- Fact Check Result -->
+        @if (multiAgent.factCheckResult(); as fact) {
+          <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" [class.bg-emerald-400]="fact.factualityScore >= 80" [class.bg-amber-400]="fact.factualityScore < 80"></span>
+                <h3 class="text-sm font-bold text-slate-200">بارودۆخی ڕاستییەتی: {{ fact.status }}</h3>
+              </div>
+              <span class="text-xs font-bold bg-cyan-950 text-cyan-300 border border-cyan-800 px-3 py-1 rounded-full">
+                Factuality Score: {{ fact.factualityScore }}%
+              </span>
+            </div>
+
+            <div class="space-y-2 text-xs text-slate-300">
+              <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <span class="font-bold text-cyan-400">شیکاریی لۆژیکی و زانستی:</span>
+                <p class="mt-1 leading-relaxed">{{ fact.explanation }}</p>
+              </div>
+
+              @if (fact.correctedStatement) {
+                <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                  <span class="font-bold text-emerald-400">تێکستی ڕاستکراوە (Corrected Form):</span>
+                  <p class="mt-1 leading-relaxed text-emerald-200">{{ fact.correctedStatement }}</p>
+                </div>
+              }
+
+              <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <span class="font-bold text-amber-400">سەرچاوە و بەڵگە زانستییە بەکارهاتووەکان:</span>
+                <ul class="mt-1 list-disc list-inside space-y-1 text-slate-400">
+                  @for (src of fact.verifiedSources; track $index) {
+                    <li>{{ src }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Tab 3: Multi-API Academic Search -->
+    @if (activeTab() === 'multiapi') {
+      <div class="space-y-6">
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <span class="block text-xs font-bold text-slate-300">گەڕانی هاوکات لە Semantic Scholar, PubMed, Open Library & Internet Archive:</span>
+          <div class="flex gap-2">
+            <input
+              #apiQueryInput
+              type="text"
+              placeholder="کلیک بکە بۆ گەڕانی خێرا لە سەدان ملیۆن وتار و کتێب..."
+              (keyup.enter)="multiAgent.runMultiApiSearch(apiQueryInput.value)"
+              class="flex-1 bg-slate-950 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 transition-all"
+            />
+            <button
+              (click)="multiAgent.runMultiApiSearch(apiQueryInput.value)"
+              [disabled]="multiAgent.isSearchingAPIs()"
+              class="bg-gradient-to-r from-blue-600 to-cyan-500 hover:opacity-90 text-slate-950 font-bold px-6 py-3 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md shadow-cyan-500/20 disabled:opacity-50"
+            >
+              @if (multiAgent.isSearchingAPIs()) {
+                <mat-icon class="animate-spin text-sm">sync</mat-icon>
+                گەڕان...
+              } @else {
+                <mat-icon class="text-sm">search</mat-icon>
+                گەڕان لە 4 API فەرمی
+              }
+            </button>
+          </div>
+        </div>
+
+        <!-- API Search Results -->
+        @if (multiAgent.isSearchingAPIs()) {
+          <div class="flex flex-col items-center justify-center py-16 text-center space-y-3">
+            <mat-icon class="animate-spin text-3xl text-cyan-400">sync</mat-icon>
+            <p class="text-xs text-cyan-300">پەیوەندیکردن بە Semantic Scholar, PubMed, Open Library و Internet Archive...</p>
+          </div>
+        } @else if (multiAgent.searchSources().length > 0) {
+          <div class="space-y-3">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>دۆزینەوەکان: {{ multiAgent.searchSources().length }} سەرچاوەی خاوەن بڕوا</span>
+              <span class="text-emerald-400 font-bold">تێکڕای Source Confidence Score: {{ multiAgent.averageConfidenceScore() }}%</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              @for (src of multiAgent.searchSources(); track src.id) {
+                <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-2 hover:border-cyan-500/50 transition-all">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" [class]="getSourceTypeClass(src.sourceType)">
+                      {{ src.sourceType }}
+                    </span>
+                    <span class="text-[11px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800/80">
+                      Confidence: {{ src.confidenceScore }}%
+                    </span>
+                  </div>
+                  <h4 class="text-xs font-bold text-slate-100 hover:text-cyan-400 cursor-pointer">
+                    <a [href]="src.url" target="_blank" class="hover:underline flex items-center gap-1">
+                      {{ src.title }}
+                      <mat-icon class="text-xs">open_in_new</mat-icon>
+                    </a>
+                  </h4>
+                  <p class="text-[11px] text-slate-400 leading-relaxed line-clamp-2">{{ src.snippet }}</p>
+                  <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-800/60">
+                    <span>نووسەران: {{ src.authors.join(', ') }}</span>
+                    <span>ساڵ: {{ src.year }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Tab 4: Knowledge Graph -->
+    @if (activeTab() === 'knowledgegraph') {
+      <div class="space-y-4">
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between">
+          <div>
+            <h3 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+              <mat-icon class="text-base text-cyan-400">account_tree</mat-icon>
+              نەخشەی زانیاریی کارلێککار (Interactive Knowledge Graph)
+            </h3>
+            <p class="text-[11px] text-slate-400">پەیوەندی نێوان چەمکەکان، نووسەران، کتێبەکان، و توێژینەوە زانستییەکان</p>
+          </div>
+        </div>
+
+        <div class="relative w-full h-80 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-center p-4 overflow-hidden">
+          <svg class="w-full h-full">
+            <line x1="20%" y1="50%" x2="50%" y2="25%" stroke="#334155" stroke-width="2" />
+            <line x1="20%" y1="50%" x2="50%" y2="75%" stroke="#334155" stroke-width="2" />
+            <line x1="50%" y1="25%" x2="80%" y2="30%" stroke="#334155" stroke-width="2" />
+            <line x1="50%" y1="75%" x2="80%" y2="70%" stroke="#334155" stroke-width="2" />
+            <line x1="50%" y1="25%" x2="50%" y2="75%" stroke="#0284c7" stroke-width="2" stroke-dasharray="4" />
+
+            <g transform="translate(100, 160)" class="cursor-pointer">
+              <circle r="30" fill="#0284c7" opacity="0.9" />
+              <text text-anchor="middle" dy="4" fill="#ffffff" font-size="10" font-weight="bold">تەوەرەی توێژینەوە</text>
+            </g>
+
+            <g transform="translate(260, 80)" class="cursor-pointer">
+              <circle r="24" fill="#6366f1" opacity="0.9" />
+              <text text-anchor="middle" dy="4" fill="#ffffff" font-size="9">Semantic Scholar</text>
+            </g>
+
+            <g transform="translate(260, 240)" class="cursor-pointer">
+              <circle r="24" fill="#10b981" opacity="0.9" />
+              <text text-anchor="middle" dy="4" fill="#ffffff" font-size="9">PubMed PMC</text>
+            </g>
+
+            <g transform="translate(420, 100)" class="cursor-pointer">
+              <circle r="22" fill="#f59e0b" opacity="0.9" />
+              <text text-anchor="middle" dy="4" fill="#ffffff" font-size="9">Open Library</text>
+            </g>
+
+            <g transform="translate(420, 220)" class="cursor-pointer">
+              <circle r="22" fill="#ec4899" opacity="0.9" />
+              <text text-anchor="middle" dy="4" fill="#ffffff" font-size="9">APA 7th Index</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: OCR Text Extraction -->
+    @if (activeTab() === 'ocr') {
+      <div class="space-y-4">
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <h3 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+            <mat-icon class="text-base text-cyan-400">document_scanner</mat-icon>
+            سیستەمی OCR و خوێندنەوەی دەقی بەڵگەنامە، PDF و وێنە
+          </h3>
+          <p class="text-xs text-slate-400">فایلی وێنە یان دەقی PDF دابنێ بۆ دەرهێنانی تێکست بە ژیری دەستکرد:</p>
+
+          <div class="space-y-3">
+            <textarea
+              #ocrTextarea
+              rows="4"
+              placeholder="دەقی لێدراو یان هەڵهێنراوی PDF لێرە بنووسە..."
+              class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-3 focus:outline-none focus:border-cyan-500"
+            ></textarea>
+            <div class="flex gap-2">
+              <button
+                (click)="multiAgent.runOcr({ textContent: ocrTextarea.value })"
+                [disabled]="multiAgent.isProcessingOcr()"
+                class="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2"
+              >
+                @if (multiAgent.isProcessingOcr()) {
+                  <mat-icon class="animate-spin text-sm">sync</mat-icon>
+                  لە کاردایە...
+                } @else {
+                  <mat-icon class="text-sm">analytics</mat-icon>
+                  شیکاری دەق بە OCR
+                }
+              </button>
+            </div>
+          </div>
+
+          @if (multiAgent.ocrResult(); as ocr) {
+            <div class="mt-4 p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-emerald-400">ئەنجامی دەرهێنراو (پوختە)</span>
+                <span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full">
+                  بڕواپێکراوی: {{ ocr.confidence }}%
+                </span>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">{{ ocr.summary }}</p>
+              <div class="text-[11px] text-slate-400 pt-2 border-t border-slate-800/80">
+                کلیلەوشەکان: {{ ocr.academicKeywords.join(', ') }}
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Peer Review & Plagiarism -->
+    @if (activeTab() === 'peer_review') {
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <h3 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+            <mat-icon class="text-base text-cyan-400">rate_review</mat-icon>
+            AI Peer Reviewer (هەڵسەنگاندنی ئەکادیمی)
+          </h3>
+          <textarea
+            #peerInput
+            rows="4"
+            placeholder="دەقی توێژینەوەکەت بنووسە بۆ هەڵسەنگاندنی ڕەخنەیی..."
+            class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-3 focus:outline-none focus:border-cyan-500"
+          ></textarea>
+          <button
+            (click)="multiAgent.runPeerReview(peerInput.value)"
+            [disabled]="multiAgent.isPeerReviewing()"
+            class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2"
+          >
+            @if (multiAgent.isPeerReviewing()) {
+              <mat-icon class="animate-spin text-sm">sync</mat-icon>
+              هەڵسەنگاندن...
+            } @else {
+              <mat-icon class="text-sm">gavel</mat-icon>
+              ئەنجامدانی Peer Review
+            }
+          </button>
+
+          @if (multiAgent.peerReviewResult(); as pr) {
+            <div class="mt-3 p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2 text-xs">
+              <div class="flex items-center justify-between font-bold text-cyan-300">
+                <span>بریاری کۆتایی: {{ pr.overallVerdict }}</span>
+                <span>نمرە: {{ pr.reviewScore }}/100</span>
+              </div>
+              <p class="text-slate-300">{{ pr.detailedComments }}</p>
+            </div>
+          }
+        </div>
+
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <h3 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+            <mat-icon class="text-base text-rose-400">find_in_page</mat-icon>
+            AI Plagiarism & Originality Analysis
+          </h3>
+          <textarea
+            #plagInput
+            rows="4"
+            placeholder="دەق بنووسە بۆ شیکاری کۆپیکاری و کێشانی نەخشەی ڕەسەنایەتی..."
+            class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-3 focus:outline-none focus:border-rose-500"
+          ></textarea>
+          <button
+            (click)="multiAgent.runPlagiarismAnalysis(plagInput.value)"
+            [disabled]="multiAgent.isCheckingPlagiarism()"
+            class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2"
+          >
+            @if (multiAgent.isCheckingPlagiarism()) {
+              <mat-icon class="animate-spin text-sm">sync</mat-icon>
+              پشکنین...
+            } @else {
+              <mat-icon class="text-sm">spellcheck</mat-icon>
+              شیکاری Plagiarism
+            }
+          </button>
+
+          @if (multiAgent.plagiarismResult(); as plag) {
+            <div class="mt-3 p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2 text-xs">
+              <div class="flex items-center justify-between font-bold text-emerald-400">
+                <span>دۆخی ڕەسەنایەتی: {{ plag.verdict }}</span>
+                <span>ڕێژەی ڕەسەن: {{ plag.originalityScore }}%</span>
+              </div>
+              <div class="text-slate-400">ڕێژەی لێکچوو: {{ plag.similarityPercentage }}%</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Citation Validator & Export -->
+    @if (activeTab() === 'citation_export') {
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <h3 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+            <mat-icon class="text-base text-amber-400">fact_check</mat-icon>
+            Citation Validator (پشکنینی دروستی سەرچاوەکان)
+          </h3>
+          <textarea
+            #citArea
+            rows="4"
+            placeholder="لیستی سەرچاوەکان لێرە بنووسە (هەر دێرێک سەرچاوەیەک)..."
+            class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-3 focus:outline-none focus:border-amber-500"
+          ></textarea>
+          <button
+            (click)="validateCitationsInput(citArea.value)"
+            [disabled]="multiAgent.isValidatingCitations()"
+            class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2"
+          >
+            @if (multiAgent.isValidatingCitations()) {
+              <mat-icon class="animate-spin text-sm">sync</mat-icon>
+              پشکنین...
+            } @else {
+              <mat-icon class="text-sm">verified</mat-icon>
+              پشکنینی دروستی Citation
+            }
+          </button>
+
+          @if (multiAgent.citationValidationResult(); as cv) {
+            <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1 text-xs text-slate-300">
+              <div class="font-bold text-emerald-400">سەرچاوەی دروست: {{ cv.validCitationsCount }} / {{ cv.totalCitationsChecked }}</div>
+            </div>
+          }
+        </div>
+
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <h3 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+            <mat-icon class="text-base text-cyan-400">download_for_offline</mat-icon>
+            داگرتن و ئێکسپۆرتی فۆرماتی ئەکادیمی (LaTeX, EPUB, Markdown)
+          </h3>
+          <input
+            #docTitleInput
+            type="text"
+            placeholder="ناونیشانی فایلی توێژینەوە..."
+            class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:outline-none focus:border-cyan-500"
+          />
+          <textarea
+            #docContentInput
+            rows="3"
+            placeholder="دەقی توێژینەوەکەت بۆ داگرتن..."
+            class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:outline-none focus:border-cyan-500"
+          ></textarea>
+
+          <div class="flex flex-wrap gap-2 pt-2">
+            <button
+              (click)="multiAgent.exportAcademicDocument('latex', docTitleInput.value || 'Paper', docContentInput.value)"
+              class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1"
+            >
+              <mat-icon class="text-sm">code</mat-icon>
+              داگرتنی LaTeX (.tex)
+            </button>
+            <button
+              (click)="multiAgent.exportAcademicDocument('markdown', docTitleInput.value || 'Paper', docContentInput.value)"
+              class="bg-blue-700 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1"
+            >
+              <mat-icon class="text-sm">description</mat-icon>
+              داگرتنی Markdown (.md)
+            </button>
+            <button
+              (click)="multiAgent.exportAcademicDocument('epub', docTitleInput.value || 'Paper', docContentInput.value)"
+              class="bg-purple-700 hover:bg-purple-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1"
+            >
+              <mat-icon class="text-sm">auto_stories</mat-icon>
+              داگرتنی EPUB Book
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Extended Academic Tools -->
+    @if (activeTab() === 'extended_tools') {
+      <div class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+            <h4 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+              <mat-icon class="text-base text-sky-400">sync</mat-icon>
+              Zotero & Mendeley Sync
+            </h4>
+            <input #zoteroInput type="text" placeholder="تەوەرەی گەڕانی Reference..." class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:outline-none focus:border-sky-500" />
+            <div class="flex gap-2">
+              <button (click)="multiAgent.syncZoteroMendeley(zoteroInput.value, 'Zotero')" [disabled]="multiAgent.isSyncingZotero()" class="bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                Zotero
+              </button>
+              <button (click)="multiAgent.syncZoteroMendeley(zoteroInput.value, 'Mendeley')" [disabled]="multiAgent.isSyncingZotero()" class="bg-red-600 hover:bg-red-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                Mendeley
+              </button>
+            </div>
+            @if (multiAgent.zoteroItems().length > 0) {
+              <div class="mt-2 text-[11px] space-y-1 bg-slate-950 p-2 rounded-lg border border-slate-800 max-h-36 overflow-y-auto">
+                @for (item of multiAgent.zoteroItems(); track item.key) {
+                  <div class="text-slate-300 border-b border-slate-800/60 pb-1">
+                    <div class="font-bold text-sky-300 truncate">{{ item.title }}</div>
+                    <div class="text-[10px] text-slate-500">{{ item.date }} | {{ item.doi }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+            <h4 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+              <mat-icon class="text-base text-emerald-400">badge</mat-icon>
+              ORCID Researcher Profile
+            </h4>
+            <input #orcidIdInput type="text" placeholder="ID (m.g., 0000-0002-1825-0097)..." class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-500" />
+            <button (click)="multiAgent.lookupOrcid(orcidIdInput.value)" [disabled]="multiAgent.isFetchingOrcid()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1">
+              پشکنینی ORCID
+            </button>
+            @if (multiAgent.orcidProfile(); as orcid) {
+              <div class="p-2 bg-slate-950 rounded-lg border border-slate-800 text-[11px] space-y-1">
+                <div class="font-bold text-emerald-300">{{ orcid.creditName }} ({{ orcid.orcidId }})</div>
+                <div class="text-slate-400">{{ orcid.institution }}</div>
+              </div>
+            }
+          </div>
+
+          <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+            <h4 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+              <mat-icon class="text-base text-amber-400">travel_explore</mat-icon>
+              Google Scholar Metadata
+            </h4>
+            <input #scholarInput type="text" placeholder="ناوی توێژینەوە یان کلیلەواشە..." class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:outline-none focus:border-amber-500" />
+            <button (click)="multiAgent.searchGoogleScholar(scholarInput.value)" [disabled]="multiAgent.isSearchingScholar()" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1">
+              گەڕانی Google Scholar
+            </button>
+            @if (multiAgent.scholarResults().length > 0) {
+              <div class="mt-2 text-[11px] space-y-1 bg-slate-950 p-2 rounded-lg border border-slate-800 max-h-36 overflow-y-auto">
+                @for (item of multiAgent.scholarResults(); track item.link) {
+                  <div class="text-slate-300 border-b border-slate-800 pb-1">
+                    <a [href]="item.link" target="_blank" class="font-bold text-amber-300 hover:underline block truncate">{{ item.title }}</a>
+                    <div class="text-[10px] text-slate-500">سایتاشن: {{ item.citedByCount }} | {{ item.publicationYear }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Memory -->
+    @if (activeTab() === 'memory') {
+      <div class="space-y-4">
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+              <mat-icon class="text-base text-cyan-400">psychology</mat-icon>
+              بیرگەی بەردەوامی پرۆژە (Research Memory)
+            </h3>
+            <span class="text-[10px] text-slate-500">خۆکارانە پاشەکەوت دەبێت</span>
+          </div>
+
+          <div class="space-y-2">
+            <span class="block text-xs text-slate-300">ناوی پرۆژەی تێز یان توێژینەوەکەت:</span>
+            <input
+              type="text"
+              [ngModel]="multiAgent.researchMemory().projectTitle"
+              (ngModelChange)="multiAgent.updateProjectTitle($event)"
+              class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:outline-none focus:border-cyan-500"
+            />
+          </div>
+
+          <div class="space-y-2 pt-2">
+            <span class="block text-xs font-bold text-slate-300">فرەکانی/هیپۆتێزەکان (Hypotheses):</span>
+            <div class="flex gap-2">
+              <input
+                #hypoInput
+                type="text"
+                placeholder="گریمانەیەکی نوێ بنووسە..."
+                (keyup.enter)="multiAgent.addHypothesis(hypoInput.value); hypoInput.value = ''"
+                class="flex-1 bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:outline-none focus:border-cyan-500"
+              />
+              <button
+                (click)="multiAgent.addHypothesis(hypoInput.value); hypoInput.value = ''"
+                class="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-4 rounded-xl text-xs"
+              >
+                زیادکردن
+              </button>
+            </div>
+
+            <ul class="space-y-1.5 pt-1">
+              @for (hypo of multiAgent.researchMemory().hypotheses; track $index) {
+                <li class="flex items-center justify-between p-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300">
+                  <span>• {{ hypo }}</span>
+                  <button (click)="multiAgent.removeHypothesis($index)" class="text-slate-500 hover:text-rose-400">
+                    <mat-icon class="text-sm">delete</mat-icon>
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,297 @@
+import { Injectable, inject } from '@angular/core';
+import { AcademicSourceModel, ChapterItemModel } from '../domain/models';
+import { AcademicStyle } from '../domain/enums';
+import { CitationBuilder, CitationItem } from '../helpers/citation-builder';
+import { auditDocumentCitations, InTextCitationMatch, RealTimeCitationReport } from '../helpers/citation-checker';
+import { BibliographyFileExtractor, BibliographyExtractionResult } from '../helpers/bibliography-file-extractor';
+import { EditorService } from '../features/editor/services/editor';
+import { toSoraniNumber } from '../pipes/sorani-number.pipe';
+
+export interface GeneratedBibliographyItem {
+  id: string;
+  author: string;
+  year: number | string;
+  title: string;
+  formattedText: string;
+  style: string;
+  citationCount: number;
+  inTextSnippet?: string;
+  sourceType: 'book' | 'journal' | 'website' | 'thesis';
+  isAutoInferred: boolean;
+}
+
+export interface BibliographyScanResult {
+  scanTimestamp: string;
+  totalInlineCitationsFound: number;
+  uniqueSourcesCount: number;
+  items: GeneratedBibliographyItem[];
+  formattedBibliographyText: string;
+  style: AcademicStyle | string;
+  unresolvedCitations: InTextCitationMatch[];
+  auditReport: RealTimeCitationReport;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AutomatedBibliographyService {
+  private editorService = inject(EditorService);
+
+  /**
+   * Scans chapters for inline citations, matches them with existing sources or infers them,
+   * and builds a formatted reference list.
+   */
+  public generateBibliography(
+    chapters: ChapterItemModel[],
+    knownSources: AcademicSourceModel[] = [],
+    style: AcademicStyle | string = AcademicStyle.APA
+  ): BibliographyScanResult {
+    const audit = auditDocumentCitations(chapters, knownSources);
+    const sourceMap = new Map<string, GeneratedBibliographyItem>();
+    const unresolved: InTextCitationMatch[] = [];
+
+    // Process matched citations from known bibliography
+    for (const match of audit.matchedCitations) {
+      if (match.matchedSource) {
+        const src = match.matchedSource;
+        const key = `${this.normalizeKey(src.author)}_${src.year || '0'}`;
+        if (!sourceMap.has(key)) {
+          const formatted = this.formatSingleSource(src, style);
+          sourceMap.set(key, {
+            id: src.id || key,
+            author: src.author || 'نووسەری دیارینەکراو',
+            year: src.year || 'بێ ساڵ',
+            title: src.title || 'سەرچاوەی بێ ناونیشان',
+            formattedText: formatted,
+            style: style.toString(),
+            citationCount: 1,
+            inTextSnippet: match.snippet,
+            sourceType: (src.sourceType as any) || 'book',
+            isAutoInferred: false
+          });
+        } else {
+          const item = sourceMap.get(key)!;
+          item.citationCount += 1;
+        }
+      }
+    }
+
+    // Process citations found in text that weren't in the registered bibliography
+    for (const missing of audit.missingInTextCitations) {
+      const key = `${this.normalizeKey(missing.authorQuery)}_${missing.yearQuery || '0'}`;
+      if (!sourceMap.has(key)) {
+        // Auto-infer citation entry
+        const inferredSource: AcademicSourceModel = {
+          id: `inferred_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+          userId: 'system',
+          title: `توێژینەوە یان پەڕتووکی (${missing.authorQuery})`,
+          author: missing.authorQuery,
+          year: missing.yearQuery || 2024,
+          publisher: 'چاپکراوە زانستییەکان',
+          sourceType: 'journal',
+          isVerified: false
+        };
+
+        const formatted = this.formatSingleSource(inferredSource, style);
+        sourceMap.set(key, {
+          id: inferredSource.id,
+          author: missing.authorQuery,
+          year: missing.yearQuery || 'بێ ساڵ',
+          title: inferredSource.title,
+          formattedText: formatted,
+          style: style.toString(),
+          citationCount: 1,
+          inTextSnippet: missing.snippet,
+          sourceType: 'journal',
+          isAutoInferred: true
+        });
+        unresolved.push(missing);
+      } else {
+        const item = sourceMap.get(key)!;
+        item.citationCount += 1;
+      }
+    }
+
+    // Also include any registered sources that haven't been cited yet if needed
+    for (const un of audit.uncitedBibliographyEntries) {
+      const key = `${this.normalizeKey(un.author)}_${un.year || '0'}`;
+      if (!sourceMap.has(key)) {
+        const formatted = this.formatSingleSource(un, style);
+        sourceMap.set(key, {
+          id: un.id || key,
+          author: un.author || 'نووسەری دیارینەکراو',
+          year: un.year || 'بێ ساڵ',
+          title: un.title || 'سەرچاوەی بێ ناونیشان',
+          formattedText: formatted,
+          style: style.toString(),
+          citationCount: 0,
+          sourceType: (un.sourceType as any) || 'book',
+          isAutoInferred: false
+        });
+      }
+    }
+
+    // Sort alphabetically by primary author name
+    const sortedItems = Array.from(sourceMap.values()).sort((a, b) => {
+      return a.author.localeCompare(b.author, 'ckb');
+    });
+
+    const formattedBibliographyText = this.constructFullBibliographyDocument(sortedItems, style);
+
+    return {
+      scanTimestamp: new Date().toLocaleTimeString('ckb-IQ', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      totalInlineCitationsFound: audit.totalInTextCitations,
+      uniqueSourcesCount: sortedItems.length,
+      items: sortedItems,
+      formattedBibliographyText,
+      style,
+      unresolvedCitations: unresolved,
+      auditReport: audit
+    };
+  }
+
+  /**
+   * Appends or updates the references list directly in the thesis chapters.
+   */
+  public appendBibliographyToDocument(
+    formattedBibliographyText: string,
+    chapters: ChapterItemModel[],
+    updateFn: (updated: ChapterItemModel[]) => void
+  ): { success: boolean; chapterTitle: string } {
+    if (!chapters || chapters.length === 0) {
+      return { success: false, chapterTitle: '' };
+    }
+
+    // Check if a bibliography / references chapter already exists
+    const bibChapterIdx = chapters.findIndex(
+      (c) =>
+        c.title.includes('سەرچاوە') ||
+        c.title.toLowerCase().includes('references') ||
+        c.title.toLowerCase().includes('bibliography')
+    );
+
+    let updatedList = [...chapters];
+    const bibliographyTitle = 'پێڕستی سەرچاوە و ژێدەرە زانستییەکان (Bibliography)';
+
+    if (bibChapterIdx >= 0) {
+      // Update existing chapter
+      updatedList[bibChapterIdx] = {
+        ...updatedList[bibChapterIdx],
+        content: formattedBibliographyText,
+        wordCount: formattedBibliographyText.trim().split(/\s+/).filter(Boolean).length
+      };
+    } else {
+      // Append a new dedicated chapter at the end
+      const maxId = chapters.reduce((max, c) => Math.max(max, c.id || 0), 0);
+      const newChapter: ChapterItemModel = {
+        id: maxId + 1,
+        title: bibliographyTitle,
+        content: formattedBibliographyText,
+        wordCount: formattedBibliographyText.trim().split(/\s+/).filter(Boolean).length,
+        status: 'completed',
+        isLocked: false
+      };
+      updatedList.push(newChapter);
+    }
+
+    updateFn(updatedList);
+    this.editorService.setChapters(updatedList);
+
+    return {
+      success: true,
+      chapterTitle: bibChapterIdx >= 0 ? chapters[bibChapterIdx].title : bibliographyTitle
+    };
+  }
+
+  private formatSingleSource(source: AcademicSourceModel, style: AcademicStyle | string): string {
+    const srcAny = source as any;
+    const citationItem: CitationItem = {
+      id: source.id,
+      authors: source.author || 'نووسەری دیارینەکراو',
+      year: source.year || 2024,
+      title: source.title || 'سەرناوی بێ ناو',
+      publisher: source.publisher,
+      journal: srcAny.journal,
+      url: srcAny.url,
+      doi: source.doi,
+      type: srcAny.type || source.sourceType || 'book'
+    };
+
+    switch (style) {
+      case AcademicStyle.Harvard:
+      case 'Harvard':
+        return CitationBuilder.formatHarvard(citationItem);
+      case AcademicStyle.MLA:
+      case 'MLA':
+        return CitationBuilder.formatMLA(citationItem);
+      case AcademicStyle.Chicago:
+      case 'Chicago':
+        return `${citationItem.authors}. ${citationItem.year}. "${citationItem.title}." ${citationItem.publisher ? `${citationItem.publisher}.` : ''}`;
+      case AcademicStyle.IEEE:
+      case 'IEEE':
+        return `${citationItem.authors}, "${citationItem.title}," ${citationItem.publisher ? `${citationItem.publisher}, ` : ''}${citationItem.year}.`;
+      case 'Kurdish':
+      case 'KurdishAcademic':
+        return CitationBuilder.formatKurdishAcademic(citationItem);
+      case AcademicStyle.APA:
+      case 'APA':
+      default:
+        return CitationBuilder.formatAPA(citationItem);
+    }
+  }
+
+  private constructFullBibliographyDocument(
+    items: GeneratedBibliographyItem[],
+    style: AcademicStyle | string
+  ): string {
+    if (items.length === 0) {
+      return 'هیچ سەرچاوەیەک نەدۆزرایەوە لە دەقی بەشەکاندا.';
+    }
+
+    const header = `# پێڕستی سەرچاوە و ژێدەرە زانستییەکان\n` +
+      `**ستانداردی فۆرماتکردن:** ${style.toString().toUpperCase()} Style\n` +
+      `**کۆی سەرچاوە تۆمارکراوەکان:** ${toSoraniNumber(items.length)} سەرچاوە\n\n---\n\n`;
+
+    const kurdishSources = items.filter((i) => this.isKurdishOrArabic(i.author));
+    const foreignSources = items.filter((i) => !this.isKurdishOrArabic(i.author));
+
+    let body = '';
+
+    if (kurdishSources.length > 0) {
+      body += `### یەکەم: سەرچاوە کوردی و عەرەبییەکان\n\n`;
+      kurdishSources.forEach((item, idx) => {
+        body += `${idx + 1}. ${item.formattedText}\n\n`;
+      });
+    }
+
+    if (foreignSources.length > 0) {
+      if (kurdishSources.length > 0) body += `\n### دووەم: سەرچاوە بیانی و ئینگلیزییەکان (Foreign / English References)\n\n`;
+      foreignSources.forEach((item, idx) => {
+        body += `${idx + 1}. ${item.formattedText}\n\n`;
+      });
+    }
+
+    return header + body;
+  }
+
+  private normalizeKey(str?: string): string {
+    if (!str) return '';
+    return str.toLowerCase().replace(/[^\w\u0600-\u06FF]/g, '').trim();
+  }
+
+  private isKurdishOrArabic(text?: string): boolean {
+    if (!text) return false;
+    return /[\u0600-\u06FF]/.test(text);
+  }
+
+  /**
+   * Extracts citations from a bibliography text file (.txt, .bib, .ris, or plain text)
+   * and maps them to the requested academic citation style.
+   */
+  public extractAndFormatFromFileText(
+    fileContent: string,
+    targetStyle: AcademicStyle | string = AcademicStyle.APA
+  ): BibliographyExtractionResult {
+    return BibliographyFileExtractor.extractAndFormat(fileContent, targetStyle);
+  }
+}

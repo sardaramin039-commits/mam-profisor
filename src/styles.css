@@ -1,0 +1,84 @@
+/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans Arabic", "Segoe UI", Tahoma, Arial, "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Amiri", "Times New Roman", Times, Georgia, Cambria, serif;
+  --font-mono: "JetBrains Mono", "Consolas", "Courier New", ui-monospace, monospace;
+  --color-editorial-bg: #FDFCFB;
+  --color-editorial-text: #1A1A1A;
+  --color-editorial-sidebar: #F8F6F2;
+  --color-editorial-border: #E5E1DA;
+  --color-editorial-muted: #8C8273;
+  --color-harvard-crimson: #A51C30;
+  --color-harvard-dark: #2C0E12;
+  --color-harvard-gold: #C49A45;
+  --color-harvard-parchment: #F9F6F0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-editorial-bg);
+  color: var(--color-editorial-text);
+}
+
+/* Elegant and highly visible scrollbar styles for academic content containers */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f1f0ec;
+  border-radius: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #c3bfb5;
+  border-radius: 4px;
+  border: 1.5px solid #f1f0ec;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #8b8577;
+}
+
+/* For non-webkit browsers */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #c3bfb5 #f1f0ec;
+}
+
+@keyframes expandFade {
+  0% {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    max-height: 500px;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-expand-fade {
+  animation: expandFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+
+@keyframes fadeInBadge {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in-badge {
+  animation: fadeInBadge 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+

@@ -1,0 +1,120 @@
+/* High-contrast Academic Dark Mode styles specifically optimized for long-form writing */
+.academic-dark {
+  --color-editorial-bg: #12100E; /* Deep warm charcoal */
+  --color-editorial-text: #F4EFEA; /* Soft parchment-toned text */
+  --color-editorial-sidebar: #1C1816; /* Warm dark sidebar */
+  --color-editorial-border: #3A322E; /* Warm subtle borders */
+  --color-editorial-muted: #A3968F; /* Soft muted text */
+  --color-harvard-parchment: #251F1C; /* Dark parchment background */
+  
+  background-color: #12100E !important;
+  color: #F4EFEA !important;
+}
+
+/* Override component backgrounds for dark mode */
+.academic-dark .bg-white,
+.academic-dark .bg-stone-50,
+.academic-dark .bg-\[\#F8F6F2\],
+.academic-dark .bg-\[\#FDFCFB\],
+.academic-dark .bg-stone-100,
+.academic-dark .bg-amber-50\/10 {
+  background-color: #1C1816 !important;
+  color: #F4EFEA !important;
+}
+
+/* Parchment paper editor background */
+.academic-dark .parchment-editor {
+  background-color: #231E1B !important;
+  color: #F7F1EB !important;
+  border-color: #5C4D44 !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Academic Dark Mode specific borders */
+.academic-dark .border,
+.academic-dark .border-2,
+.academic-dark .border-t,
+.academic-dark .border-b,
+.academic-dark .border-r,
+.academic-dark .border-l {
+  border-color: #3A322E !important;
+}
+
+/* Force dark inputs and controls */
+.academic-dark input,
+.academic-dark select,
+.academic-dark textarea {
+  background-color: #231E1B !important;
+  color: #F4EFEA !important;
+  border-color: #4C413C !important;
+}
+
+.academic-dark select option {
+  background-color: #1C1816 !important;
+  color: #F4EFEA !important;
+}
+
+/* Ensure strong typography maintains readability */
+.academic-dark .text-stone-900,
+.academic-dark .text-black,
+.academic-dark .text-stone-950,
+.academic-dark .text-slate-900,
+.academic-dark .text-slate-800 {
+  color: #F4EFEA !important;
+}
+
+.academic-dark .text-\[\#8C8273\],
+.academic-dark .text-slate-500,
+.academic-dark .text-gray-500,
+.academic-dark .text-slate-600 {
+  color: #A3968F !important;
+}
+
+.academic-dark .bg-slate-50,
+.academic-dark .bg-gray-50 {
+  background-color: #25201D !important;
+}
+
+/* Hover effects for buttons/cards in dark mode */
+.academic-dark .hover\:bg-stone-100:hover {
+  background-color: #2D2522 !important;
+}
+
+.academic-dark .hover\:border-black:hover {
+  border-color: #D4AF37 !important; /* Elegant gold hover border */
+}
+
+/* Custom Styled Scrollbars for Academic Layouts */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 9999px;
+}
+.academic-dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.38);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.academic-dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+}
+.academic-dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.38);
+}
+
+/* Ensure standard scrollbars have high visibility for the user */
+.scrollbar-thin {
+  scrollbar-width: thin !important;
+}

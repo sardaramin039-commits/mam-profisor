@@ -1,0 +1,335 @@
+import { AiToolItem } from '../ai-tools-catalog';
+
+export const CATALOG_PART3: AiToolItem[] = [
+  // Block 5: 101–130
+  {
+    num: 101,
+    id: 'research_impact_statement',
+    titleKurdish: 'نووسەری بەیانی کاریگەریی توێژینەوە',
+    titleEnglish: 'Research Impact Statement',
+    category: 'creation_planning',
+    section: '91-120',
+    icon: 'flare',
+    description: 'خستنەڕووی کاریگەرییە کۆمەڵایەتی، ئابووری و زانستییەکانی توێژینەوەکەت.',
+    placeholder: 'دەرئەنجام و سودمەندانی توێژینەوەکەت بنووسە...'
+  },
+  {
+    num: 102,
+    id: 'policy_brief_writer',
+    titleKurdish: 'نووسەری ڕاپۆرتی بڕیارسازی (Policy Brief)',
+    titleEnglish: 'Policy Brief Writer',
+    category: 'creation_planning',
+    section: '91-120',
+    icon: 'policy',
+    description: 'گۆڕینی دەرئەنجامی زانستی بۆ ڕاسپاردەی بەپەلە بۆ حکومەت و دامەزراوەکان.',
+    placeholder: 'کێشەی سیستەمی و دەرئەنجامی توێژینەوە بەیان بکە...'
+  },
+  {
+    num: 103,
+    id: 'data_management_plan',
+    titleKurdish: 'پلانی بەڕێوەبردنی داتا (DMP)',
+    titleEnglish: 'Data Management Plan Generator',
+    category: 'creation_planning',
+    section: '91-120',
+    icon: 'folder_zip',
+    description: 'نووسینی پلانی پاراستن، دابەشکردن و ئەرشیڤکردنی داتای توێژینەوە.',
+    placeholder: 'جۆری داتا و قەبارەکەی بەیان بکە...'
+  },
+  {
+    num: 104,
+    id: 'repository_uploader_helper',
+    titleKurdish: 'یارمەتیدەری بڵاوکردنەوە لە Zenodo/Figshare',
+    titleEnglish: 'Repository Uploader Helper',
+    category: 'system_workspace',
+    section: '91-120',
+    icon: 'cloud_upload',
+    description: 'ئامادەکردنی مێتا-داتا بۆ دابەزاندنی داتا لە داتابەیسە کراوەکاندا.',
+    placeholder: 'ناونیشانی داتا و نووسەران بنووسە...'
+  },
+  {
+    num: 105,
+    id: 'pre_print_prep',
+    titleKurdish: 'ئامادەکاری پێش-بڵاوکردنەوە (Preprint Prep)',
+    titleEnglish: 'Preprint Prep Helper',
+    category: 'system_workspace',
+    section: '91-120',
+    icon: 'post_add',
+    description: 'سازدانی ڕەشنووس بۆ بڵاوکردنەوە لە arXiv, bioRxiv یان SSRN.',
+    placeholder: 'پوختە و بەشەکان بەیان بکە بۆ فۆڕماتی پێش-بڵاوکردنەوە...'
+  },
+  {
+    num: 106,
+    id: 'orcid_profile_sync',
+    titleKurdish: 'هاوسازکردنی پرۆفایلی ORCID',
+    titleEnglish: 'ORCID Profile Sync',
+    category: 'apis_integrations',
+    section: '91-120',
+    icon: 'sync_alt',
+    description: 'ناردنی لیستی بڵاوکراوە نوێیەکانت بۆ پرۆفایلی فەرمیی ORCID.',
+    placeholder: 'ناوی بڵاوکراوە نوێیەکانت بنووسە...'
+  },
+  {
+    num: 107,
+    id: 'google_scholar_profile_cleaner',
+    titleKurdish: 'پاقژکەرەوەی پرۆفایلی Google Scholar',
+    titleEnglish: 'Google Scholar Profile Cleaner',
+    category: 'apis_integrations',
+    section: '91-120',
+    icon: 'auto_fix_high',
+    description: 'دۆزینەوەی ئاماژەدانە هەڵەکان و جیاکردنەوەی وتارە لێکچووەکان.',
+    placeholder: 'ناوی پرۆفایل یان بڵاوکراوەکان بنووسە...'
+  },
+  {
+    num: 108,
+    id: 'researchgate_post_generator',
+    titleKurdish: 'سازدەری پۆستی ResearchGate',
+    titleEnglish: 'ResearchGate Post Generator',
+    category: 'system_workspace',
+    section: '91-120',
+    icon: 'share',
+    description: 'نووسینی کورتەی سەرنجڕاکێش بۆ ناساندنی وتارەکەت لە ResearchGate.',
+    placeholder: 'ناونیشان و دەستکەوتی سەرەکی وتار بنووسە...'
+  },
+  {
+    num: 109,
+    id: 'academic_cv_builder',
+    titleKurdish: 'بونیادنەری سیڤیی ئەکادیمی (Academic CV)',
+    titleEnglish: 'Academic CV Builder',
+    category: 'creation_planning',
+    section: '91-120',
+    icon: 'badge',
+    description: 'ڕێکخستنی بڕوانامەکان، بڵاوکراوەکان و خەڵاتەکان بەپێی فۆڕماتی زانکۆکان.',
+    placeholder: 'زانیاری کار و بڵاوکراوەکانت بنووسە...'
+  },
+  {
+    num: 110,
+    id: 'biosketch_generator',
+    titleKurdish: 'دروستکەری کورته‌مێژووی زانستی (Biosketch)',
+    titleEnglish: 'Biosketch Generator',
+    category: 'creation_planning',
+    section: '91-120',
+    icon: 'account_box',
+    description: 'نووسینی کورتە مێژووی زانستیی توێژەر بەپێی پێوەری NIH یان NSF.',
+    placeholder: 'زانیاری بڕوانامە و وتارە سەرەکییەکان بنووسە...'
+  },
+  {
+    num: 111,
+    id: 'peer_review_checklist',
+    titleKurdish: 'چێکلیستی پێداچوونەوەی هاوەڵان',
+    titleEnglish: 'Peer Review Checklist',
+    category: 'analytics_review',
+    section: '91-120',
+    icon: 'checklist',
+    description: 'پشکنینی هەموو خاڵە پێویستەکانی وتار پێش ناردنی بۆ گۆڤار.',
+    placeholder: 'دەق یان بەشەکانی وتار بنووسە بۆ هەڵسەنگاندن...'
+  },
+  {
+    num: 112,
+    id: 'journal_submission_checker',
+    titleKurdish: 'پشکنەری یاساکانی گۆڤار',
+    titleEnglish: 'Journal Submission Checker',
+    category: 'analytics_review',
+    section: '91-120',
+    icon: 'fact_check',
+    description: 'دڵنیابوونەوە لە ڕەچاوکردنی ژمارەی وشە، فۆنت و سەرچاوەکان بەپێی گۆڤار.',
+    placeholder: 'ناوی گۆڤارەکە و ئاماری وتارەکەت بنووسە...'
+  },
+  {
+    num: 113,
+    id: 'latex_beamer_generator',
+    titleKurdish: 'دروستکەری پێشکەشکردنی LaTeX Beamer',
+    titleEnglish: 'LaTeX Beamer Generator',
+    category: 'system_workspace',
+    section: '91-120',
+    icon: 'slideshow',
+    description: 'گۆڕینی ڕەشنووس بۆ کۆدی پێشکەشکردنی زانستیی Beamer لە LaTeX.',
+    placeholder: 'کورتەی بەشەکان بەیان بکە بۆ گۆڕین بۆ Beamer...'
+  },
+  {
+    num: 114,
+    id: 'markdown_to_pdf_stylist',
+    titleKurdish: 'گۆڕەری Markdown بۆ PDF',
+    titleEnglish: 'Markdown to PDF Stylist',
+    category: 'system_workspace',
+    section: '91-120',
+    icon: 'picture_as_pdf',
+    description: 'ڕێکخستنی دەقی Markdown بە ستایلی مۆدێرنی زانکۆکان بۆ ناردن بۆ PDF.',
+    placeholder: 'دەقی Markdown بنووسە...'
+  },
+  {
+    num: 115,
+    id: 'bibtex_cleaner',
+    titleKurdish: 'پاقژکەرەوەی فایلی BibTeX',
+    titleEnglish: 'BibTeX Cleaner',
+    category: 'system_workspace',
+    section: '91-120',
+    icon: 'cleaning_services',
+    description: 'ڕاستکردنەوە و ڕێکخستنی کلیل و نیشانەکانی فایلی .bib بۆ LaTeX.',
+    placeholder: 'کۆدی BibTeX لێرەدا دابنێ...'
+  },
+  {
+    num: 116,
+    id: 'ris_file_generator',
+    titleKurdish: 'دروستکەری فایلی RIS',
+    titleEnglish: 'RIS File Generator',
+    category: 'system_workspace',
+    section: '91-120',
+    icon: 'file_present',
+    description: 'گۆڕینی سەرچاوەکان بۆ فۆڕماتی ستانداری RIS بۆ EndNote و Reference Manager.',
+    placeholder: 'زانیاری سەرچاوەکان لێرەدا دابنێ...'
+  },
+  {
+    num: 117,
+    id: 'citation_style_language_csl',
+    titleKurdish: 'دەستکاری کەینۆکی CSL',
+    titleEnglish: 'CSL Style Editor',
+    category: 'system_workspace',
+    section: '91-120',
+    icon: 'edit_note',
+    description: 'دەستکاریکردنی ستایلی ئاماژەدانی تایبەتی زانکۆکان بە فۆڕماتی CSL.',
+    placeholder: 'یاسا یان فۆڕماتی دڵخوازی ئاماژەدان بەیان بکە...'
+  },
+  {
+    num: 118,
+    id: 'academic_glossary_builder',
+    titleKurdish: 'سازدەری فەرهەنگی زاراوەکان (Glossary)',
+    titleEnglish: 'Academic Glossary Builder',
+    category: 'creation_planning',
+    section: '91-120',
+    icon: 'translate',
+    description: 'دەرهێنان و پێناسکردنی هەموو زاراوە ئەکادیمییە بەکارهاتووەکان لە تێزەکەدا.',
+    placeholder: 'دەق یان وتارەکە بنووسە بۆ دەرهێنانی فەرهەنگ...'
+  },
+  {
+    num: 119,
+    id: 'acronym_list_generator',
+    titleKurdish: 'دروستکەری لیستی کورتکراوەکان (Abbreviations)',
+    titleEnglish: 'Acronym List Generator',
+    category: 'creation_planning',
+    section: '91-120',
+    icon: 'sort_by_alpha',
+    description: 'کۆکردنەوە و ڕێکخستنی ئەلفوبێیی هەموو کورتکراوەکان (نموونە: UNESCO, DNA).',
+    placeholder: 'دەقی تێزەکە بنووسە بۆ دۆزینەوەی کورتکراوەکان...'
+  },
+  {
+    num: 120,
+    id: 'acknowledgments_writer',
+    titleKurdish: 'نووسەری بەشی سوپاس و پێزانین (Acknowledgments)',
+    titleEnglish: 'Acknowledgments Writer',
+    category: 'creation_planning',
+    section: '91-120',
+    icon: 'favorite',
+    description: 'داڕشتنی ڕاستگۆیانە و فەرمیی سوپاس و پێزانین بۆ مامۆستایان، خێزان و پاڵپشتیکاران.',
+    placeholder: 'ناوی مامۆستایان و کەسانی هاوکار بنووسە...'
+  },
+  {
+    num: 121,
+    id: 'dedication_page_writer',
+    titleKurdish: 'نووسەری بەشی پێشکەشکردن (Dedication)',
+    titleEnglish: 'Dedication Page Writer',
+    category: 'creation_planning',
+    section: '121-130',
+    icon: 'card_giftcard',
+    description: 'نووسینی ڕستەی ئەدەبیی سەرنجڕاکێش بۆ پێشکەشکردنی کتێب یان تێز.',
+    placeholder: 'ناوی ئەو کەسەی کە کارەکەی پێ پێشکەش دەکەیت بنووسە...'
+  },
+  {
+    num: 122,
+    id: 'thesis_title_page_formatter',
+    titleKurdish: 'ڕێکخەری بەرگی فەرمیی تێز',
+    titleEnglish: 'Thesis Title Page Formatter',
+    category: 'creation_planning',
+    section: '121-130',
+    icon: 'design_services',
+    description: 'نووسین و ڕێکخستنی لاپەڕەی یەکەمی تێز بەپێی ڕێنمایی زانکۆ.',
+    placeholder: 'ناوی زانکۆ، کۆلێژ، بەش، ناونیشان و ناوی توێژەر بنووسە...'
+  },
+  {
+    num: 123,
+    id: 'table_of_contents_builder',
+    titleKurdish: 'سازدەری پێرستی بابەتیی تێز (ToC)',
+    titleEnglish: 'Table of Contents Builder',
+    category: 'creation_planning',
+    section: '121-130',
+    icon: 'toc',
+    description: 'دروستکردنی پێرستی بەشەکان بە شوێنکەوتنی ژمارەی لاپەڕەکان.',
+    placeholder: 'ناونیشانی بەشەکان و ژمارەکانیان بنووسە...'
+  },
+  {
+    num: 124,
+    id: 'list_of_figures_tables_builder',
+    titleKurdish: 'پێرستی خشتەکان و هێڵکارییەکان',
+    titleEnglish: 'List of Figures & Tables Builder',
+    category: 'creation_planning',
+    section: '121-130',
+    icon: 'format_list_numbered',
+    description: 'کۆکردنەوەی جیاوازی هەموو فیگەر و خشتەکان لەناو ڕێزبەندێکی خاوێندا.',
+    placeholder: 'ناونیشانی فیگەر و خشتەکان بنووسە...'
+  },
+  {
+    num: 125,
+    id: 'index_generator',
+    titleKurdish: 'دروستکەری پێرستی زاراوەکان (Index)',
+    titleEnglish: 'Index Generator',
+    category: 'creation_planning',
+    section: '121-130',
+    icon: 'find_in_page',
+    description: 'سازدانی لیستی زاراوەکان لەگەڵ ژمارەی لاپەڕەی ئاماژەپێکراو بۆ کۆتایی کتێب.',
+    placeholder: 'دەق یان ناونیشانی لاپەڕەکان بنووسە...'
+  },
+  {
+    num: 126,
+    id: 'errata_sheet_writer',
+    titleKurdish: 'نووسەری فۆڕمی هەڵە و ڕاستکردنەوە (Errata Sheet)',
+    titleEnglish: 'Errata Sheet Writer',
+    category: 'creation_planning',
+    section: '121-130',
+    icon: 'error_outline',
+    description: 'تۆمارکردن و ڕاستکردنەوەی هەڵە چاپکراوەکانی تێز دوای چاپکردن.',
+    placeholder: 'هەڵەکە و ژمارەی لاپەڕەکەی بنووسە...'
+  },
+  {
+    num: 127,
+    id: 'plagiarism_waiver_generator',
+    titleKurdish: 'بەیاننامەی سەربەخۆیی فیکری و بەرپرسیارێتی',
+    titleEnglish: 'Plagiarism Waiver Generator',
+    category: 'creation_planning',
+    section: '121-130',
+    icon: 'verified',
+    description: 'نووسینی بەیانی یاسایی و ئەخلاقی کە تێزەکە کاری ڕەسەنی توێژەرەکەیە.',
+    placeholder: 'ناوی توێژەر و ناونیشانی تێز بەیان بکە...'
+  },
+  {
+    num: 128,
+    id: 'copyright_notice_writer',
+    titleKurdish: 'نووسەری مافی لەبەرگرتنەوە (Copyright Notice)',
+    titleEnglish: 'Copyright Notice Writer',
+    category: 'creation_planning',
+    section: '121-130',
+    icon: 'copyright',
+    description: 'داڕشتنی دەقی ڕەسمی پاراستنی مافی نووسەر لەسەر بەرهەمەکە.',
+    placeholder: 'ساڵ و ناوی توێژەر بنووسە...'
+  },
+  {
+    num: 129,
+    id: 'creative_commons_license_selector',
+    titleKurdish: 'هەڵبژێرەری مۆڵەتی Creative Commons',
+    titleEnglish: 'Creative Commons License Selector',
+    category: 'system_workspace',
+    section: '121-130',
+    icon: 'info',
+    description: 'دیاریکردنی مۆڵەتی گونجاو (CC BY, CC BY-NC) بۆ بڵاوکردنەوەی ئازاد.',
+    placeholder: 'شێوازی بڵاوکردنەوەی دڵخوازت بەیان بکە...'
+  },
+  {
+    num: 130,
+    id: 'final_thesis_archive_packager',
+    titleKurdish: 'پێچەرەوەی ئەرشیڤی کۆتایی تێز (Archive Packager)',
+    titleEnglish: 'Final Thesis Archive Packager',
+    category: 'system_workspace',
+    section: '121-130',
+    icon: 'archive',
+    description: 'کۆکردنەوەی هەموو فۆڕماتەکان (PDF, Word, LaTeX, Datasets) لەناو فایلی ZIP.',
+    placeholder: 'پێکهاتەی فۆڵدەر و فایلەکان بەیان بکە...'
+  }
+];

@@ -1,0 +1,267 @@
+{
+  "entities": {
+    "Refinement": {
+      "title": "Academic Refinement",
+      "description": "A persisted academic text refinement history or manuscript document",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The Google UID of the user who owns this history entry"
+        },
+        "originalText": {
+          "type": "string",
+          "description": "The original academic text before refinement"
+        },
+        "refinedText": {
+          "type": "string",
+          "description": "The refined and enhanced academic text"
+        },
+        "discipline": {
+          "type": "string",
+          "description": "The academic field of study"
+        },
+        "academicLevel": {
+          "type": "string",
+          "description": "The user academic stage"
+        },
+        "title": {
+          "type": "string",
+          "description": "The document heading"
+        },
+        "pages": {
+          "type": "number",
+          "description": "Calculated size or page limits"
+        },
+        "chapters": {
+          "type": "array",
+          "description": "The full chapters array holding structural snapshot records"
+        },
+        "createdAt": {
+          "type": "object",
+          "description": "Server timestamp of when this entry was created"
+        }
+      },
+      "required": ["userId", "createdAt"]
+    },
+    "EliteReport": {
+      "title": "Elite Academic Report",
+      "description": "A persisted scientific and neutrality evaluation report from Elite Lab",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The Google UID of the user who owns this report"
+        },
+        "hypothesis": {
+          "type": "string",
+          "description": "The researched scientific hypothesis statement"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The ISO string timestamp of the report creation"
+        },
+        "report": {
+          "type": "object",
+          "description": "The full scientific neutrality results and metrics"
+        }
+      },
+      "required": ["userId", "hypothesis", "timestamp", "report"]
+    },
+    "PeerSubmission": {
+      "title": "Peer Review Submission",
+      "description": "A manuscript or chapter submitted by an academic for peer evaluation",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The Google UID of the author"
+        },
+        "authorName": {
+          "type": "string",
+          "description": "The name or email of the submitting author"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the submitted chapter or manuscript"
+        },
+        "content": {
+          "type": "string",
+          "description": "The manuscript content for evaluation"
+        },
+        "discipline": {
+          "type": "string",
+          "description": "The discipline field of the study"
+        },
+        "academicLevel": {
+          "type": "string",
+          "description": "The academic level of the work"
+        },
+        "createdAt": {
+          "type": "object",
+          "description": "Server timestamp of when the work was submitted"
+        }
+      },
+      "required": ["userId", "title", "content", "createdAt"]
+    },
+    "PeerReview": {
+      "title": "Academic Peer Review",
+      "description": "An evaluation of a submitted academic text by a peer reviewer",
+      "type": "object",
+      "properties": {
+        "submissionId": {
+          "type": "string",
+          "description": "The ID of the submission being evaluated"
+        },
+        "reviewerId": {
+          "type": "string",
+          "description": "The Google UID of the peer reviewer"
+        },
+        "reviewerName": {
+          "type": "string",
+          "description": "The name of the peer reviewer or Anonymous"
+        },
+        "isAnonymous": {
+          "type": "boolean",
+          "description": "Whether the reviewer wants to remain anonymous"
+        },
+        "clarityScore": {
+          "type": "number",
+          "description": "Rating of clarity from 1 to 5"
+        },
+        "argumentationScore": {
+          "type": "number",
+          "description": "Rating of argumentation from 1 to 5"
+        },
+        "academicStandardsScore": {
+          "type": "number",
+          "description": "Rating of adherence to academic standards from 1 to 5"
+        },
+        "generalComments": {
+          "type": "string",
+          "description": "General review commentary and evaluation"
+        },
+        "suggestedEdits": {
+          "type": "string",
+          "description": "Suggested rewrite or edit segments for the author"
+        },
+        "createdAt": {
+          "type": "object",
+          "description": "Server timestamp of when this review was submitted"
+        }
+      },
+      "required": ["submissionId", "reviewerId", "isAnonymous", "clarityScore", "argumentationScore", "academicStandardsScore", "generalComments", "createdAt"]
+    },
+    "AcademicSource": {
+      "title": "Academic Source Reference",
+      "description": "A high-integrity verified academic citation/reference with DOI and metadata",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The Google UID of the user who registered this source"
+        },
+        "author": {
+          "type": "string",
+          "description": "The full author or researcher name"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the paper, book, or manuscript"
+        },
+        "year": {
+          "type": "number",
+          "description": "The year of publication"
+        },
+        "publisher": {
+          "type": "string",
+          "description": "The academic journal, publisher, or university"
+        },
+        "sourceType": {
+          "type": "string",
+          "description": "The citation type",
+          "enum": ["book", "journal", "thesis", "manuscript"]
+        },
+        "doi": {
+          "type": "string",
+          "description": "Digital Object Identifier (DOI) pattern"
+        },
+        "isbn": {
+          "type": "string",
+          "description": "International Standard Book Number (ISBN)"
+        },
+        "isVerified": {
+          "type": "boolean",
+          "description": "Boolean flag ensuring rigorous academic verification"
+        },
+        "createdAt": {
+          "type": "object",
+          "description": "The server timestamp of the registration"
+        }
+      },
+      "required": ["userId", "author", "title", "year", "publisher", "sourceType", "isVerified", "createdAt"]
+    },
+    "LibraryIndex": {
+      "title": "Academic Library Index",
+      "description": "A document vector representation and search index entry for semantic library queries",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The Google UID of the user who indexed this document"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the indexed text/document"
+        },
+        "content": {
+          "type": "string",
+          "description": "The cleaned and normalized Kurdish text content"
+        },
+        "embedding": {
+          "type": "array",
+          "description": "Numerical vector embedding representation of the content"
+        },
+        "originalId": {
+          "type": "string",
+          "description": "The original local/manuscript ID"
+        },
+        "processedAt": {
+          "type": "string",
+          "description": "ISO timestamp string of when the document was processed"
+        },
+        "createdAt": {
+          "type": "object",
+          "description": "Server timestamp of the indexing event"
+        }
+      },
+      "required": ["userId", "title", "content", "embedding", "processedAt"]
+    }
+  },
+  "firestore": {
+    "/refinements/{refinementId}": {
+      "schema": "#/entities/Refinement",
+      "description": "Collection of persisted refinement documents owned by authenticated users"
+    },
+    "/elite_reports/{reportId}": {
+      "schema": "#/entities/EliteReport",
+      "description": "Collection of saved Elite Lab scientific and neutrality reports"
+    },
+    "/peer_submissions/{submissionId}": {
+      "schema": "#/entities/PeerSubmission",
+      "description": "Collection of academic manuscripts submitted for peer review"
+    },
+    "/peer_reviews/{reviewId}": {
+      "schema": "#/entities/PeerReview",
+      "description": "Collection of reviews and feedback left by peer reviewers"
+    },
+    "/sources/{sourceId}": {
+      "schema": "#/entities/AcademicSource",
+      "description": "Collection of verified high-integrity academic reference sources"
+    },
+    "/library_index/{indexId}": {
+      "schema": "#/entities/LibraryIndex",
+      "description": "Collection of document vector representations and text index segments for academic search"
+    }
+  }
+}

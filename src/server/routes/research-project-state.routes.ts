@@ -1,0 +1,70 @@
+import { Router } from 'express';
+import { GoogleGenAI } from '@google/genai';
+import { researchProjectStateService } from '../services/research-project-state.service';
+
+export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGenAI): Router {
+  const router = Router();
+
+  /**
+   * GET /api/workspace/:workspaceId
+   */
+  router.get('/:workspaceId', (req, res) => {
+    try {
+      const userId = (req as any).user?.uid || 'default_user';
+      const { workspaceId } = req.params;
+      const ws = researchProjectStateService.getOrCreateWorkspace(userId, workspaceId);
+      res.json(ws);
+    } catch (err: unknown) {
+      console.error('Workspace Get Error:', err);
+      res.status(500).json({ error: 'کێشەیەک لە خوێندنەوەی باری واڕکسپەیسدا دروست بوو.' });
+    }
+  });
+
+  /**
+   * POST /api/workspace/:workspaceId/save
+   */
+  router.post('/:workspaceId/save', (req, res) => {
+    try {
+      const userId = (req as any).user?.uid || 'default_user';
+      const { workspaceId } = req.params;
+      const { draftContent, activeChapter } = req.body;
+
+      const updated = researchProjectStateService.updateWorkspaceContent(userId, workspaceId, draftContent || '', activeChapter);
+      res.json(updated);
+    } catch (err: unknown) {
+      console.error('Workspace Save Error:', err);
+      res.status(500).json({ error: 'کێشەیەک لە پاشەکەوتکردنی واڕکسپەیسدا دروست بوو.' });
+    }
+  });
+
+  /**
+   * POST /api/workspace/:workspaceId/orchestrate
+   */
+  router.post('/:workspaceId/orchestrate', async (req, res) => {
+    try {
+      const userId = (req as any).user?.uid || 'default_user';
+      const { workspaceId } = req.params;
+      const { topic, discipline } = req.body;
+
+      if (!topic) {
+        res.status(400).json({ error: 'تەوەرەی توێژینەوە (topic) پێویستە.' });
+        return;
+      }
+
+      const result = await researchProjectStateService.runFullWorkspaceOrchestration(
+        userId,
+        workspaceId,
+        topic,
+        discipline || 'گشتی',
+        getGeminiClient
+      );
+
+      res.json(result);
+    } catch (err: unknown) {
+      console.error('Workspace Orchestrate Error:', err);
+      res.status(500).json({ error: 'کێشەیەک لە جێبەجێکردنی پرۆسەی سەرانسەریی واڕکسپەیسدا ڕووی دا.' });
+    }
+  });
+
+  return router;
+}
