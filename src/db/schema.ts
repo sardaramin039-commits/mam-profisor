@@ -7,6 +7,7 @@ export const libraryIndex = pgTable('library_index', {
   title: text('title').notNull(),
   content: text('content').notNull(),
   language: text('language').default('ckb').notNull(), // ckb = Sorani Kurdish
+  ownerUid: text('owner_uid'), // Firebase Auth UID; null legacy rows are not returned by private RAG
   embedding: vector('embedding', { dimensions: 768 }), // 768 dimension بۆ Gemini Text Embedding
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
