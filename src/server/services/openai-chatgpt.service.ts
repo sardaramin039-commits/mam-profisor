@@ -55,14 +55,12 @@ export interface DiscoverSourcesResponse {
 }
 
 export class OpenAiChatGptService {
-  private fallbackKey = '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';
-
   public getApiKey(): string {
     const envKey = process.env['OPENAI_API_KEY'];
-    if (envKey && envKey.trim().length > 0) {
-      return envKey.trim();
+    if (!envKey || envKey.trim().length === 0) {
+      throw new Error('OPENAI_API_KEY is not configured on the server.');
     }
-    return this.fallbackKey;
+    return envKey.trim();
   }
 
   public getBaseUrl(): string {
