@@ -124,7 +124,7 @@ export class AcademicSearchService {
       return items.map((item: any) => {
         const info = item.volumeInfo || {};
         const yearMatch = info.publishedDate?.match(/\d{4}/);
-        const year = yearMatch ? parseInt(yearMatch[0], 10) : new Date().getFullYear();
+        const year = yearMatch ? parseInt(yearMatch[0], 10) : 0;
 
         return {
           id: item.id || info.industryIdentifiers?.[0]?.identifier || `gbooks:${this.stableId(info.title || '')}`,
