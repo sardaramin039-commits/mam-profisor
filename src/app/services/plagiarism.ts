@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { AuthenticatedApiService } from '../core/services/authenticated-api.service';
 
 export interface PlagiarismResult {
   originalityScore: number;
@@ -11,17 +12,12 @@ export interface PlagiarismResult {
   providedIn: 'root'
 })
 export class PlagiarismService {
-  async checkPlagiarism(content: string, title?: string): Promise<PlagiarismResult> {
-    const response = await fetch('/api/plagiarism_check', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, title })
+  private readonly api = inject(AuthenticatedApiService);
+
+  checkPlagiarism(content: string, title?: string): Promise<PlagiarismResult> {
+    return this.api.post<PlagiarismResult>('/api/plagiarism_check', {
+      content,
+      title
     });
-
-    if (!response.ok) {
-      throw new Error('پێوەندی لەگەڵ سێرڤەر نییە بۆ پشکنینی ڕەسەنایەتی.');
-    }
-
-    return response.json();
   }
 }
