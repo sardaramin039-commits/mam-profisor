@@ -78,14 +78,14 @@ class ResearchProjectStateService {
     return this.workspaces.get(key)!;
   }
 
-  public updateWorkspaceContent(userId: string, workspaceId: string, content: string, chapter?: string): WorkspaceSession {
+  public async updateWorkspaceContent(userId: string, workspaceId: string, content: string, chapter?: string): Promise<WorkspaceSession> {
     const ws = this.getOrCreateWorkspace(userId, workspaceId);
     ws.draftContent = content;
     if (chapter) ws.activeChapter = chapter;
     ws.lastSavedAt = new Date().toISOString();
 
     // Also sync to Research Memory as draft_chapter
-    researchMemoryService.addMemoryItem(userId, workspaceId, {
+    await researchMemoryService.addMemoryItem(userId, workspaceId, {
       userId,
       topic: ws.projectName,
       type: 'draft_chapter',
