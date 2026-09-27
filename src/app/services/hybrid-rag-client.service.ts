@@ -78,7 +78,7 @@ export class HybridRagClientService {
       const lexicalMatchRatio = claimWords.length > 0 ? matchedWordCount / claimWords.length : 0;
 
       // 2. Pseudo-semantic relevance calculation (token co-occurrence & substring similarity)
-      const baseOriginal = candidate.score ?? 0.7;
+      const baseOriginal = Math.max(0, Math.min(1, candidate.score ?? 0));
       const semanticRelevance = Math.min(1.0, baseOriginal * 0.5 + lexicalMatchRatio * 0.5);
 
       // 3. Verification status weighting factor
@@ -98,13 +98,13 @@ export class HybridRagClientService {
       else if (crossEncoderScore >= 0.50) relevanceCategory = 'MEDIUM';
 
       return {
-        chunkId: candidate.chunkId || `CHK-${Math.random().toString(36).substring(2, 7)}`,
-        documentId: candidate.documentId || 'DOC-DEFAULT',
-        sourceId: candidate.sourceId || 'SRC-DEFAULT',
-        sourceTitle: candidate.sourceTitle || 'سەرچاوەی ئەکادیمی',
+        chunkId: candidate.chunkId || `CHK-${Math.abs((candidate.text || '').length)}-${Math.abs(claimWords.length)}`,
+        documentId: candidate.documentId || 'DOC-UNKNOWN',
+        sourceId: candidate.sourceId || 'SRC-UNKNOWN',
+        sourceTitle: candidate.sourceTitle || 'سەرچاوەی دیارینەکراو',
         text: candidate.text,
         verificationStatus: vStatus,
-        originalScore: candidate.score || 0.7,
+        originalScore: baseOriginal,
         crossEncoderScore,
         semanticRelevance: Math.round(semanticRelevance * 100) / 100,
         lexicalMatchRatio: Math.round(lexicalMatchRatio * 100) / 100,
@@ -153,8 +153,8 @@ export class HybridRagClientService {
           query: claimText,
           candidates: reranked,
           metrics: {
-            lexicalMatchCount: res.metrics?.lexicalMatchCount || 1,
-            semanticMatchCount: res.metrics?.semanticMatchCount || 1,
+            lexicalMatchCount: res.metrics?.lexicalMatchCount || 0,
+            semanticMatchCount: res.metrics?.semanticMatchCount || 0,
             fusedCandidatesCount: rawCandidates.length,
             rerankedCount: reranked.length,
             topCrossEncoderScore: reranked.length > 0 ? reranked[0].crossEncoderScore : 0
@@ -164,27 +164,15 @@ export class HybridRagClientService {
       catchError(err => {
         console.error('HybridRagClientService API Error:', err);
         this.isReranking.set(false);
-        // Fallback local response
-        const fallbackReranked = this.rerankEvidenceForClaim(claimText, [
-          {
-            chunkId: 'CHK-FB-01',
-            documentId,
-            sourceId: 'SRC-FB-01',
-            sourceTitle: 'کتێبی سەلمێنراوی زانستی (Fallback)',
-            text: `دەقی زانستی سەلمێنراو کە وەڵامی بانگەشەی "${claimText}" دەداتەوە.`,
-            verificationStatus: 'verified',
-            score: 0.90
-          }
-        ]);
         return of({
           query: claimText,
-          candidates: fallbackReranked,
+          candidates: [],
           metrics: {
-            lexicalMatchCount: 1,
-            semanticMatchCount: 1,
-            fusedCandidatesCount: 1,
-            rerankedCount: fallbackReranked.length,
-            topCrossEncoderScore: fallbackReranked.length > 0 ? fallbackReranked[0].crossEncoderScore : 0
+            lexicalMatchCount: 0,
+            semanticMatchCount: 0,
+            fusedCandidatesCount: 0,
+            rerankedCount: 0,
+            topCrossEncoderScore: 0
           }
         });
       })
