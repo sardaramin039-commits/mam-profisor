@@ -28,13 +28,11 @@ export interface VerifiedCitationRecord {
   verificationStatus: VerificationStatus;
   verificationNotes?: string;
   auditDate: string;
-  
-  // Tier & Reliability Ranking
+
   tier: SourceTierLevel;
-  tierName: string; // e.g. "Google Books / Crossref"
-  reliabilityScore: number; // 0 - 100
-  
-  // Deduplication metadata
+  tierName: string;
+  reliabilityScore: number;
+
   canonicalSource: boolean;
   duplicateOf: string | null;
   mirrorsCount: number;
@@ -59,8 +57,8 @@ export interface EvidenceLinkedClaim {
   evidenceText: string;
   sourceURL?: string;
   verificationStatus: VerificationStatus;
-  confidenceScore: number; // 0 - 100
-  contentKind: ContentKind; // SOURCE-BASED, SYNTHESIS, AI-INFERENCE
+  confidenceScore: number;
+  contentKind: ContentKind;
   badges: {
     primary: string;
     secondary: string;
@@ -69,7 +67,7 @@ export interface EvidenceLinkedClaim {
 
 export interface ResearchGateAuditResult {
   passed: boolean;
-  score: number; // 0 - 100
+  score: number;
   insufficientReason?: string;
   missingClaims: string[];
   missingEvidence: string[];
@@ -89,57 +87,83 @@ export interface VerificationAuditReport {
   formattedSummaryMarkdown: string;
 }
 
+function normalize(value: string): string {
+  return (value || '').normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function deterministicId(prefix: string, value: string): string {
+  let hash = 2166136261;
+  const normalized = normalize(value);
+  for (let index = 0; index < normalized.length; index += 1) {
+    hash ^= normalized.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `${prefix}-${(hash >>> 0).toString(36)}`;
+}
+
+function hasAuthoritativeIdentifier(source: { identifiers?: SourceIdentifiers; doiOrUrl?: string }): boolean {
+  const identifiers = source.identifiers || {};
+  return Boolean(
+    identifiers.doi ||
+    identifiers.isbn ||
+    identifiers.pmid ||
+    identifiers.openAlexId ||
+    identifiers.crossrefId ||
+    identifiers.semanticScholarId ||
+    (source.doiOrUrl && /^https?:\/\//i.test(source.doiOrUrl))
+  );
+}
+
 export class SourceVerificationEngine {
-  
   /**
-   * Evaluates Source Tier & Reliability Score (0-100)
+   * Tier is a deterministic retrieval-quality heuristic. It is NOT a verification result.
    */
-  public static calculateSourceTier(sourceNameOrUrl: string): { tier: SourceTierLevel; tierName: string; score: number } {
-    const s = (sourceNameOrUrl || '').toLowerCase();
+  public static calculateSourceTier(sourceNameOrUrl: string): {
+    tier: SourceTierLevel;
+    tierName: string;
+    score: number;
+  } {
+    const source = normalize(sourceNameOrUrl);
 
-    // Tier 1 - Academic / Primary Sources
     const tier1Keywords = [
-      'google books', 'openalex', 'crossref', 'semantic scholar',
-      'doaj', 'pubmed', 'library of congress', 'worldcat', 'doi.org', 'ieee', 'springer', 'nature', 'jstor', 'sciencedirect'
+      'crossref', 'openalex', 'semantic scholar', 'pubmed', 'doaj',
+      'library of congress', 'worldcat', 'doi.org', 'ieee', 'springer',
+      'nature', 'jstor', 'sciencedirect'
     ];
-    
-    // Tier 2 - Digital Libraries / Archives
     const tier2Keywords = [
-      'internet archive', 'open library', 'europeana', 'university repository',
-      'digital repository', 'hathitrust', 'arxiv'
+      'google books', 'internet archive', 'open library', 'europeana',
+      'university repository', 'digital repository', 'hathitrust', 'arxiv'
     ];
 
-    for (const kw of tier1Keywords) {
-      if (s.includes(kw)) {
-        return {
-          tier: 'Tier 1',
-          tierName: `Academic / Primary (${kw.toUpperCase()})`,
-          score: 90 + Math.floor(Math.random() * 9) // 90-98
-        };
-      }
+    if (tier1Keywords.some(keyword => source.includes(keyword))) {
+      const matched = tier1Keywords.find(keyword => source.includes(keyword)) || 'academic-index';
+      return {
+        tier: 'Tier 1',
+        tierName: `Academic / Index (${matched})`,
+        score: 90
+      };
     }
 
-    for (const kw of tier2Keywords) {
-      if (s.includes(kw)) {
-        return {
-          tier: 'Tier 2',
-          tierName: `Digital Library / Archive (${kw})`,
-          score: 70 + Math.floor(Math.random() * 15) // 70-84
-        };
-      }
+    if (tier2Keywords.some(keyword => source.includes(keyword))) {
+      const matched = tier2Keywords.find(keyword => source.includes(keyword)) || 'digital-library';
+      return {
+        tier: 'Tier 2',
+        tierName: `Digital Library / Archive (${matched})`,
+        score: 70
+      };
     }
 
-    // Default Tier 3 — General Web Sources
     return {
       tier: 'Tier 3',
-      tierName: 'General Web Source / Blog',
-      score: 40 + Math.floor(Math.random() * 20) // 40-59
+      tierName: 'General Web / Unclassified',
+      score: 40
     };
   }
 
   /**
-   * Executes strict 5-step workflow: Search → Retrieve → Read → Verify → Cite
-   * Incorporates Tier ranking & deduplication metadata
+   * Local workflow only. A local snippet can establish an evidence match,
+   * but it cannot establish that the publication itself exists in an authority.
+   * Therefore this method never upgrades a source to VERIFIED on its own.
    */
   public static processWorkflow(
     rawClaim: string,
@@ -153,164 +177,142 @@ export class SourceVerificationEngine {
       pageNumber?: number | string | null;
       retrievedTextSnippet?: string;
       sourceUrl?: string;
+      externallyVerified?: boolean;
     }
   ): VerifiedCitationRecord {
-    const id = `verif_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const auditDate = new Date().toLocaleTimeString('ckb-IR', { hour: '2-digit', minute: '2-digit' });
-
-    // Step 1: Search
-    const searched = true;
-
-    // Step 2: Retrieve
-    const hasSourceData = Boolean(candidateSource.title && candidateSource.author);
-    const retrieved = hasSourceData;
-
-    // Step 3: Read
+    const title = (candidateSource.title || '').trim();
+    const author = (candidateSource.author || '').trim();
     const snippet = (candidateSource.retrievedTextSnippet || '').trim();
-    const read = snippet.length > 5;
+    const rawIdentifier = candidateSource.doiOrUrl || candidateSource.identifiers?.doi || candidateSource.identifiers?.isbn || candidateSource.identifiers?.pmid || '';
 
-    // Tier Calculation
-    const sourceRef = `${candidateSource.publisherOrJournal || ''} ${candidateSource.doiOrUrl || ''} ${candidateSource.title || ''}`;
+    const id = deterministicId('VERIF', [
+      rawClaim,
+      title,
+      author,
+      String(candidateSource.publicationYear || ''),
+      rawIdentifier,
+      snippet
+    ].join('::'));
+
+    const sourceRef = [
+      candidateSource.publisherOrJournal || '',
+      candidateSource.doiOrUrl || '',
+      candidateSource.sourceUrl || '',
+      title
+    ].join(' ');
     const tierInfo = this.calculateSourceTier(sourceRef);
 
-    // Step 4: Verify
+    const searched = Boolean(title || author || rawIdentifier || candidateSource.sourceUrl);
+    const retrieved = Boolean(title && author);
+    const read = snippet.length >= 10;
+    const claimMatch = Boolean(
+      rawClaim.trim() &&
+      snippet &&
+      (normalize(snippet).includes(normalize(rawClaim)) || normalize(rawClaim).includes(normalize(snippet)))
+    );
+    const authoritativeIdentifier = hasAuthoritativeIdentifier(candidateSource);
+
     let status: VerificationStatus = 'UNVERIFIED';
-    let notes = '';
+    let notes = 'ناسنامەی دەرەکی یان پشتڕاستکردنەوەی authority بەردەست نییە؛ source ـەکە Verified ناکرێت.';
 
-    if (!retrieved) {
+    if (candidateSource.externallyVerified === true && retrieved && read && authoritativeIdentifier) {
+      status = 'VERIFIED';
+      notes = 'پشتڕاستکردنەوەی دەرەکی و evidence ـی source بەردەستە؛ source مافی citation هەیە.';
+    } else if (retrieved && read && claimMatch) {
+      status = 'PARTIALLY_VERIFIED';
+      notes = 'Claim ـەکە لە snippet ـی وەرگیراودا هەڵکەوتووە، بەڵام identity ـی source بە authority دەرەکی پشتڕاست نەکراوەتەوە.';
+    } else if (retrieved && read) {
       status = 'UNVERIFIED';
-      notes = 'سەرچاوەکە میدیا یان داتای سەرەتایی نەدۆزرایەوە (Search / Retrieve Failed)';
+      notes = 'دەقی source بەردەستە، بەڵام evidence ـی ڕوون یان پشتڕاستکردنەوەی دەرەکی بەس نییە.';
+    } else if (!retrieved) {
+      notes = 'metadata ـی سەرچاوەکە تەواو نییە؛ citation ـی پشتڕاستکراو دروست ناکرێت.';
     } else if (!read) {
-      status = 'UNVERIFIED';
-      notes = 'ناوەڕۆکی سەرچاوەکە نەخوێندراوەتەوە یان دەقەکەی بەردەست نییە؛ بەڵگەی سەلمێنەر نەدۆزرایەوە (Unread Source)';
-    } else {
-      const normalizedClaim = rawClaim.toLowerCase().trim();
-      const normalizedSnippet = snippet.toLowerCase().trim();
-
-      const directMatch = normalizedSnippet.includes(normalizedClaim) || normalizedClaim.includes(normalizedSnippet);
-      const isDoiValid = !candidateSource.doiOrUrl || candidateSource.doiOrUrl.startsWith('http') || candidateSource.doiOrUrl.includes('10.');
-
-      if (directMatch && isDoiValid && candidateSource.pageNumber) {
-        status = 'VERIFIED';
-        notes = 'سەرچاوەکە بە تەواوی خوێندرایەوە و بەڵگەی تەواو لەگەڵ ژمارەی لاپەڕە پشتڕاستکرایەوە.';
-      } else if (snippet.length > 15) {
-        status = 'PARTIALLY_VERIFIED';
-        notes = 'دەقی سەرچاوەکە خوێندرایەوە، بەڵام ژمارەی لاپەڕە یان بەڵگەی سەلمێنەری بڕبڕەیی پێویستی بە پشتڕاستکردنەوەی زیاترە.';
-      } else {
-        status = 'UNVERIFIED';
-        notes = 'بەڵگە لەگەڵ دەقی داواکراو تەبا نییە.';
-      }
+      notes = 'دەقی evidence بەردەست نییە؛ citation ـی پشتڕاستکراو دروست ناکرێت.';
     }
 
-    // Adjust Reliability Score based on verification
-    let finalScore = tierInfo.score;
-    if (status === 'VERIFIED') finalScore = Math.min(100, finalScore + 5);
-    else if (status === 'UNVERIFIED') finalScore = Math.max(10, finalScore - 30);
+    const verificationBonus = status === 'VERIFIED' ? 10 : status === 'PARTIALLY_VERIFIED' ? -5 : -25;
+    const reliabilityScore = Math.max(0, Math.min(100, tierInfo.score + verificationBonus));
 
-    // Step 5: Cite (ONLY allowed if VERIFIED)
-    const cited = status === 'VERIFIED';
-
-    const record: VerifiedCitationRecord = {
+    return {
       id,
-      title: retrieved ? (candidateSource.title || 'سەرناوی پشتڕاستنەکراوە') : 'سەرچاوەی نەناسراو',
-      author: retrieved ? (candidateSource.author || 'نووسەری نەناسراو') : 'نووسەری دیاری نەکراو',
-      publicationYear: status !== 'UNVERIFIED' ? (candidateSource.publicationYear || null) : null,
-      publisherOrJournal: status !== 'UNVERIFIED' ? (candidateSource.publisherOrJournal || 'نادیار') : 'دیاری نەکراو',
-      identifiers: candidateSource.identifiers || { url: candidateSource.sourceUrl, doi: candidateSource.doiOrUrl },
-      doiOrUrl: status !== 'UNVERIFIED' ? candidateSource.doiOrUrl : undefined,
-      pageNumber: status === 'VERIFIED' ? candidateSource.pageNumber : null,
-      exactEvidenceSnippet: snippet || 'هیچ بەڵگەیەک لە سەرچاوەکە نەخوێندراوەتەوە',
-      sourceUrl: candidateSource.sourceUrl,
+      title: title || 'سەرچاوەی دیارینەکراو',
+      author: author || 'نووسەر دیارینەکراو نییە',
+      publicationYear: candidateSource.publicationYear ?? null,
+      publisherOrJournal: candidateSource.publisherOrJournal || 'ناوی بڵاوکەرەوە/گۆڤار دیارینەکراوە',
+      identifiers: candidateSource.identifiers || {
+        doi: candidateSource.doiOrUrl,
+        url: candidateSource.sourceUrl
+      },
+      doiOrUrl: rawIdentifier || candidateSource.sourceUrl,
+      pageNumber: status === 'VERIFIED' ? (candidateSource.pageNumber ?? null) : null,
+      exactEvidenceSnippet: snippet,
+      sourceUrl: candidateSource.sourceUrl || candidateSource.doiOrUrl,
       verificationStatus: status,
       verificationNotes: notes,
-      auditDate,
-
+      auditDate: new Date().toISOString(),
       tier: tierInfo.tier,
       tierName: tierInfo.tierName,
-      reliabilityScore: finalScore,
-
+      reliabilityScore,
       canonicalSource: true,
       duplicateOf: null,
       mirrorsCount: 0,
-
       workflowStepsCompleted: {
         searched,
         retrieved,
         read,
-        verified: status === 'VERIFIED' || status === 'PARTIALLY_VERIFIED',
-        cited
+        verified: status === 'VERIFIED',
+        cited: status === 'VERIFIED'
       }
     };
-
-    return record;
   }
 
-  /**
-   * Duplicate Source Detection & Deduplication Engine
-   * Merges duplicate sources based on DOI, ISBN, PMID, OpenAlex ID, Crossref ID, URL, or Title+Author+Year.
-   */
   public static deduplicateSources(sources: VerifiedCitationRecord[]): VerifiedCitationRecord[] {
     const canonicalMap = new Map<string, VerifiedCitationRecord>();
 
-    for (const src of sources) {
-      // Form unique deduplication fingerprint
-      const doi = src.identifiers?.doi?.toLowerCase().trim();
-      const isbn = src.identifiers?.isbn?.toLowerCase().trim();
-      const url = (src.identifiers?.url || src.sourceUrl || '').toLowerCase().trim();
-      const titleAuthorYear = `${src.title.toLowerCase().trim()}_${src.author.toLowerCase().trim()}_${src.publicationYear || ''}`;
+    for (const source of sources) {
+      const normalizedDoi = normalize(source.identifiers?.doi || '');
+      const normalizedIsbn = normalize(source.identifiers?.isbn || '');
+      const normalizedUrl = normalize(source.identifiers?.url || source.sourceUrl || '');
+      const fallbackFingerprint = `${normalize(source.title)}::${normalize(source.author)}::${source.publicationYear || ''}`;
+      const fingerprint = normalizedDoi || normalizedIsbn || normalizedUrl || fallbackFingerprint;
 
-      let fingerprint = doi || isbn || (url && url.length > 8 ? url : null) || titleAuthorYear;
-
-      if (canonicalMap.has(fingerprint)) {
-        const existingCanonical = canonicalMap.get(fingerprint)!;
-        existingCanonical.mirrorsCount += 1;
-
-        // Merge highest metadata quality
-        if (src.reliabilityScore > existingCanonical.reliabilityScore) {
-          existingCanonical.reliabilityScore = src.reliabilityScore;
-          existingCanonical.tier = src.tier;
-          existingCanonical.tierName = src.tierName;
+      const existing = canonicalMap.get(fingerprint);
+      if (existing) {
+        existing.mirrorsCount += 1;
+        if (source.verificationStatus === 'VERIFIED' && existing.verificationStatus !== 'VERIFIED') {
+          existing.verificationStatus = 'VERIFIED';
+          existing.verificationNotes = source.verificationNotes;
+          existing.workflowStepsCompleted.verified = true;
+          existing.workflowStepsCompleted.cited = true;
+          existing.pageNumber = source.pageNumber;
         }
-        if (!existingCanonical.pageNumber && src.pageNumber) {
-          existingCanonical.pageNumber = src.pageNumber;
-        }
-        if (!existingCanonical.doiOrUrl && src.doiOrUrl) {
-          existingCanonical.doiOrUrl = src.doiOrUrl;
-        }
+        existing.reliabilityScore = Math.max(existing.reliabilityScore, source.reliabilityScore);
       } else {
-        src.canonicalSource = true;
-        src.duplicateOf = null;
-        canonicalMap.set(fingerprint, { ...src });
+        canonicalMap.set(fingerprint, {
+          ...source,
+          identifiers: { ...source.identifiers },
+          workflowStepsCompleted: { ...source.workflowStepsCompleted }
+        });
       }
     }
 
-    // Sort with Tier 1 > Tier 2 > Tier 3 and highest Reliability Score
-    return Array.from(canonicalMap.values()).sort((a, b) => {
-      if (a.tier !== b.tier) {
-        const tierRank = { 'Tier 1': 1, 'Tier 2': 2, 'Tier 3': 3 };
-        return tierRank[a.tier] - tierRank[b.tier];
-      }
-      return b.reliabilityScore - a.reliabilityScore;
-    });
+    return Array.from(canonicalMap.values()).sort((a, b) => b.reliabilityScore - a.reliabilityScore);
   }
 
-  /**
-   * Evidence Linking & Claim Mapper
-   */
   public static createLinkedClaim(
     claimText: string,
     source: VerifiedCitationRecord,
     kind: ContentKind
   ): EvidenceLinkedClaim {
-    const claimId = `claim_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const claimId = deterministicId('CLAIM', `${source.id}::${claimText}::${kind}`);
+    const verified = source.verificationStatus === 'VERIFIED';
 
-    // Badges calculation
     let primaryBadge = '[Source-Based]';
-    let secondaryBadge = '[Evidence Verified]';
+    let secondaryBadge = verified ? '[Evidence Verified]' : '[Evidence Not Verified]';
 
     if (kind === 'SYNTHESIS') {
       primaryBadge = '[Synthesis]';
-      secondaryBadge = '[Multiple Sources]';
+      secondaryBadge = '[Multiple Sources — Verify]';
     } else if (kind === 'AI-INFERENCE') {
       primaryBadge = '[AI-Inference]';
       secondaryBadge = '[Requires Verification]';
@@ -323,11 +325,11 @@ export class SourceVerificationEngine {
       sourceTitle: source.title,
       author: source.author,
       publicationYear: source.publicationYear,
-      pageNumber: source.verificationStatus === 'VERIFIED' ? (source.pageNumber ?? null) : null,
+      pageNumber: verified ? (source.pageNumber ?? null) : null,
       evidenceText: source.exactEvidenceSnippet,
       sourceURL: source.sourceUrl || source.doiOrUrl,
-      verificationStatus: kind === 'AI-INFERENCE' ? 'UNVERIFIED' : source.verificationStatus,
-      confidenceScore: kind === 'AI-INFERENCE' ? 30 : source.reliabilityScore,
+      verificationStatus: verified ? 'VERIFIED' : source.verificationStatus,
+      confidenceScore: verified ? source.reliabilityScore : 0,
       contentKind: kind,
       badges: {
         primary: primaryBadge,
@@ -336,101 +338,88 @@ export class SourceVerificationEngine {
     };
   }
 
-  /**
-   * Pre-Writing Research Gate Engine
-   * Validates if there are enough verified sources and evidence before permitting Writer Agent to draft text.
-   */
   public static auditResearchGate(
     sources: VerifiedCitationRecord[],
     claims: EvidenceLinkedClaim[]
   ): ResearchGateAuditResult {
     const deduplicated = this.deduplicateSources(sources);
-    const verifiedSources = deduplicated.filter((s) => s.verificationStatus === 'VERIFIED');
-    const unverifiedSourcesList = deduplicated.filter((s) => s.verificationStatus === 'UNVERIFIED');
+    const verifiedSources = deduplicated.filter(source => source.verificationStatus === 'VERIFIED');
+    const unverifiedSources = deduplicated.filter(source => source.verificationStatus !== 'VERIFIED');
 
     const missingClaims: string[] = [];
     const missingEvidence: string[] = [];
-    const unverifiedSourceTitles: string[] = unverifiedSourcesList.map((s) => s.title);
+    const unverifiedSourceTitles = unverifiedSources.map(source => source.title);
 
-    claims.forEach((c) => {
-      if (c.verificationStatus === 'UNVERIFIED' || !c.evidenceText || c.evidenceText.length < 10) {
-        missingClaims.push(c.claimText);
-        missingEvidence.push(`هیچ بەڵگەیەک بۆ داواکاری: "${c.claimText.slice(0, 45)}..." نەدۆزرایەوە.`);
+    for (const claim of claims) {
+      if (claim.verificationStatus !== 'VERIFIED' || !claim.evidenceText || claim.evidenceText.length < 10) {
+        missingClaims.push(claim.claimText);
+        missingEvidence.push(`هیچ بەڵگەی تەواو بۆ claim ـی «${claim.claimText.slice(0, 80)}» پشتڕاست نەکراوە.`);
       }
-    });
+    }
 
-    const isEnoughVerified = verifiedSources.length >= 1;
-    const hasZeroUnverifiedMainClaims = missingClaims.length === 0;
-
-    const passed = isEnoughVerified && hasZeroUnverifiedMainClaims;
-    const score = Math.round((verifiedSources.length / Math.max(1, deduplicated.length)) * 100);
+    const passed = verifiedSources.length > 0 && missingClaims.length === 0;
+    const score = verifiedSources.length === 0
+      ? 0
+      : Math.round((verifiedSources.length / Math.max(1, deduplicated.length)) * 100);
 
     return {
       passed,
       score,
       insufficientReason: passed
         ? undefined
-        : 'بەڵگە و سەرچاوەکانی توێژینەوەکە بەس نین یان هەندێک دەق و بانگەشە بەبێ بەڵگەی سەلمێنەر ماونەتەوە.',
+        : 'تا source ـی دەرەکی پشتڕاستکراو و evidence ـی هەمان source نەبێت، Research Gate بەڵگەنامەکە بە پاس نازانێت.',
       missingClaims,
       missingEvidence,
       unverifiedSources: unverifiedSourceTitles,
       recommendedSources: [
-        'Google Books (Academic Editions)',
-        'OpenAlex Academic Knowledge Base',
         'Crossref DOI Index',
-        'PubMed & Semantic Scholar Archive'
+        'OpenAlex',
+        'PubMed',
+        'WorldCat / Library of Congress'
       ],
       canonicalSourceCount: deduplicated.length,
       verifiedSourceCount: verifiedSources.length
     };
   }
 
-  /**
-   * Generates a strict grouped markdown report separating Verified, Partially Verified, and Unverified Claims.
-   */
   public static generateAuditReport(records: VerifiedCitationRecord[]): VerificationAuditReport {
     const deduplicated = this.deduplicateSources(records);
-    const verifiedSources = deduplicated.filter((r) => r.verificationStatus === 'VERIFIED');
-    const partiallyVerifiedSources = deduplicated.filter((r) => r.verificationStatus === 'PARTIALLY_VERIFIED');
-    const unverifiedClaims = deduplicated.filter((r) => r.verificationStatus === 'UNVERIFIED');
+    const verifiedSources = deduplicated.filter(record => record.verificationStatus === 'VERIFIED');
+    const partiallyVerifiedSources = deduplicated.filter(record => record.verificationStatus === 'PARTIALLY_VERIFIED');
+    const unverifiedClaims = deduplicated.filter(record => record.verificationStatus === 'UNVERIFIED');
 
-    let md = `### 📋 ڕاپۆرتی فەرمیی پشتڕاستکردنەوە و ڕیزبەندی سەرچاوەکان (Source Verification Audit)\n\n`;
-
-    // 1. Verified Sources
-    md += `#### 🟢 Verified Sources (سەرچاوە پشتڕاستکراوەکان - Canonical):\n`;
+    let markdown = '### Source Verification Audit\n\n';
+    markdown += '#### 🟢 Verified Sources\n';
     if (verifiedSources.length === 0) {
-      md += `* هیچ سەرچاوەیەکی تەواو پشتڕاستکراوە لەم شیکارییەدا نییە.\n\n`;
+      markdown += '* هیچ source ـێکی تەواو پشتڕاستکراو لەم audit ـەدا نییە.\n\n';
     } else {
-      verifiedSources.forEach((v, idx) => {
-        md += `${idx + 1}. **${v.author}** (${v.publicationYear || 'نادیار'}). *${v.title}*. ${v.publisherOrJournal}.`;
-        if (v.pageNumber) md += ` لاپەڕە: ${v.pageNumber}.`;
-        if (v.doiOrUrl) md += ` DOI/URL: ${v.doiOrUrl}`;
-        md += `\n   > **پلەی سەرچاوە:** ${v.tier} (${v.tierName}) | **Reliability Score:** ${v.reliabilityScore}/100`;
-        md += `\n   > **بەڵگەی سەلمێنەر:** "${v.exactEvidenceSnippet}"\n\n`;
-      });
+      for (const source of verifiedSources) {
+        markdown += `- **${source.author}** (${source.publicationYear ?? 'n.d.'}). *${source.title}*. ${source.publisherOrJournal}.\n`;
+        markdown += `  - Tier: ${source.tier} | Heuristic score: ${source.reliabilityScore}/100\n`;
+        if (source.pageNumber) markdown += `  - Page: ${source.pageNumber}\n`;
+        if (source.doiOrUrl) markdown += `  - DOI/URL: ${source.doiOrUrl}\n`;
+        markdown += `  - Evidence: ${source.exactEvidenceSnippet || '—'}\n`;
+      }
+      markdown += '\n';
     }
 
-    // 2. Partially Verified Sources
-    md += `#### 🟡 Partially Verified Sources (سەرچاوە بەشێکی پشتڕاستکراوەکان):\n`;
+    markdown += '#### 🟡 Partially Verified Sources\n';
     if (partiallyVerifiedSources.length === 0) {
-      md += `* هیچ سەرچاوەیەکی بەشێکی پشتڕاستکراوە بەدی نەکرا.\n\n`;
+      markdown += '* هیچ source ـێکی بەشێکی پشتڕاستکراو نییە.\n\n';
     } else {
-      partiallyVerifiedSources.forEach((pv, idx) => {
-        md += `${idx + 1}. **${pv.author}** - *${pv.title}* (${pv.publisherOrJournal})\n`;
-        md += `   ⚠️ **تێبینی:** ${pv.verificationNotes}\n`;
-        md += `   > **پلە:** ${pv.tier} | Score: ${pv.reliabilityScore}/100\n\n`;
-      });
+      for (const source of partiallyVerifiedSources) {
+        markdown += `- **${source.title}** — ${source.verificationNotes || 'پێویستی بە پشتڕاستکردنەوەی زیاتر هەیە.'}\n`;
+      }
+      markdown += '\n';
     }
 
-    // 3. Unverified Claims
-    md += `#### 🔴 Unverified Claims (بانگەشە پشتڕاستنەکراوەکان):\n`;
+    markdown += '#### 🔴 Unverified Claims\n';
     if (unverifiedClaims.length === 0) {
-      md += `* هیچ بانگەشەیەکی بێ سەرچاوە بەدی نەکرا.\n\n`;
+      markdown += '* هیچ claim ـێکی UNVERIFIED نییە.\n';
     } else {
-      unverifiedClaims.forEach((uv, idx) => {
-        md += `${idx + 1}. ❌ **${uv.title}**\n`;
-        md += `   🛑 **ئاگاداری:** ${uv.verificationNotes}. (هیچ Citation یان لاپەڕەیەک بۆ ئەم ئیدیعایە دروست ناکرێت)\n\n`;
-      });
+      for (const claim of unverifiedClaims) {
+        markdown += `- **${claim.title}** — ${claim.verificationNotes || 'پشتڕاست نەکراوە.'}\n`;
+      }
     }
 
     return {
@@ -440,7 +429,7 @@ export class SourceVerificationEngine {
       verifiedSources,
       partiallyVerifiedSources,
       unverifiedClaims,
-      formattedSummaryMarkdown: md
+      formattedSummaryMarkdown: markdown
     };
   }
 }
