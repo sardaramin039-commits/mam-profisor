@@ -3,6 +3,8 @@
  * پسپۆڕی ئەکادیمی بۆ دۆزینەوە، هەڵسەنگاندن و ڕێکخستنی سەرچاوە زانستییەکان
  */
 
+import { sourceVerificationService } from './source-verification.service';
+
 export interface AcademicSourceItem {
   id?: string;
   title: string;
@@ -140,13 +142,37 @@ export class OpenAiChatGptService {
       parsed = { discoveredSources: [], thematicSummary: '', suggestedKeywords: [] };
     }
 
+    const candidates: AcademicSourceItem[] = Array.isArray(parsed.discoveredSources)
+      ? parsed.discoveredSources
+      : [];
+    const verification = await sourceVerificationService.verifySources(
+      candidates.map(source => ({
+        title: source.title,
+        author: Array.isArray(source.authors) ? source.authors.join(', ') : '',
+        year: String(source.year || ''),
+        doi: source.doi,
+        publisher: source.journalOrPublisher
+      })),
+      async () => {
+        throw new Error('Source verification does not use an LLM as proof of existence.');
+      }
+    );
+    const verifiedTitles = new Set(
+      verification.verifiedSources.map(source => source.sourceTitle.trim().toLowerCase())
+    );
+    const discoveredSources = candidates.filter(source =>
+      verifiedTitles.has(String(source.title || '').trim().toLowerCase())
+    );
+
     return {
       success: true,
       query: request.query,
-      discoveredSources: parsed.discoveredSources || [],
-      thematicSummary: parsed.thematicSummary || '',
-      suggestedKeywords: parsed.suggestedKeywords || [],
-      provider: 'ChatGPT (OpenAI)'
+      discoveredSources,
+      thematicSummary: discoveredSources.length > 0
+        ? (parsed.thematicSummary || '')
+        : 'هیچ سەرچاوەیەکی دڵنیابەخش لە registry ـە پشکنراوەکاندا پشتڕاست نەکرایەوە.',
+      suggestedKeywords: Array.isArray(parsed.suggestedKeywords) ? parsed.suggestedKeywords : [],
+      provider: 'ChatGPT (OpenAI) + registry verification'
     };
   }
 
@@ -188,6 +214,10 @@ export class OpenAiChatGptService {
   "inTextCitationGuide": "ڕێنمایی کورت بۆ نووسەری توێژینەوەکە لەسەر چۆنیەتی هێنانی ناوی ئەم سەرچاوانە لە ناو دەقدا بە کوردی",
   "methodologyNotes": "تێبینی زانستی و دڵنیایی لە ساغبوونەوە و نەبوونی سەرچاوەی هەڵبەستراو"
 }`;
+
+    if (!request.rawReferences || !request.rawReferences.trim()) {
+      throw new Error('Raw references are required for reference organization; no citation source may be invented.');
+    }
 
     const userPrompt = `بابەتی توێژینەوە: "${request.topic}"
 شێوازی داواکراو بۆ سەرچاوەکان: "${style.toUpperCase()}"
