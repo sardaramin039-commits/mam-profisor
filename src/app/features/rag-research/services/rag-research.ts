@@ -26,7 +26,7 @@ export class RagResearchService {
   private http = inject(HttpClient);
 
   readonly retrievedChunks = signal<RetrievedChunkModel[]>([]);
-  readonly selectedModel = signal<string>('gemini-1.5-pro');
+  readonly selectedModel = signal<string>('gemini-3.8-flash');
   readonly chunkLimit = signal<number>(5);
 
   readonly isResearching = signal<boolean>(false);
@@ -34,7 +34,7 @@ export class RagResearchService {
   readonly researchError = signal<string | null>(null);
 
   toggleChunkInChapter(chunkId: string) {
-    this.retrievedChunks.update(list => 
+    this.retrievedChunks.update(list =>
       list.map(c => c.id === chunkId ? { ...c, isUsedInChapter: !c.isUsedInChapter } : c)
     );
   }
@@ -69,4 +69,3 @@ export class RagResearchService {
     });
   }
 }
-
