@@ -37,7 +37,7 @@ export class ExternalApiTester {
     try {
       if (provider === 'gemini') {
         const apiKey = apiConfigService.getApiKey('gemini')!;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.defaultModel)}:generateContent?key=${apiKey}`;
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -69,7 +69,6 @@ export class ExternalApiTester {
             statusCode: res.status,
             latencyMs,
             message: `وەڵامی هەڵە لە Gemini API (${res.status})`,
-            errorDetails: errText,
             isRateLimited: false,
             timestamp
           };
@@ -101,7 +100,7 @@ export class ExternalApiTester {
             'Authorization': `Bearer ${apiKey}`
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: config.defaultModel,
             messages: [{ role: 'user', content: testPrompt }],
             max_tokens: 50
           })
@@ -122,7 +121,6 @@ export class ExternalApiTester {
         }
 
         if (!res.ok) {
-          const errText = await res.text();
           return {
             provider,
             name: config.name,
@@ -130,7 +128,6 @@ export class ExternalApiTester {
             statusCode: res.status,
             latencyMs,
             message: `وەڵامی هەڵە لە OpenAI (${res.status})`,
-            errorDetails: errText,
             isRateLimited: false,
             timestamp
           };
@@ -163,7 +160,7 @@ export class ExternalApiTester {
             'anthropic-version': '2023-06-01'
           },
           body: JSON.stringify({
-            model: 'claude-3-5-haiku-20241022',
+            model: config.defaultModel,
             messages: [{ role: 'user', content: testPrompt }],
             max_tokens: 50
           })
@@ -184,7 +181,6 @@ export class ExternalApiTester {
         }
 
         if (!res.ok) {
-          const errText = await res.text();
           return {
             provider,
             name: config.name,
@@ -192,7 +188,6 @@ export class ExternalApiTester {
             statusCode: res.status,
             latencyMs,
             message: `وەڵامی هەڵە لە Anthropic Claude (${res.status})`,
-            errorDetails: errText,
             isRateLimited: false,
             timestamp
           };
@@ -244,7 +239,6 @@ export class ExternalApiTester {
         }
 
         if (!res.ok) {
-          const errText = await res.text();
           return {
             provider,
             name: config.name,
@@ -252,7 +246,6 @@ export class ExternalApiTester {
             statusCode: res.status,
             latencyMs,
             message: `وەڵامی هەڵە لە Perplexity AI (${res.status})`,
-            errorDetails: errText,
             isRateLimited: false,
             timestamp
           };
@@ -275,14 +268,13 @@ export class ExternalApiTester {
       }
     } catch (err: unknown) {
       const latencyMs = Date.now() - startTime;
-      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error('External provider test failed:', err);
       return {
         provider,
         name: config.name,
         success: false,
         latencyMs,
-        message: `کێشەی پچڕانی نەوتۆرک یان سێرڤەر: ${errorMsg}`,
-        errorDetails: errorMsg,
+        message: 'پشکنینی پەیوەندیی پڕۆڤایدەر سەرکەوتوو نەبوو.',
         isRateLimited: false,
         timestamp
       };
