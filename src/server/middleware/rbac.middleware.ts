@@ -10,10 +10,12 @@ export interface ExtendedAuthRequest extends AuthRequest {
 
 export function requireRole(...allowedRoles: UserRole[]) {
   return (req: ExtendedAuthRequest, res: Response, next: NextFunction): void => {
-    // Determine user role from token claims, header, or default dev role
-    const role: UserRole = (req.user as any)?.role ||
-      (req.headers['x-academic-role'] as UserRole) ||
-      'researcher';
+    // Determine user role only from verified Firebase token claims.
+    // Client-controlled headers must never grant or elevate authorization.
+    const claims = req.user as any;
+    const claimRole = claims?.role || (Array.isArray(claims?.roles) ? claims.roles[0] : undefined);
+    const validRoles: UserRole[] = ['student', 'researcher', 'professor', 'reviewer', 'admin'];
+    const role: UserRole = validRoles.includes(claimRole) ? claimRole : 'student';
 
     req.userRole = role;
 
