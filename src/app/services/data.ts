@@ -307,12 +307,12 @@ export class Data {
           userId: data['userId'] || '',
           author: data['author'] || '',
           title: data['title'] || '',
-          year: Number(data['year']) || 2026,
+          year: Number(data['year']) || 0,
           publisher: data['publisher'] || '',
           sourceType: data['sourceType'] || 'book',
           doi: data['doi'] || '',
           isbn: data['isbn'] || '',
-          isVerified: data['isVerified'] !== false,
+          isVerified: data['isVerified'] === true,
           createdAt: data['createdAt'] || null
         });
       });
@@ -371,7 +371,8 @@ export class Data {
           sourceType: source.sourceType,
           doi: source.doi || '',
           isbn: source.isbn || '',
-          isVerified: source.isVerified,
+          // Newly entered sources are unverified until an authoritative verification step succeeds.
+          isVerified: false,
           createdAt: serverTimestamp()
         };
         await setDoc(docRef, payload);
