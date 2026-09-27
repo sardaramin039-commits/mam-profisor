@@ -58,7 +58,7 @@ export class KurdishAcademicLanguageService {
 
       const parsed = JSON.parse(response.text || '{}');
       return {
-        overallLanguageScore: parsed.overallLanguageScore || 90,
+        overallLanguageScore: typeof parsed.overallLanguageScore === 'number' ? parsed.overallLanguageScore : 0,
         academicTonePassed: parsed.academicTonePassed ?? true,
         issues: parsed.issues || [],
         refinedTextKurdish: parsed.refinedTextKurdish || text,
