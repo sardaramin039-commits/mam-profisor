@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { libraryIndex } from '../db/schema';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { generateEmbedding } from './embeddingService';
 
 export interface VectorDocument {
@@ -14,6 +14,7 @@ export interface VectorDocument {
   embedding?: number[];
   retrievalStatus?: 'persisted-vector' | 'in-memory-index';
   verificationStatus?: 'verified' | 'unverified';
+  userId?: string;
 }
 
 function stableId(title: string, content: string): string {
@@ -46,12 +47,13 @@ export class VectorStoreService {
   // No synthetic scholarly seed records are permitted.
   private inMemoryDocs: VectorDocument[] = [];
 
-  async searchSimilarContent(queryEmbedding: number[], limit = 5): Promise<VectorDocument[]> {
+  async searchSimilarContent(queryEmbedding: number[], userId: string, limit = 5): Promise<VectorDocument[]> {
     const safeLimit = Math.max(1, Math.min(50, Math.round(limit)));
     if (queryEmbedding.length !== 768) return [];
 
     try {
       const embeddingString = `[${queryEmbedding.join(',')}]`;
+      if (!userId) return [];
       const results = await db
         .select({
           id: libraryIndex.id,
@@ -60,6 +62,7 @@ export class VectorStoreService {
           similarity: sql<number>`1 - (${libraryIndex.embedding} <=> ${embeddingString}::vector)`,
         })
         .from(libraryIndex)
+        .where(eq(libraryIndex.ownerUid, userId))
         .orderBy(sql`${libraryIndex.embedding} <=> ${embeddingString}::vector`)
         .limit(safeLimit);
 
@@ -83,6 +86,7 @@ export class VectorStoreService {
     content: string;
     author?: string;
     year?: number;
+    userId: string;
   }): Promise<VectorDocument> {
     const embedding = await generateEmbedding(`${doc.title} ${doc.content}`).catch(error => {
       console.warn('[VectorStore embedding unavailable]:', (error as Error)?.message || error);
@@ -100,6 +104,7 @@ export class VectorStoreService {
           title: doc.title,
           content: doc.content,
           language: 'ckb',
+          ownerUid: doc.userId,
           embedding,
         });
         persisted = true;
@@ -116,7 +121,8 @@ export class VectorStoreService {
       year: doc.year,
       embedding,
       retrievalStatus: persisted ? 'persisted-vector' : 'in-memory-index',
-      verificationStatus: 'unverified'
+      verificationStatus: 'unverified',
+      userId: doc.userId
     };
 
     // In-memory copy is only a cache of caller-provided content, never synthetic seed data.
@@ -128,10 +134,10 @@ export class VectorStoreService {
     return newDoc;
   }
 
-  async searchSimilarDocuments(query: string, limit = 5): Promise<VectorDocument[]> {
+  async searchSimilarDocuments(query: string, userId: string, limit = 5): Promise<VectorDocument[]> {
     const normalizedQuery = query.trim();
     const safeLimit = Math.max(1, Math.min(50, Math.round(limit)));
-    if (!normalizedQuery) return [];
+    if (!normalizedQuery || !userId) return [];
 
     let queryVector: number[] = [];
     try {
@@ -141,12 +147,13 @@ export class VectorStoreService {
     }
 
     if (queryVector.length === 768) {
-      const dbResults = await this.searchSimilarContent(queryVector, safeLimit);
+      const dbResults = await this.searchSimilarContent(queryVector, userId, safeLimit);
       if (dbResults.length > 0) return dbResults;
     }
 
     // Safe fallback: only rank real caller-provided documents already indexed in memory.
     return this.inMemoryDocs
+      .filter(doc => doc.userId === userId)
       .map(doc => ({
         ...doc,
         score: lexicalScore(normalizedQuery, `${doc.title} ${doc.content}`),
