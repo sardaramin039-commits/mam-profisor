@@ -22,7 +22,12 @@ export const requireAuth = async (
     return;
   }
 
-  const token = authHeader.split('Bearer ')[1];
+  const token = authHeader.slice('Bearer '.length).trim();
+  if (!token) {
+    res.status(401).json({ error: 'Unauthorized: Missing or invalid authorization token' });
+    return;
+  }
+
   try {
     const decodedToken = await adminAuth.verifyIdToken(token);
     req.user = decodedToken;
@@ -41,12 +46,14 @@ export const optionalAuth = async (
 ): Promise<void> => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split('Bearer ')[1];
-    try {
-      const decodedToken = await adminAuth.verifyIdToken(token);
-      req.user = decodedToken;
-    } catch {
-      // Ignore token decode errors for optional auth
+    const token = authHeader.slice('Bearer '.length).trim();
+    if (token) {
+      try {
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        req.user = decodedToken;
+      } catch {
+        // Ignore token decode errors for optional auth
+      }
     }
   }
   next();
