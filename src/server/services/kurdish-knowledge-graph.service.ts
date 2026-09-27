@@ -62,7 +62,7 @@ export class KurdishKnowledgeGraphService {
     } catch (err: unknown) {
       console.error('Error in KurdishKnowledgeGraphService:', err);
       return [];
-    
+    }
   }
 }
 
