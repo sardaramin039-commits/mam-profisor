@@ -156,15 +156,14 @@ export class SourceVerificationEngine {
       externallyVerified?: boolean;
     }
   ): VerifiedCitationRecord {
-    const id = `verif_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const id = `verif_${Date.now()}_${rawClaim.trim().slice(0, 24).replace(/\s+/g, '_')}`;
     const auditDate = new Date().toLocaleTimeString('ckb-IR', { hour: '2-digit', minute: '2-digit' });
 
-    // Step 1: Search
-    const searched = true;
+    // Step 1: Search — this workflow receives a candidate record; it does not perform a search itself.
+    const searched = false;
 
-    // Step 2: Retrieve
-    const hasSourceData = Boolean(candidateSource.title && candidateSource.author);
-    const retrieved = hasSourceData;
+    // Step 2: Retrieve — only a supplied evidence snippet counts as retrieved content.
+    const retrieved = Boolean(candidateSource.retrievedTextSnippet?.trim());
 
     // Step 3: Read
     const snippet = (candidateSource.retrievedTextSnippet || '').trim();
@@ -240,7 +239,7 @@ export class SourceVerificationEngine {
       tierName: tierInfo.tierName,
       reliabilityScore: finalScore,
 
-      canonicalSource: true,
+      canonicalSource: status !== 'UNVERIFIED',
       duplicateOf: null,
       mirrorsCount: 0,
 
