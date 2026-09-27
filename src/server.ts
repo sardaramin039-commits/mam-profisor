@@ -45,16 +45,7 @@ app.use(express.json());
 // Prompt injection protection middleware
 app.use('/api', promptSanitizerMiddleware);
 
-// Pre-request check for GEMINI_API_KEY
-app.use('/api', (req, res, next) => {
-  const keysEnv = process.env['GEMINI_API_KEY'];
-  if (!keysEnv || keysEnv.trim() === '') {
-    console.warn('[GEMINI_API_KEY] Not set in environment. Dynamic academic fallbacks will be used for AI routes.');
-  }
-  next();
-});
-
-// Simple In-Memory Rate Limiter middleware
+// Simple in-memory rate limiter middleware
 app.use('/api', rateLimiterMiddleware);
 
 const angularApp = new AngularNodeAppEngine();
