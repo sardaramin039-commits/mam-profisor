@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { AuthenticatedApiService } from '../core/services/authenticated-api.service';
 
 export interface PythonSandboxResult {
   stdout: string;
@@ -11,17 +12,12 @@ export interface PythonSandboxResult {
   providedIn: 'root'
 })
 export class PythonSandboxService {
-  async executeCode(code: string, datasetName?: string): Promise<PythonSandboxResult> {
-    const response = await fetch('/api/dataset_sandbox_run', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, datasetName })
+  private readonly api = inject(AuthenticatedApiService);
+
+  executeCode(code: string, datasetName?: string): Promise<PythonSandboxResult> {
+    return this.api.post<PythonSandboxResult>('/api/dataset_sandbox_run', {
+      code,
+      datasetName
     });
-
-    if (!response.ok) {
-      throw new Error('پێوەندی لەگەڵ ژینگەی پایتۆن نییە بۆ جێبەجێکردنی کۆدەکان.');
-    }
-
-    return response.json();
   }
 }
