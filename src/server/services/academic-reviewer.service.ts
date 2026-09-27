@@ -70,26 +70,45 @@ export class AcademicReviewerService {
       });
 
       const parsed = JSON.parse(response.text || '{}');
+      const rawCriteria = Array.isArray(parsed.criteria) ? parsed.criteria : [];
+      const criteria: EvaluationCriterion[] = rawCriteria.map((criterion: any) => ({
+        category: String(criterion?.category || 'Unclassified'),
+        score: Math.max(0, Math.min(10, Number(criterion?.score) || 0)),
+        severity: ['low', 'medium', 'high', 'critical'].includes(criterion?.severity)
+          ? criterion.severity
+          : 'medium',
+        findingKurdish: String(criterion?.findingKurdish || 'هیچ دۆزینەوەیەکی پشتڕاستکراو نییە.'),
+        evidenceQuoteKurdish: String(criterion?.evidenceQuoteKurdish || ''),
+        recommendationKurdish: String(criterion?.recommendationKurdish || 'پێویستی بە پشکنینی زیاتر هەیە.')
+      }));
+
+      if (criteria.length === 0 && !parsed.summaryCritiqueKurdish) {
+        throw new Error('Reviewer returned no usable evaluation');
+      }
+
+      const overallScore = Math.max(0, Math.min(10, Number(parsed.overallScore) || 0));
       return {
-        overallScore: parsed.overallScore || 8.5,
-        thesisDefenseSimulatedPassed: parsed.thesisDefenseSimulatedPassed ?? true,
-        summaryCritiqueKurdish: parsed.summaryCritiqueKurdish || 'تێزەکە خاوەن ئاستێکی بەرزی زانستی و بونیادگەرییە.',
-        criteria: parsed.criteria || []
+        overallScore,
+        thesisDefenseSimulatedPassed: parsed.thesisDefenseSimulatedPassed === true,
+        summaryCritiqueKurdish: String(
+          parsed.summaryCritiqueKurdish || 'هەڵسەنگاندنەکە بەردەستە، بەڵام پێویستی بە پشکنینی توێژەر هەیە.'
+        ),
+        criteria
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error in AcademicReviewerService:', err);
       return {
-        overallScore: 8.2,
-        thesisDefenseSimulatedPassed: true,
-        summaryCritiqueKurdish: 'هەڵسەنگاندنی پاشەکەوتی ئەکادیمی بۆ نووسینەکە بەردەستە.',
+        overallScore: 0,
+        thesisDefenseSimulatedPassed: false,
+        summaryCritiqueKurdish: 'هەڵسەنگاندنی ئەکادیمی بەهۆی نەبوونی موتورەکە بەردەست نەبوو؛ هیچ نمرەیەکی خەملێنراو پیشان نادرێت.',
         criteria: [
           {
-            category: 'Academic Language',
-            score: 8.5,
-            severity: 'low',
-            findingKurdish: 'زمانی ئەکادیمی و ڕستەسازی ڕەوانە.',
-            evidenceQuoteKurdish: 'بەشەکانی تێکستەکە پەیڕەوی زمانی زانستی دەکەن.',
-            recommendationKurdish: 'جێبەجێکردنی زیاتری زاراوە تایبەتەکان.'
+            category: 'Reviewer Availability',
+            score: 0,
+            severity: 'critical',
+            findingKurdish: 'موتۆری Reviewer وەڵامی پشتڕاستکراوی نەدا.',
+            evidenceQuoteKurdish: '',
+            recommendationKurdish: 'پێداچوونەوەی Reviewer دووبارە بکەوە پێش بەکارهێنانی نمرەکە.'
           }
         ]
       };
