@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { SearchService, DateRangeFilter, ProgressFilter } from '../../services/search';
+import { AcademicStoreService } from '../../services/academic-store.service';
 import { SearchResultItem } from '../../domain/models';
 
 @Component({
@@ -130,6 +131,7 @@ import { SearchResultItem } from '../../domain/models';
 })
 export class SearchEngineComponent {
   private searchService = inject(SearchService);
+  private academicStore = inject(AcademicStoreService);
 
   searchQuery = signal<string>('');
   selectedDateFilter = signal<DateRangeFilter>('all');
@@ -156,58 +158,11 @@ export class SearchEngineComponent {
     this.hasSearched.set(true);
     const query = this.searchQuery();
     
-    // Mock saved manuscripts and chapters for global history search testing
-    const sampleHistory = [
-      {
-        id: 'ms-1',
-        userId: 'u1',
-        title: 'کاریگەری ئەدەبیاتی زارەکی لەسەر بەرزکردنەوەی ڕەسەنایەتی زمانی کوردی',
-        discipline: 'زمانەوانی و ئەدەب',
-        academicLevel: 'ماستەر',
-        pages: 145,
-        createdAt: { seconds: Math.floor(Date.now() / 1000) - 3600 * 5, nanoseconds: 0 },
-        chapters: [
-          { title: 'بەشی یەکەم: مێتۆدۆلۆژی', content: '...', wordCount: 2800 },
-          { title: 'بەشی دووەم: شیکاری دەق', content: '...', wordCount: 3200 }
-        ]
-      },
-      {
-        id: 'ms-2',
-        userId: 'u1',
-        title: 'سێنتێزی مێژوویی و ئەفسانەیی لە داستانی مەم و زێن بۆ تێزی دکتۆرا',
-        discipline: 'مێژوو و فەلسەفە',
-        academicLevel: 'دکتۆرا',
-        pages: 210,
-        createdAt: { seconds: Math.floor(Date.now() / 1000) - 86400 * 12, nanoseconds: 0 },
-        chapters: [
-          { title: 'بەشی یەکەم: خوانی فەلسەفی', content: '...', wordCount: 4500 }
-        ]
-      }
-    ];
-
-    const sampleChapters = [
-      {
-        id: 101,
-        title: 'پێشەکی و چوارچێوەی تیۆری توێژینەوەکە',
-        wordCount: 2500,
-        status: 'completed' as const,
-        content: 'ئەم بەشە تەرخانکراوە بۆ خستنەڕووی هیپۆتیز و پرسیارە بنەڕەتییەکانی توێژینەوەکە لەسەر زاراوەناسی.',
-        customTargetWords: 2500
-      },
-      {
-        id: 102,
-        title: 'شیکاری بەراوردکاری تیۆرییەکان و داتای ئاماری',
-        wordCount: 1200,
-        status: 'writing' as const,
-        content: 'تایبەتمەندییە سەرەکییەکان و ڕوونکردنەوەی کورت لە خشتەی بەراوردکاریدا ڕێکخراون.',
-        customTargetWords: 3000
-      }
-    ];
-
+    // Search the user's real in-memory academic workspace; never expose demo/mock results.
     const res = this.searchService.executeSearch(
       query,
-      sampleChapters,
-      sampleHistory,
+      this.academicStore.chapters(),
+      [],
       [],
       this.selectedDateFilter(),
       this.selectedProgressFilter()
