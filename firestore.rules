@@ -51,12 +51,12 @@ service cloud.firestore {
     function isValidSource(data) {
       return data.userId is string
         && data.userId == request.auth.uid
-        && data.title is string && data.title.size() >= 5
-        && data.author is string && data.author.size() >= 3
-        && data.year is int && data.year >= 1000 && data.year <= 2027
-        && data.publisher is string
+        && data.title is string && data.title.size() >= 5 && data.title.size() <= 500
+        && data.author is string && data.author.size() >= 3 && data.author.size() <= 500
+        && data.year is int && data.year >= 1000 && data.year <= 2100
+        && data.publisher is string && data.publisher.size() <= 500
         && data.sourceType in ['book', 'journal', 'thesis', 'manuscript']
-        && data.isVerified == true;
+        && data.isVerified is bool;
     }
 
     function isValidLibraryIndex(data) {
@@ -108,10 +108,15 @@ service cloud.firestore {
     match /sources/{sourceId} {
       allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId);
       allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
-      allow create: if isVerifiedUser() && isValidId(sourceId) && isValidSource(request.resource.data);
+      // Client-created sources are always unverified. Only backend/Admin credentials
+      // may create or promote a source to isVerified=true.
+      allow create: if isVerifiedUser() && isValidId(sourceId)
+        && isValidSource(request.resource.data)
+        && request.resource.data.isVerified == false;
       allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId);
       allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid
         && request.resource.data.userId == request.auth.uid
+        && request.resource.data.isVerified == resource.data.isVerified
         && isValidId(sourceId) && isValidSource(request.resource.data);
     }
 
