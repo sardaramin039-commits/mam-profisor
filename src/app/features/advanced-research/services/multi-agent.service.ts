@@ -181,7 +181,7 @@ export class MultiAgentService {
     this.api.runMultiApiSearch(query).subscribe({
       next: (res) => {
         this.searchSources.set(res.sources || []);
-        this.averageConfidenceScore.set(res.averageConfidenceScore || 85);
+        this.averageConfidenceScore.set(Number.isFinite(res.averageConfidenceScore) ? res.averageConfidenceScore : 0);
         this.isSearchingAPIs.set(false);
       },
       error: (err) => { console.error('Multi API Search Error:', err); this.isSearchingAPIs.set(false); }
