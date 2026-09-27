@@ -44,13 +44,7 @@ export class VectorStoreService {
       console.warn('[VectorStore PostgreSQL fallback]:', (error as Error)?.message || error);
     }
 
-    // لە کاتی ناچالاکبوونی سێرڤەری SQL یان پاشەکەوتکردن بەبێ کێشە لە یادگەدا بەردەوام دەبێت
-    return this.inMemoryDocs.map((doc) => ({
-      id: doc.id,
-      title: doc.title,
-      content: doc.content,
-      similarity: 0.85,
-    })).slice(0, limit);
+    return [];
   }
 
   /**
@@ -122,10 +116,44 @@ export class VectorStoreService {
       }
     }
 
-    return this.inMemoryDocs.slice(0, limit).map((doc) => ({
-      ...doc,
-      score: 0.85,
-    }));
+    const normalizedQuery = query.toLowerCase().trim();
+    const queryTerms = new Set(normalizedQuery.split(/\s+/).filter(term => term.length > 1));
+
+    return this.inMemoryDocs
+      .map(doc => {
+        const searchable = `${doc.title} ${doc.content}`.toLowerCase();
+        const lexicalMatches = [...queryTerms].filter(term => searchable.includes(term)).length;
+        const lexicalScore = queryTerms.size > 0 ? lexicalMatches / queryTerms.size : 0;
+        const vectorScore = queryVector.length > 0 && doc.embedding?.length === queryVector.length
+          ? this.cosineSimilarity(queryVector, doc.embedding)
+          : 0;
+
+        return {
+          ...doc,
+          similarity: vectorScore > 0 ? vectorScore : lexicalScore,
+          score: vectorScore > 0 ? vectorScore : lexicalScore,
+        };
+      })
+      .filter(doc => (doc.score ?? 0) > 0)
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+      .slice(0, limit);
+  }
+
+  private cosineSimilarity(a: number[], b: number[]): number {
+    if (a.length === 0 || a.length !== b.length) return 0;
+
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let index = 0; index < a.length; index++) {
+      dot += a[index] * b[index];
+      normA += a[index] * a[index];
+      normB += b[index] * b[index];
+    }
+
+    if (normA === 0 || normB === 0) return 0;
+    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
   }
 }
 
