@@ -1,46 +1,59 @@
 import { Router } from 'express';
 import { GoogleGenAI } from '@google/genai';
+import { vectorStoreService } from '../../services/vector-store.service';
 
-export function createRagRouter(getGeminiClient: () => GoogleGenAI): Router {
+export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
 
   /**
    * POST /api/rag/hybrid-retrieve
+   * Real retrieval endpoint. It never fabricates source records.
    */
   router.post('/hybrid-retrieve', async (req, res) => {
     try {
-      const { query, documentId, verifiedOnly } = req.body;
+      const query = typeof req.body?.query === 'string' ? req.body.query.trim() : '';
+      const documentId = typeof req.body?.documentId === 'string' ? req.body.documentId.trim() : '';
+      const verifiedOnly = req.body?.verifiedOnly === true;
+      const limitRaw = Number(req.body?.limit);
+      const limit = Number.isFinite(limitRaw)
+        ? Math.min(Math.max(Math.trunc(limitRaw), 1), 20)
+        : 5;
+
       if (!query) {
         res.status(400).json({ error: 'داواکاری گەڕان (query) پێویستە.' });
         return;
       }
 
-      const mockCandidates = [
-        {
-          chunkId: 'CHK-001',
-          documentId: documentId || 'DOC-DEFAULT',
-          sourceId: 'SRC-001',
-          sourceTitle: 'کتێبی زانستیی سۆرانی',
-          text: `دەقی زانستی پەیوەندیدار بە "${query}" لە سەرچاوەی سەلمێنراودا.`,
-          verificationStatus: 'verified',
-          score: 0.92,
-          provenance: {
-            author: 'د. عومەر کەریم',
-            year: '2023',
-            publisher: 'دەزگای موکریانی'
-          }
+      const documents = await vectorStoreService.searchSimilarDocuments(query, limit);
+      const filtered = documentId
+        ? documents.filter(document => document.id === documentId)
+        : documents;
+
+      const candidates = filtered.map(document => ({
+        chunkId: document.id,
+        documentId: document.id,
+        sourceId: document.id,
+        sourceTitle: document.title,
+        text: document.content,
+        verificationStatus: 'unverified' as const,
+        score: document.score ?? document.similarity ?? 0,
+        provenance: {
+          author: document.author,
+          year: document.year
         }
-      ];
+      })).filter(candidate => !verifiedOnly || candidate.verificationStatus === 'verified');
 
       res.json({
         query,
-        candidates: verifiedOnly ? mockCandidates.filter(c => c.verificationStatus === 'verified') : mockCandidates,
+        candidates,
         metrics: {
-          lexicalMatchCount: 1,
-          semanticMatchCount: 1,
-          fusedCandidatesCount: 1,
-          rerankedCount: 1
-        }
+          lexicalMatchCount: 0,
+          semanticMatchCount: documents.length,
+          fusedCandidatesCount: candidates.length,
+          rerankedCount: candidates.length
+        },
+        grounded: candidates.length > 0,
+        requiresVerification: candidates.some(candidate => candidate.verificationStatus !== 'verified')
       });
     } catch (err: unknown) {
       console.error('RAG Hybrid Retrieve Error:', err);
