@@ -523,26 +523,37 @@ export class AppTemplateBridgeService {
   }
 
   applyCopilotToChapter(chapter: ChapterItem | null) {
-    if (!chapter) return;
-    const text = 'شیکاری زانستی نوێ بۆ بەشەکە';
-    this.editorService.updateChapterContent(chapter.id, (chapter.content || '') + text, 'جێبەجێکردنی کۆپایڵۆت');
+    const synthesis = String(this.copilotDebateResult()?.synthesisText || '').trim();
+    if (!chapter || !synthesis) return;
+    this.editorService.updateChapterContent(
+      chapter.id,
+      (chapter.content || '') + '\n\n' + synthesis,
+      'جێبەجێکردنی کۆپایڵۆت'
+    );
   }
 
   generateTitleAndSummary(topic: string) {
-    if (!topic.trim()) return;
+    const value = String(topic || '').trim();
+    if (!value) return;
+
     this.isTitleSummaryGenerating.set(true);
     this.titleSummaryError.set(null);
-    setTimeout(() => {
-      this.generatedTitleSummary.set({
-        titles: [
-          `شیکاری زانستیی ${topic} لە ڕوانگەی ئابوورییەوە`,
-          `کاریگەرییە کۆمەڵایەتییەکانی ${topic} لە شێوەزاری سۆرانیدا`,
-          `توێژینەوەیەکی بەراوردکاری لەسەر ${topic}`
-        ],
-        summary: `ئەم توێژینەوەیە تیشک دەخاتە سەر ابعاد و بنەما سەرەکییەکانی ${topic} لە چوارچێوەی ئەکادیمییدا.`
+    this.api.post<any>('/api/title_summary', { topic: value })
+      .then(result => {
+        const titles = Array.isArray(result?.titles)
+          ? result.titles.filter((t: unknown) => typeof t === 'string' && t.trim()).slice(0, 3)
+          : [];
+        const summary = typeof result?.summary === 'string' ? result.summary : '';
+        this.generatedTitleSummary.set({ titles, summary });
+      })
+      .catch(error => {
+        console.error('Title summary generation failed:', error);
+        this.generatedTitleSummary.set(null);
+        this.titleSummaryError.set('دروستکردنی ناونیشان و پوختە لەم کاتەدا بەردەست نییە.');
+      })
+      .finally(() => {
+        this.isTitleSummaryGenerating.set(false);
       });
-      this.isTitleSummaryGenerating.set(false);
-    }, 1000);
   }
 
   applyGeneratedTitle(title: string) {
