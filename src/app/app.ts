@@ -59,7 +59,7 @@ import { ChapterTimelineViewComponent } from './features/editor/components/chapt
 import { GrammarSyntaxFloatingPanelComponent } from './features/editor/components/grammar-syntax-floating-panel.component';
 import { AcademicAdditionsSidebarComponent } from './features/editor/components/academic-additions-sidebar.component';
 import { ConceptGraphComponent } from './features/d3-charts/concept-graph.component';
-import { GlobalToastContainerComponent } from './components/global-toast-container';
+import { GlobalToastContainerComponent, ExecutiveDashboardComponent } from './components/global-toast-container';
 import { AppNotificationsService } from './core/app.notifications';
 import { DigitalLibraryService } from './services/digital-library.service';
 import { AcademicStoreService } from './services/academic-store.service';
@@ -90,6 +90,7 @@ import { SplashScreenComponent } from './features/splash/splash-screen.component
 import { DashboardHeaderComponent } from './features/dashboard/dashboard-header.component';
 import { AcademicPlatformComponent } from './features/academic-platform/academic-platform.component';
 import { buildAcademicThesisOutline } from './helpers/outline-structure';
+import { ExecutiveDashboardComponent } from './features/executive-dashboard/executive-dashboard.component';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
