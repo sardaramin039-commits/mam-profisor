@@ -59,24 +59,10 @@ export class KurdishKnowledgeGraphService {
 
       const parsed = JSON.parse(response.text || '{}');
       return parsed.entries || [];
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error in KurdishKnowledgeGraphService:', err);
-      return [
-        {
-          id: 'KURD-KG-FALLBACK',
-          title: 'فەرهەنگی زاراوە ئەکادیمییەکانی زانکۆی سلێمانی',
-          author: 'د. ئەحمەد جەمال',
-          type: 'dictionary' as any,
-          discipline: 'زمانەوانی ئەکادیمی',
-          period: 'هاوچەرخ',
-          dialect: 'Sorani',
-          isbnOrDoi: '978-9922-100-11',
-          publisher: 'دەزگای مەم و زین',
-          digitalAvailability: true,
-          kurdishAbstract: 'کۆکراوەی سەرچاوە و زاراوە پێوەرەکانی زانکۆکانی هەرێمی کوردستان.'
-        }
-      ];
-    }
+      return [];
+    
   }
 }
 
