@@ -24,6 +24,15 @@ export interface RerankedEvidenceChunk {
   };
 }
 
+function stableChunkId(value: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 export interface HybridRagResponse {
   query: string;
   candidates: RerankedEvidenceChunk[];
@@ -98,7 +107,7 @@ export class HybridRagClientService {
       else if (crossEncoderScore >= 0.50) relevanceCategory = 'MEDIUM';
 
       return {
-        chunkId: candidate.chunkId || `CHK-${Math.abs((candidate.text || '').length)}-${Math.abs(claimWords.length)}`,
+        chunkId: candidate.chunkId || `CHK-${stableChunkId(`${claimText}::${candidate.text || ''}`)}`,
         documentId: candidate.documentId || 'DOC-UNKNOWN',
         sourceId: candidate.sourceId || 'SRC-UNKNOWN',
         sourceTitle: candidate.sourceTitle || 'سەرچاوەی دیارینەکراو',
