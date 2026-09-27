@@ -30,15 +30,18 @@ export class SourceVerificationService {
     const ai = getGeminiClient();
 
     const externalChecks = await Promise.all(
-      sources.map(async source => ({
-        source,
-        doiResult: source.doi ? await resolveDoi(source.doi) : null,
-        isbnResult: source.isbn ? await lookupIsbn(source.isbn) : null
-      }))
-    );
+      sources.map(async source => {
+        const [doiResult, isbnResult] = await Promise.all([
+          source.doi
+            ? resolveDoi(source.doi).catch(() => null)
+            : Promise.resolve(null),
+          source.isbn
+            ? lookupIsbn(source.isbn).catch(() => null)
+            : Promise.resolve(null)
+        ]);
 
-    const externallyVerifiedSources = externalChecks.filter(check =>
-      Boolean(check.doiResult || check.isbnResult)
+        return { source, doiResult, isbnResult };
+      })
     );
 
     const prompt = `تۆ پسپۆڕی پشکنین و هەڵسەنگاندنی ڕەسەنایەتی سەرچاوە زانستییەکانی لە پلاتفۆرمی ئەکادیمیی مام.
@@ -147,7 +150,7 @@ ${JSON.stringify(sources.map((source, index) => ({ ...source, externalVerificati
           rejectionReasonKurdish: 'پشتڕاستکردنەوەی سەرچاوەکە بەهۆی نەگەیشتن بە خزمەتگوزاریی پشتڕاستکردنەوە نەکرا.',
           kurdishVerificationDetails: 'سەرچاوەکە نەسەلمێنراوە؛ هیچ داتایەکی پشتڕاستکراو لەم fallback ـەدا پەسەند ناکرێت.'
         })),
-        rejectedSourcesCount: verifiedSources.filter(s => s.rejectedAsFabricated).length
+        rejectedSourcesCount: 0
       };
     }
   }
