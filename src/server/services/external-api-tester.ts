@@ -61,7 +61,6 @@ export class ExternalApiTester {
         }
 
         if (!res.ok) {
-          const errText = await res.text();
           return {
             provider,
             name: config.name,
