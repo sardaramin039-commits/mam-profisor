@@ -156,8 +156,8 @@ export class ClaimEvidenceGraphService {
       }
 
       const claims: ClaimNode[] = rawClaims.map((raw, index) => {
-        const evidenceId = String(raw.evidenceId || '');
-        const evidence = evidenceMap.get(evidenceId);
+        const proposedEvidenceId = String(raw.evidenceId || '');
+        const evidence = evidenceMap.get(proposedEvidenceId);
         const source = evidence
           ? safeSources.find(
               candidate =>
@@ -167,17 +167,21 @@ export class ClaimEvidenceGraphService {
           : undefined;
 
         const grounded = Boolean(source && evidence && containsGroundedQuote(source, raw));
+        const actualSourceId = source
+          ? String(source.id || source.sourceId || source.doiOrIsbn || source.doi || '')
+          : '';
+        const actualEvidenceId = evidence?.evidenceId || '';
 
         return {
           claimId: String(raw.claimId || `CLAIM-${String(index + 1).padStart(3, '0')}`),
           text: String(raw.text || ''),
-          sourceId: String(raw.sourceId || ''),
-          evidenceId,
+          sourceId: actualSourceId,
+          evidenceId: actualEvidenceId,
           confidence: grounded ? Math.max(0, Math.min(100, Number(raw.confidence) || 0)) : 0,
           page: raw.page ? String(raw.page) : undefined,
-          quote: String(raw.quote || ''),
+          quote: grounded ? String(raw.quote || '') : '',
           verificationStatus: grounded ? 'verified' : 'unverified',
-          citationId: String(raw.citationId || ''),
+          citationId: grounded ? String(raw.citationId || '') : '',
           syntheticCitationBlocked: !grounded
         };
       });
