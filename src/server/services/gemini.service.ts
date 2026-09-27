@@ -29,11 +29,7 @@ function normalizeGeminiParams(params: Record<string, unknown>, model: string): 
     delete config['topK'];
     delete config['candidateCount'];
 
-    if (config['thinkingConfig'] && typeof config['thinkingConfig'] === 'object') {
-      const thinkingConfig = { ...(config['thinkingConfig'] as Record<string, unknown>) };
-      delete thinkingConfig['thinkingBudget'];
-      config['thinkingConfig'] = thinkingConfig;
-    }
+    delete config['thinkingConfig'];
   }
 
   if (Array.isArray(config['tools']) && (config['tools'] as unknown[]).length > 0) {
