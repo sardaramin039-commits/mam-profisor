@@ -34,13 +34,16 @@ import { errorMiddleware } from './middleware/error.middleware';
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
-app.set('trust proxy', true);
+// Only trust a reverse proxy when explicitly configured by the deployment.
+// This prevents clients from spoofing proxy-derived values such as their IP.
+app.set('trust proxy', process.env['TRUST_PROXY'] === 'true');
 app.disable('x-powered-by');
 
 // Security headers & strict CORS enforcement middleware
 app.use(securityHeadersMiddleware);
 
-app.use(express.json());
+// Academic requests can be larger than Express's default 100 KB, but keep a hard upper bound.
+app.use(express.json({ limit: '5mb' }));
 
 // Prompt injection protection middleware
 app.use('/api', promptSanitizerMiddleware);
