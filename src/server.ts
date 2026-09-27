@@ -41,9 +41,10 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 
-// Trusting every proxy hop lets clients spoof x-forwarded-for.
-// Rate limiting uses the direct socket address, so do not depend on this header.
-app.set('trust proxy', false);
+// Trust only an explicitly configured number of reverse-proxy hops.
+// This keeps req.ip useful behind a known proxy without trusting spoofed chains.
+const trustProxyHops = Number.parseInt(process.env['TRUST_PROXY_HOPS'] || '0', 10);
+app.set('trust proxy', Number.isInteger(trustProxyHops) && trustProxyHops > 0 ? trustProxyHops : false);
 app.disable('x-powered-by');
 
 app.use(securityHeadersMiddleware);
