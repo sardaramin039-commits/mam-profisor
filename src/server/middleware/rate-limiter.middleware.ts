@@ -1,29 +1,50 @@
 import { Request, Response, NextFunction } from 'express';
 
-// Simple In-Memory Rate Limiter to protect Gemini API from abuse
 const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 60; // 60 requests per minute
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const MAX_REQUESTS_PER_WINDOW = 60;
+const MAX_TRACKED_CLIENTS = 10_000;
+
+function pruneExpiredEntries(now: number): void {
+  for (const [key, value] of rateLimitMap) {
+    if (now - value.lastReset > RATE_LIMIT_WINDOW_MS) {
+      rateLimitMap.delete(key);
+    }
+  }
+
+  if (rateLimitMap.size <= MAX_TRACKED_CLIENTS) return;
+
+  const entries = [...rateLimitMap.entries()]
+    .sort((a, b) => a[1].lastReset - b[1].lastReset);
+
+  for (const [key] of entries.slice(0, rateLimitMap.size - MAX_TRACKED_CLIENTS)) {
+    rateLimitMap.delete(key);
+  }
+}
 
 export function rateLimiterMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'anonymous';
-  const clientIp = Array.isArray(ip) ? ip[0] : ip;
   const now = Date.now();
-  
-  let rateInfo = rateLimitMap.get(clientIp);
-  if (!rateInfo || (now - rateInfo.lastReset) > RATE_LIMIT_WINDOW_MS) {
-    rateInfo = { count: 1, lastReset: now };
-    rateLimitMap.set(clientIp, rateInfo);
-    return next();
+
+  if (rateLimitMap.size > MAX_TRACKED_CLIENTS || now % 10_000 < 50) {
+    pruneExpiredEntries(now);
   }
-  
-  if (rateInfo.count >= MAX_REQUESTS_PER_WINDOW) {
-    res.status(429).json({ 
-      error: 'داواکارییەکانت زۆرن. تکایە چەند خولەکێک چاوەڕوان بە پێش ناردنەوەی دەق.' 
+
+  const clientIp = req.ip || 'anonymous';
+  const current = rateLimitMap.get(clientIp);
+
+  if (!current || now - current.lastReset > RATE_LIMIT_WINDOW_MS) {
+    rateLimitMap.set(clientIp, { count: 1, lastReset: now });
+    next();
+    return;
+  }
+
+  if (current.count >= MAX_REQUESTS_PER_WINDOW) {
+    res.status(429).json({
+      error: 'داواکارییەکانت زۆرن. تکایە پاش چەند خولەکێک دووبارە هەوڵ بدە.'
     });
     return;
   }
-  
-  rateInfo.count++;
+
+  current.count += 1;
   next();
 }
