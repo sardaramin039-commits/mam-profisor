@@ -104,10 +104,10 @@ service cloud.firestore {
       allow update: if isVerifiedUser() && resource.data.reviewerId == request.auth.uid && isValidId(reviewId) && isValidReview(request.resource.data);
     }
 
-    // Match sources collection
+    // Match sources collection: sources are private to their owner.
     match /sources/{sourceId} {
-      allow get: if isVerifiedUser() && isValidId(sourceId);
-      allow list: if isVerifiedUser();
+      allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId);
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
       allow create: if isVerifiedUser() && isValidId(sourceId) && isValidSource(request.resource.data);
       allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId);
       allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId) && isValidSource(request.resource.data);
