@@ -93,19 +93,20 @@ ${JSON.stringify(sources)}
       };
     } catch (err: any) {
       console.error('Error in SourceVerificationService:', err);
+      // Verification failure must never turn an unverified source into a trusted citation.
       return {
         verifiedSources: sources.map(s => ({
           sourceTitle: s.title,
           author: s.author || 'نادیار',
-          publisher: s.publisher || 'بڵاوکراوەی ئەکادیمی',
+          publisher: s.publisher || 'نادیار',
           doiOrIsbn: s.doi || '',
-          integrityScore: 88,
-          trustLevel: 'A',
-          existenceVerified: true,
-          metadataAccuracy: 90,
-          peerReviewed: true,
+          integrityScore: 0,
+          trustLevel: 'D' as const,
+          existenceVerified: false,
+          metadataAccuracy: 0,
+          peerReviewed: false,
           rejectedAsFabricated: false,
-          kurdishVerificationDetails: 'پشکنینی بنەڕەتی سەرچاوەکە پەسەند کرا.'
+          kurdishVerificationDetails: 'پشکنینی سەرچاوەکە نەکرا؛ بۆیە سەرچاوەکە Verified دانانرێت و نابێت وەک Citation بەکاربهێنرێت.'
         })),
         rejectedSourcesCount: 0
       };
