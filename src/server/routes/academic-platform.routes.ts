@@ -11,6 +11,24 @@ import { kurdishKnowledgeGraphService } from '../services/kurdish-knowledge-grap
 import { multiAgentOrchestratorService } from '../services/multi-agent-orchestrator.service';
 import { observabilityService } from '../services/observability.service';
 import { aiModelRouterService } from '../services/ai-model-router.service';
+import { z } from 'zod';
+
+const textField = (max: number) => z.string().trim().min(1).max(max);
+const sourceArray = z.array(z.record(z.string(), z.unknown())).max(100);
+
+const evidenceGraphSchema = z.object({ topic: textField(500), draftText: z.string().max(250_000).default(''), sources: sourceArray.default([]) }).strict();
+const sourceVerificationSchema = z.object({ sources: sourceArray.default([]) }).strict();
+const academicReviewSchema = z.object({ draftText: textField(250_000), topic: textField(500) }).strict();
+const qaGateSchema = z.object({ documentText: textField(250_000), sources: sourceArray.default([]) }).strict();
+const kurdishLanguageSchema = z.object({ text: textField(250_000) }).strict();
+const knowledgeGraphSchema = z.object({ query: textField(500) }).strict();
+const orchestrationSchema = z.object({
+  topic: textField(500),
+  discipline: textField(200),
+  draftText: z.string().max(250_000).default(''),
+  rawSources: sourceArray.default([])
+}).strict();
+const modelRouterSchema = z.object({ taskType: textField(100).default('fast'), textLength: z.coerce.number().int().min(0).max(1_000_000).default(0) }).strict();
 
 export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -18,7 +36,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
   // 1. Claim-Evidence Graph Engine
   router.post('/evidence-graph', async (req: ExtendedAuthRequest, res: Response): Promise<void> => {
     try {
-      const { topic, draftText, sources } = req.body;
+      const evidenceGraphSchemaParsed = evidenceGraphSchema.safeParse(req.body ?? {});
+      if (!evidenceGraphSchemaParsed.success) {
+        res.status(400).json({ error: 'داتای ناردراو بۆ ئەم کارە نادروستە.', details: evidenceGraphSchemaParsed.error.issues });
+        return;
+      }
+      const { topic, draftText, sources } = evidenceGraphSchemaParsed.data;
       const graph = await claimEvidenceGraphService.buildGraph(
         topic || 'تێزی زانستی',
         draftText || '',
@@ -34,7 +57,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
   // 2. Academic Source Verification 2.0
   router.post('/source-verification', async (req: ExtendedAuthRequest, res: Response): Promise<void> => {
     try {
-      const { sources } = req.body;
+      const sourceVerificationSchemaParsed = sourceVerificationSchema.safeParse(req.body ?? {});
+      if (!sourceVerificationSchemaParsed.success) {
+        res.status(400).json({ error: 'داتای ناردراو بۆ ئەم کارە نادروستە.', details: sourceVerificationSchemaParsed.error.issues });
+        return;
+      }
+      const { sources } = sourceVerificationSchemaParsed.data;
       const result = await sourceVerificationService.verifySources(sources || [], getGeminiClient);
       res.json({ success: true, ...result });
     } catch (err: any) {
@@ -60,7 +88,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
   // 4. Academic Reviewer Engine (AI Professor)
   router.post('/academic-review', async (req: ExtendedAuthRequest, res: Response): Promise<void> => {
     try {
-      const { draftText, topic } = req.body;
+      const academicReviewSchemaParsed = academicReviewSchema.safeParse(req.body ?? {});
+      if (!academicReviewSchemaParsed.success) {
+        res.status(400).json({ error: 'داتای ناردراو بۆ ئەم کارە نادروستە.', details: academicReviewSchemaParsed.error.issues });
+        return;
+      }
+      const { draftText, topic } = academicReviewSchemaParsed.data;
       const report = await academicReviewerService.evaluateThesis(
         draftText || '',
         topic || 'تێز',
@@ -75,7 +108,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
   // 5. Automated QA Gate
   router.post('/qa-gate', async (req: ExtendedAuthRequest, res: Response): Promise<void> => {
     try {
-      const { documentText, sources } = req.body;
+      const qaGateSchemaParsed = qaGateSchema.safeParse(req.body ?? {});
+      if (!qaGateSchemaParsed.success) {
+        res.status(400).json({ error: 'داتای ناردراو بۆ ئەم کارە نادروستە.', details: qaGateSchemaParsed.error.issues });
+        return;
+      }
+      const { documentText, sources } = qaGateSchemaParsed.data;
       const qa = await academicQAGateService.runQAGate(
         documentText || '',
         sources || [],
@@ -90,7 +128,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
   // 6. Kurdish Academic Language Engine
   router.post('/kurdish-language', async (req: ExtendedAuthRequest, res: Response): Promise<void> => {
     try {
-      const { text } = req.body;
+      const kurdishLanguageSchemaParsed = kurdishLanguageSchema.safeParse(req.body ?? {});
+      if (!kurdishLanguageSchemaParsed.success) {
+        res.status(400).json({ error: 'داتای ناردراو بۆ ئەم کارە نادروستە.', details: kurdishLanguageSchemaParsed.error.issues });
+        return;
+      }
+      const { text } = kurdishLanguageSchemaParsed.data;
       const analysis = await kurdishAcademicLanguageService.analyzeAndRefineLanguage(
         text || '',
         getGeminiClient
@@ -104,7 +147,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
   // 7. Kurdish Academic Knowledge Graph Search
   router.post('/kurdish-knowledge-graph', async (req: ExtendedAuthRequest, res: Response): Promise<void> => {
     try {
-      const { query } = req.body;
+      const knowledgeGraphSchemaParsed = knowledgeGraphSchema.safeParse(req.body ?? {});
+      if (!knowledgeGraphSchemaParsed.success) {
+        res.status(400).json({ error: 'داتای ناردراو بۆ ئەم کارە نادروستە.', details: knowledgeGraphSchemaParsed.error.issues });
+        return;
+      }
+      const { query } = knowledgeGraphSchemaParsed.data;
       const entries = await kurdishKnowledgeGraphService.searchKnowledgeGraph(query || '', getGeminiClient);
       res.json({ success: true, entries });
     } catch (err: any) {
@@ -115,7 +163,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
   // 8. Full Multi-Agent Orchestrator Pipeline
   router.post('/multi-agent-orchestrate', requireRole('student', 'researcher', 'professor', 'reviewer', 'admin'), async (req: ExtendedAuthRequest, res: Response): Promise<void> => {
     try {
-      const { topic, discipline, draftText, rawSources } = req.body;
+      const orchestrationSchemaParsed = orchestrationSchema.safeParse(req.body ?? {});
+      if (!orchestrationSchemaParsed.success) {
+        res.status(400).json({ error: 'داتای ناردراو بۆ ئەم کارە نادروستە.', details: orchestrationSchemaParsed.error.issues });
+        return;
+      }
+      const { topic, discipline, draftText, rawSources } = orchestrationSchemaParsed.data;
       const result = await multiAgentOrchestratorService.executePipeline(
         { topic, discipline, draftText, rawSources },
         getGeminiClient
