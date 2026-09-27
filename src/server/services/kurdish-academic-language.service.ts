@@ -32,8 +32,8 @@ export class KurdishAcademicLanguageService {
 
 وەڵامەکەت تەنها بە JSON بێت بەم شێوازە:
 {
-  "overallLanguageScore": 92,
-  "academicTonePassed": true,
+  "overallLanguageScore": 0,
+  "academicTonePassed": false,
   "refinedTextKurdish": "دەقی دەستکاریکراو بە سۆرانی بێخەوش و فەرمی",
   "kurdishSummary": "شیکاری زمانی و ڕێزمانی بە کوردی",
   "issues": [
@@ -58,8 +58,10 @@ export class KurdishAcademicLanguageService {
 
       const parsed = JSON.parse(response.text || '{}');
       return {
-        overallLanguageScore: parsed.overallLanguageScore || 90,
-        academicTonePassed: parsed.academicTonePassed ?? true,
+        overallLanguageScore: Number.isFinite(Number(parsed.overallLanguageScore))
+          ? Math.max(0, Math.min(100, Number(parsed.overallLanguageScore)))
+          : 0,
+        academicTonePassed: parsed.academicTonePassed === true,
         issues: parsed.issues || [],
         refinedTextKurdish: parsed.refinedTextKurdish || text,
         kurdishSummary: parsed.kurdishSummary || 'زمان و ڕێنوسی دەقەکە خاوەن پێوەری فەرمییە.'
@@ -67,11 +69,16 @@ export class KurdishAcademicLanguageService {
     } catch (err: any) {
       console.error('Error in KurdishAcademicLanguageService:', err);
       return {
-        overallLanguageScore: 88,
-        academicTonePassed: true,
-        issues: [],
+        overallLanguageScore: 0,
+        academicTonePassed: false,
+        issues: [{
+          type: 'tone',
+          originalText: '',
+          suggestedText: '',
+          explanationKurdish: 'موتۆری زمان بەردەست نەبوو؛ هیچ نمرە یان پەسەندکردنێکی خەملێنراو نادرێت.'
+        }],
         refinedTextKurdish: text,
-        kurdishSummary: 'دەقی کوردی لە ڕووی ڕێزمان و زاراوەسازییەوە پەسەندکراوە.'
+        kurdishSummary: 'پشکنینی زمانی ئەکادیمی بەردەست نەبوو؛ دەقەکە تەنها وەک خۆی پارێزراوە.'
       };
     }
   }
