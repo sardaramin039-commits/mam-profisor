@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { ChapterItemModel, ChapterSnapshotModel } from '../../../domain/models';
 import { AcademicFormatter } from '../../../shared/utils/academic-formatter';
+import { encryptText, decryptText } from '../../../helpers/academic-vault';
 
 @Injectable({
   providedIn: 'root'
@@ -71,29 +72,11 @@ export class EditorService {
     return Math.round(totalWords / Math.max(1, listLength));
   }
 
-  encryptText(plaintext: string, secretKey: string): string {
-    if (!plaintext || !secretKey) return plaintext;
-    let result = '';
-    for (let i = 0; i < plaintext.length; i++) {
-      const charCode = plaintext.charCodeAt(i) ^ secretKey.charCodeAt(i % secretKey.length);
-      result += String.fromCharCode(charCode);
-    }
-    return 'ENC:' + btoa(encodeURIComponent(result));
+  async encryptText(plaintext: string, secretKey: string): Promise<string> {
+    return encryptText(plaintext, secretKey);
   }
 
-  decryptText(cipherText: string, secretKey: string): string {
-    if (!cipherText || !secretKey) return cipherText;
-    if (!cipherText.startsWith('ENC:')) return cipherText;
-    try {
-      const raw = decodeURIComponent(atob(cipherText.replace('ENC:', '')));
-      let result = '';
-      for (let i = 0; i < raw.length; i++) {
-        const charCode = raw.charCodeAt(i) ^ secretKey.charCodeAt(i % secretKey.length);
-        result += String.fromCharCode(charCode);
-      }
-      return result;
-    } catch {
-      return cipherText;
-    }
+  async decryptText(cipherText: string, secretKey: string): Promise<string> {
+    return decryptText(cipherText, secretKey);
   }
 }
