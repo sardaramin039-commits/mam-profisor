@@ -464,6 +464,7 @@ const combinedSourcesMap = new Map<string, LibrarySource>();
 
 export const DIGITAL_LIBRARY_SOURCES: LibrarySource[] = Array.from(combinedSourcesMap.values()).map(source => ({
   ...source,
+  totalItems: 0,
   status: 'idle',
   lastSync: ''
 }));
