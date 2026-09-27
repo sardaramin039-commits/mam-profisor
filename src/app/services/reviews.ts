@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { AuthenticatedApiService } from '../core/services/authenticated-api.service';
 
 export interface ReviewResponse {
   score: number;
@@ -16,33 +17,30 @@ export interface LiteratureGapResult {
   providedIn: 'root'
 })
 export class ReviewsService {
-  async runHarvardReview(title: string, content: string, discipline: string): Promise<ReviewResponse> {
-    const res = await fetch('/api/harvard_academic_review', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content, discipline })
+  private readonly api = inject(AuthenticatedApiService);
+
+  runHarvardReview(title: string, content: string, discipline: string): Promise<ReviewResponse> {
+    return this.api.post<ReviewResponse>('/api/harvard_academic_review', {
+      title,
+      content,
+      discipline
     });
-    if (!res.ok) throw new Error('تێکچوونی پێوەندی لەگەڵ سێرڤەری هەڵسەنگاندنی هارفەرد.');
-    return res.json();
   }
 
-  async runEliteAssessment(title: string, content: string, discipline: string, academicLevel: string): Promise<ReviewResponse> {
-    const res = await fetch('/api/elite_academic_assessment', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content, discipline, academicLevel })
+  runEliteAssessment(title: string, content: string, discipline: string, academicLevel: string): Promise<ReviewResponse> {
+    return this.api.post<ReviewResponse>('/api/elite_academic_assessment', {
+      title,
+      content,
+      discipline,
+      academicLevel
     });
-    if (!res.ok) throw new Error('تێکچوونی پێوەندی لەگەڵ سێرڤەری هەڵسەنگاندنی نوخبەی ئەکادیمی.');
-    return res.json();
   }
 
-  async analyzeLiteratureGap(title: string, content: string, referencesText: string): Promise<LiteratureGapResult> {
-    const res = await fetch('/api/literature_gap_analysis', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content, referencesText })
+  analyzeLiteratureGap(title: string, content: string, referencesText: string): Promise<LiteratureGapResult> {
+    return this.api.post<LiteratureGapResult>('/api/literature_gap_analysis', {
+      title,
+      content,
+      referencesText
     });
-    if (!res.ok) throw new Error('تێکچوونی پێوەندی بۆ شیکاریی بۆشایی ئەدەبیاتی توێژینەوە.');
-    return res.json();
   }
 }
