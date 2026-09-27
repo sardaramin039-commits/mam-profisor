@@ -1,16 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
 
-// Simple in-memory rate limiter to protect API routes from abuse.
-const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 60; // 60 requests per minute
-const MAX_TRACKED_CLIENTS = 10000;
+// In-memory limiter for a single application instance.
+// For multi-instance production deployments, use a shared store (e.g. Redis).
+type RateState = { count: number; lastReset: number };
+
+const rateLimitMap = new Map<string, RateState>();
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const DEFAULT_MAX_REQUESTS = 120;
+const AI_MAX_REQUESTS = 20;
+const MAX_TRACKED_CLIENTS = 10_000;
+
+function getLimit(path: string): number {
+  return path.startsWith('/ai-tools/') || path.startsWith('/platform/multi-agent-orchestrate')
+    ? AI_MAX_REQUESTS
+    : DEFAULT_MAX_REQUESTS;
+}
 
 export function rateLimiterMiddleware(req: Request, res: Response, next: NextFunction): void {
   const clientIp = req.ip || 'anonymous';
   const now = Date.now();
+  const maxRequests = getLimit(req.path);
 
-  // Prevent unbounded memory growth when many distinct client addresses are seen.
   if (rateLimitMap.size >= MAX_TRACKED_CLIENTS) {
     for (const [key, info] of rateLimitMap) {
       if (now - info.lastReset > RATE_LIMIT_WINDOW_MS) {
@@ -19,17 +29,23 @@ export function rateLimiterMiddleware(req: Request, res: Response, next: NextFun
     }
   }
 
-  let rateInfo = rateLimitMap.get(clientIp);
-  if (!rateInfo || (now - rateInfo.lastReset) > RATE_LIMIT_WINDOW_MS) {
+  const rateKey = `${clientIp}:${req.path.startsWith('/ai-tools/') ? 'ai' : 'default'}`;
+  let rateInfo = rateLimitMap.get(rateKey);
+
+  if (!rateInfo || now - rateInfo.lastReset > RATE_LIMIT_WINDOW_MS) {
     rateInfo = { count: 1, lastReset: now };
-    rateLimitMap.set(clientIp, rateInfo);
+    rateLimitMap.set(rateKey, rateInfo);
     next();
     return;
   }
 
-  if (rateInfo.count >= MAX_REQUESTS_PER_WINDOW) {
+  if (rateInfo.count >= maxRequests) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((RATE_LIMIT_WINDOW_MS - (now - rateInfo.lastReset)) / 1000));
+    res.setHeader('Retry-After', String(retryAfterSeconds));
     res.status(429).json({
-      error: 'داواکارییەکانت زۆرن. تکایە چەند خولەکێک چاوەڕوان بە پێش ناردنەوەی دەق.'
+      success: false,
+      error: 'داواکارییەکانت زۆرن. تکایە دوای کەمێک هەوڵ بدەرەوە.',
+      retryAfterSeconds
     });
     return;
   }
