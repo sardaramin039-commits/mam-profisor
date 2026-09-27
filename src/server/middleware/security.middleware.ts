@@ -1,14 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 // Strict ALLOWED_ORIGINS allowlist validation
-const DEFAULT_ALLOWED_DOMAINS = [
-  'localhost',
-  '127.0.0.1',
-  'google.com',
-  'ai.studio',
-  'run.app',
-  'googleusercontent.com'
-];
+const DEFAULT_ALLOWED_DOMAINS = ['localhost', '127.0.0.1'];
 
 export function securityHeadersMiddleware(req: Request, res: Response, next: NextFunction) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -16,7 +9,7 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), payment=()');
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'self' https://ai.studio https://*.google.com https://*.run.app;"
@@ -39,7 +32,12 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
       const urlObj = new URL(originHeader);
       const hostname = urlObj.hostname;
 
-      if (envAllowedOrigins.length > 0) {
+      const requestHost = (req.get('host') || '').split(':')[0].toLowerCase();
+      const sameHost = requestHost !== '' && hostname === requestHost;
+
+      if (sameHost) {
+        isAllowed = true;
+      } else if (envAllowedOrigins.length > 0) {
         isAllowed = envAllowedOrigins.some(allowed => {
           if (allowed === originHeader) return true;
           try {
