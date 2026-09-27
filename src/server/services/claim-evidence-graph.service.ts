@@ -108,26 +108,14 @@ export class ClaimEvidenceGraphService {
         graphIntegrityScore: parsed.graphIntegrityScore || 85,
         kurdishSummary: parsed.kurdishSummary || 'گرافی بەڵگە و ادعاکان بە سەرکەوتوویی بونیاد نرا.'
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error building ClaimEvidenceGraph:', err);
       return {
-        claims: [
-          {
-            claimId: 'CLAIM-001',
-            text: 'تەوەرەی سەرەکی توێژینەوەکە پێویستی بە پشتڕاستکردنەوەی بەڵگەیی هەیە.',
-            sourceId: 'SRC-FALLBACK',
-            evidenceId: 'EVI-FALLBACK',
-            confidence: 80,
-            quote: 'سەرچاوەی بڕواپێکراو لە فەرهەنگی دیجیتاڵیی زانکۆکاندا هەیە.',
-            verificationStatus: 'verified',
-            citationId: 'CIT-001',
-            syntheticCitationBlocked: false
-          }
-        ],
+        claims: [],
         evidences: [],
-        syntheticCitationsBlockedCount: 0,
-        graphIntegrityScore: 80,
-        kurdishSummary: 'گرافی پاشەکەوتی ئەکادیمی بۆ پاراستنی بونیادی بەڵگەکان.'
+        syntheticCitationsBlockedCount: 1,
+        graphIntegrityScore: 0,
+        kurdishSummary: 'نەتوانرا Claim-Evidence Graph بە پشتڕاستییەوە بونیاد بنرێت؛ هیچ Claim یان Citation ـێک Verified دانانرێت تا پشکنینی بەڵگەکان دووبارە بکرێتەوە.'
       };
     }
   }
