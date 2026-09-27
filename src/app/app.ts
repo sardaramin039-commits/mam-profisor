@@ -568,14 +568,33 @@ export class App implements OnInit {
   generateTitleAndSummary(topic: string) { this.bridge.generateTitleAndSummary(topic); }
   applyGeneratedTitle(t: string) { if (t) this.refineForm.patchValue({ title: t }); }
   copyTitleSummary(summary: string) { this.bridge.copyTitleSummary(summary); }
-  setPageSizeMode(mode: string) { this.bridge.setPageSizeMode(mode); }
+  setPageSizeMode(mode: string) {
+    const value = String(mode || '').trim();
+    if (value && this.refineForm.contains('sizeMode')) {
+      this.refineForm.patchValue({ sizeMode: value });
+    }
+  }
   closeQuickPreview() { this.bridge.closeQuickPreview(); }
   applySourceSuggestion(s: any) { this.bridge.applySourceSuggestion(s); }
-  toggleAcademicSection(sec: string) { this.bridge.toggleAcademicSection(sec); }
+  toggleAcademicSection(sec: string) {
+    if (!this.refineForm.contains(sec)) return;
+    const current = this.refineForm.get(sec)?.value;
+    this.refineForm.patchValue({ [sec]: !current });
+  }
   updateRagModel(m: string) { this.bridge.updateRagModel(m); }
   updateRagLimit(l: number) { this.bridge.updateRagLimit(l); }
-  toggleRole(role: string) { this.bridge.toggleRole(role); }
-  toggleDialect(d: string) { this.bridge.toggleDialect(d); }
+  toggleRole(role: string) {
+    const key = role === 'author' ? 'roleAuthor' : role === 'critic' ? 'roleCritic' : role === 'reviewer' ? 'roleReviewer' : '';
+    if (!key) return;
+    const current = this.refineForm.get(key)?.value === true;
+    this.refineForm.patchValue({ [key]: !current });
+  }
+  toggleDialect(d: string) {
+    const key = d === 'thesis' ? 'dialectThesis' : d === 'antithesis' ? 'dialectAntithesis' : d === 'synthesis' ? 'dialectSynthesis' : '';
+    if (!key) return;
+    const current = this.refineForm.get(key)?.value === true;
+    this.refineForm.patchValue({ [key]: !current });
+  }
   onDragOver(e: Event, type: string) { this.bridge.onDragOver(e, type); }
   onDragLeave(e: Event, type: string) { this.bridge.onDragLeave(e, type); }
   onFileDrop(e: DragEvent, type: string) { this.bridge.onFileDrop(e, type); }
