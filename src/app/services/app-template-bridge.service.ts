@@ -587,7 +587,6 @@ export class AppTemplateBridgeService {
       doiOrUrl: suggestion.url || ''
     });
   }
-  toggleAcademicSection(sec: string) {}
   updateRagModel(model: string) {
     const value = String(model || '').trim();
     if (value) this.ragResearchService.selectedModel.set(value);
@@ -626,7 +625,6 @@ export class AppTemplateBridgeService {
     else if (type === 'compare2') this.compareFile2Name.set(value);
     else if (type === 'copyStyle') this.copyStyleFileName.set(value);
   }
-  onSendToSecondWindow() {}
   activateAllAcademicRules() {
     this.academicRules.update(rules => rules.map(rule => ({ ...rule, enabled: true })));
   }
