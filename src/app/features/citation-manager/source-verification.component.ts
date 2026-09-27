@@ -49,41 +49,7 @@ export class SourceVerificationComponent {
   rerankQuery = signal<string>('پەرەسەندنی ڕێزمانی سۆرانی لە سەدەی بیستەمدا');
   rerankedResults = signal<RerankedEvidenceChunk[]>([]);
 
-  // Local Seed Records
-  records = signal<VerifiedCitationRecord[]>([
-    SourceVerificationEngine.processWorkflow(
-      'زمانی سۆرانی ڕێزمانی ستاندارد لە سەدەی بیستەمدا لە شاری سلێمانی پەرەی سەندووە.',
-      {
-        title: 'مێژووی زمانی کوردی و سۆرانی (Google Books)',
-        author: 'د. کەمال فوئاد',
-        publicationYear: 1971,
-        publisherOrJournal: 'چاپخانەی کۆڕی زانیاری کورد',
-        doiOrUrl: 'https://books.google.com/books?id=example123',
-        pageNumber: 'لاپەڕە 112',
-        retrievedTextSnippet: 'زمانی سۆرانی ڕێزمانی ستاندارد لە سەدەی بیستەمدا لە شاری سلێمانی پەرەی سەندووە و بوەتە بنەمای ئەکادیمی.'
-      }
-    ),
-    SourceVerificationEngine.processWorkflow(
-      'کورتکراوەی جێناوە سەربەخۆکان لە زاری سۆرانیدا.',
-      {
-        title: 'مێژووی زمانی کوردی و سۆرانی (Internet Archive)',
-        author: 'د. کەمال فوئاد',
-        publicationYear: 1971,
-        publisherOrJournal: 'Internet Archive Mirror',
-        doiOrUrl: 'https://archive.org/details/example123',
-        pageNumber: 'لاپەڕە 112',
-        retrievedTextSnippet: 'زمانی سۆرانی ڕێزمانی ستاندارد لە سەدەی بیستەمدا لە شاری سلێمانی پەرەی سەندووە.'
-      }
-    ),
-    SourceVerificationEngine.processWorkflow(
-      'تێۆریی کوانتەم بە بێ هیچ پێوانەیەک سەلمێنراوە.',
-      {
-        title: '',
-        author: '',
-        retrievedTextSnippet: ''
-      }
-    )
-  ]);
+  records = signal<VerifiedCitationRecord[]>([]);
 
   auditReport = computed<VerificationAuditReport>(() => {
     return SourceVerificationEngine.generateAuditReport(this.records());
