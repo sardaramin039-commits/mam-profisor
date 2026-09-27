@@ -11,7 +11,8 @@
     "watch": "ng build --watch --configuration development",
     "lint": "ng lint",
     "security:audit": "node scripts/security-secret-audit.mjs",
-    "test": "ng test --watch=false"
+    "test": "ng test --watch=false",
+    "test:contracts": "node --experimental-strip-types scripts/p0-fallback-safety-test.mjs && node --experimental-strip-types scripts/p1-integrity-smoke-test.mjs && node --experimental-strip-types scripts/p2-claim-evidence-graph-test.mjs && node --experimental-strip-types scripts/p3-rag2-smoke-test.mjs && node --experimental-strip-types scripts/p4-rag-production-test.mjs && node --experimental-strip-types scripts/p5-evidence-intelligence-test.mjs && node --experimental-strip-types scripts/p6-multi-agent-orchestration-test.mjs && node --experimental-strip-types scripts/p7-research-memory-test.mjs && node --experimental-strip-types scripts/p8-research-workspace-test.mjs"
   },
   "dependencies": {
     "@angular/cdk": "^19.1.0",
