@@ -24,7 +24,7 @@ export class AcademicSearchService {
     try {
       const apiKey = process.env['OPENALEX_API_KEY'];
       const headers: Record<string, string> = {
-        'User-Agent': 'AcademicKurdishPlatform/1.0 (mailto:admin@example.com)',
+        'User-Agent': `AcademicKurdishPlatform/1.0${process.env['ACADEMIC_CONTACT_EMAIL'] ? ` (mailto:${process.env['ACADEMIC_CONTACT_EMAIL']})` : ''}`,
       };
       if (apiKey) {
         headers['api_key'] = apiKey;
@@ -67,7 +67,7 @@ export class AcademicSearchService {
     if (!query || query.trim() === '') return [];
     try {
       const headers: Record<string, string> = {
-        'User-Agent': 'AcademicKurdishPlatform/1.0 (mailto:admin@example.com)',
+        'User-Agent': `AcademicKurdishPlatform/1.0${process.env['ACADEMIC_CONTACT_EMAIL'] ? ` (mailto:${process.env['ACADEMIC_CONTACT_EMAIL']})` : ''}`,
       };
       const token = process.env['CROSSREF_PLUS_TOKEN'];
       if (token) {
