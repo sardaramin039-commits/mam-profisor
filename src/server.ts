@@ -40,7 +40,7 @@ app.disable('x-powered-by');
 // Security headers & strict CORS enforcement middleware
 app.use(securityHeadersMiddleware);
 
-app.use(express.json());
+app.use(express.json({ limit: '8mb', strict: true }));
 
 // Prompt injection protection middleware
 app.use('/api', promptSanitizerMiddleware);
