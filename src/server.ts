@@ -23,8 +23,14 @@ import { createMultiAgentRouter } from './server/routes/multi-agent.routes';
 import { createResearchMemoryRouter } from './server/routes/research-memory.routes';
 import { createResearchProjectStateRouter } from './server/routes/research-project-state.routes';
 import { getGeminiClient } from './server/services/gemini.service';
-import { rateLimiterMiddleware } from './server/middleware/rate-limiter.middleware';
-import { securityHeadersMiddleware, promptSanitizerMiddleware } from './server/middleware/security.middleware';
+import {
+  rateLimiterMiddleware,
+  authenticatedRateLimiterMiddleware
+} from './server/middleware/rate-limiter.middleware';
+import {
+  securityHeadersMiddleware,
+  promptSanitizerMiddleware
+} from './server/middleware/security.middleware';
 import { requireAuth } from './middleware/auth';
 import { agentsRouter } from './routes/agents.router';
 import { academicRouter as modularAcademicRouter } from './routes/academic.router';
@@ -34,62 +40,67 @@ import { errorMiddleware } from './middleware/error.middleware';
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
-app.set('trust proxy', true);
+
+// Trusting every proxy hop lets clients spoof x-forwarded-for.
+// Rate limiting uses the direct socket address, so do not depend on this header.
+app.set('trust proxy', false);
 app.disable('x-powered-by');
 
-// Security headers & strict CORS enforcement middleware
 app.use(securityHeadersMiddleware);
 
-app.use(express.json());
+// The application is designed for chunked long-form work, not arbitrarily large
+// single JSON requests. 5 MiB is enough for normal chapter/batch payloads while
+// preventing an unlimited body-memory attack.
+app.use(express.json({ limit: '5mb' }));
 
-// Prompt injection protection middleware
 app.use('/api', promptSanitizerMiddleware);
 
-// Pre-request check for GEMINI_API_KEY
-app.use('/api', (req, res, next) => {
+app.use('/api', (req, _res, next) => {
   const keysEnv = process.env['GEMINI_API_KEY'];
   if (!keysEnv || keysEnv.trim() === '') {
-    console.warn('[GEMINI_API_KEY] Not set in environment. Dynamic academic fallbacks will be used for AI routes.');
+    console.warn(
+      '[GEMINI_API_KEY] Not set in environment. AI routes may fail until the server secret is configured.'
+    );
   }
   next();
 });
 
-// Simple In-Memory Rate Limiter middleware
+// Public documentation may be read without authentication, but still receives
+// the IP limiter so it cannot be used to exhaust the Node process.
 app.use('/api', rateLimiterMiddleware);
 
 const angularApp = new AngularNodeAppEngine();
 
-// Mount API Routers (Public Docs vs Protected API Routes)
 app.use('/api/docs', createApiDocsRouter());
 
-// Unified security middleware enforcing requireAuth for protected API endpoints & AI tools
-app.use('/api/ai-tools', requireAuth, createAiToolsRouter(getGeminiClient));
-app.use('/api/library', requireAuth, createLibraryRouter(getGeminiClient));
-app.use('/api/external-integrations', requireAuth, createExternalApiRouter());
-app.use('/api', requireAuth, createAcademicRouter(getGeminiClient));
-app.use('/api', requireAuth, createThesisWritingRouter(getGeminiClient));
-app.use('/api', requireAuth, createResearchAnalysisRouter(getGeminiClient));
-app.use('/api', requireAuth, createEvaluationReviewRouter(getGeminiClient));
-app.use('/api', requireAuth, createAcademicSearchIntegrationsRouter(getGeminiClient));
-app.use('/api/chatgpt-sources', requireAuth, createChatGptAcademicSourcesRouter());
-app.use('/api', requireAuth, createAdvancedAcademicToolsRouter(getGeminiClient));
-app.use('/api/platform', requireAuth, createAcademicPlatformRouter(getGeminiClient));
-app.use('/api/rag', requireAuth, createRagRouter(getGeminiClient));
-app.use('/api/multi-agent', requireAuth, createMultiAgentRouter(getGeminiClient));
-app.use('/api/research-memory', requireAuth, createResearchMemoryRouter(getGeminiClient));
-app.use('/api/workspace', requireAuth, createResearchProjectStateRouter(getGeminiClient));
+// From this point onward every API endpoint is authenticated once, centrally.
+// This prevents a newly-added /api router from accidentally becoming public.
+app.use('/api', requireAuth);
+app.use('/api', authenticatedRateLimiterMiddleware);
+
+app.use('/api/ai-tools', createAiToolsRouter(getGeminiClient));
+app.use('/api/library', createLibraryRouter(getGeminiClient));
+app.use('/api/external-integrations', createExternalApiRouter());
+app.use('/api', createAcademicRouter(getGeminiClient));
+app.use('/api', createThesisWritingRouter(getGeminiClient));
+app.use('/api', createResearchAnalysisRouter(getGeminiClient));
+app.use('/api', createEvaluationReviewRouter(getGeminiClient));
+app.use('/api', createAcademicSearchIntegrationsRouter(getGeminiClient));
+app.use('/api/chatgpt-sources', createChatGptAcademicSourcesRouter());
+app.use('/api', createAdvancedAcademicToolsRouter(getGeminiClient));
+app.use('/api/platform', createAcademicPlatformRouter(getGeminiClient));
+app.use('/api/rag', createRagRouter(getGeminiClient));
+app.use('/api/multi-agent', createMultiAgentRouter(getGeminiClient));
+app.use('/api/research-memory', createResearchMemoryRouter(getGeminiClient));
+app.use('/api/workspace', createResearchProjectStateRouter(getGeminiClient));
 
 // Modular Services & Routers (Agents, Scholarly Search, Digital Library Catalog)
-app.use('/api/agents', requireAuth, agentsRouter);
-app.use('/api/scholarly', requireAuth, modularAcademicRouter);
-app.use('/api/library-catalog', requireAuth, modularLibraryRouter);
+app.use('/api/agents', agentsRouter);
+app.use('/api/scholarly', modularAcademicRouter);
+app.use('/api/library-catalog', modularLibraryRouter);
 
-// Global Error Handler Middleware for API routes
 app.use('/api', errorMiddleware);
 
-/**
- * Serve static files from /browser
- */
 app.use(
   express.static(browserDistFolder, {
     maxAge: '1y',
@@ -98,9 +109,6 @@ app.use(
   }),
 );
 
-/**
- * Handle all other requests by rendering the Angular application.
- */
 app.use((req, res, next) => {
   angularApp
     .handle(req)
@@ -110,9 +118,6 @@ app.use((req, res, next) => {
     .catch(next);
 });
 
-/**
- * Start the server if this module is the main entry point, or it is ran via PM2.
- */
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
   const port = process.env['PORT'] || 3000;
   app.listen(port, () => {
@@ -120,9 +125,6 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
   });
 }
 
-/**
- * Request handler used by the Angular CLI or Cloud Functions.
- */
 export const reqHandler = createNodeRequestHandler(app);
 export { app };
 export default app;
