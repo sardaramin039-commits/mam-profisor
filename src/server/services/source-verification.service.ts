@@ -97,15 +97,16 @@ ${JSON.stringify(sources)}
         verifiedSources: sources.map(s => ({
           sourceTitle: s.title,
           author: s.author || 'نادیار',
-          publisher: s.publisher || 'بڵاوکراوەی ئەکادیمی',
+          publisher: s.publisher || 'نادیار',
           doiOrIsbn: s.doi || '',
-          integrityScore: 88,
-          trustLevel: 'A',
-          existenceVerified: true,
-          metadataAccuracy: 90,
-          peerReviewed: true,
+          integrityScore: 0,
+          trustLevel: 'D' as TrustLevel,
+          existenceVerified: false,
+          metadataAccuracy: 0,
+          peerReviewed: false,
           rejectedAsFabricated: false,
-          kurdishVerificationDetails: 'پشکنینی بنەڕەتی سەرچاوەکە پەسەند کرا.'
+          rejectionReasonKurdish: 'پشتڕاستکردنەوەی سەرچاوەکە بەهۆی نەگەیشتن بە خزمەتگوزاریی پشتڕاستکردنەوە نەکرا.',
+          kurdishVerificationDetails: 'سەرچاوەکە نەسەلمێنراوە؛ هیچ داتایەکی پشتڕاستکراو لەم fallback ـەدا پەسەند ناکرێت.'
         })),
         rejectedSourcesCount: 0
       };
