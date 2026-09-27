@@ -267,5 +267,73 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
     }
   });
 
+  router.post('/summarize_thesis_context', async (req: Request, res: Response) => {
+    try {
+      const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+      if (!text) { res.status(400).json({ error: 'دەقی تێز پێویستە.' }); return; }
+      const ai = getGeminiClient();
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: text,
+        config: { systemInstruction: SYSTEM_PROMPT_SUMMARIZE_THESIS_CONTEXT, responseMimeType: 'application/json', temperature: 0.2 }
+      });
+      res.json(robustParseJson(response.text || '{}'));
+    } catch (error) {
+      console.error('Summarize thesis context error:', error);
+      res.status(503).json({ error: 'پوختەکردنی کۆنتێکستی تێز لەم کاتەدا بەردەست نییە.', code: 'THESIS_CONTEXT_UNAVAILABLE' });
+    }
+  });
+
+  router.post('/academic_additions', async (req: Request, res: Response) => {
+    try {
+      const { chapterTitle = '', chapterText = '', discipline = 'گشتی', academicLevel = 'ماستەر' } = req.body;
+      if (!String(chapterText).trim()) { res.status(400).json({ error: 'دەقی بەش پێویستە.' }); return; }
+      const ai = getGeminiClient();
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: 'بۆ ئەم بەشەی تێز بڕگەی یارمەتیدەری ئەکادیمی پێشنیار بکە، بەبێ دروستکردنی سەرچاوە یان داتای ساختە.\\nناونیشان: ' + chapterTitle + '\\nکایە: ' + discipline + '\\nئاست: ' + academicLevel + '\\nدەق: ' + String(chapterText).slice(0, 12000),
+        config: { responseMimeType: 'application/json', temperature: 0.2 }
+      });
+      res.json(robustParseJson(response.text || '{}'));
+    } catch (error) {
+      console.error('Academic additions error:', error);
+      res.status(503).json({ error: 'زیادکردنی ئەکادیمی لەم کاتەدا بەردەست نییە.', code: 'ACADEMIC_ADDITIONS_UNAVAILABLE' });
+    }
+  });
+
+  router.post('/sorani_phonetics', async (req: Request, res: Response) => {
+    try {
+      const { text, subDialect = 'hawler', scope = 'full' } = req.body;
+      if (!String(text).trim()) { res.status(400).json({ error: 'دەق پێویستە.' }); return; }
+      const ai = getGeminiClient();
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: 'شیکاریی زمانەوانی و دەنگسازیی سۆرانی بکە. شێوەزاری ئامانج: ' + subDialect + '، سنوور: ' + scope + '\\nدەق: ' + String(text).slice(0, 12000) + '\\nهیچ سەرچاوە یان داتای ساختە دروست مەکە. وەڵام JSON بێت.',
+        config: { responseMimeType: 'application/json', temperature: 0.2 }
+      });
+      res.json(robustParseJson(response.text || '{}'));
+    } catch (error) {
+      console.error('Sorani phonetics error:', error);
+      res.status(503).json({ error: 'شیکاریی فۆنێتیک و شێوەزار لەم کاتەدا بەردەست نییە.', code: 'PHONETICS_UNAVAILABLE' });
+    }
+  });
+
+  router.post('/recalibrate_rigor', async (req: Request, res: Response) => {
+    try {
+      const { text, intuition, discipline = 'گشتی', academicLevel = 'ماستەر' } = req.body;
+      if (!String(text).trim()) { res.status(400).json({ error: 'دەقی بەش پێویستە.' }); return; }
+      const ai = getGeminiClient();
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: 'ئاستی ئەکادیمیی ئەم دەقە دووبارە هەڵبسەنگێنە بە لەبەرچاوگرتنی تێبینیی توێژەر.\\nکایە: ' + discipline + '\\nئاست: ' + academicLevel + '\\nتێبینیی توێژەر: ' + String(intuition || '').slice(0, 4000) + '\\nدەق: ' + String(text).slice(0, 12000) + '\\nهیچ نمرە یان دۆخی پەسەندکراو بەبێ شواهدی دەق مەدەرە. وەڵام JSON بێت.',
+        config: { responseMimeType: 'application/json', temperature: 0.15 }
+      });
+      res.json(robustParseJson(response.text || '{}'));
+    } catch (error) {
+      console.error('Rigor recalibration error:', error);
+      res.status(503).json({ error: 'دووبارە هەڵسەنگاندنی ئاستی ئەکادیمی لەم کاتەدا بەردەست نییە.', code: 'RIGOR_RECALIBRATION_UNAVAILABLE' });
+    }
+  });
+
   return router;
 }
