@@ -4,6 +4,7 @@ import { buildUserPromptForTool } from './ai-tools-prompts';
 import { centralizedPromptsManager, AcademicToneVariant } from './prompts/centralized-prompts-manager';
 import { apiConfigService } from './services/api-config.service';
 import { generateDynamicAcademicFallback } from './services/dynamic-academic-fallback.service';
+import { z } from 'zod';
 
 interface OpenAiOrPerplexityResponse {
   choices?: {
@@ -19,6 +20,31 @@ interface ClaudeResponse {
   }[];
 }
 
+const executeSchema = z.object({
+  toolId: z.string().trim().min(1).max(120),
+  inputText: z.string().trim().min(1).max(250_000),
+  options: z.object({
+    toneVariant: z.enum(['formal_academic', 'critical', 'analytical', 'persuasive']).optional(),
+    provider: z.enum(['auto', 'gemini', 'openai', 'claude', 'anthropic', 'perplexity', 'pplx']).optional(),
+    model: z.string().trim().min(1).max(120).optional(),
+    discipline: z.string().trim().max(120).optional(),
+    academicLevel: z.string().trim().max(120).optional(),
+    style: z.string().trim().max(40).optional(),
+    tone: z.string().trim().max(80).optional(),
+    language: z.string().trim().max(80).optional(),
+  }).optional(),
+}).strict();
+
+const fetchWithTimeout = async (url: string, init: RequestInit, timeoutMs = 45_000): Promise<Response> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
 
@@ -27,12 +53,20 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
     let selectedVariant: AcademicToneVariant = 'formal_academic';
 
     try {
-      const { toolId, inputText, options } = req.body || {};
-      if (!toolId || typeof toolId !== 'string') {
-        res.status(400).json({ error: 'toolId is required' });
+      const parsed = executeSchema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({
+          success: false,
+          error: 'داتای ناردراو بۆ ئامرازەکە دروست نییە.',
+          details: parsed.error.issues.map((issue) => ({
+            field: issue.path.join('.'),
+            message: issue.message,
+          })),
+        });
         return;
       }
 
+      const { toolId, inputText, options } = parsed.data;
       const requestedVariant = options?.toneVariant as AcademicToneVariant | undefined;
       const { systemPrompt, variantUsed } = centralizedPromptsManager.getSystemPrompt(toolId, requestedVariant);
       selectedVariant = variantUsed;
@@ -45,11 +79,11 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
       // Perplexity AI provider execution
       if (provider === 'perplexity' || provider === 'pplx' || (provider === 'auto' && (process.env['PERPLEXITY_API_KEY'] || req.body?.perplexityApiKey))) {
         apiConfigService.validateProvider('perplexity');
-        const apiKey = req.body?.perplexityApiKey || apiConfigService.getApiKey('perplexity')!;
+        const apiKey = apiConfigService.getApiKey('perplexity')!;
         const config = apiConfigService.getProviderConfig('perplexity');
         const modelName = options?.model || config.defaultModel;
 
-        const pRes = await fetch(`${config.baseUrl}/chat/completions`, {
+        const pRes = await fetchWithTimeout(`${config.baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -79,7 +113,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         const config = apiConfigService.getProviderConfig('openai');
         const modelName = options?.model || config.defaultModel;
 
-        const openAiRes = await fetch(`${config.baseUrl}/chat/completions`, {
+        const openAiRes = await fetchWithTimeout(`${config.baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -110,7 +144,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         const config = apiConfigService.getProviderConfig('claude');
         const modelName = options?.model || config.defaultModel;
 
-        const claudeRes = await fetch(`${config.baseUrl}/messages`, {
+        const claudeRes = await fetchWithTimeout(`${config.baseUrl}/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -137,7 +171,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         outputText = claudeData.content?.[0]?.text || 'هیچ وەڵامێک لە Claude سەرچاوە نەگرت.';
 
       // Gemini provider execution (default)
-      } else {
+      } else if (provider === 'auto' || provider === 'gemini') {
         const client = getGeminiClient();
         const response = await client.models.generateContent({
           model: options?.model || 'gemini-3.8-flash',
@@ -176,7 +210,8 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         toolId,
         variantUsed: selectedVariant,
         output: fallbackOutput,
-        isFallback: true
+        isFallback: true,
+        degraded: true
       });
     }
   });
