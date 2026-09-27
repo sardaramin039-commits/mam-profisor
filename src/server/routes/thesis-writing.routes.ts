@@ -9,7 +9,6 @@ import {
 import { PDF4KURD_BOOKS_ARCHIVE } from '../../prompts/pdf4kurd-books';
 import { robustParseJson } from '../utils/json-repair';
 import { getDigitalLibraryContextPrompt } from '../services/digital-library-context.service';
-import { generateDynamicAcademicFallback } from '../services/dynamic-academic-fallback.service';
 import { evidenceGroundingService } from '../services/evidence-grounding.service';
 
 export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): Router {
@@ -103,9 +102,9 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
         res.json(parsed);
       } catch (parseErr) {
         console.error('Failed to parse response as JSON. Raw text:', responseText, parseErr);
-        res.status(500).json({
-          error: 'سەرکەوتوو نەبوو لە وەرگرتنی پێکهاتەی وەڵام لەسەر شێوازی فەرمی JSON',
-          rawText: responseText
+        res.status(502).json({
+          error: 'وەڵامی سێرڤەر بە شێوازی JSON نەبوو؛ تکایە دووبارە هەوڵ بدەرەوە.',
+          code: 'INVALID_AI_JSON'
         });
       }
 
