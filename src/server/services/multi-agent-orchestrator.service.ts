@@ -49,15 +49,31 @@ export class MultiAgentOrchestratorService {
     const sources = Array.isArray(request.rawSources) ? request.rawSources : [];
 
     // Agent 4: Verification Agent
-    addLog('03', 'Verification Agent', 'Evaluating source integrity and filtering out F-graded sources');
+    addLog('03', 'Verification Agent', 'Evaluating source integrity and filtering out unverified sources');
     const verification = await sourceVerificationService.verifySources(sources, getGeminiClient);
 
+    // Preserve the original source body for evidence grounding. Verification metadata alone
+    // is never enough to construct a quotation or claim-evidence link.
+    const verifiedTitles = new Set(
+      verification.verifiedSources.map(source => source.sourceTitle.trim().toLowerCase())
+    );
+    const evidenceSources = sources
+      .filter((source: any) =>
+        verifiedTitles.has(String(source?.title || '').trim().toLowerCase()) &&
+        typeof (source?.content || source?.chunkText || source?.text) === 'string'
+      )
+      .map((source: any) => ({
+        ...source,
+        title: String(source.title || ''),
+        content: String(source.content || source.chunkText || source.text || '').trim()
+      }));
+
     // Agent 5: Evidence Agent
-    addLog('04', 'Evidence Agent', 'Mapping evidence nodes and building Claim-Evidence Graph');
+    addLog('04', 'Evidence Agent', 'Mapping evidence nodes and building Claim-Evidence Graph from verified source text');
     const graph = await claimEvidenceGraphService.buildGraph(
       request.topic,
       request.draftText || request.topic,
-      verification.verifiedSources,
+      evidenceSources,
       getGeminiClient
     );
 
@@ -93,7 +109,13 @@ export class MultiAgentOrchestratorService {
       getGeminiClient
     );
 
-    addLog('10', 'Orchestration Complete', 'Academic pipeline successfully executed with full evidence backing');
+    addLog(
+      '10',
+      'Orchestration Complete',
+      graph.graphIntegrityScore > 0
+        ? 'Academic pipeline completed; evidence graph contains grounded source text.'
+        : 'Academic pipeline completed with evidence gap; no grounded claim graph was certified.'
+    );
 
     // Record observability telemetry
     observabilityService.logEvent({
@@ -102,7 +124,7 @@ export class MultiAgentOrchestratorService {
       latencyMs: Date.now() - startTime,
       tokensPrompt: 2500,
       tokensCompletion: 1800,
-      estimatedCostUsd: 0.0035,
+      estimatedCostUsd: 0,
       success: !qaResult.exportBlocked,
       citationFailuresCount: graph.syntheticCitationsBlockedCount,
       ragQualityScore: graph.graphIntegrityScore
