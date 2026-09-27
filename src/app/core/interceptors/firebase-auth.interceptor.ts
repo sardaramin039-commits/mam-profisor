@@ -74,13 +74,6 @@ export const firebaseAuthInterceptor: HttpInterceptorFn = (
     );
   }
 
-  // Fallback for dev / preview mode when no active Firebase session is logged in yet
-  const devAuthorizedReq = req.clone({
-    setHeaders: {
-      Authorization: 'Bearer allow-dev-preview',
-      'X-Dev-Guest-Token': 'allow-dev-preview'
-    }
-  });
-
-  return next(devAuthorizedReq);
+  // No authenticated user: let the API return its normal 401 response.
+  return next(req);
 };
