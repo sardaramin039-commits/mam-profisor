@@ -14,12 +14,13 @@ export interface TelemetryEvent {
 
 export class ObservabilityService {
   private events: TelemetryEvent[] = [];
+  private sequence = 0;
   private readonly maxEvents = 200;
 
   public logEvent(event: Omit<TelemetryEvent, 'id' | 'timestamp'>): TelemetryEvent {
     const fullEvent: TelemetryEvent = {
       ...event,
-      id: `TEL-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      id: `TEL-${Date.now()}-${++this.sequence}`,
       timestamp: new Date().toISOString()
     };
 
