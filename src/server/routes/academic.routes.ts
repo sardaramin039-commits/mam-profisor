@@ -135,7 +135,7 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
         deduplicated = fallbackItems as unknown as typeof deduplicated;
       }
 
-      res.json({ sources: deduplicated, totalFound: deduplicated.length });
+      res.json({ sources: deduplicated, totalFound: deduplicated.length, isFallback: all.length === 0 });
     } catch (err: unknown) {
       console.warn('External sources search error (falling back to local catalog):', err);
       const catalog = crawlerEngine.getCatalog();
