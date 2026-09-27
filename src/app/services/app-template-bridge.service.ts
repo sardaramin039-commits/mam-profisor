@@ -852,16 +852,34 @@ export class AppTemplateBridgeService {
     this.vivaUserDefenseInput.set('');
   }
   submitVivaDefense(c: ChapterItem) {
-    if (!this.vivaUserDefenseInput().trim()) return;
+    const answer = this.vivaUserDefenseInput().trim();
+    const questions = this.vivaQuestions();
+    const question = Array.isArray(questions) && questions.length > 0
+      ? String(questions[0]?.question || questions[0]?.text || questions[0])
+      : '';
+
+    if (!answer || !question) {
+      this.vivaErrorMessage.set('پێش هەڵسەنگاندن، دەبێت پرسیارێکی Viva و وەڵامی توێژەر هەبێت.');
+      return;
+    }
+
     this.isEvaluatingDefense.set(true);
-    setTimeout(() => {
-      this.vivaEvaluationResult.set({
-        isPassed: true,
-        score: 88,
-        feedbackText: 'دۆزی توێژینەوەکە بە شێوەیەکی زانستی و بڕواپێکراو پارێزگاری لێکرا.'
-      });
+    this.vivaErrorMessage.set(null);
+    this.api.post<any>('/api/evaluate_viva_defense', {
+      thesisTitle: c.title || this.refineForm.get('title')?.value || 'تێزی ئەکادیمی',
+      chapterContext: c.content || '',
+      question,
+      answer,
+      academicLevel: this.refineForm.get('academicLevel')?.value || 'ماستەر'
+    }).then(result => {
+      this.vivaEvaluationResult.set(result);
+    }).catch(error => {
+      console.error('Viva defense evaluation failed:', error);
+      this.vivaEvaluationResult.set(null);
+      this.vivaErrorMessage.set('هەڵسەنگاندنی وەڵامی Viva لەم کاتەدا بەردەست نییە.');
+    }).finally(() => {
       this.isEvaluatingDefense.set(false);
-    }, 1000);
+    });
   }
 }
 
