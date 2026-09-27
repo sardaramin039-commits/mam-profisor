@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { resolveDoi } from '../../helpers/extended-academic-tools';
 
 export type TrustLevel = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
 
@@ -27,6 +28,22 @@ export class SourceVerificationService {
     getGeminiClient: () => GoogleGenAI
   ): Promise<{ verifiedSources: SourceVerificationReport[]; rejectedSourcesCount: number }> {
     const ai = getGeminiClient();
+
+    const externallyResolved = new Map<string, Awaited<ReturnType<typeof resolveDoi>>>();
+    await Promise.all(
+      sources
+        .filter((source) => Boolean(source.doi?.trim()))
+        .slice(0, 20)
+        .map(async (source) => {
+          try {
+            const doi = source.doi!.trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, '');
+            const resolved = await resolveDoi(doi);
+            externallyResolved.set(doi.toLowerCase(), resolved);
+          } catch {
+            // A failed external lookup must never be treated as verification.
+          }
+        })
+    );
 
     const prompt = `تۆ پسپۆڕی پشکنین و هەڵسەنگاندنی ڕەسەنایەتی سەرچاوە زانستییەکانی لە پلاتفۆرمی ئەکادیمیی مام.
 ئەم سەرچاوانەی خوارەوە لە ڕووی ڕاستیی بونیاد، DOI/ISBN، خاوەندارێتی، بڵاوکراوە و هاوتایی هاوڕێیان (Peer-review) بپشکنە:
@@ -74,15 +91,45 @@ ${JSON.stringify(sources)}
       });
 
       const parsed = JSON.parse(response.text || '{}');
-      const reports: SourceVerificationReport[] = parsed.reports || [];
+      const reports: SourceVerificationReport[] = Array.isArray(parsed.reports) ? parsed.reports : [];
 
-      // Automatically reject/filter out F sources
-      const verifiedSources = reports.map(r => {
-        if (r.trustLevel === 'F' || r.integrityScore < 30) {
-          r.rejectedAsFabricated = true;
-          r.rejectionReasonKurdish = 'سەرچاوەکە وەک سەرچاوەیەکی هەڵبەستراو یان بێ بەڵگە ڕەتکرایەوە (Trust Level F).';
+      const verifiedSources = reports.map((report) => {
+        const doiKey = (report.doiOrIsbn || '').trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').toLowerCase();
+        const external = doiKey ? externallyResolved.get(doiKey) : undefined;
+
+        if (external) {
+          const normalizedTitle = report.sourceTitle.trim().toLowerCase();
+          const externalTitle = external.title.trim().toLowerCase();
+          const titleMatches = normalizedTitle === externalTitle ||
+            normalizedTitle.includes(externalTitle) ||
+            externalTitle.includes(normalizedTitle);
+
+          report.existenceVerified = true;
+          report.metadataAccuracy = titleMatches ? Math.max(report.metadataAccuracy || 0, 95) : Math.min(report.metadataAccuracy || 0, 60);
+          if (!titleMatches) {
+            report.rejectedAsFabricated = true;
+            report.trustLevel = 'F';
+            report.integrityScore = 0;
+            report.rejectionReasonKurdish = 'ناوی سەرچاوە لەگەڵ تۆماری DOI لە Crossref هاوتا نییە؛ بۆیە سەرچاوەکە ڕەتکرایەوە.';
+          }
+        } else {
+          // LLM-only verification is insufficient for citation eligibility.
+          report.existenceVerified = false;
+          report.trustLevel = 'D';
+          report.integrityScore = Math.min(report.integrityScore || 0, 20);
+          report.rejectedAsFabricated = false;
+          report.peerReviewed = false;
+          report.rejectionReasonKurdish = 'پشکنینی ڕەسەنایەتی لە سەرچاوەی دەرەکییەوە نەسەلمێنراوە؛ ئەم تۆمارە نابێت Verified Citation بێت.';
         }
-        return r;
+
+        if (report.trustLevel === 'F' || report.integrityScore < 30) {
+          report.rejectedAsFabricated = true;
+          if (!report.rejectionReasonKurdish) {
+            report.rejectionReasonKurdish = 'سەرچاوەکە وەک سەرچاوەی هەڵبەستراو یان بێ بەڵگە ڕەتکرایەوە.';
+          }
+        }
+
+        return report;
       });
 
       const rejectedCount = verifiedSources.filter(s => s.rejectedAsFabricated).length;
