@@ -236,5 +236,36 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
     }
   });
 
+  /**
+   * Academic title and abstract ideation
+   */
+  router.post('/title_summary', async (req: Request, res: Response) => {
+    try {
+      const topic = typeof req.body?.topic === 'string' ? req.body.topic.trim() : '';
+      if (!topic) {
+        res.status(400).json({ error: 'بابەت پێویستە.' });
+        return;
+      }
+      const ai = getGeminiClient();
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: 'بۆ ئەم بابەتەی توێژینەوە سێ ناونیشانی ئەکادیمی و یەک پوختەی بێ‌سەرچاوە دروست بکە: ' + topic,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.3
+        }
+      });
+      const parsed = robustParseJson(response.text || '{}');
+      const titles = Array.isArray(parsed?.titles)
+        ? parsed.titles.filter((v: unknown) => typeof v === 'string' && v.trim()).slice(0, 3)
+        : [];
+      const summary = typeof parsed?.summary === 'string' ? parsed.summary.trim() : '';
+      res.json({ titles, summary });
+    } catch (error) {
+      console.error('Title summary error:', error);
+      res.status(503).json({ error: 'دروستکردنی ناونیشان و پوختە لەم کاتەدا بەردەست نییە.', code: 'TITLE_SUMMARY_UNAVAILABLE' });
+    }
+  });
+
   return router;
 }
