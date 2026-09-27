@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { academicSearchService } from '../../services/academic-search.service';
 
 export interface KurdishKnowledgeEntry {
   id: string;
@@ -7,58 +8,43 @@ export interface KurdishKnowledgeEntry {
   type: 'book' | 'journal' | 'thesis' | 'article' | 'encyclopedia' | 'archive';
   discipline: string;
   period: string;
-  dialect: 'Sorani' | 'Kurmanji' | 'Hawrami';
+  dialect: 'Sorani' | 'Kurmanji' | 'Hawrami' | 'Unknown';
   isbnOrDoi?: string;
   publisher?: string;
   digitalAvailability: boolean;
   kurdishAbstract: string;
 }
 
+/**
+ * Retrieval-only Kurdish knowledge graph.
+ *
+ * The graph never asks an LLM to invent bibliographic records. It maps records
+ * returned by the real academic search integrations and leaves unknown metadata blank.
+ */
 export class KurdishKnowledgeGraphService {
-  /**
-   * Queries the Kurdish Academic Knowledge Graph for verified literature, books, and theses.
-   */
   public async searchKnowledgeGraph(
     query: string,
-    getGeminiClient: () => GoogleGenAI
+    _getGeminiClient: () => GoogleGenAI
   ): Promise<KurdishKnowledgeEntry[]> {
-    const ai = getGeminiClient();
-
-    const prompt = `تۆ سەرۆکی ئەرشیفی کتێبخانەی دیجیتاڵیی ئەکادیمیی مام و گوتاری کوردیی هەولێر و سلێمانی و زانکۆکانیت.
-تکایە گەڕان بکە لەسەر ئەم تێرمە بە مەبەستی دۆزینەوەی کتێب، تێز، و وتاری زانستی ڕاستەقینەی کوردی:
-تێرم: ${query}
-
-وەڵامەکەت تەنها بە JSON بێت بەم شێوازە:
-{
-  "entries": [
-    {
-      "id": "KURD-KG-001",
-      "title": "ناوی کتێب یان توێژینەوەی زانستی",
-      "author": "ناوی نووسەر یان توێژەر",
-      "type": "book",
-      "discipline": "میژوو / ڕێزمان / فەلکۆر / زانست",
-      "period": "سەدەی بیستەم / خولی هاوچەرخ",
-      "dialect": "Sorani",
-      "isbnOrDoi": "978-9922-000-00",
-      "publisher": "چاپخانەی زانکۆی سەڵاحەدین / سلێمانی",
-      "digitalAvailability": true,
-      "kurdishAbstract": "پوختەی ناوەڕۆکەکە بە کوردیی سۆرانی"
-    }
-  ]
-}`;
+    const normalizedQuery = String(query || '').trim().slice(0, 500);
+    if (!normalizedQuery) return [];
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.2
-        }
-      });
+      const results = await academicSearchService.searchAll(normalizedQuery, 20);
 
-      const parsed = JSON.parse(response.text || '{}');
-      return parsed.entries || [];
+      return results.map((source): KurdishKnowledgeEntry => ({
+        id: source.id,
+        title: source.title,
+        author: source.authors.join(', '),
+        type: source.source.toLocaleLowerCase().includes('book') ? 'book' : 'article',
+        discipline: normalizedQuery,
+        period: source.publicationYear > 0 ? String(source.publicationYear) : 'Unknown',
+        dialect: 'Unknown',
+        isbnOrDoi: source.doi || undefined,
+        publisher: undefined,
+        digitalAvailability: Boolean(source.url),
+        kurdishAbstract: source.abstract || ''
+      }));
     } catch (err: unknown) {
       console.error('Error in KurdishKnowledgeGraphService:', err);
       return [];
