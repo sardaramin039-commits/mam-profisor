@@ -565,14 +565,15 @@ export class AppTemplateBridgeService {
   closeQuickPreview() { this.isQuickPreviewVisible.set(false); }
   applySourceSuggestion(s: any) {
     if (!s) return;
+    const suggestion = typeof s === 'string' ? { title: s } : s;
     this.verifiedSourceForm.patchValue({
-      title: s.title || '',
-      author: s.author || '',
-      publisher: s.publisher || s.journal || '',
-      year: s.year || new Date().getFullYear(),
-      sourceType: s.sourceType || 'book',
-      doi: s.doi || s.DOI || '',
-      doiOrUrl: s.url || ''
+      title: suggestion.title || '',
+      author: suggestion.author || '',
+      publisher: suggestion.publisher || suggestion.journal || '',
+      year: suggestion.year || new Date().getFullYear(),
+      sourceType: suggestion.sourceType || 'book',
+      doi: suggestion.doi || suggestion.DOI || '',
+      doiOrUrl: suggestion.url || ''
     });
   }
   toggleAcademicSection(sec: string) {}
