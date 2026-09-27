@@ -32,6 +32,8 @@ export class RagResearchService {
   readonly isResearching = signal<boolean>(false);
   readonly researchAgentResult = signal<DeepResearchResult | null>(null);
   readonly researchError = signal<string | null>(null);
+  readonly isIndexingDocument = signal<boolean>(false);
+  readonly indexStatus = signal<string | null>(null);
 
   toggleChunkInChapter(chunkId: string) {
     this.retrievedChunks.update(list => 
@@ -44,6 +46,72 @@ export class RagResearchService {
       .filter(c => c.isUsedInChapter)
       .map(c => `📖 کتێبی: ${c.bookTitle} (${c.bookAuthor})\n${c.content}`)
       .join('\n\n---\n\n');
+  }
+
+  indexDocument(document: {
+    title: string;
+    content: string;
+    author?: string;
+    year?: number;
+  }) {
+    if (!document.title?.trim() || !document.content?.trim()) return;
+
+    this.isIndexingDocument.set(true);
+    this.indexStatus.set(null);
+
+    this.http.post<{
+      id: string;
+      retrievalStatus: string;
+      verificationStatus: 'unverified';
+      embeddingDimensions: number;
+    }>('/api/rag/index-document', {
+      ...document,
+      title: document.title.trim(),
+      content: document.content.trim()
+    }).subscribe({
+      next: (result) => {
+        this.indexStatus.set(
+          result.retrievalStatus === 'persisted-vector'
+            ? 'بەڵگەنامەکە بە سەرکەوتوویی لە pgvector ئیندێکس کرا.'
+            : 'بەڵگەنامەکە لە cache ـی کاتیی ئیندێکس کرا؛ verification ـی سەرچاوە هێشتا نەکراوە.'
+        );
+        this.isIndexingDocument.set(false);
+      },
+      error: (err) => {
+        console.error('RAG Index Document Error:', err);
+        this.indexStatus.set('ئینگێستکردنی بەڵگەنامەکە سەرکەوتوو نەبوو.');
+        this.isIndexingDocument.set(false);
+      }
+    });
+  }
+
+  retrieveForClaim(query: string, documentId?: string, limit = 5) {
+    if (!query?.trim()) return;
+
+    this.http.post<{
+      query: string;
+      candidates: RetrievedChunkModel[];
+      metrics: {
+        lexicalMatchCount: number;
+        semanticMatchCount: number;
+        fusedCandidatesCount: number;
+        rerankedCount: number;
+      };
+      retrievalStatus: string;
+      verificationPolicy: string;
+    }>('/api/rag/hybrid-retrieve', {
+      query: query.trim(),
+      documentId,
+      limit
+    }).subscribe({
+      next: (result) => {
+        this.retrievedChunks.set(result.candidates || []);
+      },
+      error: (err) => {
+        console.error('RAG Retrieval Error:', err);
+        this.retrievedChunks.set([]);
+      }
+    });
   }
 
   runDeepResearchAgent(topic: string, discipline = 'زانستە ئەکادیمییەکان', documentTitle = '') {
