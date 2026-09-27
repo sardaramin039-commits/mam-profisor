@@ -40,11 +40,11 @@ export class AcademicSearchService {
       if (!Array.isArray(results)) return [];
 
       return results.map((item: any) => ({
-        id: item.id || `openalex-${Math.random()}`,
+        id: item.id || item.doi || `openalex:${this.stableId(item.display_name || item.title || '')}`,
         title: item.display_name || item.title || 'سەردێڕی دیارینەکراو',
         doi: item.doi || undefined,
         authors: item.authorships?.map((a: any) => a.author?.display_name || '').filter(Boolean) || ['توێژەری نەناسراو'],
-        publicationYear: item.publication_year || new Date().getFullYear(),
+        publicationYear: item.publication_year ?? 0,
         abstract: item.abstract_inverted_index ? this.decodeAbstract(item.abstract_inverted_index) : undefined,
         source: 'openalex' as const,
         url: item.doi || (item.id ? `https://openalex.org/${item.id}` : undefined),
@@ -79,11 +79,11 @@ export class AcademicSearchService {
       if (!Array.isArray(items)) return [];
 
       return items.map((item: any) => ({
-        id: item.DOI || `crossref-${Math.random()}`,
+        id: item.DOI || `crossref:${this.stableId(item.title?.[0] || '')}`,
         title: item.title?.[0] || 'سەردێڕی دیارینەکراو',
         doi: item.DOI,
         authors: item.author?.map((a: any) => `${a.given || ''} ${a.family || ''}`.trim()).filter(Boolean) || ['توێژەری نەناسراو'],
-        publicationYear: item.published?.['date-parts']?.[0]?.[0] || new Date().getFullYear(),
+        publicationYear: item.published?.['date-parts']?.[0]?.[0] ?? 0,
         source: 'crossref' as const,
         url: item.URL || (item.DOI ? `https://doi.org/${item.DOI}` : undefined),
       }));
@@ -127,7 +127,7 @@ export class AcademicSearchService {
         const year = yearMatch ? parseInt(yearMatch[0], 10) : new Date().getFullYear();
 
         return {
-          id: item.id || `gbooks-${Math.random()}`,
+          id: item.id || info.industryIdentifiers?.[0]?.identifier || `gbooks:${this.stableId(info.title || '')}`,
           title: info.title || 'سەردێڕی دیارینەکراو',
           authors: info.authors || ['نووسەری دیارینەکراو'],
           publicationYear: year,
@@ -171,6 +171,16 @@ export class AcademicSearchService {
       .sort((a, b) => a[1] - b[1])
       .map((w) => w[0])
       .join(' ');
+  }
+
+
+  private stableId(value: string): string {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i++) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
   }
 
   /**
