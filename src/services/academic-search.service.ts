@@ -155,16 +155,8 @@ export class AcademicSearchService {
     const combined = [...openAlex, ...crossref, ...googleBooks];
     if (combined.length > 0) return combined.slice(0, limit);
 
-    return [
-      {
-        id: 'fallback-1',
-        title: `لێکۆڵینەوەیەکی ئەکادیمی لەسەر: ${query}`,
-        authors: ['لێژنەی زانستیی کتێبخانەی دیجیتاڵی'],
-        publicationYear: 2024,
-        source: 'kurdisharchive' as const,
-        abstract: 'پوختەی سەرچاوە لە ئەرشیڤی ناوخۆیی کتێبخانەی دیجیتاڵیی کوردی.',
-      },
-    ];
+    // Never invent a scholarly record when external indexes return no results.
+    return [];
   }
 
   /**
