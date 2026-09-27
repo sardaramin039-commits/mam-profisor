@@ -269,7 +269,7 @@ export function removeDuplicateReferences(references: string[]): { uniqueReferen
   let duplicatesRemovedCount = 0;
 
   for (const ref of references) {
-    const normalized = ref.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+    const normalized = ref.toLowerCase().trim().replace(/[^\p{L}\p{N}]/gu, '');
     if (normalized.length > 5 && seen.has(normalized)) {
       duplicatesRemovedCount++;
     } else {
