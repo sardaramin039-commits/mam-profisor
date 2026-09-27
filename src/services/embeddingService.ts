@@ -13,7 +13,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
           const ai = new GoogleGenAI({ apiKey });
           const response = await ai.models.embedContent({
             model: 'gemini-embedding-2',
-            contents: text
+            contents: text,
+            config: { outputDimensionality: 768 }
           });
           return response.embeddings?.[0]?.values || [];
         }
