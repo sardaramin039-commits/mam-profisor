@@ -50,13 +50,16 @@ export class MultiAgentOrchestratorService {
     // Agent 4: Verification Agent
     addLog('03', 'Verification Agent', 'Evaluating source integrity and filtering out F-graded sources');
     const verification = await sourceVerificationService.verifySources(sources, getGeminiClient);
+    const verifiedSources = verification.verifiedSources.filter(
+      source => source.existenceVerified && !source.rejectedAsFabricated
+    );
 
     // Agent 5: Evidence Agent
     addLog('04', 'Evidence Agent', 'Mapping evidence nodes and building Claim-Evidence Graph');
     const graph = await claimEvidenceGraphService.buildGraph(
       request.topic,
       request.draftText || request.topic,
-      verification.verifiedSources,
+      verifiedSources,
       getGeminiClient
     );
 
@@ -92,7 +95,13 @@ export class MultiAgentOrchestratorService {
       getGeminiClient
     );
 
-    addLog('10', 'Orchestration Complete', 'Academic pipeline successfully executed with full evidence backing');
+    addLog(
+      '10',
+      'Orchestration Complete',
+      qaResult.exportBlocked
+        ? 'Pipeline completed with QA gate blocking export pending verification'
+        : 'Academic pipeline completed and passed QA gate'
+    );
 
     // Record observability telemetry
     observabilityService.logEvent({
@@ -109,7 +118,7 @@ export class MultiAgentOrchestratorService {
 
     return {
       executionPipelineLog: pipelineLog,
-      verifiedSourcesCount: verification.verifiedSources.length,
+      verifiedSourcesCount: verifiedSources.length,
       claimEvidenceGraphIntegrity: graph.graphIntegrityScore,
       thesisStructurePlan: structure,
       reviewerReport: reviewReport,
