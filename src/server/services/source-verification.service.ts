@@ -8,7 +8,7 @@ export interface SourceVerificationReport {
   author: string;
   publisher: string;
   doiOrIsbn?: string;
-  integrityScore: number; // 0 - 100
+  integrityScore: number;
   trustLevel: TrustLevel;
   existenceVerified: boolean;
   metadataAccuracy: number;
@@ -18,146 +18,133 @@ export interface SourceVerificationReport {
   kurdishVerificationDetails: string;
 }
 
+type InputSource = {
+  title: string;
+  author?: string;
+  year?: string;
+  doi?: string;
+  publisher?: string;
+};
+
+function normalizeTitle(value: string): string {
+  return value
+    .toLocaleLowerCase()
+    .normalize('NFKC')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function titleTokens(value: string): Set<string> {
+  return new Set(normalizeTitle(value).split(' ').filter(token => token.length > 2));
+}
+
+function titleSimilarity(a: string, b: string): number {
+  const left = titleTokens(a);
+  const right = titleTokens(b);
+  if (left.size === 0 || right.size === 0) return 0;
+
+  let overlap = 0;
+  for (const token of left) {
+    if (right.has(token)) overlap++;
+  }
+
+  return overlap / Math.max(left.size, right.size);
+}
+
+function normalizeDoi(value?: string): string {
+  return (value || '')
+    .trim()
+    .replace(/^https?:\/\/(dx\.)?doi\.org\//i, '')
+    .toLowerCase();
+}
+
 export class SourceVerificationService {
   /**
-   * Verifies academic sources, computes integrity scores, assigns Trust Levels (A+ to F),
-   * and automatically filters out fabricated/F sources.
+   * Citation eligibility is established from authoritative metadata, not from an LLM claim.
+   * DOI resolution through Crossref can establish existence and metadata consistency.
+   * Absence of an authoritative resolution leaves the source explicitly unverified.
    */
   public async verifySources(
-    sources: Array<{ title: string; author?: string; year?: string; doi?: string; publisher?: string }>,
-    getGeminiClient: () => GoogleGenAI
+    sources: InputSource[],
+    _getGeminiClient: () => GoogleGenAI
   ): Promise<{ verifiedSources: SourceVerificationReport[]; rejectedSourcesCount: number }> {
-    const ai = getGeminiClient();
+    const uniqueSources = sources.filter(source => source && typeof source.title === 'string');
 
     const externallyResolved = new Map<string, Awaited<ReturnType<typeof resolveDoi>>>();
     await Promise.all(
-      sources
-        .filter((source) => Boolean(source.doi?.trim()))
+      uniqueSources
+        .filter(source => Boolean(source.doi?.trim()))
         .slice(0, 20)
-        .map(async (source) => {
+        .map(async source => {
+          const doi = normalizeDoi(source.doi);
           try {
-            const doi = source.doi!.trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, '');
             const resolved = await resolveDoi(doi);
-            externallyResolved.set(doi.toLowerCase(), resolved);
+            externallyResolved.set(doi, resolved);
           } catch {
-            // A failed external lookup must never be treated as verification.
+            // No external proof: remain unverified.
           }
         })
     );
 
-    const prompt = `تۆ پسپۆڕی پشکنین و هەڵسەنگاندنی ڕەسەنایەتی سەرچاوە زانستییەکانی لە پلاتفۆرمی ئەکادیمیی مام.
-ئەم سەرچاوانەی خوارەوە لە ڕووی ڕاستیی بونیاد، DOI/ISBN، خاوەندارێتی، بڵاوکراوە و هاوتایی هاوڕێیان (Peer-review) بپشکنە:
+    const reports = uniqueSources.map((source): SourceVerificationReport => {
+      const inputDoi = normalizeDoi(source.doi);
+      const external = inputDoi ? externallyResolved.get(inputDoi) : undefined;
 
-سەرچاوەکان:
-${JSON.stringify(sources)}
-
-دیاریبکە کە ئایا سەرچاوەکە هەیە، یان دروستکراوی دەستکردە (Fabricated/F).
-پلەکانی بڕواپێکراوی (Trust Level):
-- A+: سەرچاوەی بنەڕەتی باڵا (Primary Authoritative)
-- A: گۆڤار و کتێبی ڕەخنەدراوی زانستی (Peer-reviewed)
-- B: سەرچاوەی لاوەکی زانستی (Academic Secondary)
-- C: گوتاری گشتی ئەکادیمی (General Scholarly)
-- D: نەسەلمێنراو (Unverified)
-- F: هەڵبەستراو یان گوماناوی (Suspicious / Fabricated) - ئەمە دەبێت ڕەت بکرێتەوە.
-
-وەڵامەکەت بە تەنها JSON بێت بەم شێوازە:
-{
-  "reports": [
-    {
-      "sourceTitle": "ناوی سەرچاوە",
-      "author": "نووسەر",
-      "publisher": "بڵاوکار",
-      "doiOrIsbn": "10.xxxx/xxxx",
-      "integrityScore": 94,
-      "trustLevel": "A",
-      "existenceVerified": true,
-      "metadataAccuracy": 95,
-      "peerReviewed": true,
-      "rejectedAsFabricated": false,
-      "rejectionReasonKurdish": "",
-      "kurdishVerificationDetails": "پشکنینی سەرچاوەکە بە سەرکەوتوویی ڕێپێدراو درا."
-    }
-  ]
-}`;
-
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.1
-        }
-      });
-
-      const parsed = JSON.parse(response.text || '{}');
-      const reports: SourceVerificationReport[] = Array.isArray(parsed.reports) ? parsed.reports : [];
-
-      const verifiedSources = reports.map((report) => {
-        const doiKey = (report.doiOrIsbn || '').trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').toLowerCase();
-        const external = doiKey ? externallyResolved.get(doiKey) : undefined;
-
-        if (external) {
-          const normalizedTitle = report.sourceTitle.trim().toLowerCase();
-          const externalTitle = external.title.trim().toLowerCase();
-          const titleMatches = normalizedTitle === externalTitle ||
-            normalizedTitle.includes(externalTitle) ||
-            externalTitle.includes(normalizedTitle);
-
-          report.existenceVerified = true;
-          report.metadataAccuracy = titleMatches ? Math.max(report.metadataAccuracy || 0, 95) : Math.min(report.metadataAccuracy || 0, 60);
-          if (!titleMatches) {
-            report.rejectedAsFabricated = true;
-            report.trustLevel = 'F';
-            report.integrityScore = 0;
-            report.rejectionReasonKurdish = 'ناوی سەرچاوە لەگەڵ تۆماری DOI لە Crossref هاوتا نییە؛ بۆیە سەرچاوەکە ڕەتکرایەوە.';
-          }
-        } else {
-          // LLM-only verification is insufficient for citation eligibility.
-          report.existenceVerified = false;
-          report.trustLevel = 'D';
-          report.integrityScore = Math.min(report.integrityScore || 0, 20);
-          report.rejectedAsFabricated = false;
-          report.peerReviewed = false;
-          report.rejectionReasonKurdish = 'پشکنینی ڕەسەنایەتی لە سەرچاوەی دەرەکییەوە نەسەلمێنراوە؛ ئەم تۆمارە نابێت Verified Citation بێت.';
+      if (external) {
+        const matches = titleSimilarity(source.title, external.title) >= 0.72;
+        if (!matches) {
+          return {
+            sourceTitle: source.title,
+            author: source.author || 'نادیار',
+            publisher: source.publisher || 'نادیار',
+            doiOrIsbn: source.doi || '',
+            integrityScore: 0,
+            trustLevel: 'F',
+            existenceVerified: true,
+            metadataAccuracy: 0,
+            peerReviewed: false,
+            rejectedAsFabricated: true,
+            rejectionReasonKurdish: 'ناونیشانی سەرچاوە لەگەڵ تۆماری DOI لە Crossref هاوتا نییە؛ تۆمارەکە بۆ Citation ڕەتکرایەوە.',
+            kurdishVerificationDetails: 'DOI بە شێوەی دەرەکی دۆزرایەوە، بەڵام ناسنامەی سەرچاوەکە لەگەڵ metadata ـی Crossref ناگونجێت.'
+          };
         }
 
-        if (report.trustLevel === 'F' || report.integrityScore < 30) {
-          report.rejectedAsFabricated = true;
-          if (!report.rejectionReasonKurdish) {
-            report.rejectionReasonKurdish = 'سەرچاوەکە وەک سەرچاوەی هەڵبەستراو یان بێ بەڵگە ڕەتکرایەوە.';
-          }
-        }
-
-        return report;
-      });
-
-      const rejectedCount = verifiedSources.filter(s => s.rejectedAsFabricated).length;
-
-      return {
-        verifiedSources,
-        rejectedSourcesCount: rejectedCount
-      };
-    } catch (err: any) {
-      console.error('Error in SourceVerificationService:', err);
-      // Verification failure must never turn an unverified source into a trusted citation.
-      return {
-        verifiedSources: sources.map(s => ({
-          sourceTitle: s.title,
-          author: s.author || 'نادیار',
-          publisher: s.publisher || 'نادیار',
-          doiOrIsbn: s.doi || '',
-          integrityScore: 0,
-          trustLevel: 'D' as const,
-          existenceVerified: false,
-          metadataAccuracy: 0,
+        return {
+          sourceTitle: external.title,
+          author: external.authors.join(', ') || source.author || 'نادیار',
+          publisher: external.publisher || source.publisher || 'نادیار',
+          doiOrIsbn: external.doi,
+          integrityScore: 80,
+          trustLevel: 'C',
+          existenceVerified: true,
+          metadataAccuracy: 100,
           peerReviewed: false,
           rejectedAsFabricated: false,
-          kurdishVerificationDetails: 'پشکنینی سەرچاوەکە نەکرا؛ بۆیە سەرچاوەکە Verified دانانرێت و نابێت وەک Citation بەکاربهێنرێت.'
-        })),
-        rejectedSourcesCount: 0
+          kurdishVerificationDetails: 'بونی سەرچاوە و metadata ـی سەرەکی بە DOI/Crossref پشتڕاستکرایەوە. ئەمە بە تەنها پشتڕاستکردنەوەی Peer Review نییە.'
+        };
+      }
+
+      return {
+        sourceTitle: source.title,
+        author: source.author || 'نادیار',
+        publisher: source.publisher || 'نادیار',
+        doiOrIsbn: source.doi || '',
+        integrityScore: 0,
+        trustLevel: 'D',
+        existenceVerified: false,
+        metadataAccuracy: 0,
+        peerReviewed: false,
+        rejectedAsFabricated: false,
+        rejectionReasonKurdish: 'هیچ سەرچاوەیەکی دەرەکیی پشتڕاستکەرەوە بۆ ئەم تۆمارە بەردەست نەبوو.',
+        kurdishVerificationDetails: 'سەرچاوەکە نە Verified ـە و نابێت وەک citation ـی پشتڕاستکراو بەکاربهێنرێت تا verification ـی دەرەکی تەواو بکرێت.'
       };
-    }
+    });
+
+    return {
+      verifiedSources: reports,
+      rejectedSourcesCount: reports.filter(report => report.rejectedAsFabricated).length
+    };
   }
 }
 
