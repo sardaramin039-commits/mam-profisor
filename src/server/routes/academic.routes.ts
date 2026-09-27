@@ -81,8 +81,10 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
       res.json(json);
     } catch (error: unknown) {
       console.error('Error in /api/refine:', error);
-      const errMsg = error instanceof Error ? error.message : 'هەڵەیەکی نەزانراو ڕوویدا';
-      res.status(500).json({ error: `هەڵە لە پاڵفتەکردنی دەق: ${errMsg}` });
+      res.status(503).json({
+        error: 'پاڵفتەکردنی دەق لەم کاتەدا بەردەست نییە؛ تکایە دواتر دووبارە هەوڵ بدەرەوە.',
+        code: 'ACADEMIC_REFINE_UNAVAILABLE'
+      });
     }
   });
 
