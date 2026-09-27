@@ -82,12 +82,14 @@ class ResearchMemoryService {
       evidenceCoverage: project.evidenceCoverage,
       lastUpdated: project.lastUpdated
     }, { merge: true });
+  }
 
-    const batch = adminDb.batch();
-    for (const item of project.memoryItems.slice(-500)) {
-      batch.set(projectRef.collection('items').doc(item.id), item, { merge: true });
-    }
-    await batch.commit();
+  private async persistMemoryItem(
+    project: ResearchProjectState,
+    item: ResearchMemoryItem
+  ): Promise<void> {
+    await this.projectRef(project.userId, project.projectId).collection('items').doc(item.id).set(item, { merge: true });
+    await this.persistProjectState(project);
   }
 
   public getOrCreateProjectState(userId: string, projectId: string, title: string, discipline: string): ResearchProjectState {
@@ -108,7 +110,7 @@ class ResearchMemoryService {
     return this.inMemoryStore.get(key)!;
   }
 
-  public addMemoryItem(userId: string, projectId: string, item: Omit<ResearchMemoryItem, 'id' | 'createdAt' | 'updatedAt'>): ResearchMemoryItem {
+  public async addMemoryItem(userId: string, projectId: string, item: Omit<ResearchMemoryItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<ResearchMemoryItem> {
     const project = this.getOrCreateProjectState(userId, projectId, '', '');
     const newItem: ResearchMemoryItem = {
       ...item,
@@ -123,9 +125,11 @@ class ResearchMemoryService {
     if (item.type === 'claim') project.claimsCount++;
     if (item.type === 'source') project.sourcesCount++;
     
-    void this.persistProjectState(project).catch(error => {
+    try {
+      await this.persistMemoryItem(project, newItem);
+    } catch (error) {
       console.warn('[ResearchMemory Firestore persist unavailable]:', (error as Error)?.message || error);
-    });
+    }
     return newItem;
   }
 
