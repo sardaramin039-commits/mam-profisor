@@ -73,7 +73,7 @@ export function getGeminiClient(): GoogleGenAI {
         const originalModel = typedParams?.model || 'gemini-3.8-flash';
 
         const modelSequence = [originalModel];
-        const textModelsBackup = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'];
+        const textModelsBackup = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'];
         for (const m of textModelsBackup) {
           if (!modelSequence.includes(m)) {
             modelSequence.push(m);
