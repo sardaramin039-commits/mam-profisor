@@ -193,7 +193,7 @@ export async function resolveDoi(doi: string): Promise<DoiResolutionResult> {
  * Fetch book details by ISBN via Open Library API
  */
 export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
-  const cleanIsbn = isbn.replace(/[^0-[9X]/gi, '');
+  const cleanIsbn = isbn.replace(/[^0-9X]/gi, '');
   try {
     const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
