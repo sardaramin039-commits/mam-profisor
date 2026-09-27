@@ -107,7 +107,7 @@ service cloud.firestore {
     // Match sources collection: sources are private to their owner.
     match /sources/{sourceId} {
       allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId);
-      allow list: if isVerifiedUser() && request.query.limit <= 100;
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
       allow create: if isVerifiedUser() && isValidId(sourceId) && isValidSource(request.resource.data);
       allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId);
       allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid
