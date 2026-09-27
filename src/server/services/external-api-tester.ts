@@ -37,10 +37,13 @@ export class ExternalApiTester {
     try {
       if (provider === 'gemini') {
         const apiKey = apiConfigService.getApiKey('gemini')!;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
         const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
           body: JSON.stringify({
             contents: [{ parts: [{ text: testPrompt }] }]
           })
