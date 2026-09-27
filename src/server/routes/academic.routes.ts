@@ -116,38 +116,36 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
       });
 
       if (deduplicated.length === 0) {
-        // Dynamic fallback to local catalog
         const catalog = crawlerEngine.getCatalog();
-        const q = query.toLowerCase();
+        const normalizedQuery = query.toLowerCase().trim();
         const matched = catalog.filter((b: any) =>
-          b.title.toLowerCase().includes(q) ||
-          b.author.toLowerCase().includes(q) ||
-          (Array.isArray(b.subjects) && b.subjects.some((sub: any) => String(sub).toLowerCase().includes(q)))
+          String(b.title || '').toLowerCase().includes(normalizedQuery) ||
+          String(b.author || '').toLowerCase().includes(normalizedQuery) ||
+          (Array.isArray(b.subjects) &&
+            b.subjects.some((sub: any) => String(sub).toLowerCase().includes(normalizedQuery)))
         );
-        const fallbackItems = (matched.length > 0 ? matched : catalog.slice(0, 10)).map((b: any) => ({
-          title: b.title,
-          authors: [b.author],
-          year: b.year,
-          sourceName: b.sourceName || 'ئەرشیڤی ٤٠ کتێبخانە دیجیتاڵییەکە',
-          url: b.sourceUrl || '#',
-          snippet: `کتێبی ساغکراوە لە ئەرشیڤی ${b.sourceName}: ${b.title} لە نووسینی ${b.author} (${b.year}).`
-        }));
-        deduplicated = fallbackItems as unknown as typeof deduplicated;
+
+        deduplicated = matched
+          .filter((b: any) => Boolean(b.sourceUrl))
+          .map((b: any) => ({
+            title: b.title,
+            authors: [b.author].filter(Boolean),
+            year: b.year,
+            sourceName: b.sourceName || 'ناوخۆ',
+            url: b.sourceUrl,
+            snippet: 'سەرچاوەی دۆزرایەوە لە کەتەلۆگی ناوخۆ؛ پێویستی بە پشتڕاستکردنەوە هەیە.'
+          })) as unknown as typeof deduplicated;
       }
 
       res.json({ sources: deduplicated, totalFound: deduplicated.length, isFallback: all.length === 0 });
     } catch (err: unknown) {
-      console.warn('External sources search error (falling back to local catalog):', err);
-      const catalog = crawlerEngine.getCatalog();
-      const fallbackItems = catalog.slice(0, 10).map((b: any) => ({
-        title: b.title,
-        authors: [b.author],
-        year: b.year,
-        sourceName: b.sourceName || 'ئەرشیڤی ٤٠ کتێبخانە دیجیتاڵییەکە',
-        url: b.sourceUrl || '#',
-        snippet: `کتێبی ساغکراوە لە ئەرشیڤی ${b.sourceName}: ${b.title} لە نووسینی ${b.author} (${b.year}).`
-      }));
-      res.json({ sources: fallbackItems, totalFound: fallbackItems.length, isFallback: true });
+      console.warn('External sources search failed:', err);
+      res.json({
+        sources: [],
+        totalFound: 0,
+        isFallback: true,
+        warning: 'خزمەتگوزارییە دەرەکییەکان بەردەست نەبوون؛ هیچ سەرچاوەی هەڕەمەکی جێگرتەوە دانەنرا.'
+      });
     }
   });
 
