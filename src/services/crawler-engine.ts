@@ -19,6 +19,23 @@ export class DigitalLibraryCrawlerEngine {
   ];
 
   constructor() {
+    // The source catalog is configuration metadata only. Do not present
+    // hard-coded counts or timestamps as live crawl results.
+    this.sources = this.sources.map(source => ({
+      ...source,
+      totalItems: 0,
+      lastSync: '',
+      status: 'idle'
+    }));
+
+    // Seed catalog entries are retrieval candidates, not independently verified sources.
+    this.catalog = this.catalog.map(book => ({
+      ...book,
+      verified: false,
+      rating: undefined,
+      reviewCount: undefined
+    }));
+
     this.runDeduplication();
   }
 
@@ -77,31 +94,19 @@ export class DigitalLibraryCrawlerEngine {
   // Auto Crawl & Sync trigger for all 40 digital libraries
   public async triggerSync(): Promise<CrawlerSyncLog> {
     const startTime = Date.now();
-    let newlyCrawledCount = 0;
 
-    // Simulate crawling active sources and fetching new metadata
-    for (const source of this.sources) {
-      source.status = 'syncing';
-      // Simulate indexing 2-5 new items per source
-      const added = Math.floor(Math.random() * 4) + 1;
-      source.totalItems += added;
-      source.lastSync = new Date().toISOString();
-      source.status = 'active';
-      newlyCrawledCount += added;
-    }
-
-    const dedup = this.runDeduplication();
+    // Live crawling requires a source-specific adapter and authoritative response parsing.
+    // Until such adapters are connected, never fabricate crawl counts or sync success.
     const durationMs = Date.now() - startTime;
-
     const log: CrawlerSyncLog = {
       id: `log-${Date.now()}`,
       timestamp: new Date().toISOString(),
-      status: 'success',
-      recordsCrawled: newlyCrawledCount,
-      duplicatesRemoved: dedup.removedCount,
-      sourcesProcessed: this.sources.length,
+      status: 'warning',
+      recordsCrawled: 0,
+      duplicatesRemoved: 0,
+      sourcesProcessed: 0,
       durationMs,
-      message: `گەڕان و تێکەڵکردنی ٤٠ کتێبخانەی دیجیتاڵی بەسەرکەوتوویی ئەنجامدرا. ${newlyCrawledCount} تۆماری نوێ ئیندێکسکران.`
+      message: 'هیچ source-adapter ـێکی ڕاستەقینە بۆ crawl لە ئەم build ـەدا پەیوەست نییە؛ هیچ تۆماری ساختە زیاد نەکرا.'
     };
 
     this.syncLogs.unshift(log);
@@ -124,10 +129,10 @@ export class DigitalLibraryCrawlerEngine {
       totalBooks: this.catalog.length,
       totalSources: this.sources.length,
       activeSources: this.sources.filter(s => s.status === 'active').length,
-      totalCrawled24h: 320,
-      duplicateCount: 18,
-      ocrQueueSize: 3,
-      lastSyncTime: this.syncLogs[0]?.timestamp || new Date().toISOString(),
+      totalCrawled24h: 0,
+      duplicateCount: 0,
+      ocrQueueSize: 0,
+      lastSyncTime: this.syncLogs[0]?.timestamp || '',
       languagesCount: langCounts as AdminStats['languagesCount']
     };
   }
@@ -135,23 +140,21 @@ export class DigitalLibraryCrawlerEngine {
   // Add new book manually to catalog
   public addBook(book: Partial<LibraryBook>): LibraryBook {
     const newBook: LibraryBook = {
-      id: `kb-custom-${Date.now()}`,
+      id: `kb-custom-${globalThis.crypto?.randomUUID?.() || Date.now().toString(36)}`,
       title: book.title || 'کتێبی بێ ناونیشان',
       author: book.author || 'نادیار',
-      year: book.year || new Date().getFullYear(),
+      year: book.year ?? 0,
       language: book.language || 'ckb',
       description: book.description || '',
-      coverImage: book.coverImage || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600',
-      sourceUrl: book.sourceUrl || 'https://www.kurdipedia.org',
-      sourceName: book.sourceName || 'دەستکاری دروستکراو',
-      sourceId: book.sourceId || 'kurdipedia',
+      coverImage: book.coverImage || '',
+      sourceUrl: book.sourceUrl || '',
+      sourceName: book.sourceName || 'بەکارهێنەر',
+      sourceId: book.sourceId || 'user-supplied',
       sourceCategory: book.sourceCategory || 'kurdish',
       documentType: book.documentType || 'book',
-      downloadUrl: book.downloadUrl || '#',
-      subjects: book.subjects || ['گشتی'],
-      rating: 5.0,
-      reviewCount: 1,
-      verified: true,
+      downloadUrl: book.downloadUrl || '',
+      subjects: book.subjects || [],
+      verified: false,
       indexedAt: new Date().toISOString()
     };
 
