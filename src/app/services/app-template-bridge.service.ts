@@ -32,7 +32,7 @@ export class AppTemplateBridgeService {
 
   // Title summary generator state
   isTitleSummaryGenerating = signal<boolean>(false);
-  generatedTitleSummary = signal<{ titles: string[]; summary: string } | null>(null);
+  generatedTitleSummary = signal<{ titles: string[]; summary: string; status?: 'generated' | 'degraded' | 'title-only' } | null>(null);
   titleSummaryError = signal<string | null>(null);
   isCopied = signal<boolean>(false);
 
@@ -505,20 +505,53 @@ export class AppTemplateBridgeService {
   }
 
   generateTitleAndSummary(topic: string) {
-    if (!topic.trim()) return;
+    const value = topic.trim();
+    if (!value) return;
+
     this.isTitleSummaryGenerating.set(true);
     this.titleSummaryError.set(null);
-    setTimeout(() => {
-      this.generatedTitleSummary.set({
-        titles: [
-          `شیکاری زانستیی ${topic} لە ڕوانگەی ئابوورییەوە`,
-          `کاریگەرییە کۆمەڵایەتییەکانی ${topic} لە شێوەزاری سۆرانیدا`,
-          `توێژینەوەیەکی بەراوردکاری لەسەر ${topic}`
-        ],
-        summary: `ئەم توێژینەوەیە تیشک دەخاتە سەر ابعاد و بنەما سەرەکییەکانی ${topic} لە چوارچێوەی ئەکادیمییدا.`
-      });
-      this.isTitleSummaryGenerating.set(false);
-    }, 1000);
+
+    this.http.post<any>('/api/ai-tools/execute', {
+      toolId: 'title_generator',
+      inputText: value,
+      options: { discipline: 'گشتی', academicLevel: 'ماستەر', language: 'ckb', tone: 'formal_academic' }
+    }).subscribe({
+      next: titleResult => {
+        const titleOutput = typeof titleResult?.output === 'string' ? titleResult.output.trim() : '';
+        const titles = titleOutput
+          .split('\\n')
+          .map((line: string) => line.replace(/^\\s*(?:[-*•]|\\d+[.)])\\s*/, '').trim())
+          .filter((line: string) => line.length > 5)
+          .slice(0, 5);
+
+        this.http.post<any>('/api/ai-tools/execute', {
+          toolId: 'abstract_generator',
+          inputText: value,
+          options: { discipline: 'گشتی', academicLevel: 'ماستەر', language: 'ckb', tone: 'formal_academic' }
+        }).subscribe({
+          next: summaryResult => {
+            this.generatedTitleSummary.set({
+              titles,
+              summary: typeof summaryResult?.output === 'string' ? summaryResult.output.trim() : '',
+              status: titleResult?.isFallback || summaryResult?.isFallback ? 'degraded' : 'generated'
+            } as any);
+            this.isTitleSummaryGenerating.set(false);
+          },
+          error: error => {
+            console.error('Abstract generation error:', error);
+            this.titleSummaryError.set('پوختەی AI دروست نەکرا.');
+            this.generatedTitleSummary.set({ titles, summary: '', status: 'title-only' } as any);
+            this.isTitleSummaryGenerating.set(false);
+          }
+        });
+      },
+      error: error => {
+        console.error('Title generation error:', error);
+        this.titleSummaryError.set('دروستکردنی ناونیشان و پوختە سەرکەوتوو نەبوو.');
+        this.generatedTitleSummary.set(null);
+        this.isTitleSummaryGenerating.set(false);
+      }
+    });
   }
 
   applyGeneratedTitle(title: string) {}
