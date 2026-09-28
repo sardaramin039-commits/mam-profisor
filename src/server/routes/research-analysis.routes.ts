@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { SYSTEM_PROMPT_ANALYZE_RIGOR } from '../../prompts/system-prompts';
 import { robustParseJson } from '../utils/json-repair';
+import { multiAgentOrchestratorService } from '../services/multi-agent-orchestrator.service';
 
 export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -157,56 +158,35 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
    */
   router.post('/multi_agent_pipeline', async (req, res) => {
     try {
-      const { topic, professorMode = 'ماستەر', researchMemory } = req.body;
-      if (!topic) {
-        res.status(400).json({ error: 'بابەت یان پرسیاری توێژینەوە پێویستە' });
+      const { topic, discipline = 'گشتی', draftText = '', rawSources = [] } = req.body || {};
+
+      if (!topic || typeof topic !== 'string' || topic.trim().length < 2) {
+        res.status(400).json({ error: 'بابەتی توێژینەوە پێویستە.' });
         return;
       }
 
-      const ai = getGeminiClient();
+      const result = await multiAgentOrchestratorService.executePipeline(
+        {
+          topic: topic.trim().slice(0, 500),
+          discipline: typeof discipline === 'string' ? discipline.trim().slice(0, 200) : 'گشتی',
+          draftText: typeof draftText === 'string' ? draftText.slice(0, 250000) : '',
+          rawSources: Array.isArray(rawSources) ? rawSources.slice(0, 100) : []
+        },
+        getGeminiClient
+      );
 
-      const researchPrompt = `تۆ سەرپەرشتیاری تیمی Multi-Agent هەڵسەنگاندن و نووسینی ئەکادیمیت لە چوارچێوەی ناوخۆیی ئەپەکەیت.
-تکایە زنجیرە شیکاریی فرە-ئەجێنت (Research -> Evidence -> Writer -> Citation -> Reviewer) ئەنجام بدە بۆ بابەتی: "${topic}"
-ئاستی پرۆفیسۆر: ${professorMode}
-پاشخانی بیرگەی توێژینەوە: ${JSON.stringify(researchMemory || {})}
-
-پێویستە وەڵامەکە بە JSON و بە تەنها ئەم شێوازە بێت:
-{
-  "topic": "${topic}",
-  "academicLevel": "${professorMode}",
-  "pipelineSteps": [
-    { "agentName": "Research Agent", "status": "completed", "summary": "دەستنیشانکردنی کێشە، چەمکەکان و ڕەوتی مێژوویی بابەتەکە" },
-    { "agentName": "Evidence Agent", "status": "completed", "summary": "کۆکردنەوەی بەڵگە و هەڵسەنگاندنی هێزی سەرچاوە زانستییەکان" },
-    { "agentName": "Writer Agent", "status": "completed", "summary": "داڕشتنی دەقی چڕی زانستی بێ لایەن و فەرمی" },
-    { "agentName": "Citation Agent", "status": "completed", "summary": "هاوسازکردنی بەڵگەکان لەگەڵ سەرچاوە ڕاستەقینەکاندا" },
-    { "agentName": "Reviewer Agent", "status": "completed", "summary": "پێداچوونەوەی ڕەخنەیی، متمانە و نمرەی کۆتایی" }
-  ],
-  "synthesizedProse": "دەقی ئەکادیمیی سەرەکیی داڕێژراو بە کوردیی سۆرانیی فەرمی، بێ لایەن و زانستی بەپێی پێوەری ${professorMode}.",
-  "keyEvidencePoints": [
-    "خاڵی بەڵگەی یەکەم بە پشتیوانی سەرچاوەی ساغکراوە",
-    "خاڵی بەڵگەی دووەم"
-  ],
-  "verifiedCitations": [],
-  "peerReviewAudit": {
-    "scholarlyScore": null,
-    "rigorGrade": null,
-    "criticalFeedback": "پێداچوونەوەی ڕەخنەیی و ئامۆژگاری زانستی بۆ توێژەر؛ هیچ citation یەک Verified ناکرێت لەم قۆناغەدا."
-  }
-}`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: researchPrompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.3
+      res.json({
+        success: true,
+        pipeline: result,
+        integrityPolicy: {
+          citations: 'verified-only',
+          unverifiedClaims: 'blocked',
+          exportGate: result.qaGateResult?.exportBlocked === true ? 'blocked' : 'review-required'
         }
       });
-
-      res.json(robustParseJson(response.text || '{}'));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Multi-agent pipeline error:', err);
-      res.status(500).json({ error: 'کێشەیەک لە ڕاکێشانی پڕۆسەی Multi-Agent دا ڕوویدا' });
+      res.status(500).json({ error: 'کێشەیەک لە ڕاکێشانی پڕۆسەی Multi-Agent دا ڕوویدا.' });
     }
   });
 
