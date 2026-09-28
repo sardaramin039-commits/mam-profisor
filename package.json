@@ -13,7 +13,8 @@
     "test": "ng test --watch=false",
     "integrity:audit": "node scripts/anti-hallucination-audit.mjs",
     "db:migrate": "drizzle-kit migrate",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "line-limit": "node scripts/verify-file-line-limits.mjs"
   },
   "dependencies": {
     "@angular/cdk": "^19.1.0",

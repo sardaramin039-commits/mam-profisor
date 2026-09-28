@@ -1,0 +1,415 @@
+            <div class="space-y-1">
+              <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                <mat-icon class="text-stone-800 !text-sm !w-4 !h-4 leading-none">title</mat-icon>
+                ناونیشانی سەرەکی تێز/گوتار (شووێنی نووسینی ناونیشانی بەرهەم):
+              </span>
+              <input type="text" formControlName="title" class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-amber-50/10 font-semibold text-black placeholder-stone-400" placeholder="بۆ نموونە: دیالێکتیکی عەقڵ لای فەیلەسوفانی زمانەوانی" />
+            </div>
+
+            <!-- Scientific Title & Summary Generator -->
+            <div class="p-4 bg-stone-50 border-2 border-dashed border-stone-300 rounded-xl space-y-3 mt-1 shadow-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                  <mat-icon class="text-amber-600 !text-sm !w-4 !h-4 leading-none">auto_awesome</mat-icon>
+                  بونیادنەری ناونیشان و پوختەی زانستی:
+                </span>
+                <span class="text-[10px] text-stone-500 font-medium">پێشنیارکردنی ناونیشانی ئەکادیمی و کورتە بۆ بیرۆکەکەت</span>
+              </div>
+              
+              <div class="flex gap-2">
+                <input #topicInput type="text" class="flex-1 text-xs p-2.5 border-2 border-stone-800 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white placeholder-stone-400 font-medium text-black" placeholder="سەرەبابەت یان کلیلەوشەیەک بنووسە... (بۆ نموونە: گەشەی زمان لای منداڵ)" />
+                <button type="button" (click)="generateTitleAndSummary(topicInput.value)" [disabled]="isTitleSummaryGenerating()" class="text-xs font-bold px-4 py-2 bg-stone-900 text-amber-400 border-2 border-stone-900 rounded-md hover:bg-stone-800 hover:border-stone-800 transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-50">
+                  @if (isTitleSummaryGenerating()) {
+                    <span class="animate-spin inline-block w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full mr-1"></span>
+                    خەریکی داڕشتن...
+                  } @else {
+                    بونیادنان
+                  }
+                </button>
+              </div>
+
+              @if (titleSummaryError()) {
+                <p class="text-xs font-medium text-red-600 flex items-center gap-1">
+                  <mat-icon class="!text-xs !w-3.5 !h-3.5 leading-none">error_outline</mat-icon>
+                  {{ titleSummaryError() }}
+                </p>
+              }
+
+              @if (generatedTitleSummary(); as g) {
+                <div class="mt-2.5 p-3.5 bg-amber-50/20 border-2 border-amber-200/50 rounded-lg space-y-3">
+                  <!-- Titles proposal -->
+                  <div class="space-y-1.5">
+                    <span class="block text-[11px] font-bold text-amber-900">پێشنیارەکانی ناونیشانی زانستی (کلیك بکە بۆ جێگیرکردن بە فەرمی):</span>
+                    <div class="space-y-1.5">
+                      @for (t of g.titles; track t) {
+                        <button type="button" (click)="applyGeneratedTitle(t)" class="w-full text-right text-xs p-2.5 bg-white hover:bg-amber-50/60 border border-stone-300 hover:border-amber-500 rounded-md transition-all font-semibold text-stone-900 cursor-pointer flex items-center justify-between gap-1.5">
+                          <span class="flex items-center gap-1.5">
+                            <mat-icon class="text-amber-500 !text-sm !w-4 !h-4 leading-none">check_circle_outline</mat-icon>
+                            {{ t }}
+                          </span>
+                          <span class="text-[9px] uppercase font-mono tracking-wider bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded font-bold">هەڵبژاردن</span>
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Summary proposal -->
+                  <div class="pt-3 border-t border-dashed border-stone-200 space-y-1.5">
+                    <span class="block text-[11px] font-bold text-amber-900 flex items-center gap-1">
+                      <mat-icon class="!text-xs !w-3.5 !h-3.5 leading-none">description</mat-icon>
+                      پوختەی زانستیی پێشنیارکراو (کەمتر لە ١٥٠ وشە):
+                    </span>
+                    <div class="text-xs p-3 bg-white border border-stone-300 rounded-md font-medium text-stone-800 leading-relaxed relative">
+                      {{ g.summary }}
+                      <button type="button" (click)="copyTitleSummary(g.summary)" class="absolute left-2 top-2 p-1 text-stone-400 hover:text-stone-700 bg-stone-50 border border-stone-200 rounded hover:bg-stone-100 transition-colors" title="لەبەرگرتنەوە">
+                        @if (isCopied()) {
+                          <span class="text-[9px] text-emerald-600 font-bold px-1">کۆپی کرا!</span>
+                        } @else {
+                          <mat-icon class="!text-xs !w-3.5 !h-3.5 leading-none">content_copy</mat-icon>
+                        }
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Academic Level & Main Domain Grid row -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Academic Level (11 Levels) -->
+              <div class="space-y-1">
+                <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                  <mat-icon class="text-stone-800 !text-sm">school</mat-icon>
+                  ئاستی ئەکادیمی (Academic Level):
+                </span>
+                <select formControlName="academicLevel" class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium cursor-pointer">
+                  <option value="primary">👦 قوتابخانەی سەرەتایی (Primary School)</option>
+                  <option value="middle">👧 قوتابخانەی ناوەندی (Middle School)</option>
+                  <option value="highschool">👨‍🎓 ئامادەیی (High School)</option>
+                  <option value="institute">📘 پەیمانگا (Institute)</option>
+                  <option value="bachelor">🎓 بەکالۆریۆس (Bachelor)</option>
+                  <option value="master">🎓 ماستەر (Master's)</option>
+                  <option value="phd">🎓 دکتۆرا (PhD)</option>
+                  <option value="postdoc">🧑‍🔬 پۆست‌دکتۆرا (Postdoctoral)</option>
+                  <option value="teacher">👨‍🏫 مامۆستا (Teacher/Instructor)</option>
+                  <option value="professor">👨‍🏫 پڕۆفیسۆر (Professor)</option>
+                  <option value="researcher">🏛️ توێژەر / ناوەندی توێژینەوە (Researcher)</option>
+                </select>
+              </div>
+
+              <!-- Main Domain (10 Main Domains) -->
+              <div class="space-y-1">
+                <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                  <mat-icon class="text-stone-800 !text-sm">account_tree</mat-icon>
+                  بوارە سەرەکییەکان (Main Discipline):
+                </span>
+                <select formControlName="discipline" class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium cursor-pointer">
+                  <option value="humanities">📖 زانستە مرۆییەکان (Humanities)</option>
+                  <option value="natural_sciences">🔬 زانستە سروشتییەکان (Natural Sciences)</option>
+                  <option value="medical">🏥 زانستە پزیشکییەکان (Medical Sciences)</option>
+                  <option value="engineering">⚙️ ئەندازیاری (Engineering)</option>
+                  <option value="computer_science">💻 زانستی کۆمپیوتەر (Computer Science / AI)</option>
+                  <option value="economics_business">📊 ئابووری و بەڕێوەبردن (Economics & Business)</option>
+                  <option value="law">⚖️ یاسا (Law & Governance)</option>
+                  <option value="education">🎓 پەروەردە (Education)</option>
+                  <option value="social_sciences">🌐 زانستە کۆمەڵایەتییەکان (Social Sciences)</option>
+                  <option value="arts">🎨 هونەر (Arts & Design)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Task Type & Goal Grid row -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Task Type -->
+              <div class="space-y-1">
+                <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                  <mat-icon class="text-stone-800 !text-sm">article</mat-icon>
+                  جۆری ئەرکی زانستی (Task Type):
+                </span>
+                <select formControlName="writingType" class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium cursor-pointer">
+                  <option value="essay">📝 وتار (Academic Essay)</option>
+                  <option value="report">📋 ڕاپۆرت (Technical Report)</option>
+                  <option value="assignment">🎒 تکلیف / ئەرکی دراسات (Assignment)</option>
+                  <option value="presentation">📊 پرێزەنتەیشن (Presentation Deck Script)</option>
+                  <option value="study">🔬 لێکۆڵینەوەی زانستی (Scientific Study)</option>
+                  <option value="proposal">📜 پێشنیاری توێژینەوە (Research Proposal)</option>
+                  <option value="master">📘 نامەی ماستەر (Master's Thesis)</option>
+                  <option value="phd">🎓 تێزی دکتۆرا (PhD Dissertation)</option>
+                  <option value="journal_article">📑 وتاری گۆڤاری زانستی (Journal Article)</option>
+                  <option value="conference_paper">🏛️ وتاری کۆنفرانس (Conference Paper)</option>
+                  <option value="book">📚 کتێبی زانستی (Academic Book)</option>
+                  <option value="book_chapter">📖 بەشی کتێب (Book Chapter)</option>
+                  <option value="peer_review">🔍 Peer Review Report</option>
+                  <option value="systematic_review">📊 Systematic Review</option>
+                  <option value="meta_analysis">📈 Meta-Analysis</option>
+                  <option value="literature_review">📚 Literature Review</option>
+                  <option value="research_gap">⚡ Research Gap Analysis</option>
+                  <option value="annotated_bib">🔗 Annotated Bibliography</option>
+                </select>
+              </div>
+
+              <!-- Task Goal -->
+              <div class="space-y-1">
+                <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                  <mat-icon class="text-stone-800 !text-sm">flag</mat-icon>
+                  ئامانجی ئەرکەکە (Task Goal):
+                </span>
+                <select formControlName="taskGoal" class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium cursor-pointer">
+                  <option value="learning">📖 فێربوون و تێگەیشتنی چەمکەکان</option>
+                  <option value="writing">✍️ نووسین و داڕشتنی ئەکادیمی</option>
+                  <option value="research">🔬 توێژینەوە و دۆزینەوەی بەڵگە</option>
+                  <option value="analysis">📊 شیکردنەوەی لۆجیکی و داتا</option>
+                  <option value="reading">📚 خوێندنەوەی ڕەخنەگرانەی دەقەکان</option>
+                  <option value="teaching">🎓 وانەوتنەوە و ئامادەکردنی مەنهەج</option>
+                  <option value="publishing">📰 ئامادەکردن بۆ بڵاوکردنەوە لە گۆڤار</option>
+                  <option value="exam_prep">📝 ئامادەکاری بۆ تاقیکردنەوەکان</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Writing Style & AI Persona Modes -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Writing Style -->
+              <div class="space-y-1">
+                <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                  <mat-icon class="text-stone-800 !text-sm">edit_note</mat-icon>
+                  شێوازی نووسین (Writing Style):
+                </span>
+                <select formControlName="writingStyle" class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium cursor-pointer">
+                  <option value="academic">🎓 ئەکادیمیی پێوەر (Standard Academic)</option>
+                  <option value="pedagogical">📖 فێرکاری و ڕوونکرنەوەیی (Pedagogical)</option>
+                  <option value="formal">👔 فەرمی و زانستیی بێلایەن (Formal)</option>
+                  <option value="critical">🧐 ڕەخنەگرانە و شیکاریی عاقڵانی (Critical)</option>
+                  <option value="scientific">🔬 زانستیی پەتی و بەڵگەدار (Scientific)</option>
+                  <option value="literary">🖋️ ئەدەبی و ڕەوانبێژیی باڵا (Literary)</option>
+                  <option value="translation">🌐 وەرگێڕانی ئەکادیمی (Academic Translation)</option>
+                  <option value="journal_style">📑 شێوازی گۆڤار (Journal Style)</option>
+                </select>
+              </div>
+
+              <!-- AI Persona Mode -->
+              <div class="space-y-1">
+                <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                  <mat-icon class="text-stone-800 !text-sm">psychology</mat-icon>
+                  مۆدی بریکاری ژیریی دەستکرد (AI Persona):
+                </span>
+                <select formControlName="aiPersona" class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium cursor-pointer">
+                  <option value="research_assistant">🧑‍🔬 یاریدەدەری توێژینەوە (Research Assistant)</option>
+                  <option value="tutor">👨‍🏫 مامۆستای تایبەت (Private Tutor)</option>
+                  <option value="writing_assistant">✍️ یاریدەدەری نووسین (Writing Assistant)</option>
+                  <option value="scientific_critic">🧐 ڕەخنەگری زانستی (Scientific Critic)</option>
+                  <option value="journal_reviewer">📑 هەڵسەنگێنەری گۆڤار (Journal Reviewer)</option>
+                  <option value="statistician">📊 شارەزای ئامار (Statistician/Data Expert)</option>
+                  <option value="language_editor">📝 دەستکاریکەری زمان (Language Editor)</option>
+                  <option value="final_auditor">✅ هەڵسەنگێنەری کۆتایی (Final Auditor)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Book Selection Dropdown (Selected Book for Academic Grounding) -->
+            <div class="space-y-1">
+              <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                <mat-icon class="text-stone-800 !text-sm !w-4 !h-4 leading-none">library_books</mat-icon>
+                هەڵبژاردنی سەرچاوەی سەرەکی بۆ بەستنەوەی ڕاستەقینە (Selected Book for Grounding):
+              </span>
+              <select formControlName="selectedBook" class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium cursor-pointer">
+                <option value="">هەموو کتێب و سەرچاوەکان (بەبێ سنووردارکردن)</option>
+                @for (book of pdf4kurdBooks(); track book.id) {
+                  <option [value]="book.title">{{ book.title }} ({{ book.author }} - {{ book.year }})</option>
+                }
+              </select>
+              <div class="text-[9.5px] text-[#8C8273] font-serif leading-none mt-1">
+                تێبینی: ئەگەر کتێبێک دیاری بکەیت، مەکینەی نووسین بە تەواوی پابەند دەبێت بە دەق و زانیارییەکانی ناو ئەو کتێبە دیاریکراوە.
+              </div>
+            </div>
+
+            <!-- Citation Standard & Source Filter -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Citation Standard -->
+              <div class="space-y-1">
+                <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                  <mat-icon class="text-stone-800 !text-sm">format_quote</mat-icon>
+                  شێوازی ژێدەر/سەرچاوەکان (Citation Style):
+                </span>
+                <select formControlName="academicStyle" class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium cursor-pointer">
+                  <option value="harvard">Harvard Referencing System</option>
+                  <option value="apa7">APA 7th Edition</option>
+                  <option value="mla">MLA 9th Edition</option>
+                  <option value="chicago">Chicago Manual of Style</option>
+                  <option value="ieee">IEEE Standard Format</option>
+                  <option value="vancouver">Vancouver System</option>
+                  <option value="ama">AMA Manual of Style</option>
+                  <option value="acs">ACS Style Guide</option>
+                  <option value="turabian">Turabian Format</option>
+                </select>
+              </div>
+
+              <!-- Source Types Filter -->
+              <div class="space-y-1">
+                <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                  <mat-icon class="text-stone-800 !text-sm">filter_alt</mat-icon>
+                  جۆری سەرچاوەکان (Source Types Filter):
+                </span>
+                <select formControlName="sourceFilter" class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium cursor-pointer">
+                  <option value="mixed">📚 تێکەڵە (کتێب و گۆڤاری زانستی)</option>
+                  <option value="books_only">📖 تەنها کتێبەکان (Books Only)</option>
+                  <option value="journals_only">📑 تەنها گۆڤارە زانستییەکان (Peer-Reviewed Journals)</option>
+                  <option value="last_5_years">⏱️ توێژینەوەکانی ٥ ساڵی دوایی (Last 5 Years)</option>
+                  <option value="systematic_reviews">🔍 Systematic Reviews & Meta-Analyses</option>
+                  <option value="govt_reports">🏛️ ڕاپۆرتە فەرمییەکانی حکومەت و ڕێکخراوەکان</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Enterprise Writing Length Control (قەبارەی نووسین) -->
+            <div class="space-y-3 p-4 bg-amber-50/20 border-2 border-stone-800 rounded-xl shadow-xs">
+              <div class="flex items-center justify-between pb-2 border-b border-stone-800">
+                <div class="flex items-center gap-1.5">
+                  <mat-icon class="!text-base text-amber-800">straighten</mat-icon>
+                  <span class="text-xs font-bold text-stone-900">قەبارەی نووسین (Writing Length Control)</span>
+                </div>
+                <span class="text-[10px] font-bold text-amber-900 bg-amber-200/60 px-2 py-0.5 rounded border border-amber-400 font-mono">
+                  ١ لاپەڕە = ٣٥٠ وشە (±٢٥)
+                </span>
+              </div>
+
+              <!-- Mode Switcher: Exact Target vs Range Mode -->
+              <div class="grid grid-cols-2 gap-2 p-1 bg-stone-200/70 border border-stone-400 rounded-lg">
+                <button type="button" (click)="setPageSizeMode('target')"
+                        class="py-1.5 text-[11px] font-bold rounded-md transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        [class.bg-stone-900]="refineForm.get('sizeMode')?.value === 'target'"
+                        [class.text-white]="refineForm.get('sizeMode')?.value === 'target'"
+                        [class.shadow-xs]="refineForm.get('sizeMode')?.value === 'target'"
+                        [class.text-stone-700]="refineForm.get('sizeMode')?.value !== 'target'">
+                  <mat-icon class="!text-xs">adjust</mat-icon>
+                  ئامانجی دیاریکراو
+                </button>
+
+                <button type="button" (click)="setPageSizeMode('range')"
+                        class="py-1.5 text-[11px] font-bold rounded-md transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        [class.bg-stone-900]="refineForm.get('sizeMode')?.value === 'range'"
+                        [class.text-white]="refineForm.get('sizeMode')?.value === 'range'"
+                        [class.shadow-xs]="refineForm.get('sizeMode')?.value === 'range'"
+                        [class.text-stone-700]="refineForm.get('sizeMode')?.value !== 'range'">
+                  <mat-icon class="!text-xs">swap_horiz</mat-icon>
+                  مەودا (Target ± Margin)
+                </button>
+              </div>
+
+              <!-- Margin Presets (ئاستەنگ / Target ± Margin Presets) -->
+              <div class="p-2 bg-stone-100/80 border border-stone-300 rounded-lg space-y-1">
+                <span class="block text-[9.5px] font-bold text-stone-700">ئاستەنگی رێگەپێدراو (Target ± Margin):</span>
+                <div class="grid grid-cols-5 gap-1 text-center">
+                  <button type="button" (click)="applyMarginPreset('5%')" class="py-1 text-[9.5px] font-bold border border-stone-400 rounded bg-white hover:bg-amber-100 transition-all cursor-pointer">±٥٪</button>
+                  <button type="button" (click)="applyMarginPreset('10%')" class="py-1 text-[9.5px] font-bold border border-stone-400 rounded bg-white hover:bg-amber-100 transition-all cursor-pointer">±١٠٪</button>
+                  <button type="button" (click)="applyMarginPreset('15%')" class="py-1 text-[9.5px] font-bold border border-amber-500 bg-amber-50 text-amber-900 rounded hover:bg-amber-200 transition-all cursor-pointer">±١٥٪ (پێوەر)</button>
+                  <button type="button" (click)="applyMarginPreset('1page')" class="py-1 text-[9.5px] font-bold border border-stone-400 rounded bg-white hover:bg-amber-100 transition-all cursor-pointer">±١ لاپەڕە</button>
+                  <button type="button" (click)="applyMarginPreset('2pages')" class="py-1 text-[9.5px] font-bold border border-stone-400 rounded bg-white hover:bg-amber-100 transition-all cursor-pointer">±٢ لاپەڕە</button>
+                </div>
+              </div>
+
+              <!-- Page Presets Quick Buttons -->
+              <div>
+                <span class="block text-[10px] font-bold text-stone-700 mb-1.5">هەڵبژاردنی خێرای لاپەڕەکان (Preset Sizes):</span>
+                <div class="grid grid-cols-5 gap-1.5 text-center">
+                  <button type="button" (click)="selectPagePreset(1)" class="py-1 text-[10px] font-bold border border-stone-700 rounded bg-white hover:bg-amber-100/60 transition-all cursor-pointer shadow-2xs" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 1">١ لاپەڕە</button>
+                  <button type="button" (click)="selectPagePreset(2)" class="py-1 text-[10px] font-bold border border-stone-700 rounded bg-white hover:bg-amber-100/60 transition-all cursor-pointer shadow-2xs" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 2">٢ لاپەڕە</button>
+                  <button type="button" (click)="selectPagePreset(3)" class="py-1 text-[10px] font-bold border border-stone-700 rounded bg-white hover:bg-amber-100/60 transition-all cursor-pointer shadow-2xs" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 3">٣ لاپەڕە</button>
+                  <button type="button" (click)="selectPagePreset(5)" class="py-1 text-[10px] font-bold border border-stone-700 rounded bg-white hover:bg-amber-100/60 transition-all cursor-pointer shadow-2xs" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 5">٥ لاپەڕە</button>
+                  <button type="button" (click)="selectPagePreset(10)" class="py-1 text-[10px] font-bold border border-stone-700 rounded bg-white hover:bg-amber-100/60 transition-all cursor-pointer shadow-2xs" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 10">١٠ لاپەڕە</button>
+                  <button type="button" (click)="selectPagePreset(15)" class="py-1 text-[10px] font-bold border border-stone-700 rounded bg-white hover:bg-amber-100/60 transition-all cursor-pointer shadow-2xs" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 15">١٥ لاپەڕە</button>
+                  <button type="button" (click)="selectPagePreset(20)" class="py-1 text-[10px] font-bold border border-stone-700 rounded bg-white hover:bg-amber-100/60 transition-all cursor-pointer shadow-2xs" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 20">٢٠ لاپەڕە</button>
+                  <button type="button" (click)="selectPagePreset(30)" class="py-1 text-[10px] font-bold border border-stone-700 rounded bg-white hover:bg-amber-100/60 transition-all cursor-pointer shadow-2xs" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 30">٣٠ لاپەڕە</button>
+                  <button type="button" (click)="selectPagePreset(50)" class="py-1 text-[10px] font-bold border border-stone-700 rounded bg-white hover:bg-amber-100/60 transition-all cursor-pointer shadow-2xs" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 50">٥٠ لاپەڕە</button>
+                  <button type="button" (click)="selectPagePreset(100)" class="py-1 text-[10px] font-bold border border-stone-700 rounded bg-white hover:bg-amber-100/60 transition-all cursor-pointer shadow-2xs" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 100">١٠٠ لاپەڕە</button>
+                </div>
+              </div>
+
+              <!-- Inputs for Target Mode vs Range Mode -->
+              @if (refineForm.get('sizeMode')?.value === 'target') {
+                <div class="space-y-1">
+                  <div class="flex justify-between items-center">
+                    <span class="block text-xs font-bold text-gray-800">ژمارەی لاپەڕەی ئامانج (Target Pages):</span>
+                    <span class="text-[10px] text-amber-900 font-bold font-mono">{{ pageRangeWords().targetWords | number }} وشە</span>
+                  </div>
+                  <input type="text" formControlName="targetPages" (input)="onNumericInput($event, 'targetPages'); onNumericInput($event, 'size')"
+                         class="w-full text-xs p-3 border-2 border-stone-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left bg-white font-bold"
+                         placeholder="10" />
+                </div>
+              } @else {
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="space-y-1">
+                    <span class="block text-[10px] font-bold text-gray-800">کەمترین (Min Pages):</span>
+                    <input type="text" formControlName="minPages" (input)="onNumericInput($event, 'minPages')"
+                           class="w-full text-xs p-2.5 border-2 border-stone-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left bg-white font-bold text-amber-900"
+                           placeholder="9" />
+                    <span class="block text-[9px] text-stone-600 font-mono text-left">{{ pageRangeWords().minWords | number }} w</span>
+                  </div>
+
+                  <div class="space-y-1">
+                    <span class="block text-[10px] font-bold text-stone-900">ئامانج (Target Pages):</span>
+                    <input type="text" formControlName="targetPages" (input)="onNumericInput($event, 'targetPages'); onNumericInput($event, 'size')"
+                           class="w-full text-xs p-2.5 border-2 border-amber-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left bg-amber-50 font-bold text-stone-900"
+                           placeholder="10" />
+                    <span class="block text-[9px] text-stone-900 font-bold font-mono text-left">{{ pageRangeWords().targetWords | number }} w</span>
+                  </div>
+
+                  <div class="space-y-1">
+                    <span class="block text-[10px] font-bold text-gray-800">زۆرترین (Max Pages):</span>
+                    <input type="text" formControlName="maxPages" (input)="onNumericInput($event, 'maxPages')"
+                           class="w-full text-xs p-2.5 border-2 border-stone-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left bg-white font-bold text-amber-900"
+                           placeholder="11" />
+                    <span class="block text-[9px] text-stone-600 font-mono text-left">{{ pageRangeWords().maxWords | number }} w</span>
+                  </div>
+                </div>
+              }
+
+              <!-- Auto Breakdown Analysis Card (شیکاریی خۆکاری قەبارە و پێکهاتە) -->
+              <div class="bg-white p-3 border-2 border-stone-800 rounded-xl space-y-2 text-xs">
+                <div class="flex items-center justify-between pb-1.5 border-b border-stone-200">
+                  <span class="font-bold text-stone-900 flex items-center gap-1 text-[11px]">
+                    <mat-icon class="!text-xs text-amber-700">analytics</mat-icon>
+                    شیکاریی خۆکاری قەبارە (Auto Breakdown):
+                  </span>
+                  <span class="text-[10px] font-extrabold text-stone-900 bg-stone-100 px-2 py-0.5 rounded border border-stone-300 font-mono">
+                    @if (refineForm.get('sizeMode')?.value === 'range') {
+                      {{ autoBreakdownAnalysis().minWords | number }} - {{ autoBreakdownAnalysis().maxWords | number }} وشە
+                    } @else {
+                      ~{{ autoBreakdownAnalysis().words | number }} وشە
+                    }
+                  </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-[10.5px]">
+                  <div class="bg-stone-50 p-2 rounded border border-stone-200 flex flex-col justify-between">
+                    <span class="text-stone-500 font-medium">پاراگرافەکان (Paragraphs):</span>
+                    <strong class="text-stone-900 font-mono text-[11px] mt-0.5">~{{ autoBreakdownAnalysis().minParagraphs }} - {{ autoBreakdownAnalysis().maxParagraphs }} پاراگراف</strong>
+                  </div>
+
+                  <div class="bg-stone-50 p-2 rounded border border-stone-200 flex flex-col justify-between">
+                    <span class="text-stone-500 font-medium">سەرچاوەکان (Citations):</span>
+                    <strong class="text-stone-900 font-mono text-[11px] mt-0.5">~{{ autoBreakdownAnalysis().minCitations }} - {{ autoBreakdownAnalysis().maxCitations }} ئاماژە</strong>
+                  </div>
+
+                  <div class="bg-stone-50 p-2 rounded border border-stone-200 flex flex-col justify-between">
+                    <span class="text-stone-500 font-medium">خشتە و وێنەکان (Tables/Figures):</span>
+                    <strong class="text-stone-900 font-mono text-[11px] mt-0.5">~{{ autoBreakdownAnalysis().estTablesFigures }} خشتە یان دیگرام</strong>
+                  </div>
+
+                  <div class="bg-stone-50 p-2 rounded border border-stone-200 flex flex-col justify-between">
+                    <span class="text-stone-500 font-medium">پێکهاتەی بەشەکان (Structure):</span>
+                    <strong class="text-stone-900 font-mono text-[10px] mt-0.5 leading-tight truncate">{{ autoBreakdownAnalysis().sectionCount }}</strong>
+                  </div>
+                </div>
+
+                <!-- Structural Sections Badge List -->
+                <div class="pt-1.5 border-t border-stone-100">
+                  <span class="block text-[9.5px] font-bold text-stone-600 mb-1">دابەشکاریی لۆژیکیی بەشەکان:</span>
+                  <div class="flex flex-wrap gap-1">
+                    @for (sec of autoBreakdownAnalysis().sectionList; track sec) {
+                      <span class="text-[9px] bg-stone-100 text-stone-800 px-1.5 py-0.5 rounded border border-stone-300 font-medium">
+                        • {{ sec }}
+                      </span>
+                    }
+                  </div>
+                </div>

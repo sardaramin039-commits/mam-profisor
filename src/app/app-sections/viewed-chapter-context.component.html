@@ -1,0 +1,164 @@
+            <!-- 🗺️ LONG-CONTEXT THESIS GRAPH-RAG (بەڕێوەبەری کۆنتێکستی درێژ) -->
+            <div class="p-4 border-2 border-stone-850 bg-stone-50 rounded-xl space-y-3">
+              <div class="flex items-center gap-1.5 justify-between">
+                <div class="flex items-center gap-1">
+                  <mat-icon class="text-harvard-crimson !text-sm">account_tree</mat-icon>
+                  <h4 class="text-xs font-serif font-extrabold text-stone-900">وێنە گشتییەکەی تێز و بەڕێوەبەری کۆنتێکست (Graph-RAG Context)</h4>
+                </div>
+                <span class="text-[8px] bg-harvard-crimson text-white px-1.5 py-0.5 rounded font-bold">Long-Context Window</span>
+              </div>
+              <p class="text-[10.5px] text-stone-600 font-serif leading-relaxed">ئەم سیستەمە گەرەنتی پێکەوەبەستنی سەرجەم بەشەکان و لۆجیکی تێزەکە دەکات لە ڕێگەی کورتکردنەوەی جۆری Graph-RAG بۆ پاراستنی هاوتایی و ڕێگری لە دژبەری (Coherence Guard).</p>
+
+              @if (!isSummarizingContext()) {
+                <button 
+                  type="button"
+                  (click)="summarizeThesisContext()"
+                  class="w-full py-2.5 px-4 bg-stone-900 hover:bg-black text-white rounded-lg text-[11px] font-serif font-bold flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all">
+                  <mat-icon class="!text-xs">share</mat-icon>
+                  <span>نوێکردنەوەی نەخشەی کۆنتێکست (Map & Update Context)</span>
+                </button>
+              } @else if (isSummarizingContext()) {
+                <div class="p-4 border border-stone-200 bg-stone-50 rounded-xl space-y-2 text-center animate-pulse">
+                  <div class="w-5 h-5 border-2 border-harvard-crimson border-t-transparent rounded-full animate-spin mx-auto block"></div>
+                  <p class="text-[11px] font-serif font-bold text-stone-900">مەکینەی Graph-RAG خەریکی داڕشتنی پەیوەندی لۆجیکی بەشەکان و نەخشاندنی کۆنتێکستە...</p>
+                </div>
+              }
+
+              @if (thesisSummaryError()) {
+                <div class="p-2.5 bg-red-50 text-red-800 text-[10px] rounded border border-red-200 leading-relaxed">
+                  {{ thesisSummaryError() }}
+                </div>
+              }
+
+              @if (thesisSummaryContext(); as context) {
+                <div class="p-3 bg-white border border-stone-200 rounded-lg space-y-3 animate-expand-fade text-right text-xs">
+                  <div class="p-2 bg-stone-100 rounded text-[11px] font-medium font-serif leading-relaxed text-stone-900">
+                    <strong class="text-harvard-crimson block font-bold text-[10px] mb-1">🔑 گوتاری تێزی سەرەکی (Thesis Statement):</strong>
+                    {{ context.globalThesisStatement }}
+                  </div>
+
+                  @if (context.overarchingQuestions.length > 0) {
+                    <div class="space-y-1">
+                      <strong class="text-[10px] text-stone-700 block">❓ پرسیارە گشتییەکانی توێژینەوە (Overarching Questions):</strong>
+                      <ul class="list-disc list-inside space-y-0.5 text-stone-600 text-[10.5px]">
+                        @for (q of context.overarchingQuestions; track q) {
+                          <li>{{ q }}</li>
+                        }
+                      </ul>
+                    </div>
+                  }
+
+                  @if (context.conceptualGraph.length > 0) {
+                    <div class="space-y-1.5 pt-1">
+                      <strong class="text-[10px] text-stone-700 block flex items-center gap-1">
+                        <mat-icon class="!text-xs text-stone-500">bubble_chart</mat-icon>
+                        پەیوەندی چەمکەکان (Conceptual Graph Links):
+                      </strong>
+                      <div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 border border-stone-100 rounded">
+                        @for (g of context.conceptualGraph; track g.conceptA) {
+                          <div class="bg-stone-50 border border-stone-200 p-1.5 rounded text-[10px] leading-relaxed w-full">
+                            <span class="font-bold text-stone-900 font-sans">{{ g.conceptA }}</span> 
+                            <span class="text-[9.5px] text-stone-500 italic px-1 bg-stone-200 rounded mx-1">{{ g.relationship }}</span> 
+                            <span class="font-bold text-stone-900 font-sans">{{ g.conceptB }}</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  @if (context.chapterSummaries.length > 0) {
+                    <div class="space-y-1.5 pt-1 border-t border-stone-100">
+                      <strong class="text-[10px] text-stone-700 block">📖 پوختەی پەرەگرافی چڕی بەشەکان (Core Chapter Nodes):</strong>
+                      <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        @for (cc of context.chapterSummaries; track cc.chapterTitle) {
+                          <div class="bg-stone-50 p-2 rounded text-[10px] text-justify leading-relaxed">
+                            <span class="font-bold text-stone-900 block border-b border-stone-200 pb-0.5 mb-1">{{ cc.chapterTitle }}</span>
+                            {{ cc.conceptSummary }}
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <div class="p-2 bg-[#F6F5FF] border border-indigo-200 text-[10.5px] text-indigo-950 rounded leading-relaxed pt-2">
+                    <span class="font-bold text-indigo-900 block flex items-center gap-1 mb-1">
+                      <mat-icon class="!text-xs">sync_alt</mat-icon>
+                      وردبینی هاوتایی و بەرگری زمانەوانی (Continuity & Redundancy Check):
+                    </span>
+                    {{ context.continuityCheck }}
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- ⚖️ RESEARCH ETHICS & PARTICIPANT SAFEGUARD (ئانۆنیمایزکردن و ئەخلاقیاتی داتا) -->
+            <div class="p-4 border-2 border-stone-850 bg-stone-50 rounded-xl space-y-3">
+              <div class="flex items-center gap-1.5 justify-between">
+                <div class="flex items-center gap-1">
+                  <mat-icon class="text-harvard-crimson !text-sm">policy</mat-icon>
+                  <h4 class="text-xs font-serif font-extrabold text-stone-900">فلتەری ئەخلاقی توێژینەوە و ئانۆنیمایزکردن (Ethics Guard)</h4>
+                </div>
+                <span class="text-[8px] bg-harvard-crimson text-white px-1.5 py-0.5 rounded font-bold">Anonymizer & IRB</span>
+              </div>
+              <p class="text-[10.5px] text-stone-600 font-serif leading-relaxed">ئەم سیستەمە ناوی کەسەکان، ناونیشانەکان و ناوی ڕێکخراوەکان ئانۆنیمایز دەکات بۆ پاراستنی نهێنی و ڕێگریکردن لە دزەکردنی داتا بەرەو مۆدێلە دەرەکییەکان (Ethics Compliance).</p>
+
+              @if (!isAnonymizingData()) {
+                <button 
+                  type="button"
+                  (click)="anonymizeActiveChapterData(viewedChapter()!)"
+                  class="w-full py-2.5 px-4 bg-stone-900 hover:bg-black text-white rounded-lg text-[11px] font-serif font-bold flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all">
+                  <mat-icon class="!text-xs">lock_person</mat-icon>
+                  <span>ئانۆنیمایزکردن و شاردنەوەی زانیارییەکان (Anonymize Data)</span>
+                </button>
+              } @else if (isAnonymizingData()) {
+                <div class="p-4 border border-stone-200 bg-stone-50 rounded-xl space-y-2 text-center animate-pulse">
+                  <div class="w-5 h-5 border-2 border-harvard-crimson border-t-transparent rounded-full animate-spin mx-auto block"></div>
+                  <p class="text-[11px] font-serif font-bold text-stone-900">مەکینەی ئەخلاقیات سەرقاڵی دۆزینەوە و شاردنەوەی ناو و شوێنە گوماناوییەکانە...</p>
+                </div>
+              }
+
+              @if (anonymizationError()) {
+                <div class="p-2.5 bg-red-50 text-red-800 text-[10px] rounded border border-red-200 leading-relaxed">
+                  {{ anonymizationError() }}
+                </div>
+              }
+
+              @if (anonymizationResult(); as anonymized) {
+                <div class="p-3 bg-white border border-stone-200 rounded-lg space-y-3 animate-expand-fade text-right text-xs">
+                  <div class="flex items-center justify-between text-xs pb-1.5 border-b border-stone-100">
+                    <span class="font-serif">نمرەی پابەندبوونی ئەخلاقی (Ethics Match Score):</span>
+                    <span class="font-bold font-mono px-2 py-0.5 bg-emerald-100 text-emerald-850 rounded">
+                      {{ anonymized.ethicsScore }}%
+                    </span>
+                  </div>
+
+                  @if (anonymized.redactions.length > 0) {
+                    <div class="space-y-1.5">
+                      <strong class="text-[10px] text-stone-700 block">📊 ڕاپۆرتی بڕین و تێکەڵکردنی کۆدەکان (Redaction Logs):</strong>
+                      <div class="space-y-1 max-h-32 overflow-y-auto pr-1">
+                        @for (r of anonymized.redactions; track r.originalValue) {
+                          <div class="p-1.5 bg-stone-50 border border-stone-100 rounded text-[10px] leading-relaxed flex items-center justify-between">
+                            <span class="text-red-900 line-through font-mono font-bold text-[9px]">{{ r.originalValue }}</span>
+                            <mat-icon class="!text-xs text-stone-400">arrow_forward</mat-icon>
+                            <span class="text-emerald-900 font-mono font-bold bg-emerald-50 px-1 rounded text-[9px]">{{ r.replacement }}</span>
+                            <span class="text-[8px] bg-stone-200 text-stone-700 px-1 rounded">{{ r.type }}</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  } @else {
+                    <p class="text-[10px] text-stone-500 italic text-center">هیچ زانیارییەکی کەسی، ناونیشان یان شوێنی هەستیار لەم بەشەدا نەدۆزرایەوە.</p>
+                  }
+
+                  <div class="p-2 bg-emerald-50 border border-emerald-200 text-[10.5px] text-emerald-950 rounded leading-relaxed pt-2">
+                    <span class="font-bold text-emerald-900 block flex items-center gap-1 mb-1">
+                      <mat-icon class="!text-xs text-emerald-700">verified_user</mat-icon>
+                      بارودۆخی دەرەکی:
+                    </span>
+                    دەقەکە بە تەواوی پاڵێوراوە و ئامادەیە بۆ ناردن بۆ مۆدێلە دەرەکییەکان بە سەلامەتی ڕەها (100% Safe).
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- AI Academic & Rigor Analyzer Option -->

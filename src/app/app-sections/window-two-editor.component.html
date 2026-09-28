@@ -1,0 +1,291 @@
+              <!-- Standard Chapter List View -->
+              @if (chapters().length === 0) {
+                <div class="flex flex-col items-center justify-center text-center py-24 space-y-4">
+                  <div class="p-4 bg-amber-50 border border-amber-200 rounded-full text-amber-700">
+                    <mat-icon class="!text-4xl !w-10 !h-10">hourglass_empty</mat-icon>
+                  </div>
+                  <div class="max-w-xs space-y-2">
+                    <h4 class="font-serif font-bold text-black text-sm">بەشەکان هێشتا ڕێک نەخراون</h4>
+                    <p class="text-xs text-[#8C8273] leading-relaxed">
+                      تکایە ناونیشان و ڕێکخستنەکان لە پەنجەرەی یەکەم دیاری بکە، پاشان دوگمەی 'ناردن بۆ پەنجەرەی دووەم' بەکاربهێنە تا پرۆفایل و پێکهاتەی بەشەکانت لێرە جێگیر بێت.
+                    </p>
+                    <div class="pt-2">
+                      <button type="button" 
+                              (click)="onSendToSecondWindow()" 
+                              class="px-4 py-2 bg-black hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer flex items-center gap-1.5 mx-auto">
+                        <mat-icon class="!text-xs !w-4 !h-4 text-amber-400">auto_awesome</mat-icon>
+                        <span>دەستپێکردن و ڕێکخستنی دەستبەجێی بەشەکان</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <!-- Active Chapter List displayed vertically -->
+                <div class="space-y-4">
+                  
+                  <!-- Overall Book Progress & Sorani Spelling Fix Summary Dashboard -->
+                  @let bookSummary = bookProgressSummary();
+                  <div class="bg-stone-900 text-white rounded-2xl p-4.5 border border-amber-900/40 shadow-md space-y-3.5 relative overflow-hidden">
+                    <!-- Glow decoration -->
+                    <div class="absolute -right-10 -top-10 w-44 h-44 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <!-- Header & Status Row -->
+                    <div class="flex items-center justify-between flex-wrap gap-2.5 relative z-10">
+                      <div class="flex items-center gap-2">
+                        <div class="p-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-400">
+                          <mat-icon class="!w-5 !h-5 !text-base leading-none">analytics</mat-icon>
+                        </div>
+                        <div>
+                          <h4 class="text-xs md:text-sm font-serif font-bold text-white flex items-center gap-2 flex-wrap">
+                            داشبۆردی بەرەوپێشچوونی تەواوی کتێبەکە
+                            <span class="text-[9.5px] px-2 py-0.5 rounded-full font-sans font-bold border" [class]="bookSummary.statusBadgeBg + ' ' + bookSummary.statusTextColor">
+                              {{ bookSummary.statusBadgeLabel }}
+                            </span>
+                          </h4>
+                          <p class="text-[10px] text-stone-300 font-serif mt-0.5">
+                            تێکرای ڕێژەی وشەکان، لاپەڕەکان، و کاتی پێشبینیکراوی ماوە بەراورد بە ئامانجەکان
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Quick Global Sorani Spelling Corrector Button -->
+                      <button type="button" 
+                              (click)="fixAllChaptersSpelling()"
+                              class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-xs rounded-xl transition-all duration-300 flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
+                              title="بە یەک کرتە سەرجەم هەڵە ڕێنووسییەکانی تەواوی بەشەکان بەپێی ستانداردی سۆرانی چاک بکەرەوە">
+                        <mat-icon class="!text-sm !w-4 !h-4 text-stone-950">auto_fix_high</mat-icon>
+                        <span>چاککردنەوەی خێرای ڕێنووسی سۆرانیی هەموو بەشەکان</span>
+                      </button>
+                    </div>
+
+                    <!-- Metric Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 relative z-10">
+                      <!-- Progress Percentage -->
+                      <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col justify-between space-y-1">
+                        <span class="text-[9.5px] text-stone-300 font-serif">ڕێژەی تەواوبوون:</span>
+                        <div class="flex items-baseline justify-between">
+                          <span class="text-lg md:text-xl font-mono font-black text-amber-400">{{ bookSummary.bookProgressPct }}٪</span>
+                          <span class="text-[10px] text-stone-400 font-mono">{{ bookSummary.completedChaptersCount }} / {{ bookSummary.totalChapters }} بەش</span>
+                        </div>
+                        <div class="w-full bg-stone-800 h-1.5 rounded-full overflow-hidden mt-1">
+                          <div class="bg-amber-400 h-full rounded-full transition-all duration-500" [style.width.%]="bookSummary.bookProgressPct"></div>
+                        </div>
+                      </div>
+
+                      <!-- Words Metric -->
+                      <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col justify-between space-y-1">
+                        <span class="text-[9.5px] text-stone-300 font-serif">تێکرای وشەکان:</span>
+                        <div class="flex items-baseline justify-between">
+                          <span class="text-base md:text-lg font-mono font-bold text-white">{{ bookSummary.totalCurrentWords }}</span>
+                          <span class="text-[10px] text-stone-400 font-mono">/ {{ bookSummary.totalTargetWords }}</span>
+                        </div>
+                        <span class="text-[9px] text-stone-400 font-serif truncate">ئامانج: {{ bookSummary.totalTargetWords }} وشە</span>
+                      </div>
+
+                      <!-- Pages Metric -->
+                      <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col justify-between space-y-1">
+                        <span class="text-[9.5px] text-stone-300 font-serif">لاپەڕەکان:</span>
+                        <div class="flex items-baseline justify-between">
+                          <span class="text-base md:text-lg font-mono font-bold text-emerald-400">{{ bookSummary.totalCurrentPages }}</span>
+                          <span class="text-[10px] text-stone-400 font-mono">/ {{ bookSummary.totalTargetPages }}</span>
+                        </div>
+                        <span class="text-[9px] text-stone-400 font-serif">ماوە: {{ bookSummary.remainingPages }} لاپەڕە</span>
+                      </div>
+
+                      <!-- Estimated Time Metric -->
+                      <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col justify-between space-y-1">
+                        <span class="text-[9.5px] text-stone-300 font-serif">پێشبینی کاتی ماوە:</span>
+                        <span class="text-xs md:text-sm font-bold font-serif text-amber-300 leading-tight">
+                          {{ bookSummary.formattedRemainingTime }}
+                        </span>
+                        <span class="text-[9px] text-stone-400 font-serif truncate">وشەی ماوە: {{ bookSummary.remainingWords }} وشە</span>
+                      </div>
+                    </div>
+
+                    <!-- Section Deviation Summary Bar -->
+                    <div class="flex items-center justify-between text-[10px] pt-1.5 border-t border-white/10 text-stone-300 flex-wrap gap-2">
+                      <div class="flex items-center gap-2.5 flex-wrap">
+                        <span class="font-serif text-stone-300 font-bold">دۆخی بەشەکان بەپێی ئامانجی ٨٥٪ - ١١٥٪:</span>
+                        <span class="inline-flex items-center gap-1 text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-md font-bold">
+                          ✅ لە ئامانجدایە: {{ bookSummary.idealSectionsCount }}
+                        </span>
+                        @if (bookSummary.underTargetSectionsCount > 0) {
+                          <span class="inline-flex items-center gap-1 text-amber-300 bg-amber-950/60 border border-amber-800/60 px-2 py-0.5 rounded-md font-bold">
+                            ⚠️ کەمتر لە ٪٨٥: {{ bookSummary.underTargetSectionsCount }}
+                          </span>
+                        }
+                        @if (bookSummary.overTargetSectionsCount > 0) {
+                          <span class="inline-flex items-center gap-1 text-rose-300 bg-rose-950/60 border border-rose-800/60 px-2 py-0.5 rounded-md font-bold">
+                            🚨 زیاتر لە ٪١١٥: {{ bookSummary.overTargetSectionsCount }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Strengthened Title Structure advice banner -->
+                  @if (activeReview()) {
+                    <div class="p-4 bg-[#F8F6F2] border-r-4 border-[#D4AF37] border border-[#E5E1DA] rounded-lg space-y-2">
+                      <span class="text-[9px] bg-black text-white px-2 py-0.5 rounded font-extrabold uppercase">ئاستی گوتاری پێشنیارکراو</span>
+                      <h4 class="text-xs font-serif font-bold text-black mt-1">✨ نازناوی چاککراوی تەواو ئەکادیمی:</h4>
+                      <p class="text-sm font-light text-slate-800 leading-relaxed font-semibold">« {{ activeReview()?.strengthenedTitle }} »</p>
+                      <p class="text-[10.5px] text-[#8C8273] leading-relaxed italic border-t border-gray-200/55 pt-1.5">
+                        <strong>شی شیکاریی پەیڕەو:</strong> {{ activeReview()?.feedbackMessage }}
+                      </p>
+                    </div>
+                  }
+
+                  <!-- Listing Parts vertically -->
+                  <div class="space-y-3.5">
+                    @for (c of chapters(); track c.id) {
+                      @let wStatus = getWordValidationStatus(c);
+                      <div class="border rounded-xl p-4.5 bg-white transition-all duration-300 hover:shadow-md border-gray-200 flex flex-col justify-between shadow-xs">
+                        
+                        <!-- Chapter header row -->
+                        <div class="flex items-start justify-between gap-3 flex-wrap">
+                          <div class="space-y-1 text-right max-w-[85%]">
+                            <div class="flex items-center gap-2 flex-wrap">
+                              <span class="text-[10px] bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full font-bold">بەشی {{ getKurdishNumberStr(c.id) }}</span>
+                              <!-- Status Badges -->
+                              @if (c.status === 'pending') {
+                                <span class="text-[8px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded">لە چاوەڕوانیدایە</span>
+                              } @else if (c.status === 'writing') {
+                                <span class="text-[8px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded flex items-center gap-0.5 font-bold">
+                                  <span class="w-1.5 h-1.5 bg-amber-600 rounded-full animate-ping"></span>
+                                  خەریکی نووسینە...
+                                </span>
+                              } @else if (c.status === 'humanizing') {
+                                <span class="text-[8px] bg-indigo-100 text-[#4338ca] px-2 py-0.5 rounded flex items-center gap-0.5 font-bold">
+                                  <span class="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse"></span>
+                                  هیومانیزکردن...
+                                </span>
+                              } @else if (c.status === 'completed') {
+                                <span class="text-[8px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">تەواوکراوە ({{ c.wordCount }} وشە)</span>
+                              }
+
+                              <!-- Special Research Context Badges -->
+                              @if (c.customSourcesOn || c.fieldWorkOn) {
+                                <div class="inline-flex gap-1 animate-fade-in-badge">
+                                  @if (c.customSourcesOn) {
+                                    <span class="inline-flex items-center gap-0.5 text-[8px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded" title="سەرچاوەی تایبەت">
+                                      <mat-icon class="!text-[9px] !w-2.5 !h-2.5 leading-none">menu_book</mat-icon>
+                                      سەرچاوە
+                                    </span>
+                                  }
+                                  @if (c.fieldWorkOn) {
+                                    <span class="inline-flex items-center gap-0.5 text-[8px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded" title="کاری مەیدانی">
+                                      <mat-icon class="!text-[9px] !w-2.5 !h-2.5 leading-none">explore</mat-icon>
+                                      کاری مەیدانی
+                                    </span>
+                                  }
+                                </div>
+                              }
+                            </div>
+
+                            <!-- Chapter title row with Word Count Deviation Alert Badge directly next to title -->
+                            <div class="flex items-center gap-2 flex-wrap pt-1">
+                              <h4 class="text-xs md:text-sm font-serif font-bold text-black leading-snug">{{ c.title }}</h4>
+                              
+                              @if (wStatus.pct < 85 || wStatus.pct > 115) {
+                                <span class="inline-flex items-center gap-1 text-[9.5px] font-extrabold px-2 py-0.5 rounded-md border shadow-2xs transition-all animate-pulse"
+                                      [class]="wStatus.badgeBg + ' ' + wStatus.textColor + ' ' + wStatus.borderColor"
+                                      [title]="'ئاگاداری لادان لە ئامانجی ٨٥٪ - ١١٥٪: ' + wStatus.label">
+                                  <mat-icon class="!text-xs !w-3.5 !h-3.5 leading-none">{{ wStatus.icon }}</mat-icon>
+                                  <span>{{ wStatus.label }}</span>
+                                </span>
+                              }
+                            </div>
+                          </div>
+                          
+                          <!-- Chapter card action buttons -->
+                          <div class="flex items-center gap-1.5 flex-wrap">
+                            <button 
+                              type="button" 
+                              (click)="fixChapterSpelling(c.id)" 
+                              class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-[10.5px] font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                              title="چاککردنەوەی هەڵە ڕێنووسییەکانی ئەم بەشە بەپێی ستانداردی کوردی سۆرانی">
+                              <mat-icon class="!text-xs !w-3.5 !h-3.5 text-amber-700">auto_fix_high</mat-icon>
+                              <span>چاککردنی ڕێنووس</span>
+                            </button>
+
+                            <button 
+                              type="button" 
+                              (click)="openChapterPreview(c)" 
+                              class="px-3 py-1.5 bg-stone-900 hover:bg-black text-white text-[10.5px] font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-xs">
+                              <mat-icon class="!text-xs !w-3.5 !h-3.5 text-amber-400">visibility</mat-icon>
+                              <span>پێشاندانی لە سەرنووسەردا</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Section Word Count Progress Bar & Validation Indicator -->
+                        <div class="mt-2.5 p-2.5 rounded-xl border flex flex-col gap-2 transition-all" [class]="wStatus.badgeBg + ' ' + wStatus.borderColor">
+                          
+                          <!-- Top Stats Row -->
+                          <div class="flex items-center justify-between gap-2 flex-wrap text-xs">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                              <span class="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-md border" [class]="wStatus.badgeBg + ' ' + wStatus.textColor + ' ' + wStatus.borderColor">
+                                <mat-icon class="!text-xs !w-3.5 !h-3.5 leading-none">{{ wStatus.icon }}</mat-icon>
+                                <span>{{ wStatus.label }}</span>
+                              </span>
+
+                              <span class="text-[10px] font-mono font-semibold text-stone-600 bg-white/80 px-2 py-0.5 rounded border border-stone-200">
+                                📊 {{ c.wordCount || 0 }} / {{ wStatus.targetWords }} وشە (ئاستی لاپەڕە: {{ wStatus.currentPages }} / {{ wStatus.targetPages }} لاپەڕە)
+                              </span>
+                            </div>
+
+                            <div class="flex items-center gap-1 bg-white px-2 py-0.5 rounded-lg border border-stone-250 text-[#555] shadow-2xs">
+                              <span class="text-[9.5px] font-bold font-serif shrink-0 text-stone-700">ئامانجی بەش (وشە):</span>
+                              <input type="number" 
+                                     [value]="getChapterTarget(c)" 
+                                     (change)="updateChapterTargetWords(c.id, targetInput.valueAsNumber)" 
+                                     #targetInput
+                                     class="w-16 text-center bg-transparent border-none text-[10.5px] font-mono font-bold py-0 focus:outline-none focus:ring-0 focus:border-none p-0 text-stone-900" 
+                                     min="100" 
+                                     max="25000" 
+                                     [title]="'ئامانجی وشە بۆ ئەم بەشە بگۆڕە'"/>
+                            </div>
+                          </div>
+
+                          <!-- Progress Bar Row -->
+                          <div class="flex items-center gap-3">
+                            <div class="flex-1 bg-stone-200/90 h-2 rounded-full overflow-hidden shadow-inner">
+                              <div class="h-full rounded-full transition-all duration-500"
+                                [style.width.%]="Math.min(100, wStatus.pct)"
+                                [style.background-color]="wStatus.progressBarBg">
+                              </div>
+                            </div>
+                            
+                            <span class="text-[11px] font-mono font-extrabold shrink-0" [class]="wStatus.textColor">
+                              {{ wStatus.pct }}%
+                            </span>
+                          </div>
+
+                        </div>
+
+                        <!-- Content Preview -->
+                        @if (c.content) {
+                          <div class="mt-3.5 pt-3 border-t border-gray-100">
+                            <div class="max-h-[500px] overflow-y-auto pr-2 text-justify scrollbar-thin space-y-1.5">
+                              <p class="text-[11.5px] text-slate-800 leading-[1.85] font-serif whitespace-pre-wrap select-all">
+                                {{ c.content }}
+                              </p>
+                            </div>
+                            @if (c.academicNotes) {
+                              <div class="text-[9.5px] text-[#8C8273] font-serif leading-tight mt-2.5 pt-2 border-t border-dotted border-stone-200">
+                                📝 <strong>تێبینی کورتکراوە:</strong> {{ c.academicNotes }}
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <div class="mt-3 text-[11px] text-[#8C8273] italic">
+                            دەقی ناوەڕۆکی ئەم بەشە هێشتا بەرهەم نەهاتووە. دەتوانیت لە ڕێگەی دوگمەی ئۆتۆڕایت دەستبەکار بیت.
+                          </div>
+                        }
+
+                      </div>
+                    }
+                  </div>
+
+                </div>
+              }

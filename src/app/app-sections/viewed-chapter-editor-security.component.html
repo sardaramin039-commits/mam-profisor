@@ -1,0 +1,390 @@
+                @if (viewedChapter()?.isLocked) {
+                  <span class="text-[10px] bg-red-100 text-red-800 font-extrabold px-2.5 py-1 rounded-md border border-red-200 flex items-center gap-1 animate-pulse">
+                    <mat-icon class="!text-[11px] !w-3 !h-3">lock</mat-icon>
+                    ئەم بەشە قفڵکراوە و دەستکاریکردنی ڕێگەپێنەدراوە
+                  </span>
+                } @else {
+                  <span class="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2.5 py-1 rounded-md border border-emerald-200 flex items-center gap-1">
+                    <mat-icon class="!text-[11px] !w-3 !h-3">lock_open</mat-icon>
+                    دەتوانیت لێرەوە بە ئازادی دێڕەکان بنووسیت
+                  </span>
+                }
+              </div>
+
+              <!-- Lock Banner Alert Notification -->
+              @if (viewedChapter()?.isLocked) {
+                <div class="p-3 bg-red-50/80 border-r-4 border-red-600 rounded-lg text-xs leading-relaxed text-red-950 font-serif my-1">
+                  <strong>پێداچوونەوە مۆری کۆتایی لێدراوە:</strong> قفڵەکە چالاک کراوە تا ڕێگری لە هەر گۆڕانکارییەکی بەڕێکەوت بکات. بۆ دەستکاریکردن، سەرەتا قفڵەکە لەسەر کارتی لاوەکی بکەرەوە.
+                </div>
+              }
+
+              <!-- Encrypted alert banner if stored securely -->
+              @if (viewedChapter()?.isEncryptedInVault) {
+                <div class="p-3.5 bg-indigo-50 border-r-4 border-indigo-700 text-indigo-950 rounded-lg text-xs font-serif leading-relaxed my-1">
+                  🔒 <strong>مشتومڕی پارێزراو:</strong> ناوەڕۆکی ئەم بەشە لێرەدا کۆدکراوە (Encrypted in Vault). بۆ نیشاندان، پێویستە کلیلی بەکارهێنەر بهێنیتە کایەوە لە پانێلی ڕاست.
+                </div>
+              }
+
+              <!-- Toolbars above the textarea (Dynamic Academic Headings & Text Styling) -->
+              @if (!viewedChapter()?.isLocked) {
+                <div class="flex flex-col gap-2 p-3 bg-stone-100 border border-stone-300 rounded-t-xl select-none animate-fade-in">
+                  <!-- Academic Headings Insertion Toolbar -->
+                  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-300/80 pb-2">
+                    <span class="text-[11px] font-extrabold text-stone-850 font-serif flex items-center gap-1">
+                      <mat-icon class="!text-xs !w-4 !h-4 text-[#8C8273]">bookmark_add</mat-icon>
+                      سەرپەڕە ئەکادیمییەکان (Academic Headings):
+                    </span>
+                    <div class="flex flex-wrap items-center gap-1.5 font-serif">
+                      <button 
+                        type="button"
+                        (click)="insertAcademicHeading(chapterTextarea, 'methodology')"
+                        class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded font-bold transition flex items-center gap-1 cursor-pointer text-[10px]">
+                        <mat-icon class="!text-[11px] !w-3 !h-3 text-stone-500">science</mat-icon>
+                        Methodology / میتۆدۆلۆژی
+                      </button>
+                      <button 
+                        type="button"
+                        (click)="insertAcademicHeading(chapterTextarea, 'results')"
+                        class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded font-bold transition flex items-center gap-1 cursor-pointer text-[10px]">
+                        <mat-icon class="!text-[11px] !w-3 !h-3 text-stone-500">bar_chart</mat-icon>
+                        Results / ئەنجامەکان
+                      </button>
+                      <button 
+                        type="button"
+                        (click)="insertAcademicHeading(chapterTextarea, 'discussion')"
+                        class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded font-bold transition flex items-center gap-1 cursor-pointer text-[10px]">
+                        <mat-icon class="!text-[11px] !w-3 !h-3 text-stone-500">forum</mat-icon>
+                        Discussion / گفتوگۆ
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Text Styling Toolbar -->
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-[11px] font-extrabold text-stone-850 font-serif flex items-center gap-1">
+                      <mat-icon class="!text-xs !w-4 !h-4 text-[#8C8273]">format_bold</mat-icon>
+                      شێوازی نووسین (Text Styling Tools):
+                    </span>
+                    <div class="flex flex-wrap items-center gap-1.5 font-serif font-bold">
+                      <button 
+                        type="button"
+                        (click)="applyTextFormatting(chapterTextarea, 'bold')"
+                        title="Bold text (**دەق**)"
+                        class="px-3 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded transition flex items-center justify-center font-extrabold cursor-pointer text-[11px]">
+                        B
+                      </button>
+                      <button 
+                        type="button"
+                        (click)="applyTextFormatting(chapterTextarea, 'italic')"
+                        title="Italic text (*دەق*)"
+                        class="px-3 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded transition flex items-center justify-center italic cursor-pointer text-[11px]">
+                        I
+                      </button>
+                      <button 
+                        type="button"
+                        (click)="applyTextFormatting(chapterTextarea, 'sub')"
+                        title="Subscript (<sub>دەق</sub>)"
+                        class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded transition flex items-center justify-center cursor-pointer text-[10px]">
+                        X<sub>sub</sub>
+                      </button>
+                      <button 
+                        type="button"
+                        (click)="applyTextFormatting(chapterTextarea, 'sup')"
+                        title="Superscript (<sup>دەق</sup>)"
+                        class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded transition flex items-center justify-center cursor-pointer text-[10px]">
+                        X<sup>sup</sup>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <textarea 
+                #chapterTextarea 
+                [value]="viewedChapter()?.content || ''" 
+                (input)="updateChapterContent(viewedChapter()!.id, chapterTextarea.value)"
+                [readonly]="viewedChapter()?.isLocked"
+                class="w-full flex-1 p-6 text-sm md:text-base lg:text-lg border-2 border-stone-400 bg-[#FAFAFC] focus:bg-white text-slate-900 leading-[2.2] font-serif focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium text-justify shadow-md scrollbar-thin scrollbar-thumb-stone-400 scrollbar-track-transparent transition-all"
+                [class.rounded-xl]="viewedChapter()?.isLocked"
+                [class.rounded-b-xl]="!viewedChapter()?.isLocked"
+                [class.border-t-0]="!viewedChapter()?.isLocked"
+                placeholder="دەتوانیت لێرەوە بە دەستی خۆت بابەتەکە بنووسیت، یان ناوەڕۆکە بەکارخراوەکە لە فۆرمەکەدا بنوسیت..."
+                style="resize: vertical; min-height: 500px; overflow-y: scroll !important; max-height: 65vh; display: block;"></textarea>
+
+              <!-- Progress bar based word counter inside the footer of the chapter textarea -->
+              @if (viewedChapter()) {
+                <div class="mt-2 px-4 py-3 bg-stone-100 border border-stone-300 rounded-xl flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-stone-700 font-serif shadow-xs">
+                  <div class="flex items-center gap-2">
+                    <mat-icon class="!text-sm text-amber-800 font-bold">assessment</mat-icon>
+                    <span>ئاماری بەشەکە: <strong>{{ viewedChapter()?.wordCount || 0 }}</strong> وشە لە <strong>{{ getChapterTarget(viewedChapter()) }}</strong> (ئامانجی پێشنیارکراو)</span>
+                  </div>
+                  
+                  <div class="flex items-center gap-3 w-full md:w-auto flex-1 justify-end max-w-md">
+                    <!-- Progress bar container -->
+                    <div class="flex-1 bg-stone-300 rounded-full h-2.5 overflow-hidden">
+                      <div class="bg-amber-600 h-full rounded-full transition-all duration-300"
+                           [style.width.%]="getWordProgressPct(viewedChapter()!)">
+                      </div>
+                    </div>
+                    
+                    <span class="text-[10px] font-mono font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded shrink-0">
+                      {{ getWordProgressPct(viewedChapter()!) }}% تەواوبووە
+                    </span>
+                  </div>
+                </div>
+              }
+
+              <!-- Real-time Academic Spellcheck & Orthography Inspector -->
+              <div class="mt-4 p-4 bg-stone-50 border border-stone-200 rounded-xl space-y-3 text-right">
+                <div class="flex items-center justify-between border-b border-stone-200 pb-2 flex-wrap gap-2">
+                  <div class="flex items-center gap-1.5">
+                    <mat-icon class="text-rose-700 leading-none">spellcheck</mat-icon>
+                    <span class="text-xs font-extrabold text-stone-900 font-serif">پشکنەری زمانی و ڕێنووسی زانستی (Sorani Kurdish Spellchecker)</span>
+                  </div>
+                  @if (viewedChapterSpellIssues().length > 0) {
+                    <button 
+                      type="button"
+                      (click)="applySoranispellFixInViewedChapter()"
+                      class="px-2.5 py-1 bg-rose-700 hover:bg-rose-800 text-white text-[9.5px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                      <mat-icon class="!text-xs">auto_fix_high</mat-icon>
+                      <span>چاککردنی هەموو کێشەکان (Fix All)</span>
+                    </button>
+                  }
+                </div>
+
+                @if (viewedChapterSpellIssues().length === 0) {
+                  <div class="flex items-center gap-1.5 py-2 text-emerald-800 text-[10.5px] font-serif">
+                    <mat-icon class="!text-sm text-emerald-600">verified</mat-icon>
+                    <span>دەستخۆش! هیچ ناڕێکییەکی ڕێنووسی یان پیت تێکەڵبوون لەم بەشەدا نەدۆزرایەوە.</span>
+                  </div>
+                } @else {
+                  <div class="text-[10.5px] text-stone-600 pb-1 font-serif">
+                    ئەم لادانە ڕێنووسی و نا-ئەکادیمیانە لە دەقەکەدا دۆزرانەوە کە پێویستیان بە چاککردن هەیە:
+                  </div>
+
+                  <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    @for (issue of viewedChapterSpellIssues(); track $index) {
+                      <div class="p-2.5 bg-amber-50/50 border border-amber-200 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div class="space-y-1">
+                          <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-extrabold leading-none">
+                              {{ issue.title }}
+                            </span>
+                          </div>
+                          <p class="text-[10px] text-stone-700 font-serif leading-relaxed">
+                            {{ issue.desc }}
+                          </p>
+                        </div>
+
+                        <div class="flex items-center gap-2 self-end sm:self-center font-serif text-[10px]">
+                          <span class="text-rose-750 line-through font-bold font-mono">{{ issue.original }}</span>
+                          <mat-icon class="!text-xs font-bold text-stone-400">arrow_back</mat-icon>
+                          <span class="text-emerald-800 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200 font-mono">{{ issue.replacement }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Suggested Historical Reference Sources with automatic indexing -->
+              @if (!viewedChapter()?.isLocked && suggestedSourcesForActiveChapter().length > 0) {
+                <div class="mt-3.5 p-3.5 bg-amber-50/30 border border-amber-200/50 rounded-xl space-y-2.5">
+                  <div class="flex items-center justify-between text-[11px] text-[#5c3e07] border-b border-amber-200/40 pb-1.5 justify-between">
+                    <span class="font-extrabold flex items-center gap-1.5 font-serif text-[10.5px]">
+                      <mat-icon class="text-amber-700 !text-xs !w-4 !h-4 font-bold">auto_stories</mat-icon>
+                      سەرچاوە پێشنیارکراوەکان لە مێژووی توێژینەوە پەیوەندیدارەکاندا (Automated Sourcing)
+                    </span>
+                    <span class="text-[9px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-sans font-bold">
+                      گونجاو بۆ ئەم بەشە
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto pr-1">
+                    @for (source of suggestedSourcesForActiveChapter(); track source.id) {
+                      <div class="p-2.5 bg-white border border-stone-200 rounded-lg flex flex-col justify-between hover:border-amber-400 transition-colors">
+                        <div class="space-y-1">
+                          <span class="block text-[10px] font-extrabold text-stone-900 font-serif leading-tight">
+                            {{ source.title }}
+                          </span>
+                          <span class="block text-[8.5px] text-[#6e685f] font-serif">
+                            نووسەر: {{ source.author }} ({{ source.year }}) — {{ source.publisher }}
+                          </span>
+                        </div>
+
+                        <div class="pt-2 flex justify-end gap-1.5 border-t border-stone-100 mt-2">
+                          <button 
+                            type="button" 
+                            (click)="injectAcademicSourceCitation(source, 'inline')"
+                            class="px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-900 text-[8.5px] font-extrabold rounded cursor-pointer transition flex items-center gap-0.5"
+                            title="سایتەیشنی کورت لە مەتنی نوسینەکەدا دروست دەکات">
+                            <mat-icon class="!text-[9.5px] !w-3 !h-3">add</mat-icon>
+                            <span>+ نێودەقی</span>
+                          </button>
+                          <button 
+                            type="button" 
+                            (click)="injectAcademicSourceCitation(source, 'bibliography')"
+                            class="px-2 py-0.5 bg-amber-700 hover:bg-amber-800 text-white text-[8.5px] font-extrabold rounded cursor-pointer transition flex items-center gap-0.5"
+                            title="تەواوی زانیاری سەرچاوەکە دەخاتە ژێرەوە">
+                            <mat-icon class="!text-[9.5px] !w-3 !h-3">library_books</mat-icon>
+                            <span>+ لیستی سەرچاوەکان</span>
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Column 3: Security Vault & Snapshots (md:col-span-1) -->
+          <div class="md:col-span-1 bg-stone-50 p-4 rounded-xl border border-stone-200 flex flex-col justify-start space-y-4">
+            
+            <!-- Vault Header -->
+            <div class="space-y-1 border-b border-stone-200 pb-2.5">
+              <span class="text-xs font-serif font-extrabold text-stone-900 flex items-center gap-1.5 justify-start">
+                <mat-icon class="text-indigo-800 !text-sm !w-4 !h-4 font-bold">lock</mat-icon>
+                خەزێنەی ڕیسمۆنی نهێنی (Secure Vault)
+              </span>
+              <p class="text-[9.5px] text-stone-500 leading-snug">کۆدکردنی بەهێزی ناوەڕۆکی بەشەکان بەر لە ناردنیان بۆ داتابەیسی فایەربەیس.</p>
+            </div>
+
+            <!-- E2EE Form Integration -->
+            <div class="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 space-y-2.5 text-right">
+              <span class="block text-[10.5px] font-bold text-indigo-950">تایبەتمەندی کۆدکردنی لایەنی بەکارهێنەر (E2EE):</span>
+              
+              <input 
+                #vaultKeyInput 
+                type="password" 
+                class="w-full p-2 bg-white border border-stone-300 rounded text-xs select-all focus:outline-none text-left font-mono" 
+                placeholder="کلیلی تێپەڕەوشە (Passphrase)" />
+
+              <div class="grid grid-cols-2 gap-2">
+                <button 
+                  type="button"
+                  (click)="encryptChapterInVault(viewedChapter()!, vaultKeyInput.value)"
+                  [disabled]="viewedChapter()?.isLocked || !vaultKeyInput.value"
+                  class="font-serif py-1.5 bg-indigo-700 text-white rounded text-[10.5px] font-bold hover:bg-indigo-800 disabled:bg-stone-200 disabled:text-stone-400 cursor-pointer">
+                  کۆدکردن
+                </button>
+                <button 
+                  type="button"
+                  (click)="decryptChapterInVault(viewedChapter()!, vaultKeyInput.value)"
+                  [disabled]="!vaultKeyInput.value"
+                  class="font-serif py-1.5 bg-stone-800 text-white rounded text-[10.5px] font-bold hover:bg-stone-900 disabled:bg-stone-200 disabled:text-stone-400 cursor-pointer">
+                  بازدان/کردنەوە
+                </button>
+              </div>
+            </div>
+
+            <!-- Snapshots History Integration -->
+            <div class="flex-1 flex flex-col min-h-[180px]">
+              <div class="flex justify-between items-center border-b border-stone-200 pb-2 mb-2">
+                <span class="text-xs font-serif font-extrabold text-stone-900 flex items-center gap-1.5">
+                  <mat-icon class="text-amber-700 !text-sm !w-4 !h-4">history</mat-icon>
+                  ئەرشیفی وەشانی مێژوویی (Snapshots)
+                </span>
+                
+                <button 
+                  type="button"
+                  (click)="createManualSnapshot(viewedChapter()!)"
+                  [disabled]="viewedChapter()?.isLocked"
+                  class="text-[9.5px] font-serif bg-amber-800 text-white font-bold px-2 py-1 rounded hover:bg-amber-900 disabled:bg-stone-250 cursor-pointer flex items-center gap-0.5">
+                  <mat-icon class="!text-[10px] !w-2.5 !h-2.5">add_circle</mat-icon>
+                  گرتنی وەشەن
+                </button>
+              </div>
+
+              <!-- Integrity check indicator -->
+              @if (viewedChapter()) {
+                @let integrityResult = verifyChapterIntegrityAgainstLastSnapshot(viewedChapter()!);
+                <div class="mb-2.5 p-2 rounded-lg text-[10px] flex items-center gap-2 border transition-all"
+                     [class.bg-emerald-50]="integrityResult.isValid"
+                     [class.border-emerald-200]="integrityResult.isValid"
+                     [class.text-emerald-800]="integrityResult.isValid"
+                     [class.bg-rose-50]="!integrityResult.isValid"
+                     [class.border-rose-200]="!integrityResult.isValid"
+                     [class.text-rose-800]="!integrityResult.isValid">
+                  <mat-icon class="!text-[14px] !w-4 !h-4">
+                    {{ integrityResult.isValid ? 'verified_user' : 'gpp_maybe' }}
+                  </mat-icon>
+                  <div class="flex-1">
+                    <span class="font-serif font-bold block">
+                      {{ integrityResult.isValid ? 'سەلامەتی دەق پارێزراوە (سیمیتریک)' : 'ئاگاداری: دەستکاریی ناڕەوا دەستنیشانکرا!' }}
+                    </span>
+                    @if (!integrityResult.isValid) {
+                      <span class="text-[9px] text-rose-600/90 block">ناوەڕۆک لەگەڵ کۆتا وەشانی مێژوویی یەکنایەتەوە.</span>
+                    }
+                  </div>
+                  @if (!integrityResult.isValid && viewedChapter()!.snapshots && viewedChapter()!.snapshots!.length > 0) {
+                    <button type="button" 
+                            (click)="rollbackToSnapshot(viewedChapter()!, viewedChapter()!.snapshots![viewedChapter()!.snapshots!.length - 1])"
+                            class="px-2 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded font-bold font-serif text-[9px] cursor-pointer shadow-xs transition-colors shrink-0">
+                      ڕاستکردنەوە
+                    </button>
+                  }
+                </div>
+              }
+
+              <!-- List of timestamped snaps -->
+              <div class="flex-1 overflow-y-auto max-h-[220px] space-y-1.5 pr-0.5">
+                @if (viewedChapter()?.snapshots && viewedChapter()!.snapshots!.length > 0) {
+                  @for (sn of viewedChapter()!.snapshots!; track sn.timestamp) {
+                    <div class="p-2 bg-white rounded border border-stone-200/85 text-[10px] space-y-1.5 flex flex-col justify-between hover:border-amber-400 transition-colors">
+                      <div class="flex justify-between items-center text-[9px] text-stone-500 font-mono">
+                        <span class="font-bold bg-stone-100 px-1 py-0.5 rounded text-stone-700">{{ sn.trigger }}</span>
+                        <span>{{ sn.timestamp }}</span>
+                      </div>
+                      
+                      <div class="flex justify-between items-center">
+                        <span class="text-[9.5px] text-stone-800">{{ sn.wordCount }} وشە</span>
+                        <button 
+                          type="button"
+                          (click)="rollbackToSnapshot(viewedChapter()!, sn)"
+                          [disabled]="viewedChapter()?.isLocked"
+                          class="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded font-bold transition-all disabled:bg-stone-100 disabled:text-stone-400 text-[9px] cursor-pointer">
+                          گەڕانەوە
+                        </button>
+                      </div>
+                    </div>
+                  }
+                } @else {
+                  <div class="text-[10.5px] text-stone-400 italic text-center py-6">
+                    هیچ وەشانی ئەرشیف بۆ پاشەکەوتکاری ئەم بەشە بوونی نییە. هەر گۆڕانکارییەک پاش کارا بوون تۆمار دەکرێت.
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Quick Navigation Sidebar Inside Column 3 -->
+            <div class="border-t border-stone-200 pt-4 mt-2">
+              <span class="text-xs font-serif font-extrabold text-stone-900 flex items-center justify-start gap-1.5 mb-2.5">
+                <mat-icon class="text-blue-700 !text-sm !w-4 !h-4 font-bold">explore</mat-icon>
+                ڕێپیشاندەری خێرای بەشەکە (Quick Navigation)
+              </span>
+              
+              <div class="space-y-1.5 overflow-y-auto max-h-[160px] pr-1">
+                @if (viewedChapterHeaders() && viewedChapterHeaders().length > 0) {
+                  @for (header of viewedChapterHeaders(); track header.id) {
+                    <button 
+                      type="button" 
+                      (click)="scrollToSection(header.text, chapterTextarea)"
+                      class="w-full text-right py-1 px-2 text-[10.5px] rounded hover:bg-stone-200/80 hover:text-stone-950 transition-all font-serif flex items-center justify-start gap-1 cursor-pointer block border border-transparent hover:border-text-stone-350"
+                      [style.paddingRight]="(header.level * 8) + 'px'"
+                      [title]="'بڕۆ خوارەوە بۆ: ' + header.text">
+                      <mat-icon class="!text-[10px] !w-3 !h-3 text-stone-400">subdirectory_arrow_left</mat-icon>
+                      <span class="truncate font-medium text-stone-700" [class.font-extrabold]="header.level === 1" [class.text-stone-900]="header.level === 1">
+                        {{ header.text }}
+                      </span>
+                    </button>
+                  }
+                } @else {
+                  <div class="text-[10.5px] text-stone-400 italic py-3 text-center">
+                    هیچ سەرپەڕەیەکی ڕاشکاو (Markdown/Bracket titles) نەدۆزرایەوە لەناو دەقەکەدا.
+                  </div>
+                }
+              </div>
+            </div>
+
+          </div>

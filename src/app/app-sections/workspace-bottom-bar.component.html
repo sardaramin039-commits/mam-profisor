@@ -1,0 +1,54 @@
+    <!-- 3. PERSISTENT SMALL BUTTONS BOTTOM BAR (ئەو ئایکۆنانە بە بچوکی لە خوارەوەی شاشە دابنێ) -->
+    @if (chapters().length > 0) {
+      <div class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-[#E5E1DA] shadow-2xl py-4.5 px-6 z-50 transition-all text-right">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 flex-wrap">
+          
+          <!-- Info tag -->
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-emerald-700 leading-none">menu_book</mat-icon>
+            <div class="text-right">
+              <span class="text-xs font-bold text-black font-serif">بەرهەمی کایەی پەڕتووکی مام:</span>
+              <span class="text-[10px] text-gray-500 block">ژمارەی بەشەکان: {{ chapters().length }} بەش گشتی</span>
+            </div>
+          </div>
+
+          <!-- Bottom bar operations row -->
+          <div class="flex items-center gap-3.5 flex-wrap">
+            <!-- 1. پێداچوونەوەی پێکهاتە -->
+            <button (click)="reviewStructure()" class="px-4.5 py-3.5 bg-[#F8F6F2] hover:bg-[#E5E1DA] text-black border border-[#E5E1DA] rounded-xl text-xs font-serif font-extrabold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors">
+              <mat-icon class="!text-sm !w-4 !h-4">insights</mat-icon>
+              <span>پێداچوونەوەی پێکهاتە</span>
+            </button>
+
+            <!-- 2. ئۆتۆڕایت -->
+            <button (click)="autoWrite()" [disabled]="isWritingProgress() || isHumanizingProgress()" class="px-5 py-3.5 bg-black hover:bg-neutral-800 disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl text-xs font-serif font-extrabold flex items-center gap-1.5 cursor-pointer shadow-md transition-colors">
+              @if (isWritingProgress()) {
+                <span class="w-4 h-0.5 bg-white border border-white-300 rounded-full animate-spin"></span>
+                <span>خەریکی زانستە...</span>
+              } @else {
+                <mat-icon class="!text-sm !w-4 !h-4 text-[#D4AF37]">flash_on</mat-icon>
+                <span>ئۆتۆڕایت</span>
+              }
+            </button>
+
+            <!-- 3. ئۆتۆهیومانیز -->
+            <button (click)="autoHumanize()" [disabled]="isWritingProgress() || isHumanizingProgress() || !chapters().length || !chapters()[0].content" class="px-5 py-3.5 bg-indigo-900 hover:bg-indigo-950 disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl text-xs font-serif font-extrabold flex items-center gap-1.5 cursor-pointer shadow-md transition-colors">
+              @if (isHumanizingProgress()) {
+                <span class="w-4 h-0.5 bg-white border border-white-300 rounded-full animate-spin"></span>
+                <span>مرۆڤ دەکات...</span>
+              } @else {
+                <mat-icon class="!text-sm !w-4 !h-4 text-pink-400">psychology</mat-icon>
+                <span>ئۆتۆهیومانیز</span>
+              }
+            </button>
+
+            <!-- 4. سەیڤ ئۆڵ (سەیڤ ئۆڵ بە شێوەی وۆرد) -->
+            <button (click)="saveAll()" [disabled]="!chapters().length || !chapters()[0].content" class="px-5 py-3.5 bg-[#007acc] hover:bg-[#005999] disabled:bg-gray-100 disabled:text-gray-400 text-white rounded-xl text-xs font-serif font-extrabold flex items-center gap-1.5 cursor-pointer shadow-md transition-all">
+              <mat-icon class="!text-sm !w-4 !h-4">cloud_download</mat-icon>
+              <span>سەیڤ ئۆڵ (Word DOCX)</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    }

@@ -1,0 +1,179 @@
+
+      <!-- ⚠️ Real-Time Academic Rigor Score Notification Banner -->
+      <app-academic-rigor-banner
+        [chapterContent]="activeChapter()?.content || ''"
+        [chapterTitle]="activeChapter()?.title || ''">
+      </app-academic-rigor-banner>
+
+      <!-- Configuration Alerts / Error display -->
+      @if (errorStr()) {
+        <div class="p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-2">
+          <mat-icon class="text-red-600 !text-sm !w-4 !h-4 flex-none mt-0.5">error_outline</mat-icon>
+          <span>{{ errorStr() }}</span>
+        </div>
+      }
+
+      <!-- ADVANCED RESEARCH HUB VIEW -->
+      @if (mainTab() === 'advanced_research') {
+        <app-advanced-research-hub></app-advanced-research-hub>
+      }
+
+      <!-- GOOGLE DRIVE INTEGRATION VIEW -->
+      @if (mainTab() === 'google_drive') {
+        <app-google-drive-integration
+          [thesisContent]="getActiveThesisText()"
+          (fileImported)="onDriveFileImported($event)"
+        ></app-google-drive-integration>
+      }
+
+      <!-- ACADEMIC RESEARCH PLATFORM VIEW -->
+      @if (mainTab() === 'platform') {
+        <app-academic-platform></app-academic-platform>
+      }
+
+      <!-- System Maintenance Panel (Stability, Cache, Offline & Backup) -->
+      <div class="my-3">
+        <app-system-maintenance-panel></app-system-maintenance-panel>
+      </div>
+
+      <!-- Local Draft Backup Restoration Banner -->
+      @if (hasLocalDraft()) {
+        <div class="p-4 bg-amber-50/90 border-2 border-amber-500 rounded-xl flex items-center justify-between gap-4 flex-wrap text-right font-serif shadow-xs my-2 animate-pulse">
+          <div class="flex items-start gap-2.5">
+            <mat-icon class="text-amber-700 flex-none mt-0.5 animate-bounce">drafts</mat-icon>
+            <div class="space-y-1">
+              <strong class="text-xs text-amber-950 block">💾 ڕەشنووسێکی کاتیی پاشەکەوتکراو دۆزرایەوە!</strong>
+              <p class="text-[11px] text-amber-900">ڕەشنووسێکی ئۆتۆماتیکی لە کاتژمێر <strong>{{ lastAutoSaveTime() }}</strong> پاشەکەوتکراوە. دەتوانیت بیگەڕێنیتەوە تاوەکو کارەکەت لەدەست نەچێت.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button (click)="restoreLocalDraft()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer">
+              گەڕاندنەوەی ڕەشنووس
+            </button>
+            <button (click)="discardLocalDraft()" class="px-2.5 py-1.5 border border-stone-300 hover:bg-white text-stone-600 rounded-lg text-[10px] font-semibold transition-all cursor-pointer">
+              سڕینەوە
+            </button>
+          </div>
+        </div>
+      } @else if (mainTab() === 'google_drive') {
+        <div class="space-y-6">
+          <app-google-drive-integration [thesisTitle]="manuscriptTitle()" [thesisContent]="activeChapter()?.content || ''"></app-google-drive-integration>
+          <app-gmail-integration [thesisContent]="activeChapter()?.content || ''"></app-gmail-integration>
+          <app-google-sheets-integration [thesisTitle]="manuscriptTitle()"></app-google-sheets-integration>
+          <app-google-keep-integration></app-google-keep-integration>
+          <app-google-tasks-integration></app-google-tasks-integration>
+        </div>
+      } @else if (mainTab() === 'suite') {
+        <!-- 🚀 ELITE ACADEMIC TOOLS SUITE VIEW (کۆمەڵە ئامرازە ئەکادیمییە باڵاکان) -->
+        <div class="space-y-6">
+          <div class="bg-gradient-to-r from-stone-900 via-stone-850 to-stone-900 border border-stone-800 rounded-2xl p-6 text-white shadow-xl space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+              <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-inner">
+                  <mat-icon class="!w-6 !h-6">auto_awesome</mat-icon>
+                </div>
+                <div>
+                  <h2 class="text-xl font-bold text-amber-400 font-serif">کۆمەڵە ئامرازە ئەکادیمییە باڵاکان (Elite Academic Tools Suite)</h2>
+                  <p class="text-xs text-stone-300">سەرجەم ئامرازە زانستی، ئاماری، هەڵسەنگاندن، داڕشتن و ١٦٠ ئامرازی ژیریی دەستکرد بە تەواوی کاران.</p>
+                </div>
+              </div>
+              <span class="text-xs font-mono bg-amber-500/10 text-amber-300 border border-amber-500/30 px-3.5 py-1.5 rounded-full font-bold">
+                160+ AI Tools Active
+              </span>
+            </div>
+          </div>
+
+          <!-- 🤖 160+ AI Enterprise Academic Tools Component -->
+          <div class="my-4">
+            <app-ai-tools-suite></app-ai-tools-suite>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-export-word></app-export-word>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-harvard-review></app-harvard-review>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-literature-gap></app-literature-gap>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-plagiarism></app-plagiarism>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-python-sandbox></app-python-sandbox>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-latex></app-latex>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-glossary></app-glossary>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-viva-simulation></app-viva-simulation>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-citation-feature></app-citation-feature>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-search-engine></app-search-engine>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-research-feature></app-research-feature>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <app-elite-review></app-elite-review>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-speech-dictation (dictatedTextAppended)="appendDictatedSpeechText($event)"></app-speech-dictation>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-formality-tone-control (configChanged)="onFormalityConfigChanged($event)"></app-formality-tone-control>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-text-lineage-connector (parentSelected)="onLineageParentChanged($event)"></app-text-lineage-connector>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-d3-chord-diagram [data]="chapterCrossData()"></app-d3-chord-diagram>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-kurdish-academic-evaluator [textToEvaluate]="activeChapter()?.content || ''"></app-kurdish-academic-evaluator>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-academic-glossary-table></app-academic-glossary-table>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-logical-consistency-checker [initialText]="activeChapter()?.content || ''"></app-logical-consistency-checker>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-editor-pomodoro-timer [activeText]="activeChapter()?.content || ''"></app-editor-pomodoro-timer>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-academic-additions-sidebar (insertRequested)="onInsertAcademicAddition($event)"></app-academic-additions-sidebar>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-concept-graph></app-concept-graph>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-thesis-health-report [thesisText]="activeChapter()?.content || ''"></app-thesis-health-report>
+            </div>
+
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-daily-research-pulse [totalWordsInput]="activeChapter()?.wordCount || 0" [citationsCountInput]="sources().length" [glossaryCountInput]="12"></app-daily-research-pulse>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-citation-health-check [chapterText]="activeChapter()?.content || ''"></app-citation-health-check>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-chapter-timeline-view [chapterId]="activeChapter()?.id || 1" [chapterContent]="activeChapter()?.content || ''" (restoreRequested)="updateActiveChapterContent($event)"></app-chapter-timeline-view>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-grammar-syntax-floating-panel [chapterContent]="activeChapter()?.content || ''" (textUpdated)="updateActiveChapterContent($event)"></app-grammar-syntax-floating-panel>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+              <app-split-view-editor [chapterContent]="activeChapter()?.content || ''" (applyCorrections)="updateActiveChapterContent($event)"></app-split-view-editor>
+            </div>
+          </div>
+        </div>
+      }

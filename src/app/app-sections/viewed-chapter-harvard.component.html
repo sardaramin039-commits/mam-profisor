@@ -1,0 +1,154 @@
+                    <!-- COMPONENT 9: HARVARD PEER-REVIEW PANEL & EPISTEMOLOGY GENEALOGY -->
+                    <div id="harvardAcademicReviewSection" class="p-4 bg-white border border-red-250 rounded-xl shadow-sm space-y-3 flex flex-col justify-between col-span-1 lg:col-span-2 hover:shadow-md transition duration-300">
+                      <div class="space-y-2">
+                        <div class="flex items-center gap-1 text-red-950 border-b border-red-100 pb-1.5 justify-between">
+                          <div class="flex items-center gap-1.5">
+                            <mat-icon class="!text-sm font-bold text-red-850">menu_book</mat-icon>
+                            <h4 class="text-xs font-serif font-extrabold text-red-950">٩. دەستەی هاوتای هەڵسەنگاندن و بیردۆزە کلاسیکیەکانی هارفەرد (Harvard Peer-Review & Epistemology)</h4>
+                          </div>
+                          <span class="text-[9px] font-mono bg-red-50 text-red-900 border border-red-200 px-1.5 py-0.5 rounded font-bold">Harvard Ivy Standard</span>
+                        </div>
+                        <p class="text-[10.5px] text-stone-600 leading-relaxed">
+                          ئەم مۆدیولە ئامادەکراوەی هارفەرد مەتنەکەت بەپێی تووندترین پێوەرەکانی زانکۆی هارفەردPh.D دەنرخێنێت. ٣ پڕۆفیسۆری ئەکادیمی سەرنجی لایەنەکانی (ڕێچکەی لۆژیک، ئاماری ڕاست، و زمانەوانی مۆدێرن) دەدەن و هاوکات نەژادنامەی کلاسیکی بیردۆزە گەرەکەت دیاری دەکەن.
+                        </p>
+
+                        <!-- Input concept to map -->
+                        <div class="flex flex-col gap-1 text-[11px] pt-1">
+                          <label for="harvardConceptInput" class="font-bold text-stone-800">چەمکی سەرەکی بۆ مەمپینگی تیۆری کلاسیكی (Theoretical Concept):</label>
+                          <div class="flex gap-2">
+                            <input 
+                              id="harvardConceptInput"
+                              type="text"
+                              [value]="harvardConceptInput()"
+                              (input)="harvardConceptInput.set($any($event.target).value)"
+                              placeholder="بۆ نموونە: بیردۆزی دەسەڵاتی کۆمەڵایەتی فۆکۆ..."
+                              class="p-1 px-2 text-stone-850 bg-stone-50 border border-stone-300 rounded text-xs focus:bg-white outline-none w-full border-red-100 focus:border-red-500">
+                          </div>
+                        </div>
+
+                        <!-- Error display -->
+                        @if (harvardReviewError()) {
+                          <div class="text-[10.5px] text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                            {{ harvardReviewError() }}
+                          </div>
+                        }
+
+                        <!-- Results display -->
+                        @if (harvardReviewResult()) {
+                          <div class="space-y-4 pt-2">
+                            <!-- Overall Grade Badge and Verdict -->
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-red-50/40 p-3 border border-red-200/50 rounded-xl items-center">
+                              <div class="col-span-1 flex flex-col items-center justify-center border-l border-red-200 pb-2 md:pb-0 font-sans">
+                                <span class="text-[9px] text-red-900 font-extrabold uppercase">نمرەی لیژنەی هارفەرد</span>
+                                <div class="w-14 h-14 rounded-full border-4 border-red-900 text-red-900 bg-white shadow-sm flex items-center justify-center font-serif font-extrabold text-xl mt-1 select-none">
+                                  {{ harvardReviewResult()?.peerReviewGrade }}
+                                </div>
+                              </div>
+                              <div class="col-span-1 md:col-span-3 text-right">
+                                <span class="text-[10px] font-extrabold text-red-950 block pb-1 border-b border-red-250/20">حوکم گشتیی لیژنەی داوەرانی هارفەرد (Peer Review Verdict):</span>
+                                <p class="text-[11px] text-stone-700 leading-relaxed font-serif pt-1">
+                                  {{ harvardReviewResult()?.peerReviewVerdict }}
+                                </p>
+                              </div>
+                            </div>
+
+                            <!-- Critiques from 3 Harvard Professors -->
+                            <div class="space-y-2">
+                              <span class="text-[10px] font-extrabold text-red-950 block">ڕادەربڕینی پێشەنگی پڕۆفیسۆرانی هارفەرد (Ivy Peer Critiques):</span>
+                              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                @for (prof of harvardReviewResult()?.professors || []; track $index) {
+                                  <div class="p-3 bg-stone-50 border border-stone-200 rounded-lg shadow-2xs space-y-2 flex flex-col justify-between">
+                                    <div class="space-y-1.5">
+                                      <div class="flex items-center gap-1.5 border-b border-stone-100 pb-1">
+                                        <mat-icon class="!text-[13px] !w-3.5 !h-3.5 text-red-900">portrait</mat-icon>
+                                        <span class="text-[10.5px] font-extrabold text-stone-900 leading-normal">{{ prof.name }}</span>
+                                      </div>
+                                      <p class="text-[10px] text-stone-600 text-justify leading-relaxed font-serif italic">
+                                        {{ prof.critique }}
+                                      </p>
+                                    </div>
+                                    <div class="mt-2 p-2 bg-white border border-stone-150 rounded text-[9.5px] leading-relaxed text-stone-700">
+                                      <strong class="text-stone-850 block">ڕاسپاردەی بەرزکردنەوە:</strong>
+                                      <p class="font-serif">{{ prof.recommendation }}</p>
+                                    </div>
+                                  </div>
+                                }
+                              </div>
+                            </div>
+
+                            <!-- Theory Genealogy Mapping Timeline -->
+                            <div class="p-3 bg-stone-950 text-white rounded-xl space-y-2">
+                              <div class="flex items-center justify-between border-b border-stone-800 pb-1.5">
+                                <span class="text-[10px] text-amber-250 font-bold flex items-center gap-1">
+                                  <mat-icon class="!text-xs">share</mat-icon>
+                                  پارادایم و سەرهەڵدانی چەمک لە زانستی تیۆری: {{ harvardReviewResult()?.genealogy?.conceptName }}
+                                </span>
+                              </div>
+                              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-[10px]">
+                                <div class="p-2 bg-stone-900/50 border border-stone-800 rounded relative">
+                                  <span class="text-amber-250 font-bold block pb-1 border-b border-stone-800">١. سەرەتای کلاسیکی (Foundational Era)</span>
+                                  <p class="text-stone-300 font-serif leading-relaxed pt-1">{{ harvardReviewResult()?.genealogy?.foundationalEra }}</p>
+                                </div>
+                                <div class="p-2 bg-stone-900/50 border border-stone-800 rounded relative">
+                                  <span class="text-amber-250 font-bold block pb-1 border-b border-stone-800">٢. دەستەواژەی نوێ (Paradigm Shift)</span>
+                                  <p class="text-stone-300 font-serif leading-relaxed pt-1">{{ harvardReviewResult()?.genealogy?.paradigmShift }}</p>
+                                </div>
+                                <div class="p-2 bg-stone-900/50 border border-stone-800 rounded relative">
+                                  <span class="text-emerald-400 font-bold block pb-1 border-b border-stone-800">٣. داڕشتنی نیشتمانی (Kurdish Synthesis)</span>
+                                  <p class="text-stone-300 font-serif leading-relaxed pt-1">{{ harvardReviewResult()?.genealogy?.kurdishSynthesiser }}</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <!-- Harvard Prose Suggestion and Action button -->
+                            <div class="p-3 bg-red-50/20 border border-red-200.5 rounded-lg space-y-1.5">
+                              <span class="text-[10px] font-extrabold text-red-950 block">نموونەی پەسەندکراوی مەتن بە ستانداردی هارفەرد (Harvard Actionable Prose):</span>
+                              <div class="p-3 bg-white border border-red-200/50 rounded text-stone-900 font-serif text-[11px] leading-relaxed max-h-44 overflow-y-auto text-justify whitespace-pre-wrap select-all">
+                                {{ harvardReviewResult()?.harvardActionableImprovement }}
+                              </div>
+                            </div>
+                          </div>
+                        }
+
+                      </div>
+
+                      <div class="pt-2 flex items-center justify-end gap-2 border-t border-stone-100">
+                        @if (harvardReviewResult()) {
+                          <button 
+                            type="button" 
+                            (click)="applyHarvardActionableImprovement(viewedChapter()!)"
+                            class="px-2.5 py-1.5 bg-red-900 hover:bg-red-950 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">add_circle</mat-icon>
+                            <span>چاندنی دەقە هارفەردییەکە لە مەتنی لاپەڕەم</span>
+                          </button>
+                        }
+                        <button 
+                          type="button" 
+                          (click)="runHarvardAcademicReview(viewedChapter()!)"
+                          [disabled]="isAnalyzingHarvardReview() || !harvardConceptInput().trim()"
+                          class="px-3.5 py-1.5 bg-red-950 hover:bg-black disabled:bg-stone-400 text-white text-[10px] font-extrabold tracking-wide rounded cursor-pointer transition flex items-center gap-1 shadow">
+                          @if (isAnalyzingHarvardReview()) {
+                            <div class="w-3 h-3 border-2 border-red-300 border-t-white rounded-full animate-spin"></div>
+                            <span>هەڵسەنگاندنی پێوەرەکان...</span>
+                          } @else {
+                            <mat-icon class="!text-xs">gavel</mat-icon>
+                            <span>تاقیکردنەوە بە پێورەکانی هارفەرد</span>
+                          }
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- COMPONENT 10: LITERATURE GAP & NOVELTY PANEL (THE 10TH ROYAL LAB) -->
+                    <div id="literatureGapAnalysisSection" class="p-4 bg-white border border-amber-300 rounded-xl shadow-sm space-y-3 flex flex-col justify-between col-span-1 lg:col-span-2 hover:shadow-md transition duration-300">
+                      <div class="flex items-center gap-2 text-amber-950 border-b border-amber-100 pb-2 justify-between">
+                        <div class="flex items-center gap-2">
+                          <mat-icon class="text-amber-600">find_in_page</mat-icon>
+                          <h4 class="text-xs font-bold font-serif">شیکاریی کەلێنی زانستی و نوێکاریی توێژینەوە (Literature Gap & Novelty)</h4>
+                        </div>
+                        <span class="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-mono font-bold">Gap Analysis & Novelty</span>
+                      </div>
+                      <app-literature-gap></app-literature-gap>
+                    </div>
+
+                  </div>
+                </div>

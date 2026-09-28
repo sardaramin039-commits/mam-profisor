@@ -1,0 +1,101 @@
+                    <!-- COMPONENT 2: STATS SIMULATOR & CHARTS -->
+                    <div class="p-4 bg-white border border-stone-300 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
+                      <div class="space-y-2">
+                        <div class="flex items-center gap-1 text-slate-900 border-b border-stone-100 pb-1.5 justify-between">
+                          <div class="flex items-center gap-1.5">
+                            <mat-icon class="!text-sm font-bold">area_chart</mat-icon>
+                            <h4 class="text-xs font-serif font-extrabold font-bold">٢. چوارچێوەی ئاماری و گرافیک</h4>
+                          </div>
+                          <span class="text-[9px] font-mono bg-slate-50 text-slate-900 px-1.5 py-0.5 rounded font-bold">SPSS Simulator</span>
+                        </div>
+                        <p class="text-[10.5px] text-stone-600 leading-relaxed">
+                          هاوشێوەکەری زانستی کار دەکات بۆ بونیادنانی داتایەکی گریمانەیی هۆکار و بڕ و پەیوەندی پێوژ توند بۆ دیاردەکە بە فۆرماتکردنی SPSS.
+                        </p>
+
+                        <!-- Error display -->
+                        @if (statsError()) {
+                          <div class="text-[10.5px] text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                            {{ statsError() }}
+                          </div>
+                        }
+
+                        <!-- Results visualization -->
+                        @if (empiricalStatsResult()) {
+                          <div class="p-3 bg-stone-50 border border-stone-300 rounded space-y-3 mt-1 font-sans">
+                            <!-- Info row -->
+                            <div class="grid grid-cols-2 gap-2 text-[11px] font-serif border-b border-stone-200 pb-2">
+                              <div><strong>گەورەیی نموونە:</strong> {{ empiricalStatsResult()?.sampleSize }} بەشداربوو</div>
+                              <div><strong>تاقیکردنەوە:</strong> {{ empiricalStatsResult()?.testName }}</div>
+                              <div><strong>بەهای بەدەستهاتوو:</strong> <span class="font-mono">{{ empiricalStatsResult()?.testValue }}</span></div>
+                              <div class="flex items-center gap-1">
+                                <strong>دەرئەنجام (P-Value):</strong>
+                                <span class="font-mono font-extrabold text-[10.5px] px-1 py-0.1 rounded" 
+                                      [class.bg-emerald-100]="empiricalStatsResult()?.isSignificant"
+                                      [class.text-emerald-800]="empiricalStatsResult()?.isSignificant"
+                                      [class.bg-amber-100]="!empiricalStatsResult()?.isSignificant"
+                                      [class.text-amber-800]="!empiricalStatsResult()?.isSignificant">
+                                  P={{ empiricalStatsResult()?.pValue }}
+                                </span>
+                              </div>
+                            </div>
+
+                            <!-- Dynamic SVG Chart (Simulating D3 with high design alignment) -->
+                            <div class="p-2.5 bg-white border border-stone-200 rounded space-y-1.5">
+                              <span class="text-[10px] text-stone-500 font-serif block">گرافی بڕی دڵنیایی (گرووپەکان لەبەرانبەر بەهای پێشبینیکراو)</span>
+                              <div class="space-y-2 pt-1 font-sans">
+                                @for (dp of empiricalStatsResult()?.dataPoints || []; track $index) {
+                                  <div class="space-y-0.5">
+                                    <div class="flex justify-between text-[9px] text-[#555] font-serif">
+                                      <span>{{ dp.label }}</span>
+                                      <span>ئەزموونی: {{ dp.value }}% / چاوەڕوانکراو: {{ dp.expected }}%</span>
+                                    </div>
+                                    <!-- Double bar representing D3 style visualization -->
+                                    <div class="w-full h-3 bg-stone-150 rounded overflow-hidden flex flex-col justify-center relative">
+                                      <!-- Actual bar -->
+                                      <div class="h-1.5 bg-indigo-900 rounded-r" [style.width.%]="dp.value"></div>
+                                      <!-- Expected target hairline indicator -->
+                                      <div class="h-1.5 bg-emerald-600 rounded-r opacity-50" [style.width.%]="dp.expected"></div>
+                                    </div>
+                                  </div>
+                                }
+                              </div>
+                              <div class="flex items-center justify-between text-[8px] text-stone-400 pt-1">
+                                <span>٠% (نزمترین بر)</span>
+                                <span>٥٠%</span>
+                                <span>١٠٠% (تەواوترین پێوەر)</span>
+                              </div>
+                            </div>
+
+                            <!-- Standard Text Interpretation -->
+                            <div class="text-[10.5px] text-stone-750 text-justify leading-relaxed font-serif pt-1">
+                              {{ empiricalStatsResult()?.explanation }}
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+                      <div class="pt-2 flex items-center justify-end gap-2 border-t border-stone-100">
+                        @if (empiricalStatsResult()) {
+                          <button 
+                            type="button" 
+                            (click)="appendStatsExplanationToChapter(viewedChapter()!)"
+                            class="px-2.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">add_circle</mat-icon>
+                            <span>چاندنی ڕاپۆرتی ئامار بە ناوەڕۆک</span>
+                          </button>
+                        }
+                        <button 
+                          type="button" 
+                          (click)="simulateEmpiricalStats(viewedChapter()!)"
+                          [disabled]="isSimulatingStats()"
+                          class="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-950 disabled:bg-stone-400 text-white text-[10px] font-extrabold tracking-wide rounded cursor-pointer transition flex items-center gap-1 shadow">
+                          @if (isSimulatingStats()) {
+                            <div class="w-3 h-3 border-2 border-stone-300 border-t-white rounded-full animate-spin"></div>
+                            <span>بەرهەمهێنان...</span>
+                          } @else {
+                            <mat-icon class="!text-xs">leaderboard</mat-icon>
+                            <span>هاوشێوەکردنی شیکاری</span>
+                          }
+                        </button>
+                      </div>
+                    </div>

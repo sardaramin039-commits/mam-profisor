@@ -1,0 +1,102 @@
+            <!-- TWO COMPARISON SPACES (ئایکۆنی بەراورد) -->
+            <div class="space-y-3 pt-3 border-t-2 border-stone-800">
+              <span class="block text-xs font-bold text-stone-900 flex items-center gap-1">
+                <mat-icon class="!text-sm text-neutral-800">compare_arrows</mat-icon>
+                ئایکۆنی بەراورد (بۆشایی بەراوردکردنی دوو بابەت بە فایلی سەرچاوە):
+              </span>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <!-- Word 1 Card Simulated upload containing Drag Drop and real input -->
+                <div class="relative p-3.5 border-2 border-dashed border-stone-850 rounded-xl hover:border-black transition-all text-right cursor-pointer h-24 flex flex-col justify-between bg-stone-50"
+                     (dragover)="onDragOver($event, 'comp1')"
+                     (dragleave)="onDragLeave($event, 'comp1')"
+                     (drop)="onFileDrop($event, 'comp1')"
+                     [class.bg-emerald-100]="isDraggingComp1()"
+                     [class.border-emerald-500]="isDraggingComp1()"
+                     (click)="fileInputComp1.click()"
+                     (keydown.enter)="fileInputComp1.click()"
+                     tabindex="0"
+                     role="button">
+                  <span class="text-[9px] text-stone-600 font-bold block">فایلی یەکەم (.docx / .pdf / .txt)</span>
+                  <input type="file" #fileInputComp1 (change)="onFileSelected($event, 'comp1')" class="hidden" accept=".docx,.doc,.pdf,.txt,.md,.json">
+                  
+                  <span class="text-xs font-bold text-stone-900 line-clamp-2 leading-tight">
+                    @if (compareFile1Name()) {
+                      📂 {{ compareFile1Name() }}
+                    } @else {
+                      📂 فایلێک باربکە یان لێرە دایبنێ
+                    }
+                  </span>
+                </div>
+
+                <!-- Word 2 Card Simulated upload containing Drag Drop and real input -->
+                <div class="relative p-3.5 border-2 border-dashed border-stone-850 rounded-xl hover:border-black transition-all text-right cursor-pointer h-24 flex flex-col justify-between bg-stone-50"
+                     (dragover)="onDragOver($event, 'comp2')"
+                     (dragleave)="onDragLeave($event, 'comp2')"
+                     (drop)="onFileDrop($event, 'comp2')"
+                     [class.bg-emerald-100]="isDraggingComp2()"
+                     [class.border-emerald-500]="isDraggingComp2()"
+                     (click)="fileInputComp2.click()"
+                     (keydown.enter)="fileInputComp2.click()"
+                     tabindex="0"
+                     role="button">
+                  <span class="text-[9px] text-stone-600 font-bold block">فایلی دووەم (.docx / .pdf / .txt)</span>
+                  <input type="file" #fileInputComp2 (change)="onFileSelected($event, 'comp2')" class="hidden" accept=".docx,.doc,.pdf,.txt,.md,.json">
+                  
+                  <span class="text-xs font-bold text-stone-900 line-clamp-2 leading-tight">
+                    @if (compareFile2Name()) {
+                      📂 {{ compareFile2Name() }}
+                    } @else {
+                      📂 فایلێک باربکە یان لێرە دایبنێ
+                    }
+                  </span>
+                </div>
+              </div>
+
+              <!-- Extra aspect of comparison text box -->
+              <input type="text" formControlName="compareAspect" class="w-full text-xs p-3.5 border-2 border-stone-850 rounded-lg focus:outline-none focus:border-amber-600 text-black font-semibold placeholder-stone-400" placeholder="ڕووی بەراوردکاری دیاریکراو بنووسە (بۆ نموونە: خاڵی لێکچوون و جیاوازی)" />
+            </div>
+
+            <!-- Temperature creativity slider -->
+            <div class="pt-2 border-t border-gray-100 space-y-1">
+              <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                <span class="flex items-center gap-1">
+                  <mat-icon class="!text-sm !w-4 !h-4 text-[#D4AF37]">thermostat</mat-icon>
+                  پلەی گەرمی نووسینی زانستی (Temperature):
+                </span>
+                <span class="font-mono bg-stone-100 px-1.5 py-0.5 rounded text-neutral-800">{{ refineForm.get('temperature')?.value }}</span>
+              </div>
+              <input type="range" min="0.1" max="1.0" step="0.1" formControlName="temperature" class="w-full accent-black cursor-pointer" />
+              <div class="flex justify-between text-[9px] text-[#8C8273]">
+                <span>یاسایی و بێلایەنی زانستی (0.1)</span>
+                <span>داهێنەر و دەوڵەمەندی ڕەخنەیی (1.0)</span>
+              </div>
+            </div>
+
+            <!-- TOKENS CONFIGURATION SECTION (Third Goal: Moved to main writing section with numerical inputs) -->
+            <div class="pt-3 border-t-2 border-dashed border-stone-350 space-y-2.5 p-3.5 bg-[#FAF7F0] rounded-xl border border-stone-250 hover:border-stone-400 transition-all">
+              <div class="flex items-center gap-1.5 text-xs font-bold text-stone-900">
+                <mat-icon class="text-amber-800 !text-sm !w-4 !h-4 leading-none">toll</mat-icon>
+                <span>ئایکۆنی تۆکێن و توانای نووسین (ڕێژەی تۆکێن بە ژمارە):</span>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-3.5">
+                <div class="space-y-1">
+                  <span class="block text-[10px] font-bold text-stone-600">تۆکێنی بیرکردنەوە (Reasoning):</span>
+                  <div class="relative">
+                    <input type="text" formControlName="thinkingTokens" (input)="onNumericInput($event, 'thinkingTokens')" class="w-full text-xs p-2.5 border-2 border-stone-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-black bg-white select-all text-left font-mono pr-2 pl-7 text-black font-semibold" placeholder="1024" />
+                    <mat-icon class="absolute left-2 top-2.5 text-stone-500 !text-sm !w-4 !h-4 leading-none pointer-events-none">memory</mat-icon>
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <span class="block text-[10px] font-bold text-stone-600">تۆکێنی نووسین (Output):</span>
+                  <div class="relative">
+                    <input type="text" formControlName="writingTokens" (input)="onNumericInput($event, 'writingTokens')" class="w-full text-xs p-2.5 border-2 border-stone-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-black bg-white select-all text-left font-mono pr-2 pl-7 text-black font-semibold" placeholder="4096" />
+                    <mat-icon class="absolute left-2 top-2.5 text-stone-500 !text-sm !w-4 !h-4 leading-none pointer-events-none">font_download</mat-icon>
+                  </div>
+                </div>
+              </div>
+              <p class="text-[9px] text-[#8C8273] leading-tight font-serif">
+                تێبینی: لێرەوە دەتوانیت بە ژمارە تێکڕای دەرپەڕاندنی کۆمپیوتەری دیاری بکەیت تا دووربێت لە بڕینی ناوەڕۆک.
+              </p>
+            </div>

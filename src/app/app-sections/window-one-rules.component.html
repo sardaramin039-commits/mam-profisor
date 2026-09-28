@@ -1,0 +1,214 @@
+            <!-- SUBMIT ACTION: SEND TO WINDOW 2 (ئایکۆنی ناردن بۆ پەنجەرەی دووەم) -->
+            <div class="pt-4">
+              <button type="button" (click)="onSendToSecondWindow()" [disabled]="refineForm.invalid" class="w-full bg-black hover:bg-neutral-800 disabled:bg-[#F0EEEA] disabled:text-[#8C8273] text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-md">
+                <mat-icon class="!w-5 !h-5 leading-none animate-pulse">forward</mat-icon>
+                <span>پڕکردنەوەی پێکھاتە و ناردن بۆ پەنجەرەی دووەم</span>
+              </button>
+              <p class="text-[9.5px] text-center text-[#8C8273] font-serif mt-2">
+                بە لێدانی ئەم دوگمەیە پێکھاتەی بەشەکان لە پەنجەرەی دووەم ڕێکدەخرێن و ناونیشانەکان بەهێزتر دەکرێن.
+              </p>
+            </div>
+
+            <!-- ======================= STRICT ACADEMIC REQUIREMENTS CONTROL CENTER ======================= -->
+            <div class="border border-[#E5E1DA] bg-stone-50/50 p-4 rounded-xl space-y-4">
+              <div class="flex items-center justify-between border-b border-[#E5E1DA] pb-2.5">
+                <div class="flex items-center gap-2">
+                  <mat-icon class="text-neutral-800 !w-5 !h-5 font-bold leading-none">school</mat-icon>
+                  <span class="text-xs font-serif font-bold text-black">
+                    ڕێسا و مەرجە ئەکادیمییە قورسەکان (١٠,٠٠٠ مەرجی زانستی)
+                  </span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[8.5px] bg-[#2E3B1C] text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">سەداسەد زانستی</span>
+                </div>
+              </div>
+
+              <div class="text-[10px] text-[#8C8273] font-serif leading-relaxed">
+                بەپێی داواکاریت بۆ هێنانەدی بەرزترین ئاستی گوتاری توێژینەوەی زانکۆیی، مەرجە پڕ مۆڵەتەکان لە خوارەوە هەڵبژێرە تا لەکاتی نووسیندا بە ١٠٠٪ـی فەرمی جێبەجێ ببن:
+              </div>
+
+              <!-- Quick Global Controls -->
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" (click)="activateAllAcademicRules()" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 text-[10.5px] font-bold py-2 px-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-1 w-full cursor-pointer">
+                  <mat-icon class="!w-4 !h-4 text-emerald-800 !text-xs leading-none">done_all</mat-icon>
+                  <span>چالاککردنی هەمووان</span>
+                </button>
+                <button type="button" (click)="deactivateAllAcademicRules()" class="bg-stone-100 hover:bg-stone-200 border border-stone-200 text-neutral-800 text-[10.5px] font-bold py-2 px-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-1 w-full cursor-pointer">
+                  <mat-icon class="!w-4 !h-4 !text-xs leading-none">close</mat-icon>
+                  <span>لادانی هەمووان</span>
+                </button>
+              </div>
+
+              <!-- Rules Selection Grid -->
+              <div class="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto pr-1">
+                @for (rule of academicRules(); track rule.id) {
+                  <div (click)="toggleAcademicRule(rule.id)" (keydown.enter)="toggleAcademicRule(rule.id)" tabindex="0" role="button"
+                    class="p-2.5 rounded-lg border text-right transition-all cursor-pointer flex items-start gap-2.5"
+                    [class.bg-emerald-50]="rule.active"
+                    [class.border-emerald-300]="rule.active"
+                    [class.bg-white]="!rule.active"
+                    [class.border-[#E5E1DA]]="!rule.active"
+                    [class.hover:border-neutral-500]="!rule.active">
+                    
+                    <!-- Toggle Icon -->
+                    <div class="pt-0.5">
+                      <mat-icon class="!w-4 !h-4 !text-sm leading-none" 
+                        [class.text-emerald-700]="rule.active" 
+                        [class.text-stone-400]="!rule.active">
+                        {{ rule.active ? 'check_circle' : 'radio_button_unchecked' }}
+                      </mat-icon>
+                    </div>
+
+                    <!-- Custom Visual Rule Icon -->
+                    <div class="p-1 px-1.5 rounded bg-stone-100 text-[#4D4539] flex items-center justify-center">
+                      <mat-icon class="!w-3.5 !h-3.5 !text-xs leading-none">{{ rule.icon }}</mat-icon>
+                    </div>
+
+                    <!-- Text Details -->
+                    <div class="flex-1 space-y-0.5">
+                      <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-neutral-900 leading-tight">
+                          {{ rule.title }}
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                          @if (rule.isCustom) {
+                            <button type="button" (click)="$event.stopPropagation(); removeCustomRule(rule.id)"
+                              class="text-red-500 hover:text-red-700 p-0.5 rounded hover:bg-red-50 cursor-pointer transition-colors flex items-center justify-center shrink-0" 
+                              title="سڕینەوەی ئەم مەرجە">
+                              <mat-icon class="!w-3.5 !h-3.5 !text-xs leading-none">delete_outline</mat-icon>
+                            </button>
+                          }
+                          @if (rule.active) {
+                            <span class="text-[7.5px] font-bold uppercase bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded border border-emerald-200">کارایە</span>
+                          } @else {
+                            <span class="text-[7.5px] font-bold uppercase bg-stone-100 text-stone-500 px-1.5 py-0.2 rounded">ناچالاک</span>
+                          }
+                        </div>
+                      </div>
+                      <p class="text-[9px] text-[#6E6454] font-serif leading-normal col-span-2">
+                        {{ rule.desc }}
+                      </p>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Add Custom Prompt / Academic Rule Form -->
+              <div class="pt-3 border-t border-[#E5E1DA] space-y-2">
+                <div class="flex items-center gap-1.5 text-[10px] font-extrabold text-neutral-800">
+                  <mat-icon class="!text-xs !w-3.5 !h-3.5 text-amber-700">add_circle</mat-icon>
+                  <span>نووسین و زیادکردنی پڕۆمپت/ڕێنمایی ئەکادیمی تایبەت</span>
+                </div>
+                <div class="flex gap-1.5 items-stretch">
+                  <input type="text" #customRuleInput (keyup.enter)="addCustomRule(customRuleInput)"
+                    placeholder="بۆ نموونە: تەنها باسی کاریگەری زمانەوانی بکە و لە گوتنەوەی مێژوویی بەدووربە..."
+                    class="flex-1 p-2 text-[10.5px] rounded-lg border border-[#E5E1DA] bg-white focus:outline-none focus:border-[#2E3B1C] placeholder-stone-450 text-black font-semibold shadow-sm">
+                  <button type="button" (click)="addCustomRule(customRuleInput)"
+                    class="bg-[#2E3B1C] hover:bg-neutral-800 text-white text-[10.5px] font-bold px-3 rounded-lg flex items-center justify-center gap-1 cursor-pointer transition-colors shrink-0">
+                    <mat-icon class="!w-3.5 !h-3.5 !text-xs leading-none">add</mat-icon>
+                    <span>زیاد بکە</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Notifications area when global feedback occurs -->
+              @if (searchFeedbackMessage()) {
+                <div class="p-2 bg-emerald-50 text-emerald-900 border border-emerald-200 text-[10px] text-center font-bold rounded-lg animate-fade-in animate-pulse">
+                  {{ searchFeedbackMessage() }}
+                </div>
+              }
+            </div>
+
+            <!-- Google Cloud Firestore Historical Drafts Backup List -->
+            <div class="border border-dashed border-[#E5E1DA] p-4 bg-[#FDFCFB]/70 rounded-xl space-y-3.5">
+              <div class="flex items-center justify-between border-b border-gray-100 pb-1.5">
+                <span class="text-xs font-serif font-bold text-black flex items-center gap-1.5">
+                  <mat-icon class="!text-sm !w-4 !h-4">cloud_done</mat-icon>
+                  دەستنووسە هاوکاتکراوەکانی پێشوو
+                </span>
+                @if (currentUser()) {
+                  <span class="text-[8px] bg-emerald-100 text-emerald-800 border border-emerald-250 px-2 py-0.5 rounded">هاوکاتی هەور</span>
+                } @else {
+                  <span class="text-[8px] bg-gray-150 text-gray-500 px-2 py-0.5 rounded">نەبەستراوەوە</span>
+                }
+              </div>
+
+              <!-- History Tags and Status Filter Bar -->
+              <div class="grid grid-cols-3 gap-1.5 text-[9px] pt-1 pb-2">
+                <div class="flex flex-col gap-0.5">
+                  <label for="historyFilterDisciplineSelect" class="font-bold text-stone-600">بواری توێژینەوە:</label>
+                  <select 
+                    id="historyFilterDisciplineSelect"
+                    [value]="historyFilterDiscipline()"
+                    (change)="historyFilterDiscipline.set($any($event.target).value)"
+                    class="p-1 bg-stone-50 border border-stone-250 rounded outline-none text-[9px] text-stone-800 cursor-pointer focus:bg-white">
+                    <option value="all">هەموو بوارەکان</option>
+                    <option value="social">کۆمەڵایەتی</option>
+                    <option value="pure">پەڕگیر/سروشتی</option>
+                    <option value="applied">کارەکی/تەکنەلۆجی</option>
+                    <option value="humanities">زمانەوانی/ئەدەبیات</option>
+                  </select>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                  <label for="historyFilterLevelSelect" class="font-bold text-stone-600">ئاستی ئەکادیمی:</label>
+                  <select 
+                    id="historyFilterLevelSelect"
+                    [value]="historyFilterLevel()"
+                    (change)="historyFilterLevel.set($any($event.target).value)"
+                    class="p-1 bg-stone-50 border border-stone-250 rounded outline-none text-[9px] text-stone-800 cursor-pointer focus:bg-white">
+                    <option value="all">هەموو ئاستەکان</option>
+                    <option value="bachelor">بەکالۆریۆس</option>
+                    <option value="master">ماستەر</option>
+                    <option value="phd">دکتۆرا</option>
+                    <option value="journal">پێشکەوتوو</option>
+                  </select>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                  <label for="historyFilterStatusSelect" class="font-bold text-stone-600">دۆخی نووسین:</label>
+                  <select 
+                    id="historyFilterStatusSelect"
+                    [value]="historyFilterStatus()"
+                    (change)="historyFilterStatus.set($any($event.target).value)"
+                    class="p-1 bg-stone-50 border border-stone-250 rounded outline-none text-[9px] text-stone-800 cursor-pointer focus:bg-white">
+                    <option value="all">هەموو دۆخەکان</option>
+                    <option value="completed">تەواوکراو</option>
+                    <option value="draft">لە پەرەپێداندا</option>
+                  </select>
+                </div>
+              </div>
+
+              @if (isHistoryLoading()) {
+                <div class="text-center py-4 text-xs text-gray-400">هاوکاتکردنی فایەربەیس...</div>
+              } @else {
+                @if (filteredHistoryList().length === 0) {
+                  <div class="text-center py-2 text-[10px] text-gray-400 font-serif leading-tight">
+                    هیچ دەستنووسێک نەدۆزرایەوە کە لەگەڵ ئەم فلتەرانەدا بگونجێت.
+                  </div>
+                } @else {
+                  <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    @for (item of filteredHistoryList(); track item.id) {
+                      <div (click)="loadHistoryItem(item)" (keydown.enter)="loadHistoryItem(item)" tabindex="0" role="button" class="p-2.5 bg-white hover:border-black border border-gray-200 transition-all cursor-pointer flex justify-between items-center group">
+                        <div class="text-right max-w-[80%] space-y-1">
+                          <span class="text-xs font-bold text-black block truncate">{{ item.title || 'کارێکی پارێزراو' }}</span>
+                          <div class="flex flex-wrap gap-1">
+                            <span class="text-[8px] bg-slate-50 border border-slate-200 px-1.5 py-0.5 text-gray-500 font-mono inline-block rounded">{{ item.discipline }}</span>
+                            <span class="text-[8px] bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-amber-800 font-mono inline-block rounded">{{ item.academicLevel }}</span>
+                            <span class="text-[8px] px-1.5 py-0.5 font-mono inline-block rounded border"
+                                  [class.bg-emerald-50]="isManuscriptCompleted(item)"
+                                  [class.border-emerald-200]="isManuscriptCompleted(item)"
+                                  [class.text-emerald-800]="isManuscriptCompleted(item)"
+                                  [class.bg-blue-50]="!isManuscriptCompleted(item)"
+                                  [class.border-blue-200]="!isManuscriptCompleted(item)"
+                                  [class.text-blue-800]="!isManuscriptCompleted(item)">
+                              {{ isManuscriptCompleted(item) ? 'completed' : 'draft' }}
+                            </span>
+                          </div>
+                        </div>
+                        <button (click)="deleteHistoryItem(item.id, $event)" title="سڕینەوە" class="p-1 text-slate-500 hover:text-red-700 bg-transparent hover:bg-slate-50 rounded">
+                          <mat-icon class="!text-xs !w-3.5 !h-3.5 leading-none">delete_forever</mat-icon>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              }

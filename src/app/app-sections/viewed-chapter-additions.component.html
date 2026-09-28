@@ -1,0 +1,109 @@
+              @if (viewedChapter()?.content) {
+                <div class="mt-4 pt-4 border-t-2 border-stone-800 space-y-4">
+                  <div class="p-4 bg-stone-50 border-2 border-stone-800 rounded-xl space-y-3">
+                    <div class="flex items-center gap-2">
+                      <span class="text-[9px] bg-emerald-800 text-white px-2 py-0.5 rounded font-extrabold uppercase font-sans tracking-wide">مامۆستای ئەکادیمی</span>
+                      <h4 class="text-xs font-serif font-extrabold text-stone-900 flex items-center gap-1.5">
+                        <mat-icon class="text-stone-900 !text-sm font-bold">menu_book</mat-icon>
+                        داڕشتنی پاشکۆی مێتۆدۆلۆجی و سەرچاوە ئەکادیمییەکان (Methodology & Sources Lab)
+                      </h4>
+                    </div>
+                    <p class="text-[10.5px] text-stone-700 leading-relaxed font-serif">
+                      بە فەرمانی پڕۆفیسۆر، دەتوانیت بۆ ئەم بەشەی نووسراوەکەت «پاشکۆی مێتۆدۆلۆجی» (بۆ شیکاری ڕێباز، هۆکار، جێبەجێکردن و سنوورەکان) لەگەڵ لێکۆڵینەوەیەکی تەواو لە «سەرچاوە و توێژینەوەی هاوچەرخ» بە شێوازی فەرمی APA دابڕێژیت:
+                    </p>
+
+                    @if (additionsError()) {
+                      <div class="p-3 bg-red-50 border border-red-200 text-red-900 text-[10.5px] rounded-lg font-serif">
+                        ⚠️ {{ additionsError() }}
+                      </div>
+                    }
+
+                    <!-- Action triggered: Generate Additions -->
+                    @if (!academicAdditions() && !isGeneratingAdditions()) {
+                      <div class="pt-2 text-center">
+                        <button 
+                          type="button" 
+                          (click)="generateAcademicAdditions(viewedChapter()!)"
+                          class="w-full sm:w-auto px-6 py-3 bg-stone-900 hover:bg-black text-white text-xs font-serif font-extrabold rounded-lg flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all active:scale-95 mx-auto">
+                          <mat-icon class="!text-sm">auto_stories</mat-icon>
+                          <span>داڕشتنی مێتۆدۆلۆجیا و سەرچاوەکانی APA</span>
+                        </button>
+                      </div>
+                    }
+
+                    <!-- Generating spinner -->
+                    @if (isGeneratingAdditions()) {
+                      <div class="p-5 border border-dashed border-stone-400 bg-white rounded-xl text-center space-y-3 animate-pulse">
+                        <div class="w-6 h-6 border-2 border-emerald-800 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        <p class="text-xs font-serif font-bold text-stone-900">پڕۆفیسۆر پشکنیار دەکات لەسەر مێتۆدۆلۆژی و سیستەمی بیبلۆگرافیای APA لۆژیکی...</p>
+                        <p class="text-[9px] text-[#8C8273]">داڕشتنی چاوپێداخشاندنی مێتۆدی زانستی لەگەڵ دەستنیشانکردنی ٣ بۆ ٥ سەرچاوەی مراجع زانیاری نوێ.</p>
+                      </div>
+                    }
+
+                    <!-- Additions view & Insert logic -->
+                    @if (academicAdditions(); as additions) {
+                      <div class="space-y-4 pt-2">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          
+                          <!-- Methodology column -->
+                          <div class="p-3 bg-white border border-stone-300 rounded-lg space-y-2">
+                            <span class="block text-[11px] font-extrabold text-stone-900 border-b pb-1.5 flex items-center gap-1">
+                              <mat-icon class="!text-sm text-emerald-800">schema</mat-icon>
+                              ١. پاشکۆی میتۆدۆلۆجی (Methodology Appendix)
+                            </span>
+                            <div class="text-[10px] text-stone-800 leading-relaxed font-serif whitespace-pre-wrap max-h-60 overflow-y-auto pr-1 text-justify">
+                              {{ additions.methodologyContent }}
+                            </div>
+                          </div>
+
+                          <!-- Sources column -->
+                          <div class="p-3 bg-white border border-stone-300 rounded-lg space-y-2">
+                            <span class="block text-[11px] font-extrabold text-stone-900 border-b pb-1.5 flex items-center gap-1">
+                              <mat-icon class="!text-sm text-amber-800">class</mat-icon>
+                              ٢. سەرچاوە و توێژینەوەی هاوچەرخ (Contemporary Bibliography)
+                            </span>
+                            <div class="text-[10px] text-stone-800 leading-relaxed font-serif whitespace-pre-wrap max-h-60 overflow-y-auto pr-1 text-justify">
+                              {{ additions.sourcesContent }}
+                            </div>
+                          </div>
+
+                        </div>
+
+                        <!-- Apply actions -->
+                        <div class="p-3 bg-emerald-50/30 border border-emerald-800/40 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-right">
+                          <div class="space-y-0.5">
+                            <span class="block text-[10.5px] font-extrabold text-emerald-950">ئایا دەتەوێت ئەم داتایانە بچێنیت لە نێو دەقی لاپەڕەکە؟</span>
+                            <p class="text-[9.5px] text-stone-600">دەتوانیت بڕیاربدەیت چ بەشێک زیادبکرێت بۆ کۆتایی بابەتەکەت بە سەرکەوتوویی.</p>
+                          </div>
+                          
+                          <div class="flex items-center gap-2 flex-wrap text-left">
+                            <button 
+                              type="button" 
+                              (click)="appendAdditionsToChapter(viewedChapter()!, 'methodology')"
+                              class="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-[10px] font-bold rounded cursor-pointer border border-stone-300">
+                              + تەنها پاشکۆی مێتۆد
+                            </button>
+                            
+                            <button 
+                              type="button" 
+                              (click)="appendAdditionsToChapter(viewedChapter()!, 'sources')"
+                              class="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-[10px] font-bold rounded cursor-pointer border border-stone-300">
+                              + تەنها سەرچاوەکان
+                            </button>
+
+                            <button 
+                              type="button" 
+                              (click)="appendAdditionsToChapter(viewedChapter()!, 'both')"
+                              class="px-3.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white text-[10px] font-extrabold rounded cursor-pointer shadow-inner flex items-center gap-1">
+                              <mat-icon class="!text-xs">add_circle</mat-icon>
+                              <span>+ هەردوو بەشەکە پێکەوە بچێنە</span>
+                            </button>
+                          </div>
+                        </div>
+
+                      </div>
+                    }
+
+                  </div>
+                </div>
+              }

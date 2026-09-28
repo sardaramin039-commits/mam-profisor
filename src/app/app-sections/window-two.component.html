@@ -1,0 +1,97 @@
+        <!-- ======================= WINDOW 2 (Sequential Document Preview & Output - Left layout in RTL is right col) ======================= -->
+        <section id="window-2-section" class="lg:col-span-6 bg-white border border-[#E5E1DA] shadow-xs flex flex-col justify-between">
+          
+          <div class="p-4 border-b border-[#E5E1DA] bg-[#F8F6F2] flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-black leading-none">article</mat-icon>
+              <h3 class="font-serif font-bold text-sm text-black">پەنجەرەی دووەم: بەرهەم و یەکگرتنی زنجیرەیی بەشەکان</h3>
+            </div>
+            <span class="text-[9px] uppercase font-mono tracking-widest bg-emerald-950 text-white px-2 py-0.5 font-bold">بەرگی دووەم</span>
+          </div>
+
+          <!-- Subtab Navigation Switcher Bar -->
+          <div class="px-4 py-2 bg-[#F1EEEC] border-b border-[#E5E1DA] flex items-center gap-1.5 overflow-x-auto select-none">
+            <button 
+              type="button"
+              (click)="activeSubTab.set('editor')"
+              [class]="'px-3.5 py-1.5 text-xs font-serif font-extrabold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ' + 
+                (activeSubTab() === 'editor' ? 'bg-black text-white shadow-xs' : 'bg-white/80 text-stone-700 hover:bg-stone-200 border border-stone-250')">
+              <mat-icon class="!text-xs !w-4 !h-4">menu_book</mat-icon>
+              <span>بەشەکانی توێژینەوە</span>
+            </button>
+
+            <button 
+              type="button"
+              (click)="activeSubTab.set('chunks')"
+              [class]="'px-3.5 py-1.5 text-xs font-serif font-extrabold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ' + 
+                (activeSubTab() === 'chunks' ? 'bg-black text-white shadow-xs' : 'bg-white/80 text-stone-700 hover:bg-stone-200 border border-stone-250')">
+              <mat-icon class="!text-xs !w-4 !h-4 text-amber-500">auto_awesome_motion</mat-icon>
+              <span>پارچە داتاکانی RAG (Chunks)</span>
+              <span class="text-[9px] font-mono font-bold bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded-full">
+                {{ filteredRetrievedChunks().length }}
+              </span>
+            </button>
+
+            <button 
+              type="button"
+              (click)="activeSubTab.set('citations')"
+              [class]="'px-3.5 py-1.5 text-xs font-serif font-extrabold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ' + 
+                (activeSubTab() === 'citations' ? 'bg-black text-white shadow-xs' : 'bg-white/80 text-stone-700 hover:bg-stone-200 border border-stone-250')">
+              <mat-icon class="!text-xs !w-4 !h-4 text-emerald-600">bookmark</mat-icon>
+              <span>بەڕێوەبەری سەرچاوەکان (Citations)</span>
+              <span class="text-[9px] font-mono font-bold bg-emerald-100 text-emerald-900 px-1.5 py-0.2 rounded-full">
+                {{ filteredRetrievedChunks().length }}
+              </span>
+            </button>
+
+            <button 
+              type="button"
+              (click)="activeSubTab.set('pulse')"
+              [class]="'px-3.5 py-1.5 text-xs font-serif font-extrabold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ' + 
+                (activeSubTab() === 'pulse' ? 'bg-black text-white shadow-xs' : 'bg-white/80 text-stone-700 hover:bg-stone-200 border border-stone-250')">
+              <mat-icon class="!text-xs !w-4 !h-4 text-cyan-500">pulse_alert</mat-icon>
+              <span>نبزی توێژینەوە (Pulse)</span>
+            </button>
+            <button 
+              type="button"
+              (click)="activeSubTab.set('health_check')"
+              [class]="'px-3.5 py-1.5 text-xs font-serif font-extrabold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ' + 
+                (activeSubTab() === 'health_check' ? 'bg-black text-white shadow-xs' : 'bg-white/80 text-stone-700 hover:bg-stone-200 border border-stone-250')">
+              <mat-icon class="!text-xs !w-4 !h-4 text-rose-500">health_and_safety</mat-icon>
+              <span>پشکنینی سەرچاوەکان</span>
+            </button>
+            <button 
+              type="button"
+              (click)="activeSubTab.set('timeline')"
+              [class]="'px-3.5 py-1.5 text-xs font-serif font-extrabold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ' + 
+                (activeSubTab() === 'timeline' ? 'bg-black text-white shadow-xs' : 'bg-white/80 text-stone-700 hover:bg-stone-200 border border-stone-250')">
+              <mat-icon class="!text-xs !w-4 !h-4 text-indigo-500">history_edu</mat-icon>
+              <span>تایملایینی مێژووی بەش</span>
+            </button>
+            <button 
+              type="button"
+              (click)="activeSubTab.set('grammar_panel')"
+              [class]="'px-3.5 py-1.5 text-xs font-serif font-extrabold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ' + 
+                (activeSubTab() === 'grammar_panel' ? 'bg-black text-white shadow-xs' : 'bg-white/80 text-stone-700 hover:bg-stone-200 border border-stone-250')">
+              <mat-icon class="!text-xs !w-4 !h-4 text-amber-500">auto_fix_high</mat-icon>
+              <span>چاکسازیی ڕێزمان</span>
+            </button>
+          </div>
+
+          <!-- Content View Switcher Container -->
+          <div class="p-6 space-y-6 flex-1 min-h-[500px] max-h-[85vh] overflow-y-auto scrollbar-thin">
+            
+@if (activeSubTab() === 'editor') {
+  <app-window-two-editor></app-window-two-editor>
+} @else if (activeSubTab() === 'chunks' || activeSubTab() === 'citations') {
+  <app-window-two-rag-citations></app-window-two-rag-citations>
+} @else {
+  <app-window-two-diagnostics></app-window-two-diagnostics>
+}
+          <!-- Footer status diagnostic bar -->
+          <div class="p-4 bg-[#F8F6F2] border-t border-[#E5E1DA] flex items-center justify-between text-[11px] font-sans">
+            <span>دۆخی بەدواداچوونی گشتی بەشەکان: 
+              <strong class="font-bold">
+                @if (chapters().length === 0) { ڕێک نەخراوە } @else if (isWritingProgress() || isHumanizingProgress()) { لە وێنەکێشاندایە... } @else { ئامادە نووسین }
+              </strong>
+            </span>

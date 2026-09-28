@@ -1,0 +1,255 @@
+              @if (viewedChapter()?.content) {
+                <div class="p-4 bg-stone-50 border-2 border-stone-800 rounded-xl space-y-3 mt-4">
+                  <div class="flex items-center gap-2">
+                    <span class="text-[9px] bg-indigo-900 text-white px-2 py-0.5 rounded font-extrabold uppercase font-sans tracking-wide">دەستەی ڕاوێژی زانستی</span>
+                    <h4 class="text-xs font-serif font-extrabold text-stone-900 flex items-center gap-1.5 font-bold">
+                      <mat-icon class="text-stone-900 !text-sm font-bold font-bold">psychology_alt</mat-icon>
+                      مەکۆی ڕاوێژکاری و پێشنیاری لێکۆڵینەوە (Scientific Advisory Lab)
+                    </h4>
+                  </div>
+                  <p class="text-[10.5px] text-stone-700 leading-relaxed font-serif">
+                    لێرەدا دەتوانیت چوارچێوەی تیۆری گونجاو دیاری بکەیت، یاخود لە چەمکە بنەڕەتییەکان بکۆڵیتەوە، پێشنیاری بابەتێکی لێکۆڵینەوەی نوێ وەربگریت، یان نووسینەکانت لە ڕووی زانستی و ڕێکارە ئەکادیمییەکانەوە بە قووڵی وردبینی بکەیت.
+                  </p>
+
+                  <!-- Actions Selector -->
+                  <div class="flex items-center gap-2 flex-wrap pt-1 text-right">
+                    <button 
+                      type="button"
+                      [class]="consultationAction() === 'theoretical_framework' ? 'px-3 py-1.5 bg-stone-900 text-white text-[10px] font-bold rounded cursor-pointer border border-stone-800 shadow-sm transition-all' : 'px-3 py-1.5 bg-white text-stone-800 hover:bg-stone-55 text-[10px] font-bold rounded cursor-pointer border border-stone-300 transition-all'"
+                      (click)="consultationAction.set('theoretical_framework'); consultationResult.set(null); consultationError.set(null)">
+                      📚 چوارچێوەی تیۆری
+                    </button>
+                    <button 
+                      type="button"
+                      [class]="consultationAction() === 'deep_dive' ? 'px-3 py-1.5 bg-stone-900 text-white text-[10px] font-bold rounded cursor-pointer border border-stone-800 shadow-sm transition-all' : 'px-3 py-1.5 bg-white text-stone-800 hover:bg-stone-55 text-[10px] font-bold rounded cursor-pointer border border-stone-300 transition-all'"
+                      (click)="consultationAction.set('deep_dive'); consultationResult.set(null); consultationError.set(null)">
+                      🔬 قووڵبوونەوەی زانستی
+                    </button>
+                    <button 
+                      type="button"
+                      [class]="consultationAction() === 'new_proposal' ? 'px-3 py-1.5 bg-stone-900 text-white text-[10px] font-bold rounded cursor-pointer border border-stone-800 shadow-sm transition-all' : 'px-3 py-1.5 bg-white text-stone-800 hover:bg-stone-55 text-[10px] font-bold rounded cursor-pointer border border-stone-300 transition-all'"
+                      (click)="consultationAction.set('new_proposal'); consultationResult.set(null); consultationError.set(null)">
+                      💡 پێشنیاری بابەت
+                    </button>
+                    <button 
+                      type="button"
+                      [class]="consultationAction() === 'proofreading' ? 'px-3 py-1.5 bg-stone-900 text-white text-[10px] font-bold rounded cursor-pointer border border-stone-800 shadow-sm transition-all' : 'px-3 py-1.5 bg-white text-stone-800 hover:bg-stone-55 text-[10px] font-bold rounded cursor-pointer border border-stone-300 transition-all'"
+                      (click)="consultationAction.set('proofreading'); consultationResult.set(null); consultationError.set(null)">
+                      ✍️ وردبینی مەتن
+                    </button>
+                    <button 
+                      type="button"
+                      [class]="consultationAction() === 'kurdish_dialects' ? 'px-3 py-1.5 bg-emerald-950 text-emerald-50 text-[10px] font-bold rounded cursor-pointer border border-emerald-900 shadow-sm transition-all' : 'px-3 py-1.5 bg-white text-stone-800 hover:bg-stone-55 text-[10px] font-bold rounded cursor-pointer border border-stone-300 transition-all'"
+                      (click)="consultationAction.set('kurdish_dialects'); consultationResult.set(null); consultationError.set(null)">
+                      🗣️ شێوەزار و ڕێنووس
+                    </button>
+                    <button 
+                      type="button"
+                      [class]="consultationAction() === 'you_search' ? 'px-3 py-1.5 bg-indigo-900 text-white text-[10px] font-bold rounded cursor-pointer border border-indigo-800 shadow-sm transition-all' : 'px-3 py-1.5 bg-white text-stone-800 hover:bg-stone-55 text-[10px] font-bold rounded cursor-pointer border border-stone-300 transition-all'"
+                      (click)="consultationAction.set('you_search'); consultationResult.set(null); consultationError.set(null)">
+                      🔍 گەڕانی You.com
+                    </button>
+                  </div>
+
+                  <!-- Dynamic Inputs -->
+                  <div class="bg-white p-3 border border-stone-300 rounded-lg space-y-3">
+                    
+                    @if (consultationAction() === 'theoretical_framework') {
+                      <div class="space-y-1.5">
+                        <span class="block text-[10px] font-extrabold text-stone-900 font-bold font-bold">بابەتی سەرەکی بۆ چوارچێوەی تیۆری:</span>
+                        <input 
+                          type="text" 
+                          [value]="consultationTopic() || viewedChapter()!.title"
+                          (input)="consultationTopic.set($any($event.target).value)"
+                          placeholder="بۆ نموونە: دیالێکتیک لە ئەدەبیاتی زانستیدا"
+                          class="w-full px-3 py-1.5 border border-stone-300 rounded-md text-xs font-serif text-right"
+                        />
+                        <p class="text-[9px] text-[#8C8273]">پڕۆفیسۆر چوارچێوەیەکی فەرمی گونجاو پێشنیار دەکات لەگەڵ ڕوونکردنەوەی فەلسەفە و هاوسەنگییەکەی.</p>
+                      </div>
+                    }
+
+                    @if (consultationAction() === 'deep_dive') {
+                      <div class="space-y-2">
+                        <div class="space-y-1">
+                          <span class="block text-[10px] font-extrabold text-stone-900 font-bold">بابەتی سەرەکی لێکۆڵینەوە:</span>
+                          <input 
+                            type="text" 
+                            [value]="consultationTopic() || viewedChapter()!.title"
+                            (input)="consultationTopic.set($any($event.target).value)"
+                            placeholder="بابەتی لێکۆڵینەوە"
+                            class="w-full px-3 py-1.5 border border-stone-300 rounded-md text-xs font-serif text-right"
+                          />
+                        </div>
+                        <div class="space-y-1">
+                          <span class="block text-[10px] font-extrabold text-stone-900 font-bold">چەمکی بنەڕەتی یان پرسیاری قۆڵ:</span>
+                          <input 
+                            type="text" 
+                            [value]="consultationKeyConcept()"
+                            (input)="consultationKeyConcept.set($any($event.target).value)"
+                            placeholder="چەمکی بنەڕەتی بۆ قووڵبوونەوە"
+                            class="w-full px-3 py-1.5 border border-stone-300 rounded-md text-xs font-serif text-right"
+                          />
+                        </div>
+                      </div>
+                    }
+
+                    @if (consultationAction() === 'new_proposal') {
+                      <div class="space-y-1.5">
+                        <span class="block text-[10px] font-extrabold text-stone-900 font-bold font-bold">بابەتی بنەڕەتی بۆ پێشنیارکردنی لێکۆڵینەوەی نوێ:</span>
+                        <input 
+                          type="text" 
+                          [value]="consultationTopic() || viewedChapter()!.title"
+                          (input)="consultationTopic.set($any($event.target).value)"
+                          placeholder="مشتومڕی دیالێکتیکی"
+                          class="w-full px-3 py-1.5 border border-stone-300 rounded-md text-xs font-serif text-right"
+                        />
+                        <p class="text-[9px] text-[#8C8273]">سیستەم بابەتێکی پێشنیازکراوی نوێ دروست دەکات بە فۆرماتی فەرمی و پێکهاتەی (سەرچاوەکان، مێتۆدۆلۆژیا، ئەنجامەکان).</p>
+                      </div>
+                    }
+
+                    @if (consultationAction() === 'proofreading') {
+                      <div class="space-y-1.5">
+                        <span class="block text-[10px] font-extrabold text-stone-900 font-bold font-bold">دەقی پێشکەشکراو بۆ وردبینی:</span>
+                        <textarea 
+                          rows="4"
+                          [value]="consultationTextToProofread() || viewedChapter()!.content"
+                          (input)="consultationTextToProofread.set($any($event.target).value)"
+                          placeholder="مەتنە ئەکادیمییەکەت لێرەدا دابنێ بۆ چاکسازی زانستی و مۆرفۆلۆژی..."
+                          class="w-full px-3 py-2 border border-stone-300 rounded-md text-xs font-serif text-right"
+                        ></textarea>
+                        <p class="text-[9px] text-[#8C8273]">پیاچوونەوەی ڕێزمان و زانست لەگەڵ پێشکەشکردنی دەقی نووسراوە بە تەواوی دوای چاککردن بە کوردی فەرمی.</p>
+                      </div>
+                    }
+
+                    @if (consultationAction() === 'kurdish_dialects') {
+                      <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                          <div class="space-y-1" id="kurdish-mode-div">
+                            <span class="block text-[10px] font-extrabold text-stone-900">مۆدی کارکردن:</span>
+                            <select 
+                              [value]="consultationKurdishMode()"
+                              (change)="consultationKurdishMode.set($any($event.target).value)"
+                              class="w-full px-2.5 py-1.5 border border-stone-300 rounded-md text-[11px] font-serif text-right bg-white"
+                              id="kurdish-mode-select"
+                            >
+                              <option value="orthography">ڕێنووسی مەتن، ڕێزمان و دروستیی وشە</option>
+                              <option value="translation">داڕشتنەوە/گۆڕینی شێوەزاری دەقەکە</option>
+                              <option value="morphology">شەن و کەوی وشەسازی و مۆرفۆلۆژی</option>
+                            </select>
+                          </div>
+                          
+                          <div class="space-y-1" id="kurdish-dialect-div">
+                            <span class="block text-[10px] font-extrabold text-stone-900">شێوەزاری ئامانج:</span>
+                            <select 
+                              [value]="consultationTargetDialect()"
+                              (change)="consultationTargetDialect.set($any($event.target).value)"
+                              class="w-full px-2.5 py-1.5 border border-stone-300 rounded-md text-[11px] font-serif text-right bg-white"
+                              id="kurdish-dialect-select"
+                            >
+                              <option value="sorani">کوردیی ناوەندی (سۆرانی)</option>
+                              <option value="kurmanji_lat">کورمانجی ژوروو (پیت مەکۆی لاتینی)</option>
+                              <option value="kurmanji_arab">کورمانجی باکوور (ئەلفوبێی عەرەبی)</option>
+                              <option value="hewrami">شێوەزاری هەورامی (ماچۆ)</option>
+                              <option value="kelhuri">کوردیی باشوور (کلهوڕی / لەکی)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div class="space-y-1.5" id="kurdish-text-div">
+                          <span class="block text-[10px] font-extrabold text-stone-900">دەقی خوێندنەوە یان شیکاریکردن بە کوردی:</span>
+                          <textarea 
+                            rows="4"
+                            [value]="consultationTextToProofread() || viewedChapter()!.content"
+                            (input)="consultationTextToProofread.set($any($event.target).value)"
+                            placeholder="دەقی ئەکادیمی خۆت لێرە بدۆزەرەوە یان بنووسە بۆ شەن و کەوکردن..."
+                            class="w-full px-3 py-2 border border-stone-300 rounded-md text-xs font-serif text-right font-medium"
+                            id="kurdish-text-input"
+                          ></textarea>
+                          <p class="text-[9px] text-emerald-800 font-bold">بەکارهێنانی ئەم بەشە ڕێگە بە دیاریکردنی هەڵەی ڕێنووسی پیتە غەیبەتکراوەکان، ناسینەوەی تێکەڵبونی زاراوەکان، و وەرگێڕان بۆ سەرجەم شێوەزارەکانی نیشتمان دەدات.</p>
+                        </div>
+                      </div>
+                    }
+
+                    @if (consultationAction() === 'you_search') {
+                      <div class="space-y-1.5">
+                        <span class="block text-[10px] font-extrabold text-stone-900 font-bold font-bold">گەڕان بەدوای سەرچاوە و بەڵگە زانستییە نوێیەکان لە You.com:</span>
+                        <input 
+                          type="text" 
+                          [value]="consultationTopic() || viewedChapter()!.title"
+                          (input)="consultationTopic.set($any($event.target).value)"
+                          placeholder="بۆ نموونە: دیالێکتیک لە توێژینەوەی ئەکادیمی هاوچەرخی کوردی"
+                          class="w-full px-3 py-1.5 border border-stone-300 rounded-md text-xs font-serif text-right"
+                        />
+                        <p class="text-[9px] text-indigo-900 font-bold">ئەم گەڕانە ڕاستەوخۆ بەستەر و مەتنی توێژینەوەکانی ناو زەریای ئینتەرنێت دەخوێنێتەوە و گەرانێکی مۆدێرن و نوێ فەراهەم دەکات.</p>
+                      </div>
+                    }
+
+                    <!-- Error alerts if any -->
+                    @if (consultationError()) {
+                      <div class="p-3 bg-red-50 border border-red-200 text-red-900 text-[10.5px] rounded-lg font-serif">
+                        ⚠️ {{ consultationError() }}
+                      </div>
+                    }
+
+                    <!-- Trigger buttons and loaders -->
+                    <div class="pt-1 flex justify-end">
+                      @if (!isConsulting()) {
+                        <button 
+                          type="button" 
+                          (click)="runAcademicConsultation()"
+                          class="px-5 py-2.5 bg-indigo-900 hover:bg-indigo-950 text-white text-xs font-serif font-extrabold rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all active:scale-95">
+                          <mat-icon class="!text-sm">analytics</mat-icon>
+                          <span>ئەنجامدانی ڕاوێژکاری زانستی</span>
+                        </button>
+                      } @else {
+                        <div class="flex items-center gap-2 text-indigo-900 text-xs font-bold font-serif font-serif">
+                          <span class="w-3.5 h-3.5 border-2 border-indigo-900 border-t-transparent rounded-full animate-spin"></span>
+                          <span>شەن و کەوی گوتار و داڕشتنی وەڵام دەکرێت...</span>
+                        </div>
+                      }
+                    </div>
+
+                  </div>
+
+                  <!-- Result view and actions -->
+                  @if (consultationResult(); as result) {
+                    <div class="p-4 bg-indigo-50 border border-indigo-700/30 rounded-lg space-y-3">
+                      <div class="flex items-center justify-between border-b border-indigo-250 pb-1.5">
+                        <span class="text-[11px] font-extrabold text-stone-900 flex items-center gap-1 font-bold">
+                          <mat-icon class="text-indigo-900 !text-sm">article</mat-icon>
+                          ئەنجامی ڕاوێژکاری ئەکادیمی
+                        </span>
+                        <span class="text-[9px] text-stone-500 font-mono">ADVISORY OUTPUT</span>
+                      </div>
+                      
+                      <!-- Standard view for results -->
+                      <div class="text-[10.5px] text-stone-850 font-serif leading-relaxed text-justify whitespace-pre-wrap max-h-96 overflow-y-auto pr-1">
+                        {{ result }}
+                      </div>
+
+                      <!-- Insert choices -->
+                      <div class="pt-2 border-t border-indigo-200/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <p class="text-[9.5px] text-stone-600 font-serif">دەتوانیت ئەنجامەکە پێوەست بکەیت بە لاپەڕەی بابەتەکەت بۆ باشترکردن.</p>
+                        <div class="flex items-center gap-2 justify-end">
+                          <button 
+                            type="button"
+                            (click)="consultationResult.set(null)"
+                            class="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-slate-800 text-[10px] font-bold rounded cursor-pointer border border-stone-300">
+                            داخستن
+                          </button>
+                          <button 
+                            type="button"
+                            (click)="appendConsultationToActiveChapter(viewedChapter()!)"
+                            class="px-4 py-1.5 bg-indigo-900 hover:bg-indigo-950 text-white text-[10px] font-bold rounded cursor-pointer shadow-sm flex items-center gap-1 font-bold">
+                            <mat-icon class="!text-xs font-bold">add_circle</mat-icon>
+                            <span>+ پێوەستکردن بە ناوەڕۆک</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  }
+
+                </div>
+              }
+
+              <!-- ─── ADVANCED SCIENTIFIC & ACADEMIC HUB (THE 4 MISSING MAJORS) ─── -->

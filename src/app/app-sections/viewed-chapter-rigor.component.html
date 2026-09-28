@@ -1,0 +1,338 @@
+            <div class="pt-4 border-t border-slate-200/65">
+              @if (!activeAcademicDiagnostic() && isAnalyzingRigorForChapterId() === null) {
+                <button 
+                  type="button"
+                  (click)="analyzeChapterRigor(viewedChapter()!)"
+                  class="w-full py-3 px-5 bg-gradient-to-r from-emerald-800 to-teal-800 hover:from-emerald-900 hover:to-teal-900 text-white rounded-xl text-xs font-serif font-extrabold flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all animate-pulse">
+                  <mat-icon class="!text-sm animate-bounce">auto_awesome</mat-icon>
+                  <span>هەڵسەنگاندنی کوالێتی و ڕەسەنایەتی دەق بە ١٠٠٪ زانستی و ئەکادیمی (AI Quality Analyzer)</span>
+                </button>
+              } @else if (isAnalyzingRigorForChapterId() === viewedChapter()?.id) {
+                <div class="p-5 border border-emerald-200/50 bg-emerald-50/40 rounded-xl space-y-3 text-center transition-all animate-pulse">
+                  <div class="w-7 h-7 border-3 border-emerald-800 border-t-transparent rounded-full animate-spin mx-auto block"></div>
+                  <p class="text-xs font-serif font-bold text-emerald-950">مەکینەی ئەکادیمی مام خەریکی شیکردنەوە و بەهێزکردنی ئاستی زمانەوانییە...</p>
+                  <p class="text-[9.5px] text-emerald-800 font-medium">پشکنینی گوتاری زانستی، دیاریکردنی زاراوەی پەیوەستکراو، و چاککردنی ڕستە باوەکان.</p>
+                </div>
+              }
+
+              @if (activeAcademicDiagnostic(); as diag) {
+                <div class="p-4 border-l-4 border-r-4 border-amber-600 bg-[#FCFAF7] rounded-xl space-y-4 animate-fade-in text-right">
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-200/60 pb-3 gap-2">
+                    <div class="flex items-center gap-1.5 text-xs font-extrabold text-slate-900">
+                      <mat-icon class="!text-sm text-amber-700">analytics</mat-icon>
+                      <span>پێوەری ڕاستگۆیی و ڕەسەنایەتی ئەکادیمی (Academic Rigor & Honesty Gauge)</span>
+                    </div>
+                    <span class="text-[10.5px] font-bold px-3 py-1 bg-amber-800 text-white rounded-full font-mono flex items-center gap-1.5">
+                      <mat-icon class="!text-[11px] !w-3 !h-3">verified</mat-icon>
+                      متمانەی زانستی: {{ diag.academicScore }}/100
+                    </span>
+                  </div>
+
+                  <!-- Honest Explanation & Cap Gauge -->
+                  <div class="p-3.5 bg-amber-50/40 border border-amber-200/50 rounded-lg text-xs leading-relaxed text-amber-950 font-serif">
+                    <span class="font-extrabold block mb-1 flex items-center gap-1 text-amber-900">
+                      <mat-icon class="!text-xs text-amber-800">wb_incandescent</mat-icon>
+                      ڕاستگۆیی ئامێرەکە لێرەدا:
+                    </span>
+                    <p class="mb-3">{{ diag.honestyCapExplanation || 'نووسینی مەکینەیی تەنیا ڕۆنانی دەقێکی گشتی دروست دەکات. بۆ گەیشتن بە پلەی زانستی پڕۆفیسۆر، تێکەڵکردنی مێژوو و سەرچاوەی دەستی مرۆڤ نەبڕاوەیە.' }}</p>
+                    
+                    <!-- Progress Level Bar -->
+                    <div class="space-y-1">
+                      <div class="flex justify-between text-[9px] font-bold text-amber-900">
+                        <span>قۆناغی ڕەشنووسی سەرەتایی (مەکینەیی)</span>
+                        <span>ئاستی پڕۆفیسۆری (زانستی و مرۆیی)</span>
+                      </div>
+                      <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden flex">
+                        <div class="bg-amber-600 h-full transition-all duration-500" [style.width.%]="diag.academicScore"></div>
+                      </div>
+                      <div class="flex justify-between text-[8.5px] font-medium text-slate-500">
+                        <span>٣٠٪ - فایلی سادە</span>
+                        <span class="text-amber-700 font-bold">٥٥٪ - ٧٠٪ ئاستی لوتکەی AI (ئێستا)</span>
+                        <span>٩٥٪+ لکاندنی دەستی مرۆڤ</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10.5px] font-serif font-medium leading-relaxed">
+                    <!-- Column 1: Diagnostic Evaluation Details -->
+                    <div class="space-y-2.5">
+                      <div class="bg-white p-3 rounded-lg border border-gray-200/60 shadow-xs">
+                        <span class="font-extrabold text-slate-900 block mb-1">⚖️ بارودۆخی تۆن و گوتار:</span>
+                        <p class="text-slate-600 leading-relaxed">{{ diag.toneEvaluation }}</p>
+                      </div>
+                      <div class="bg-white p-3 rounded-lg border border-gray-200/60 shadow-xs">
+                        <span class="font-extrabold text-slate-900 block mb-1">🔗 ئاماژە و مێژووسازی هاوتا:</span>
+                        <p class="text-slate-600 leading-relaxed">{{ diag.citationSuggestions }}</p>
+                      </div>
+                    </div>
+
+                    <!-- Column 2: Plagiarism and Lexicon details -->
+                    <div class="space-y-2.5">
+                      <div class="bg-white p-3 rounded-lg border border-gray-200/60 shadow-xs">
+                        <span class="font-extrabold text-slate-900 block mb-1">📚 هەڵسەنگاندنی زاراوەسازی (Vocabulary):</span>
+                        <p class="text-slate-600 leading-relaxed">{{ diag.vocabularyComplexity }}</p>
+                      </div>
+                      <div class="bg-emerald-50/40 p-3 rounded-lg border border-emerald-100/60 shadow-xs flex items-center justify-between gap-3">
+                        <div>
+                          <span class="font-extrabold text-emerald-950 block">🛡️ ڕێژەی بێ لێکچوون و ڕەسەنایەتی (Originality):</span>
+                          <span class="text-[9.5px] text-emerald-800 leading-relaxed block mt-0.5">بە بەراورد لەگەڵ بنکۆڵە زانستیەکان</span>
+                        </div>
+                        <span class="text-sm font-extrabold font-mono text-emerald-900 bg-emerald-100 px-3 py-1 rounded-md">
+                          {{ 100 - diag.plagiarismSimilarity }}% ڕەسەن
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Sentence Refactoring Table -->
+                  @if (diag.sentencesReform && diag.sentencesReform.length > 0) {
+                    <div class="pt-3 border-t border-gray-200/65 font-serif">
+                      <span class="font-extrabold text-xs text-slate-900 block mb-2">🔄 پێشنیاری پاڕاوکردنەوە بۆ دەستەواژەکانی ڕەشنووسەکە (Scientific Refactoring):</span>
+                      <div class="overflow-hidden border border-gray-200/70 rounded-lg bg-white/95">
+                        <table class="w-full text-right border-collapse text-[10px]">
+                          <thead>
+                            <tr class="bg-slate-100/70 text-slate-900 font-extrabold">
+                              <th class="p-2 border-b border-gray-200 w-1/2">دەربڕینی باو یان نا-ئەکادیمی (Before)</th>
+                              <th class="p-2 border-b border-gray-200 w-1/2">پێشنیاری نایابی زمانەوانی و زانستی (After)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (item of diag.sentencesReform; track item.original) {
+                              <tr class="hover:bg-[#FCFAF7] transition-colors border-b border-slate-100 last:border-0 text-slate-700">
+                                <td class="p-2.5 italic border-l border-slate-100 font-medium">{{ item.original }}</td>
+                                <td class="p-2.5 font-bold text-amber-900">{{ item.improved }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Required Tasks Checklist for Harvard Rigor -->
+                  @if (diag.requiredHumanActions && diag.requiredHumanActions.length > 0) {
+                    <div class="bg-amber-100/30 border border-amber-200 p-4 rounded-xl space-y-2 mt-4 font-serif">
+                      <span class="text-xs font-extrabold text-amber-950 flex items-center gap-1 mb-1">
+                        <mat-icon class="!text-xs text-amber-800">assignment_turned_in</mat-icon>
+                        مەرجە پێویستەکان بۆ هاوتاکردن لەگەڵ ئاستی پڕۆفیسیۆری هارڤارد (Scholarly Human Action Items):
+                      </span>
+                      <ul class="space-y-1.5 text-[10px] text-amber-900 leading-relaxed pr-1">
+                        @for (action of diag.requiredHumanActions; track action) {
+                          <li class="flex items-start gap-1.5">
+                            <mat-icon class="!text-[11px] !w-3 !h-3 text-amber-700 mt-0.5">check_box_outline_blank</mat-icon>
+                            <span>{{ action }}</span>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+
+                  <!-- 1. Logic & Fallacy Detector -->
+                  @if (diag.fallacies && diag.fallacies.length > 0) {
+                    <div class="pt-4 border-t border-gray-200/65 font-serif space-y-2.5">
+                      <span class="font-extrabold text-xs text-rose-900 flex items-center gap-1.5">
+                        <mat-icon class="!text-sm text-rose-700">gavel</mat-icon>
+                        مۆدیۆڵی شیکردنەوەی لۆجیک و گوتار (Argumentation & Fallacy Detector):
+                      </span>
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        @for (f of diag.fallacies; track f.fallacyName) {
+                          <div class="bg-rose-50/30 border border-rose-200/60 p-3 rounded-lg space-y-2 text-xs">
+                            <div class="flex items-center justify-between">
+                              <span class="font-extrabold text-rose-950 flex items-center gap-1">
+                                <mat-icon class="!text-xs text-rose-800">warning</mat-icon>
+                                {{ f.fallacyName }}
+                              </span>
+                            </div>
+                            <div class="p-2 bg-white/80 rounded border border-rose-100 text-[10.5px] italic text-slate-700">
+                              « {{ f.textSegment }} »
+                            </div>
+                            <p class="text-[10px] text-slate-600 leading-relaxed"><strong class="text-rose-900">هۆکار:</strong> {{ f.explanation }}</p>
+                            <p class="text-[10px] text-emerald-900 font-bold leading-relaxed flex items-center gap-1">
+                              <mat-icon class="!text-xs text-emerald-700">check_circle</mat-icon>
+                              <span>داڕشتنەوەی پێشنیارکراو: {{ f.correction }}</span>
+                            </p>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <!-- 2. Hedging & Nuance Control -->
+                  @if (diag.hedgingChecks && diag.hedgingChecks.length > 0) {
+                    <div class="pt-4 border-t border-gray-200/65 font-serif space-y-2">
+                      <span class="font-extrabold text-xs text-indigo-900 flex items-center gap-1.5">
+                        <mat-icon class="!text-sm text-indigo-700">psychology</mat-icon>
+                        کۆنتڕۆڵی زمانی ئەکادیمی نەرم (Hedging & Nuance Control):
+                      </span>
+                      <div class="overflow-hidden border border-indigo-100 rounded-lg bg-indigo-50/10">
+                        <table class="w-full text-right border-collapse text-[10px]">
+                          <thead>
+                            <tr class="bg-indigo-100/40 text-indigo-950 font-extrabold">
+                              <th class="p-2 border-b border-indigo-200/50">زاراوەی دڵنیایی ڕەها (Absolute Term)</th>
+                              <th class="p-2 border-b border-indigo-200/50">پێشنیاری نەرمکردن (Suggested Hedge)</th>
+                              <th class="p-2 border-b border-indigo-200/50">هۆکاری زانستی (Reason)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (h of diag.hedgingChecks; track h.absoluteTerm) {
+                              <tr class="hover:bg-indigo-50/20 border-b border-indigo-100/30 text-slate-700 last:border-0">
+                                <td class="p-2.5 font-bold text-rose-800 border-l border-indigo-100/30">{{ h.absoluteTerm }}</td>
+                                <td class="p-2.5 font-bold text-emerald-800 border-l border-indigo-100/30">{{ h.suggestedHedge }}</td>
+                                <td class="p-2.5 text-slate-600 leading-normal">{{ h.reason }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- 3. Theoretical Consistency Check -->
+                  @if (diag.theoreticalConsistency) {
+                    <div class="pt-4 border-t border-gray-200/65 font-serif space-y-2.5">
+                      <span class="font-extrabold text-xs text-teal-900 flex items-center gap-1.5">
+                        <mat-icon class="!text-sm text-teal-700">hub</mat-icon>
+                        مۆدیۆڵی پشکنینی قووڵایی بیردۆزی (Theoretical Consistency Check):
+                      </span>
+                      <div class="bg-teal-50/30 border border-teal-200/50 p-3.5 rounded-xl space-y-3">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                          <div class="flex items-center gap-1.5 text-xs font-bold text-teal-950">
+                            <span class="bg-teal-100 text-teal-900 px-2.5 py-0.5 rounded font-bold">بیردۆز: {{ diag.theoreticalConsistency.frameworkUsed }}</span>
+                          </div>
+                          <span class="text-[9.5px] px-2.5 py-0.5 rounded-full font-bold"
+                            [ngClass]="{
+                              'bg-emerald-100 text-emerald-950 border border-emerald-200': diag.theoreticalConsistency.status === 'matching',
+                              'bg-amber-100 text-amber-950 border border-amber-200': diag.theoreticalConsistency.status === 'mixed',
+                              'bg-rose-100 text-rose-950 border border-rose-200': diag.theoreticalConsistency.status === 'mismatch'
+                            }">
+                            دۆخ: 
+                            @if (diag.theoreticalConsistency.status === 'matching') { یەکگرتوو (Matching) }
+                            @if (diag.theoreticalConsistency.status === 'mixed') { تێکەڵاو (Mixed) }
+                            @if (diag.theoreticalConsistency.status === 'mismatch') { ناتەبا (Mismatch) }
+                          </span>
+                        </div>
+                        <p class="text-[10.5px] text-slate-700 leading-relaxed">{{ diag.theoreticalConsistency.notes }}</p>
+                        @if (diag.theoreticalConsistency.suggestions && diag.theoreticalConsistency.suggestions.length > 0) {
+                          <div class="space-y-1.5">
+                            <span class="text-[10px] font-extrabold text-teal-950 block">💡 پێشنیارەکان بۆ بەهێزکردنی یەکگرتوویی بیردۆزی:</span>
+                            <ul class="space-y-1 text-[10px] text-teal-900 list-disc list-inside leading-relaxed pr-1">
+                              @for (sug of diag.theoreticalConsistency.suggestions; track sug) {
+                                <li>{{ sug }}</li>
+                              }
+                            </ul>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <!-- 4. Cross-Reference Validation -->
+                  @if (diag.crossReferenceStatus) {
+                    <div class="pt-4 border-t border-gray-200/65 font-serif space-y-2.5">
+                      <span class="font-extrabold text-xs text-sky-900 flex items-center gap-1.5">
+                        <mat-icon class="!text-sm text-sky-700">link</mat-icon>
+                        هاوئاهەنگیی تەواوی سەرچاوەکان (Cross-Reference Validation):
+                      </span>
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="bg-sky-50/20 border border-sky-200/40 p-3 rounded-lg flex items-center justify-between gap-2 text-xs">
+                          <div>
+                            <span class="font-extrabold text-slate-800">📊 سەرچاوە هێنانەوەکانی دەق:</span>
+                            <span class="text-[9.5px] text-slate-500 block">ژمارەی سەرچاوە ناوەکییە دۆزراوەکان</span>
+                          </div>
+                          <span class="font-mono font-extrabold bg-sky-100 text-sky-950 px-3 py-1 rounded">
+                            {{ diag.crossReferenceStatus.citationCount }} سەرچاوە
+                          </span>
+                        </div>
+                        <div class="bg-emerald-50/20 border border-emerald-200/40 p-3 rounded-lg flex items-center justify-between gap-2 text-xs">
+                          <div>
+                            <span class="font-extrabold text-slate-800">✅ سەرچاوە هاوتاکراوەکان:</span>
+                            <span class="text-[9.5px] text-slate-500 block">لەگەڵ پێڕستی بیبلۆگرافیا (Bibliography)</span>
+                          </div>
+                          <span class="font-mono font-extrabold bg-emerald-100 text-emerald-950 px-3 py-1 rounded">
+                            {{ diag.crossReferenceStatus.matchedCount }} هاوتا
+                          </span>
+                        </div>
+                      </div>
+
+                      @if (diag.crossReferenceStatus.mismatches && diag.crossReferenceStatus.mismatches.length > 0) {
+                        <div class="p-3 bg-rose-50/40 border border-rose-200/40 rounded-lg space-y-1.5 text-xs">
+                          <span class="font-extrabold text-rose-950 flex items-center gap-1">
+                            <mat-icon class="!text-xs text-rose-800">link_off</mat-icon>
+                            سەرچاوە ناوەکییە کەمبووەکان یان ناتەباکان (Mismatches):
+                          </span>
+                          <ul class="list-disc list-inside text-[10px] text-rose-900 space-y-1 leading-relaxed">
+                            @for (m of diag.crossReferenceStatus.mismatches; track m) {
+                              <li>{{ m }}</li>
+                            }
+                          </ul>
+                        </div>
+                      }
+
+                      @if (diag.crossReferenceStatus.unusedBibliography && diag.crossReferenceStatus.unusedBibliography.length > 0) {
+                        <div class="p-3 bg-amber-50/30 border border-amber-200/40 rounded-lg space-y-1.5 text-xs">
+                          <span class="font-extrabold text-amber-950 flex items-center gap-1">
+                            <mat-icon class="!text-xs text-amber-800">playlist_add_check</mat-icon>
+                            سەرچاوە بەکارنەهێنراوەکان لە بیبلۆگرافیادا (Unused Bibliography):
+                          </span>
+                          <ul class="list-disc list-inside text-[10px] text-amber-900 space-y-1 leading-relaxed">
+                            @for (u of diag.crossReferenceStatus.unusedBibliography; track u) {
+                              <li>{{ u }}</li>
+                            }
+                          </ul>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Interactive Human Recalibration Injection Panel -->
+                  <div class="p-4 border border-dashed border-amber-300 bg-[#FCFAF7] rounded-xl space-y-3.5 mt-4">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <mat-icon class="text-amber-800 leading-none">history_edu</mat-icon>
+                        هاوتاسازیی ڕاستەقینە: تێبینییە مەیدانییەکان و مێژووسازی مرۆیی خۆت بنووسە
+                      </span>
+                      <span class="text-[9.5px] text-slate-500 font-serif">پرۆسەی ڕەسەن تێکەڵکردن</span>
+                    </div>
+
+                    <p class="text-[9.5px] text-slate-600 leading-relaxed">
+                      بۆ لادانی تامە مەکینەییە باوەکە و هاوتاکردنی کارەکەت لەگەڵ توێژینەوە باڵاکانی جیهان، سەرچاوە فیزیکییەکان، داتا ئەزموونییەکان یان دەنگ و وتارە ڕەسەنەکانی تێکەڵ بکە:
+                    </p>
+
+                    <textarea
+                      [value]="userIntuitionText()"
+                      (input)="userIntuitionText.set($any($event.target).value)"
+                      rows="3"
+                      class="w-full text-xs p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600 bg-white leading-relaxed placeholder-slate-400"
+                      placeholder="بۆ نموونە: من لەم بەشەدا هاوتای فەلسەفەی (شێروانی، ٢٠٢٢) دەکەم و بە دیمانەیەکی مەیدانی کەی ئەی زانکۆ پشتگیری دەکەم... یان لادانی دەرپەڕاندنەکانی بەشەکە.">
+                    </textarea>
+
+                    <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                      @if (recalibrationFeedback()) {
+                        <span class="text-[9.5px] font-bold text-emerald-800 flex items-center gap-1">
+                          <mat-icon class="!text-xs text-emerald-600">done_all</mat-icon>
+                          {{ recalibrationFeedback() }}
+                        </span>
+                      } @else {
+                        <span></span>
+                      }
+
+                      <button
+                        type="button"
+                        (click)="recalibrateWithIntuition(viewedChapter()!)"
+                        [disabled]="isRecalibratingRigor() || !userIntuitionText().trim()"
+                        class="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-serif font-extrabold rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        <mat-icon class="!text-xs leading-none">merge</mat-icon>
+                        <span>{{ isRecalibratingRigor() ? 'خەریکی بونیادنانی گوتارە ڕەسەنەکەیە...' : 'تێکەڵکردن و نوێبوونەوەی نیشاندەری ڕەسەنایەتی (Merge & Humanize)' }}</span>
+                      </button>
+                    </div>
+
+                    @if (isRecalibratingRigor()) {
+                      <div class="pt-1.5 flex items-center gap-2 justify-center animate-pulse">
+                        <span class="w-2 h-2 rounded-full bg-amber-600 animate-ping"></span>
+                        <span class="text-[9px] text-[#A67C00] font-bold font-serif">مەکینەی ئەکادیمی مام خەریکی پووچەڵکردنەوەی کلیشە زاڵەکانی ئەی ئایە لەگەڵ جێگیرکردنی تێبینییەکانت...</span>
+                      </div>
+                    }
+                  </div>
+
+                </div>
+              }

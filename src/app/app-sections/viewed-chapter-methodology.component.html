@@ -1,0 +1,225 @@
+                    <!-- COMPONENT 1: METHODOLOGY SYNTHESIZER -->
+                    <div class="p-4 bg-white border border-stone-300 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
+                      <div class="space-y-2">
+                        <div class="flex items-center gap-1 text-indigo-900 border-b border-stone-100 pb-1.5 justify-between">
+                          <div class="flex items-center gap-1.5">
+                            <mat-icon class="!text-sm font-bold">query_stats</mat-icon>
+                            <h4 class="text-xs font-serif font-extrabold">١. میتۆدۆلۆژی و بونیادنەری گریمانەکان</h4>
+                          </div>
+                          <span class="text-[9px] font-mono bg-indigo-50 text-indigo-900 px-1.5 py-0.5 rounded font-bold">Methodology</span>
+                        </div>
+                        <p class="text-[10.5px] text-stone-600 leading-relaxed">
+                          شێوازی فەرمی لێکۆڵینەوە دیاری بکە، پاشان گریمانەکانی توێژینەوەکەت بنووسە تا پەیوەندی زانستییان لەگەڵ کرۆکی ناونیشانەکەت وردبین بکرێت.
+                        </p>
+
+                        <!-- Input settings -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
+                          <div class="flex flex-col gap-1">
+                            <label for="methodologyTypeSelect" class="font-bold text-stone-800">جۆری میتۆدۆلۆژی:</label>
+                            <select 
+                              id="methodologyTypeSelect"
+                              [value]="methodologyType()" 
+                              (change)="methodologyType.set($any($event.target).value)"
+                              class="p-1.5 bg-stone-50 border border-stone-300 rounded outline-none text-xs cursor-pointer focus:bg-white text-stone-850">
+                              <option value="quantitative">ڕێژەیی / ژمارەیی (Quantitative)</option>
+                              <option value="qualitative">چۆنایەتی / وەسفی (Qualitative)</option>
+                              <option value="mixed">تێکەڵاو (Mixed-Model)</option>
+                              <option value="case_study">ستادیۆ کەیس (Case Study / دیراسە)</option>
+                            </select>
+                          </div>
+                          <div class="flex flex-col gap-1">
+                            <label for="hypothesesInputArea" class="font-bold text-stone-800">تاقیکردنەوەی گریمانەکان (Hypotheses):</label>
+                            <textarea 
+                              id="hypothesesInputArea"
+                              rows="2"
+                              [value]="hypothesesInput()"
+                              (input)="hypothesesInput.set($any($event.target).value)"
+                              placeholder="گریمانەی H1 یان H0 لێرە بنووسە..."
+                              class="p-1 bg-stone-50 border border-stone-300 text-[10.5px] rounded outline-none w-full font-serif text-stone-850 focus:bg-white"></textarea>
+                          </div>
+                        </div>
+
+                        <!-- Phonetic toggle & settings -->
+                        <div class="border-t border-stone-200/60 pt-2.5 mt-2.5 space-y-2">
+                          <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-amber-950">
+                            <input 
+                              type="checkbox" 
+                              [checked]="analyzeSoraniPhonetics()" 
+                              (change)="analyzeSoraniPhonetics.set($any($event.target).checked)"
+                              class="rounded border-stone-300 text-amber-800 focus:ring-amber-850 h-3.5 w-3.5 cursor-pointer">
+                            <mat-icon class="!text-xs text-amber-800 leading-none">lyrics</mat-icon>
+                            <span>چالاککردنی شیکردنەوەی دەنگناسی و شێوەزاری سۆرانی</span>
+                          </label>
+
+                          @if (analyzeSoraniPhonetics()) {
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10.5px] bg-stone-50 p-2.5 rounded-lg border border-stone-200 transition-all duration-300">
+                              <div class="flex flex-col gap-1">
+                                <label for="subDialectSelect" class="font-bold text-stone-800">شێوەزاری لاوەکی:</label>
+                                <select 
+                                  id="subDialectSelect"
+                                  [value]="soraniSubDialect()" 
+                                  (change)="soraniSubDialect.set($any($event.target).value)"
+                                  class="p-1 bg-white border border-stone-300 rounded outline-none text-xs cursor-pointer text-stone-850">
+                                  <option value="suleimani">سلێمانی (Suleimani)</option>
+                                  <option value="erbili">هەولێری (Erbili)</option>
+                                  <option value="mukriani">موکریانی (Mukriani)</option>
+                                  <option value="garmiani">گەرمیانی (Garmiani)</option>
+                                </select>
+                              </div>
+                              <div class="flex flex-col gap-1">
+                                <label for="phoneticScopeSelect" class="font-bold text-stone-800">مەودای دەنگی (Phonetic Scope):</label>
+                                <select 
+                                  id="phoneticScopeSelect"
+                                  [value]="phoneticScope()" 
+                                  (change)="phoneticScope.set($any($event.target).value)"
+                                  class="p-1 bg-white border border-stone-300 rounded outline-none text-xs cursor-pointer text-stone-850">
+                                  <option value="narrative">دەربڕینی سەردی/وەسفی (Narrative)</option>
+                                  <option value="poetic">شیعری داستانی (Poetic/Epic)</option>
+                                  <option value="dramatic">دراماتیکی/چڕ (Dramatic)</option>
+                                </select>
+                              </div>
+                            </div>
+                          }
+                        </div>
+
+                        <!-- Error displays -->
+                        @if (methodologyError()) {
+                          <div class="text-[10.5px] text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                            {{ methodologyError() }}
+                          </div>
+                        }
+                        @if (phoneticsError()) {
+                          <div class="text-[10.5px] text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                            {{ phoneticsError() }}
+                          </div>
+                        }
+
+                        <!-- Results showing -->
+                        @if (methodologyResult()) {
+                          <div class="p-3 bg-stone-50 border border-stone-300 rounded space-y-2 mt-2">
+                            <div class="flex items-center justify-between border-b border-stone-200 pb-1">
+                              <span class="text-[11px] font-bold text-stone-900 flex items-center gap-1">
+                                <mat-icon class="!text-xs text-amber-700">stars</mat-icon> نمرەی ڕێکخستنی گریمانەکان:
+                              </span>
+                              <span class="text-xs font-mono font-extrabold px-1.5 py-0.5 bg-emerald-150 text-emerald-900 rounded">
+                                {{ methodologyResult()?.alignmentScore }}%
+                              </span>
+                            </div>
+                            
+                            <!-- Suggestions bullets -->
+                            <div class="text-[10px] space-y-1 text-stone-700">
+                              <div><strong>خاڵە چۆنایەتییەکان:</strong></div>
+                              <ul class="list-disc pr-4 space-y-0.5">
+                                @for (foci of methodologyResult()?.qualitativeFoci || []; track $index) {
+                                  <li>{{ foci }}</li>
+                                }
+                              </ul>
+                            </div>
+
+                            <div class="text-[10px] space-y-1 text-stone-700">
+                              <div><strong>گۆڕاوە پێشنیارکراوەکان (Variables):</strong></div>
+                              <ul class="list-disc pr-4 space-y-0.5">
+                                @for (variable of methodologyResult()?.suggestedVariables || []; track $index) {
+                                  <li>{{ variable }}</li>
+                                }
+                              </ul>
+                            </div>
+
+                            <!-- Layout output text -->
+                            <div class="text-[10.5px] bg-white p-2 border border-stone-200 rounded text-justify text-stone-900 max-h-40 overflow-y-auto whitespace-pre-wrap leading-relaxed font-serif">
+                              {{ methodologyResult()?.writtenLayout }}
+                            </div>
+                          </div>
+                        }
+
+                        <!-- Phonetics Results showing -->
+                        @if (phoneticsResult()) {
+                          <div class="p-3 bg-amber-50/50 border border-amber-200 rounded-lg space-y-3 mt-2">
+                            <div class="flex items-center justify-between border-b border-amber-200 pb-1.5">
+                              <span class="text-[11px] font-bold text-amber-950 flex items-center gap-1">
+                                <mat-icon class="!text-xs text-amber-800">multitrack_audio</mat-icon> شیکردنەوەی فۆنێتیکی شێوەزاری سۆرانی:
+                              </span>
+                              <div class="flex items-center gap-2">
+                                <span class="text-[9px] text-stone-600 font-serif">هاوسەنگیی دەنگی:</span>
+                                <span class="text-xs font-mono font-extrabold px-1.5 py-0.5 bg-amber-250 text-amber-900 rounded">
+                                  {{ phoneticsResult()?.acousticScore }}%
+                                </span>
+                              </div>
+                            </div>
+
+                            <div class="text-[10px] space-y-1 text-stone-700">
+                              <span class="font-bold text-amber-950 block">هاوسەنگی بزوێنەکان (Vowel Harmony):</span>
+                              <p class="text-[10px] text-stone-650 leading-relaxed text-justify">{{ phoneticsResult()?.vowelHarmony }}</p>
+                            </div>
+
+                            <div class="text-[10px] space-y-1 text-stone-700">
+                              <span class="font-bold text-amber-950 block">دروستیی زاراوەکان (Dialectal Alignment):</span>
+                              <p class="text-[10px] text-stone-650 leading-relaxed text-justify">{{ phoneticsResult()?.dialectAccuracy }}</p>
+                            </div>
+
+                            <!-- Corrections display -->
+                            @if (phoneticsResult()?.corrections?.length) {
+                              <div class="text-[10px] space-y-1 text-stone-700 pt-1.5 border-t border-amber-100">
+                                <span class="font-bold text-red-800 flex items-center gap-0.5 mb-1">
+                                  <mat-icon class="!text-xs text-red-800">warning</mat-icon> پێشنیاری چاکسازی بۆ دروستیی دەنگی و مانایی:
+                                </span>
+                                <div class="space-y-1.5">
+                                  @for (item of phoneticsResult()?.corrections; track $index) {
+                                    <div class="bg-white p-2 rounded border border-amber-100 space-y-1 text-[9.5px]">
+                                      <div class="flex items-center justify-between">
+                                        <span class="line-through text-red-700 font-serif">{{ item.original }}</span>
+                                        <mat-icon class="!text-xs text-stone-400">arrow_forward</mat-icon>
+                                        <span class="font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">{{ item.replacement }}</span>
+                                      </div>
+                                      <p class="text-[9px] text-stone-600 italic">هۆکار: {{ item.reason }}</p>
+                                    </div>
+                                  }
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+
+                      <div class="pt-2 flex items-center justify-end gap-1.5 border-t border-stone-100 flex-wrap">
+                        @if (methodologyResult()) {
+                          <button 
+                            type="button" 
+                            (click)="appendMethodologyLayoutToChapter(viewedChapter()!)"
+                            class="px-2.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">add_circle</mat-icon>
+                            <span>پێوەستکردنی میتۆد بە تێکستەکە</span>
+                          </button>
+                        }
+
+                        @if (analyzeSoraniPhonetics()) {
+                          <button 
+                            type="button" 
+                            (click)="analyzeSoraniPhoneticsAndDialect(viewedChapter()!)"
+                            [disabled]="isAnalyzingPhonetics() || !viewedChapter()?.content"
+                            class="px-2.5 py-1.5 bg-amber-800 hover:bg-amber-900 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            @if (isAnalyzingPhonetics()) {
+                              <div class="w-3 h-3 border-2 border-stone-300 border-t-white rounded-full animate-spin"></div>
+                              <span>شیکارکردنی دەنگ...</span>
+                            } @else {
+                              <mat-icon class="!text-xs">graphic_eq</mat-icon>
+                              <span>شیکردنەوەی دەنگ و شێوەزار</span>
+                            }
+                          </button>
+                        }
+
+                        <button 
+                          type="button" 
+                          (click)="constructMethodologyAndHypotheses(viewedChapter()!)"
+                          [disabled]="isConstructingMethodology() || !viewedChapter()?.content"
+                          class="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-950 disabled:bg-stone-400 text-white text-[10px] font-extrabold tracking-wide rounded cursor-pointer transition flex items-center gap-1 shadow">
+                          @if (isConstructingMethodology()) {
+                            <div class="w-3 h-3 border-2 border-stone-300 border-t-white rounded-full animate-spin"></div>
+                            <span>سازکردن...</span>
+                          } @else {
+                            <mat-icon class="!text-xs">sync_saved_locally</mat-icon>
+                            <span>داڕشتن و تاقیکردنەوە</span>
+                          }
+                        </button>
+                      </div>
+                    </div>

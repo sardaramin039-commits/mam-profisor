@@ -1,0 +1,182 @@
+          @if (viewedChapter()?.academicNotes) {
+            <div class="p-3.5 bg-[#F8F6F2] border-r-4 border-black border rounded text-xs space-y-1 font-serif">
+              <span class="font-bold flex items-center gap-1">
+                <mat-icon class="!text-xs !w-4 !h-4 leading-none text-slate-600">rate_review</mat-icon>
+                تێبینی و ڕێبەری خوێندنی باڵا بۆ ئەم بەشە:
+              </span>
+              <p class="text-slate-700 italic mt-1 font-medium">{{ viewedChapter()?.academicNotes }}</p>
+            </div>
+          }
+
+            <!-- 🔐 LIVE CITATION LOCK (مەکینەی دژە-وەهم و لۆکی سەرچاوەکان) -->
+            <div class="p-4 border-2 border-stone-850 bg-stone-50 rounded-xl space-y-3">
+              <div class="flex items-center gap-1.5 justify-between">
+                <div class="flex items-center gap-1">
+                  <mat-icon class="text-harvard-crimson !text-sm">verified</mat-icon>
+                  <h4 class="text-xs font-serif font-extrabold text-stone-900">مەکینەی دژە-وەهم و لۆکی سەرچاوەکان (Live Citation Lock)</h4>
+                </div>
+                <span class="text-[8px] bg-harvard-crimson text-white px-1.5 py-0.5 rounded font-bold">Anti-Hallucination</span>
+              </div>
+              <p class="text-[10.5px] text-stone-600 font-serif leading-relaxed">ئەم مەکینەیە گەڕانی ڕاستەقینەی زانستی ئەنجام دەدات بۆ پشکنین و دڵنیابوونەوە لە سەرجەم ئەو ئاماژە و سەرچاوانەی لەم بەشەدا بەکارهێنراون، بۆ ڕێگریکردن لە هەر وەهمێکی ئەکادیمی (AI Hallucination).</p>
+
+              @if (!isVerifyingCitations() && !citationVerificationResult()) {
+                <button 
+                  type="button"
+                  (click)="verifyCitationsLive(viewedChapter()!)"
+                  class="w-full py-2.5 px-4 bg-stone-900 hover:bg-black text-white rounded-lg text-[11px] font-serif font-bold flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all">
+                  <mat-icon class="!text-xs">query_stats</mat-icon>
+                  <span>چالاککردنی پشکنینی ڕاستەقینەی سەرچاوەکان (Verify Citations)</span>
+                </button>
+              } @else if (isVerifyingCitations()) {
+                <div class="p-4 border border-stone-200 bg-stone-50 rounded-xl space-y-2 text-center animate-pulse">
+                  <div class="w-5 h-5 border-2 border-harvard-crimson border-t-transparent rounded-full animate-spin mx-auto block"></div>
+                  <p class="text-[11px] font-serif font-bold text-stone-900">خەریکی گەڕانی مەیدانییە لە سەرچاوە زانستییەکان بە بەکارهێنانی Google Grounding...</p>
+                </div>
+              }
+
+              @if (citationVerificationError()) {
+                <div class="p-2.5 bg-red-50 text-red-800 text-[10px] rounded border border-red-200 leading-relaxed">
+                  {{ citationVerificationError() }}
+                </div>
+              }
+
+              @if (citationVerificationResult(); as result) {
+                <div class="p-3 bg-white border border-stone-200 rounded-lg space-y-3 animate-expand-fade text-right">
+                  <div class="flex items-center justify-between text-xs pb-2 border-b border-stone-100">
+                    <span class="font-serif">نمرەی ڕاستگۆیی سەرچاوەکان (Trust Score):</span>
+                    <span class="font-bold font-mono px-2 py-0.5 rounded" [class.bg-emerald-100]="result.overallScore >= 80" [class.text-emerald-850]="result.overallScore >= 80" [class.bg-red-100]="result.overallScore < 80" [class.text-red-850]="result.overallScore < 80">
+                      {{ result.overallScore }}/100
+                    </span>
+                  </div>
+
+                  <div class="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                    @for (v of result.verifications; track v.citation) {
+                      <div class="p-2 bg-stone-50 border border-stone-200 rounded text-[11px] space-y-1.5 font-serif text-justify">
+                        <div class="flex items-center justify-between">
+                          <strong class="text-stone-900 font-sans block text-[10.5px]">{{ v.citation }}</strong>
+                          <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"
+                                [class.bg-emerald-100]="v.status === 'valid'" [class.text-emerald-800]="v.status === 'valid'"
+                                [class.bg-red-100]="v.status === 'hallucinated'" [class.text-red-800]="v.status === 'hallucinated'"
+                                [class.bg-amber-100]="v.status === 'questionable'" [class.text-amber-800]="v.status === 'questionable'">
+                            {{ v.status }}
+                          </span>
+                        </div>
+                        <p class="text-stone-600 leading-normal">{{ v.explanation }}</p>
+                        @if (v.realAlternative) {
+                          <div class="bg-blue-50/50 p-2 rounded text-[10px] text-blue-950 font-mono border border-blue-100/50">
+                            <span class="font-bold block text-blue-800 mb-0.5">🔄 سەرچاوەی پێشنیارکراوی ڕاستەقینە (Real Alternative):</span>
+                            {{ v.realAlternative }}
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <div class="p-2.5 rounded text-[10px] leading-relaxed flex items-center gap-1.5 border" [class.bg-emerald-50]="result.isCitationLockCleared" [class.border-emerald-200]="result.isCitationLockCleared" [class.text-emerald-950]="result.isCitationLockCleared" [class.bg-red-50]="!result.isCitationLockCleared" [class.border-red-250]="!result.isCitationLockCleared" [class.text-red-950]="!result.isCitationLockCleared">
+                    <mat-icon class="!text-sm" [class.text-emerald-700]="result.isCitationLockCleared" [class.text-red-700]="!result.isCitationLockCleared">
+                      {{ result.isCitationLockCleared ? 'lock' : 'lock_open' }}
+                    </mat-icon>
+                    <span>
+                      @if (result.isCitationLockCleared) {
+                        <strong>سەرچاوەکان ڕاستەقینەن!</strong> بەشی بابەتەکە لۆک کرا و نمرەی بەرگریی زارەکی بە فەرمی بەرز دەبێتەوە.
+                      } @else {
+                        <strong>سەرچاوەی وەهمی بەدی کرا!</strong> قفڵی بەشەکە ناکرێتەوە تا نوقسانی و سەرچاوە هەڵبەستراوەکان چاک نەکەیت.
+                      }
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- 🛡️ AI-DETECTION SAFEGUARD (پشکنەری دەستپاکی ئەکادیمی و دژە ئەی ئای) -->
+            <div class="p-4 border-2 border-stone-850 bg-stone-50 rounded-xl space-y-3">
+              <div class="flex items-center gap-1.5 justify-between">
+                <div class="flex items-center gap-1">
+                  <mat-icon class="text-harvard-crimson !text-sm">security</mat-icon>
+                  <h4 class="text-xs font-serif font-extrabold text-stone-900">پشکنەر و ڕێبەری دەستپاکی ئەکادیمی (AI-Detection Safeguard)</h4>
+                </div>
+                <span class="text-[8px] bg-harvard-crimson text-white px-1.5 py-0.5 rounded font-bold">Linguistic Integrity</span>
+              </div>
+              <p class="text-[10.5px] text-stone-600 font-serif leading-relaxed">ئەم مەکینەیە پارێزگاری لە زمانەوانی مرۆیی دەکات و ڕێگری دەکات لە بەکارهێنانی وشە و ڕستە کلیشەییەکانی ئەی ئای (وەک delve, testament, furthermore) بە پێشکەشکردنی ڕێنمایی نەک نووسینەوەی ڕاستەوخۆ.</p>
+
+              @if (!isAuditingIntegrity() && !integrityAuditResult()) {
+                <button 
+                  type="button"
+                  (click)="auditAIIntegrity(viewedChapter()!)"
+                  class="w-full py-2.5 px-4 bg-stone-900 hover:bg-black text-white rounded-lg text-[11px] font-serif font-bold flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all">
+                  <mat-icon class="!text-xs">gavel</mat-icon>
+                  <span>وردبینی زمانەوانی و پشکنینی دژە-ئەی ئای (Run Integrity Audit)</span>
+                </button>
+              } @else if (isAuditingIntegrity()) {
+                <div class="p-4 border border-stone-200 bg-stone-50 rounded-xl space-y-2 text-center animate-pulse">
+                  <div class="w-5 h-5 border-2 border-harvard-crimson border-t-transparent rounded-full animate-spin mx-auto block"></div>
+                  <p class="text-[11px] font-serif font-bold text-stone-900">مەکینەی هۆشیاری ئەکادیمی خەریکی وردبینی زمانەوانی و پشکنینی کلیشە ڕۆبۆتییەکانە...</p>
+                </div>
+              }
+
+              @if (integrityAuditError()) {
+                <div class="p-2.5 bg-red-50 text-red-800 text-[10px] rounded border border-red-200 leading-relaxed">
+                  {{ integrityAuditError() }}
+                </div>
+              }
+
+              @if (integrityAuditResult(); as audit) {
+                <div class="p-3 bg-white border border-stone-200 rounded-lg space-y-3 animate-expand-fade text-right">
+                  <div class="flex items-center justify-between text-xs pb-2 border-b border-stone-100">
+                    <span class="font-serif">ڕێژەی زمانەوانی مرۆیی (Human Phrasing Score):</span>
+                    <span class="font-bold font-mono px-2 py-0.5 rounded" 
+                          [class.bg-emerald-100]="audit.humanScore >= 75" [class.text-emerald-850]="audit.humanScore >= 75" 
+                          [class.bg-amber-100]="audit.humanScore < 75 && audit.humanScore >= 50" [class.text-amber-850]="audit.humanScore < 75 && audit.humanScore >= 50"
+                          [class.bg-red-100]="audit.humanScore < 50" [class.text-red-850]="audit.humanScore < 50">
+                      {{ audit.humanScore }}%
+                    </span>
+                  </div>
+
+                  @if (audit.flaggedTerms.length > 0) {
+                    <div class="space-y-1.5">
+                      <span class="text-[10.5px] font-bold text-amber-900 flex items-center gap-1">
+                        <mat-icon class="!text-xs text-amber-700">warning</mat-icon>
+                        وشە و کلیشە ڕۆبۆتییە دۆزراوەکان (Flagged AI Clichés):
+                      </span>
+                      <div class="space-y-2">
+                        @for (t of audit.flaggedTerms; track t.term) {
+                          <div class="p-2 bg-amber-50/50 border border-amber-200/55 rounded text-[10.5px] space-y-1">
+                            <div class="flex items-center justify-between">
+                              <span class="font-mono font-bold text-red-800 bg-red-50 px-1 py-0.5 rounded">{{ t.term }}</span>
+                              <span class="text-[8px] font-bold px-1 rounded uppercase bg-red-100 text-red-800">{{ t.severity }}</span>
+                            </div>
+                            <p class="text-stone-700 italic">{{ t.guidance }}</p>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  @if (audit.flaggedSentences.length > 0) {
+                    <div class="space-y-1.5 pt-2">
+                      <span class="text-[10.5px] font-bold text-red-950 flex items-center gap-1">
+                        <mat-icon class="!text-xs text-red-700">report_problem</mat-icon>
+                        ڕستە گوماناوییەکان و تێبینی ڕێبەریکردن (Flagged Sentences & Hints):
+                      </span>
+                      <div class="space-y-2 max-h-48 overflow-y-auto">
+                        @for (s of audit.flaggedSentences; track s.sentence) {
+                          <div class="p-2 bg-stone-50 border border-stone-200 rounded text-[10.5px] space-y-1">
+                            <p class="text-stone-900 font-medium leading-relaxed bg-white p-1 rounded border border-stone-100">"{{ s.sentence }}"</p>
+                            <p class="text-stone-500 text-[9.5px]"><strong class="text-stone-700">هۆکار:</strong> {{ s.reason }}</p>
+                            <div class="bg-indigo-50/70 p-2 rounded text-[10px] text-indigo-950 border border-indigo-100">
+                              <span class="font-bold text-indigo-800 block">💡 ڕێبەری هاندانی قوتابی بۆ نووسینەوە:</span>
+                              {{ s.guidance }}
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <div class="p-2 bg-stone-50 border border-stone-200 rounded text-[10.5px] text-stone-700 leading-relaxed pt-2">
+                    <span class="font-bold block text-stone-900 mb-1">📋 ڕاپۆرتی زمانەوانی سەرانسەری (Linguistic Integrity Digest):</span>
+                    {{ audit.overallFeedback }}
+                  </div>
+                </div>
+              }
+            </div>

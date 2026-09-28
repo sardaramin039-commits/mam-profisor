@@ -1,0 +1,129 @@
+                    <!-- COMPONENT 8: ELITE ACADEMIC ASSESSMENT INDEX & LATEX EXPORT BOARD -->
+                    <div id="eliteAcademicRigorSection" class="p-4 bg-white border border-stone-300 rounded-xl shadow-sm space-y-3 flex flex-col justify-between col-span-1 lg:col-span-2">
+                      <div class="space-y-2">
+                        <div class="flex items-center gap-1 text-slate-900 border-b border-stone-100 pb-1.5 justify-between">
+                          <div class="flex items-center gap-1.5 flex-row-reverse w-full justify-between">
+                            <span class="text-[9px] font-mono bg-emerald-50 text-emerald-800 px-1.5 py-0.5 rounded font-bold">LaTeX & Rigor Compiler Elite</span>
+                            <div class="flex items-center gap-1.5">
+                              <mat-icon class="!text-sm font-bold">verified</mat-icon>
+                              <h4 class="text-xs font-serif font-extrabold">٨. کۆنمرەی گشتیی زانستی و هەناردەکردنی فەرمی بۆ LaTeX</h4>
+                            </div>
+                          </div>
+                        </div>
+                        <p class="text-[10.5px] text-stone-600 leading-relaxed">
+                          شیکارێکی توندی پێکهاتەی ئەکادیمی ئەنجام بدە لەسەر جەستەی بەرگەکە. ئەم مۆدیولە تێزەکەت بەپێی ٨ پێوەری جیهانی بڵاوکردنەوە هەڵدەسەنگێنێت و دەرچووی فەرمی کۆدی LaTeX بۆ چاپ و پێشکەشکردن ئامادە دەکات.
+                        </p>
+
+                        <!-- Options selection -->
+                        <div class="flex flex-wrap gap-3 items-center justify-between pt-1">
+                          <div class="flex items-center gap-1.5 text-[10.5px]">
+                            <label for="latexTemplateSelect" class="font-bold text-stone-750">قاڵبی بنەڕەتی LaTeX (Document Class):</label>
+                            <select 
+                              id="latexTemplateSelect"
+                              [value]="selectedLatexTemplate()"
+                              (change)="selectedLatexTemplate.set($any($event.target).value)"
+                              class="p-1 px-2.5 bg-stone-50 border border-stone-300 rounded text-xs text-stone-850 focus:bg-white outline-none cursor-pointer">
+                              <option value="academic_thesis">Thesis / Dissertation Format (تێزی باڵا)</option>
+                              <option value="article">Scientific Journal Article (وتاری زانستی)</option>
+                              <option value="book">Scholarly Monograph (پەڕتووکی ئەکادیمی)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <!-- Error display -->
+                        @if (eliteRigorError()) {
+                          <div class="text-[10.5px] text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                            {{ eliteRigorError() }}
+                          </div>
+                        }
+
+                        <!-- Scorecard results interface -->
+                        @if (eliteRigorScorecard()) {
+                          <div class="grid grid-cols-1 xl:grid-cols-3 gap-3.5 pt-2">
+                            <!-- Overall Score Badge and Dimension Progress Bars -->
+                            <div class="xl:col-span-1 bg-stone-50 p-3 border border-stone-250 rounded-xl space-y-3">
+                              <!-- Overall score bento item -->
+                              <div class="flex items-center gap-3 bg-white p-2.5 border border-stone-200 rounded-lg shadow-xs justify-between">
+                                <div class="space-y-0.5 leading-tight text-right">
+                                  <span class="text-[11px] font-bold block text-stone-800">کۆنمرەی گشتیی توندوتۆڵی</span>
+                                  <span class="text-[9.5px] text-stone-500 font-serif">بەپێی تیۆری لێکۆڵینەوە</span>
+                                </div>
+                                <div class="w-11 h-11 rounded-full border-4 flex flex-col items-center justify-center font-mono font-extrabold text-sm shrink-0 border-emerald-800 text-emerald-800 bg-emerald-50">
+                                  {{ eliteRigorScorecard()?.overallScore }}%
+                                </div>
+                              </div>
+
+                              <!-- Dimensions -->
+                              <div class="space-y-2 pt-1 font-sans text-[10px]">
+                                <span class="font-bold text-stone-700 block pb-0.5">پێوەرە فیشاڵییەکان:</span>
+                                @for (dim of eliteRigorScorecard()?.dimensions || []; track $index) {
+                                  <div class="space-y-1 bg-white p-1.5 border border-stone-150 rounded">
+                                    <div class="flex justify-between text-[9px] text-stone-500 font-serif">
+                                      <span class="font-bold text-stone-850">{{ dim.name }}</span>
+                                      <span class="font-mono text-emerald-800 font-extrabold">{{ dim.score }}% ({{ dim.verdict }})</span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-stone-100 rounded overflow-hidden">
+                                      <div class="h-full bg-emerald-800 rounded-r" [style.width.%]="dim.score"></div>
+                                    </div>
+                                    <p class="text-[8.5px] text-stone-500 leading-normal font-serif">تێبینی: {{ dim.hint }}</p>
+                                  </div>
+                                }
+                              </div>
+                            </div>
+
+                            <!-- Academic Interpretation Report wide -->
+                            <div class="xl:col-span-1 bg-white p-3 border border-stone-250 rounded-xl space-y-2">
+                              <span class="text-[10px] font-extrabold text-stone-900 block pb-1 border-b border-stone-100 flex items-center gap-1">
+                                <mat-icon class="!text-xs">assignment</mat-icon>
+                                <span>ڕاپۆرتی ڕەخنەگری ئەکادیمی دەرەکی:</span>
+                              </span>
+                              <div class="text-[10.5px] text-stone-700 leading-relaxed font-serif text-justify max-h-80 overflow-y-auto pr-1 whitespace-pre-wrap">
+                                {{ eliteRigorScorecard()?.analysisReport }}
+                              </div>
+                            </div>
+
+                            <!-- LaTeX Code Console Panel -->
+                            <div class="xl:col-span-1 bg-zinc-950 p-3 rounded-xl border border-zinc-800 space-y-2 flex flex-col justify-between">
+                              <div class="space-y-1.5">
+                                <div class="flex items-center justify-between border-b border-zinc-800 pb-1.5">
+                                  <span class="text-[9px] text-[#00FF55] font-mono flex items-center gap-1 leading-none">
+                                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-[#00FF55] animate-ping"></span>
+                                    LaTeX Template Generated
+                                  </span>
+                                  <div class="flex items-center gap-1.5">
+                                    <button 
+                                      type="button" 
+                                      (click)="copyLatexCode(eliteRigorScorecard()?.latexCode || '')"
+                                      class="px-2 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[8.5px] font-mono rounded cursor-pointer transition">
+                                      {{ isLatexCopying() ? 'Copied ✓' : 'Copy Code' }}
+                                    </button>
+                                  </div>
+                                </div>
+                                <pre id="latexCodeOutputConsole" class="p-2.5 bg-zinc-900 text-slate-100 text-[9px] rounded overflow-auto whitespace-pre font-mono leading-tight max-h-[240px] text-left border border-zinc-800/50" dir="ltr">
+                                  {{ eliteRigorScorecard()?.latexCode }}
+                                </pre>
+                              </div>
+                              <p class="text-[8px] text-zinc-500 font-sans text-center leading-normal pt-1.5">
+                                دەتوانیت ئەم کۆدە کۆپی بکەیت و لەسەر Overleaf یان تەواوکەری TeX Live دایبنێیت بۆ داگرتنی PDF بە جوانترین فۆمات.
+                              </p>
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+                      <div class="pt-2 flex items-center justify-end gap-2 border-t border-stone-100">
+                        <button 
+                          type="button" 
+                          (click)="generateEliteAcademicAssessment(viewedChapter()!)"
+                          [disabled]="isAnalyzingEliteRigor()"
+                          class="px-3.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 disabled:bg-stone-400 text-white text-[10px] font-extrabold tracking-wide rounded cursor-pointer transition flex items-center gap-1 shadow">
+                          @if (isAnalyzingEliteRigor()) {
+                            <div class="w-3 h-3 border-2 border-stone-300 border-t-white rounded-full animate-spin"></div>
+                            <span>هەڵسەنگاندن و سازکردنی LaTeX...</span>
+                          } @else {
+                            <mat-icon class="!text-xs">verified_user</mat-icon>
+                            <span>هەڵسەنگاندنی ئەکادیمی باڵا و ناردن بۆ LaTeX</span>
+                          }
+                        </button>
+                      </div>
+                    </div>

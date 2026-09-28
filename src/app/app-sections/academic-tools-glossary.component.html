@@ -1,0 +1,366 @@
+        <!-- Utility B: Searchable Terminology Database -->
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5" id="lexicon-database">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-3 flex-wrap justify-between">
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-neutral-700 leading-none">translate</mat-icon>
+              <div>
+                <h3 class="font-bold text-slate-900 text-sm">زاراوەناسی توێژینەوەی باڵا پەیڕەو</h3>
+                <p class="text-[11px] text-slate-500">زاراوە قورسە بیانییەکان و هاوتای پێوانەییەکانیان بدۆزەوە.</p>
+              </div>
+            </div>
+            <span class="text-[10px] bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded text-slate-500 font-mono">١٢ چەمک</span>
+          </div>
+
+          <!-- 5-Column Grid Layout: Side-by-side Glossary List & D3 Concepts Relationship Network Map -->
+          <div class="grid grid-cols-1 lg:grid-cols-5 gap-5 text-right">
+
+            <!-- Col 1: List Interface (lg:col-span-2) -->
+            <div class="lg:col-span-2 space-y-4">
+
+              <!-- Search Bar and filters -->
+          <div class="space-y-3">
+            <div class="relative">
+              <mat-icon class="absolute right-3 top-3 text-slate-400 !text-sm !w-4 !h-4">search</mat-icon>
+              <input 
+                type="text" 
+                [value]="glossarySearchQuery()"
+                (input)="onSearchChange($event)"
+                class="w-full text-xs p-3 pr-9 border border-slate-200 rounded-xl focus:border-emerald-500 focus:outline-none"
+                placeholder="لەم فەرهەنگەدا بگەڕێ بۆ زاراوە زمانەوانییەکان..." />
+            </div>
+
+            <!-- Quick Category Filters tags row -->
+            <div class="flex flex-wrap gap-2 text-[10px]">
+              <button 
+                type="button"
+                (click)="onFilterCategory('all')"
+                [class.bg-neutral-900]="glossaryCategoryFilter() === 'all'"
+                [class.text-white]="glossaryCategoryFilter() === 'all'"
+                [class.bg-slate-100]="glossaryCategoryFilter() !== 'all'"
+                class="px-2.5 py-1 rounded-md border border-slate-200 hover:border-black transition-colors cursor-pointer font-bold select-none">
+                هەمووی
+              </button>
+              <button 
+                type="button"
+                (click)="onFilterCategory('تیۆری')"
+                [class.bg-neutral-900]="glossaryCategoryFilter() === 'تیۆری'"
+                [class.text-white]="glossaryCategoryFilter() === 'تیۆری'"
+                [class.bg-slate-100]="glossaryCategoryFilter() !== 'تیۆری'"
+                class="px-2.5 py-1 rounded-md border border-slate-200 hover:border-black transition-colors cursor-pointer font-bold select-none">
+                تیۆری کۆنفرانس
+              </button>
+              <button 
+                type="button"
+                (click)="onFilterCategory('شیکاری')"
+                [class.bg-neutral-900]="glossaryCategoryFilter() === 'شیکاری'"
+                [class.text-white]="glossaryCategoryFilter() === 'شیکاری'"
+                [class.bg-slate-100]="glossaryCategoryFilter() !== 'شیکاری'"
+                class="px-2.5 py-1 rounded-md border border-slate-200 hover:border-black transition-colors cursor-pointer font-bold select-none">
+                شیکاری وەسفی
+              </button>
+              <button 
+                type="button"
+                (click)="onFilterCategory('پێکهاتە')"
+                [class.bg-neutral-900]="glossaryCategoryFilter() === 'پێکهاتە'"
+                [class.text-white]="glossaryCategoryFilter() === 'پێکهاتە'"
+                [class.bg-slate-100]="glossaryCategoryFilter() !== 'پێکهاتە'"
+                class="px-2.5 py-1 rounded-md border border-slate-200 hover:border-black transition-colors cursor-pointer font-bold select-none">
+                پێکهاتەی فۆڕم
+              </button>
+            </div>
+          </div>
+
+          <!-- Terminology glossary scrolling list output -->
+          <div class="h-64 overflow-y-auto space-y-3.5 pr-1">
+            @for (entry of filteredGlossary(); track entry.foreign) {
+              <div class="p-3.5 border border-slate-200/80 rounded-xl bg-slate-50/50 space-y-2 group transition-all duration-300 hover:bg-white hover:shadow-xs">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-extrabold text-slate-800 group-hover:text-emerald-700 transition-colors">{{ entry.foreign }}</span>
+                    <span class="text-[9px] bg-slate-200 text-slate-600 px-1.5 rounded font-mono">{{ entry.sourceLang }}</span>
+                  </div>
+                  <span class="text-xs font-bold text-neutral-800">{{ entry.translation }}</span>
+                </div>
+                <p class="text-[11px] text-slate-500 leading-relaxed border-t border-slate-100 pt-1.5">
+                  {{ entry.definition }}
+                </p>
+                
+                <div class="flex gap-2 items-center justify-end mt-1.5 pt-1.5 border-t border-dashed border-slate-200/80 bg-transparent flex-wrap">
+                  <button type="button" (click)="copyToClipboard(entry.translation)" class="text-[9px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-0.5 cursor-pointer bg-transparent border-none">
+                    <mat-icon class="!text-[11px] !w-3.5 !h-3.5 leading-none">content_copy</mat-icon>
+                    کۆپی هاوتا
+                  </button>
+                  <button type="button" (click)="useGlossaryTerm(entry)" class="text-[10px] font-bold text-amber-700 hover:text-amber-900 flex items-center gap-0.5 cursor-pointer bg-transparent border-none">
+                    <mat-icon class="!text-[11px] !w-3.5 !h-3.5 leading-none">add_circle_outline</mat-icon>
+                    بەکارهێنان لە کۆپی ستایل
+                  </button>
+                  <button type="button" (click)="expandGlossaryTerm(entry)" 
+                    [disabled]="isExpandingTerm() !== null && isExpandingTerm() !== entry.foreign"
+                    class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-0.5 cursor-pointer bg-transparent border-none disabled:opacity-50 disabled:cursor-not-allowed">
+                    @if (isExpandingTerm() === entry.foreign) {
+                      <span class="w-3 h-3 border-2 border-emerald-700 border-t-transparent rounded-full animate-spin inline-block"></span>
+                      فراوانکردن... (AI)
+                    } @else if (expandedTerms()[entry.foreign]) {
+                      <mat-icon class="!text-[12px] !w-3.5 !h-3.5 leading-none">unfold_less</mat-icon>
+                      داخستنەوە
+                    } @else {
+                      <mat-icon class="!text-[12px] !w-3.5 !h-3.5 leading-none">auto_awesome</mat-icon>
+                      فراوانکردنی ئەکادیمی (AI Expand)
+                    }
+                  </button>
+                </div>
+
+                @if (expandedTerms()[entry.foreign]; as expanded) {
+                  <div class="mt-3 p-3 bg-emerald-50/50 border border-emerald-100/80 rounded-xl space-y-3 animate-fade-in text-right">
+                    <div class="flex items-center gap-1.5 text-xs font-extrabold text-emerald-900 border-b border-emerald-100 pb-1.5">
+                      <mat-icon class="!text-sm text-emerald-700">science</mat-icon>
+                      <span>شیکردنەوەی ئەنسایکڵۆپیدی و مێژوویی (AI Encyclopedic Context)</span>
+                    </div>
+
+                    <div class="space-y-2 text-xs text-slate-800 leading-relaxed font-sans">
+                      <div>
+                        <strong class="text-emerald-950 font-bold block mb-1">📖 شرۆڤەی ورد و گشتگیر:</strong>
+                        <p class="bg-white/60 p-2.5 rounded-lg border border-emerald-100/50 text-[10.5px] leading-relaxed">{{ expanded.explanation }}</p>
+                      </div>
+
+                      @if (expanded.academicDefinition) {
+                        <div>
+                          <strong class="text-emerald-950 font-bold block mb-1">📝 پێناسەی زانیاریی ئەکادیمی:</strong>
+                          <p class="text-[10px] text-slate-700 bg-emerald-100/20 p-2.5 rounded-lg border border-emerald-100/40 font-sans">{{ expanded.academicDefinition }}</p>
+                        </div>
+                      }
+
+                      @if (expanded.scientificExample) {
+                        <div>
+                          <strong class="text-emerald-950 font-bold block mb-1">💡 نموونەی پڕاکتیکی زانستی:</strong>
+                          <p class="text-[10px] text-slate-700 bg-amber-50/50 p-2.5 rounded-lg border border-amber-100/40 font-sans font-medium line-clamp-none">{{ expanded.scientificExample }}</p>
+                        </div>
+                      }
+
+                      @if (expanded.history) {
+                        <div>
+                          <strong class="text-emerald-950 font-bold block mb-1">⏳ ڕیشە و باکگراوندی مێژوویی:</strong>
+                          <p class="text-[10px] text-slate-600 bg-white/40 p-2.5 rounded-lg font-sans">{{ expanded.history }}</p>
+                        </div>
+                      }
+
+                      @if (expanded.importance) {
+                        <div>
+                          <strong class="text-emerald-950 font-bold block mb-1">🎓 گرنگی لە مێتۆدۆلۆژی توێژینەوەدا:</strong>
+                          <p class="text-[10px] text-slate-600 bg-white/40 p-2.5 rounded-lg font-sans">{{ expanded.importance }}</p>
+                        </div>
+                      }
+
+                      @if (expanded.related && expanded.related.length > 0) {
+                        <div class="pt-1.5 border-t border-emerald-100/50">
+                          <strong class="text-emerald-950 font-bold block mb-1">🔗 زاراوە بەستراوەکان:</strong>
+                          <div class="flex flex-wrap gap-1.5 mt-1">
+                            @for (rel of expanded.related; track rel) {
+                              <span class="text-[9.5px] bg-emerald-100/40 text-emerald-900 px-2.5 py-0.5 rounded-lg font-serif border border-emerald-100/30">{{ rel }}</span>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            } @empty {
+              <div class="text-center py-10 text-slate-400 text-xs text-sans">
+                چەمک و زاراوەی گونجاو لەگەڵ ئەم گەڕانەدا نەدۆزرایەوە.
+              </div>
+            }
+          </div>
+          </div> <!-- Close Col 1: List Interface -->
+
+          <!-- Col 2: Interactive Relationship Network Map (lg:col-span-3) -->
+          <div class="lg:col-span-3 bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between space-y-3 relative shadow-xs">
+            <div class="flex items-center justify-between border-b border-stone-200 pb-2 flex-wrap gap-2 justify-between">
+              <span class="text-xs font-bold text-slate-850 flex items-center gap-1.5 font-serif">
+                <mat-icon class="text-indigo-800 !text-sm !w-4 !h-4">hub</mat-icon>
+                نەخشەی تۆڕی چەمکە زاراوەییە سەرەکییەکان (Glossary Concept Map)
+              </span>
+              <span class="text-[8px] bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded font-mono font-bold">D3 Interactivity</span>
+            </div>
+
+            <!-- D3 Interactive Map SVG Canvas -->
+            <div class="bg-white border border-stone-150 rounded-lg overflow-hidden relative shadow-inner">
+              <svg viewBox="0 0 520 230" class="w-full h-auto select-none overflow-visible">
+                <!-- Arrow Marker Definition -->
+                <defs>
+                  <marker id="arrow-glossary" viewBox="0 0 10 10" refX="18" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 2 L 10 5 L 0 8 z" fill="#94a3b8" />
+                  </marker>
+                </defs>
+
+                <!-- Links / Relationships -->
+                @for (link of glossaryConceptMap().links; track $index) {
+                  <g>
+                    <line 
+                      [attr.x1]="link.x1" 
+                      [attr.y1]="link.y1" 
+                      [attr.x2]="link.x2" 
+                      [attr.y2]="link.y2" 
+                      stroke="#e2e8f0" 
+                      stroke-width="1.5" 
+                      marker-end="url(#arrow-glossary)"></line>
+                    <text 
+                      [attr.x]="(link.x1 + link.x2)/2" 
+                      [attr.y]="(link.y1 + link.y2)/2 - 3" 
+                      fill="#64748b" 
+                      text-anchor="middle" 
+                      class="text-[7px] font-bold font-serif pointer-events-none">
+                      {{ link.label }}
+                    </text>
+                  </g>
+                }
+
+                <!-- Nodes -->
+                @for (node of glossaryConceptMap().nodes; track node.id) {
+                  <g 
+                    (click)="glossaryActiveNode.set(node.english); glossarySearchQuery.set(node.kurdish)" 
+                    class="cursor-pointer transition-transform duration-200 hover:scale-105"
+                    [attr.transform]="'translate(0, 0)'">
+                    
+                    @if (node.isActive) {
+                      <circle 
+                        [attr.cx]="node.cx" 
+                        [attr.cy]="node.cy" 
+                        [attr.r]="node.r + 5" 
+                        fill="none" 
+                        stroke="#4f46e5" 
+                        stroke-width="2" 
+                        stroke-dasharray="3,2"></circle>
+                    }
+
+                    <circle 
+                      [attr.cx]="node.cx" 
+                      [attr.cy]="node.cy" 
+                      [attr.r]="node.r" 
+                      [attr.fill]="node.fill" 
+                      opacity="0.9"></circle>
+
+                    <text 
+                      [attr.x]="node.cx" 
+                      [attr.y]="node.cy - 1" 
+                      [attr.fill]="node.textColor" 
+                      text-anchor="middle" 
+                      class="text-[7.5px] font-extrabold font-serif pointer-events-none select-none">
+                      {{ node.kurdish }}
+                    </text>
+
+                    <text 
+                      [attr.x]="node.cx" 
+                      [attr.y]="node.cy + 7" 
+                      fill="#ffffff" 
+                      opacity="0.8"
+                      text-anchor="middle" 
+                      class="text-[5.5px] font-mono pointer-events-none select-none">
+                      {{ node.english }}
+                    </text>
+                  </g>
+                }
+              </svg>
+            </div>
+
+            <!-- Active Concept Node Insights details-->
+            <div class="p-3 bg-white border border-stone-200 rounded-lg space-y-1 text-right">
+              @if (getactiveGlossaryConceptNode(); as active) {
+                <div class="flex items-center justify-between border-b border-slate-100 pb-1 flex-wrap gap-1">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-xs font-extrabold text-indigo-900 font-serif">{{ active.kurdish }}</span>
+                    <span class="text-[9px] font-mono bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded font-bold font-mono">({{ active.english }})</span>
+                  </div>
+                  <span class="text-[8px] bg-stone-100 text-stone-600 px-2 py-0.5 rounded font-serif font-bold">پۆلێن: {{ active.category }}</span>
+                </div>
+                <p class="text-[10px] text-stone-600 leading-relaxed font-serif pt-1">
+                  {{ active.desc }}
+                </p>
+              } @else {
+                <div class="text-[10px] text-stone-500 font-serif italic text-center py-2">
+                  لەسەر نوقتەی دەقەکەی سەرەوە کلیک بکە تا گشتگیرییەکەی ببینی.
+                </div>
+              }
+            </div>
+          </div>
+
+          </div> <!-- Close grid root -->
+
+          <!-- ✍️ REAL-TIME GRAMMAR & SCHOLASTIC STYLE WRITING SANDBOX -->
+          <div class="border-t border-slate-200/80 pt-4.5 space-y-3">
+            <div class="flex items-center gap-1.5 text-slate-800">
+              <mat-icon class="text-indigo-800 leading-none">spellcheck</mat-icon>
+              <div>
+                <strong class="text-xs font-serif font-extrabold text-stone-900 block text-right">ڕاهێنەری ڕاستەوخۆی زمانەوانی و بەرزکردنەوەی ئاستی دەق (Live Style Checker)</strong>
+                <p class="text-[9.5px] text-[#8C8273] text-right">لێرەدا بنووسە یان بابەتەکەت لێکبدەرەوە؛ سیستەمەکە ڕاستەوخۆ هەڵە گشتییەکان، ڕێنووسی کوردی و شێوازی ئەکادیمی چاک دەکات.</p>
+              </div>
+            </div>
+
+            <div class="relative">
+              <textarea 
+                #sandboxTextarea
+                [value]="glossaryUserDraft()"
+                (input)="glossaryUserDraft.set(sandboxTextarea.value)"
+                class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-xl focus:border-indigo-600 focus:outline-none leading-relaxed font-serif text-slate-900 text-justify"
+                placeholder="ڕستە یان پەرەگرافێکی کوردی لێرەدا بنووسە بۆ تاقیکردنەوە (بۆ نموونە: «توێژینەوەی من زۆر چاکە بەڵام پاشان بۆ نموونە باسی دەکەین»)..."
+                style="min-height: 110px;"></textarea>
+                
+              @if (glossaryUserDraft()) {
+                <button 
+                  type="button" 
+                  (click)="glossaryUserDraft.set('')"
+                  class="absolute left-2.5 bottom-2.5 text-[8.5px] font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-2.5 py-1 rounded cursor-pointer transition-colors shadow-xs">
+                  سڕینەوەی دەق
+                </button>
+              }
+            </div>
+
+            <!-- Instant dynamic suggestion cards -->
+            @if (glossaryRealtimeSuggestions().length > 0) {
+              <div class="space-y-2 animate-fade-in">
+                <span class="text-[9.5px] font-bold text-stone-900 block text-right">💡 پێشنیاری زمانەوانی و شێوازی فەرمی ({{ glossaryRealtimeSuggestions().length }} دۆزرایەوە):</span>
+                
+                <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  @for (sug of glossaryRealtimeSuggestions(); track sug.title) {
+                    <div 
+                      class="p-3 rounded-lg border text-right flex flex-col justify-between gap-2.5 transition-all"
+                      [class]="sug.type === 'warning' ? 'bg-amber-50/75 border-amber-200' : sug.type === 'success' ? 'bg-emerald-50/75 border-emerald-200' : 'bg-slate-50 border-slate-200'">
+                      
+                      <div class="space-y-1">
+                        <div class="flex items-center gap-1.5 justify-end">
+                          <span class="text-[10px] font-extrabold" [class]="sug.type === 'warning' ? 'text-amber-950' : sug.type === 'success' ? 'text-emerald-950' : 'text-slate-950'">
+                            {{ sug.title }}
+                          </span>
+                          <mat-icon class="!text-xs inline-flex items-center" [class]="sug.type === 'warning' ? 'text-amber-700' : sug.type === 'success' ? 'text-emerald-700' : 'text-slate-700'">
+                            {{ sug.type === 'warning' ? 'warning' : sug.type === 'success' ? 'auto_awesome' : 'info_outline' }}
+                          </mat-icon>
+                        </div>
+                        <p class="text-[10px] leading-relaxed text-[#555] font-serif pr-4">{{ sug.desc }}</p>
+                      </div>
+
+                      @if (sug.original && sug.replacement) {
+                        <div class="flex justify-between items-center bg-white/70 p-2 border border-slate-150 rounded-lg flex-wrap gap-1">
+                          <div class="text-[9.5px] text-[#444] font-serif">
+                            گۆڕینی «<span class="text-red-700 line-through font-bold">{{ sug.original }}</span>» ───» «<span class="text-emerald-700 font-bold">{{ sug.replacement }}</span>»
+                          </div>
+                          <button 
+                            type="button" 
+                            (click)="applyGlossaryRealtimeFix(sug.original, sug.replacement)"
+                            class="px-2.5 py-1 text-[9px] font-bold bg-stone-900 text-white rounded hover:bg-slate-800 transition-colors cursor-pointer shadow-xs">
+                            جێبەجێکردن (Apply)
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            } @else if (glossaryUserDraft().trim().length > 0) {
+              <div class="p-3 bg-emerald-50/40 border border-emerald-100 rounded-xl text-center flex items-center justify-center gap-1.5 py-4 animate-bounce">
+                <mat-icon class="text-emerald-700 leading-none">verified</mat-icon>
+                <span class="text-[10px] font-bold text-emerald-950 font-serif">پیرۆزە! هیچ کێشەیەکی ڕێنووسی یان دەربڕینی نازانستی تێدا نییە. دەقەکە بەتەواوی شیاوە.</span>
+              </div>
+            }
+          </div>
+        </section>
+        

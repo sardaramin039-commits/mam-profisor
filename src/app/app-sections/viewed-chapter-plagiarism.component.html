@@ -1,0 +1,94 @@
+                    <!-- COMPONENT 4: PLAGIARISM CHECKER & PARAPHRASER -->
+                    <div class="p-4 bg-white border border-stone-300 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
+                      <div class="space-y-2">
+                        <div class="flex items-center gap-1 text-rose-950 border-b border-stone-100 pb-1.5 justify-between">
+                          <div class="flex items-center gap-1.5">
+                            <mat-icon class="!text-sm font-bold">document_scanner</mat-icon>
+                            <h4 class="text-xs font-serif font-extrabold">٤. پشکنەری دزینی ئەدەبی و پارافراسکردنی ژیر (Plagiarism Checker & Paraphraser)</h4>
+                          </div>
+                          <span class="text-[9px] font-mono bg-rose-50 text-rose-950 px-1.5 py-0.5 rounded font-bold">Anti-Plagiarism Engine</span>
+                        </div>
+                        <p class="text-[10.5px] text-stone-600 leading-relaxed">
+                          سیستەمێکی ژیر بۆ پشکنینی دێڕ بە دێڕی بەشەکان لەبەرانبەر سەرچاوە دەرەکییەکان و ئامادەکردنی پارافراسی پارێزراو.
+                        </p>
+
+                        <!-- Error display -->
+                        @if (plagiarismError()) {
+                          <div class="text-[10.5px] text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                            {{ plagiarismError() }}
+                          </div>
+                        }
+
+                        <!-- Plagiarism Result Details -->
+                        @if (plagiarismResult()) {
+                          <div class="p-3 bg-stone-50 border border-stone-300 rounded space-y-2 text-[10.5px]">
+                            <div class="flex items-center gap-2">
+                              <div class="w-10 h-10 rounded-full border-4 border-rose-100 flex items-center justify-center text-rose-700 font-mono font-bold text-xs">
+                                {{ plagiarismResult()?.similarityPercentage }}%
+                              </div>
+                              <div class="space-y-0.5 leading-tight">
+                                <span class="text-[11px] font-bold block">ڕێژەی لێکچوونی دۆزراوە</span>
+                                <span class="text-[10px] text-stone-500 font-serif">{{ plagiarismResult()?.overallVerdict }}</span>
+                              </div>
+                            </div>
+
+                            <!-- List of copied flagged rows -->
+                            @if ((plagiarismResult()?.flaggedSentences || []).length > 0) {
+                              <div class="space-y-2 pt-1">
+                                <span class="text-[10px] font-bold text-stone-800 block">دەستەواژە گوماناوییەکان و سەرچاوەکەیان:</span>
+                                @for (flag of plagiarismResult()?.flaggedSentences || []; track $index) {
+                                  <div class="p-2 border-r-2 border-rose-500 bg-rose-50/50 rounded text-[10.5px] space-y-1 text-stone-800">
+                                    <div class="text-stone-900 font-serif quote">«{{ flag.sentence }}»</div>
+                                    <div class="text-[9px] text-stone-500 font-sans">
+                                      سەرچاوەی لێکچوو: <strong>{{ flag.matchedSource }} — (لێکچوون: {{ flag.similarityRatio }}%)</strong>
+                                    </div>
+                                    <div class="text-[10px] text-stone-700 bg-white p-1 rounded font-serif italic">
+                                      پێشنیار بۆ پارافراز: {{ flag.suggestion }}
+                                    </div>
+                                  </div>
+                                }
+                              </div>
+                            } @else {
+                              <div class="p-2 bg-emerald-50 text-emerald-800 text-[10.5px] rounded text-center font-serif">
+                                هیچ دەستەواژەیەکی لێکچووی جێی گومان لە سەرچاوەکان نەدۆزرایەوە! تێکستەکە تەواو پاکە.
+                              </div>
+                            }
+
+                            <!-- Paraphrased safe version view -->
+                            @if (plagiarismResult()?.paraphrasedAlternative) {
+                              <div class="p-2 bg-indigo-50/50 border border-indigo-200 rounded space-y-1">
+                                <span class="text-[9.5px] font-extrabold text-indigo-900 block">دەقی فەرمی و پارافراسکراوی بێ کێشە:</span>
+                                <div class="p-2 bg-white rounded text-stone-900 font-serif text-[10.5px] leading-relaxed max-h-36 overflow-y-auto whitespace-pre-wrap text-justify">
+                                  {{ plagiarismResult()?.paraphrasedAlternative }}
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+
+                      <div class="pt-2 flex items-center justify-end gap-2 border-t border-stone-100">
+                        @if (plagiarismResult()?.paraphrasedAlternative) {
+                          <button 
+                            type="button" 
+                            (click)="applyParaphrasedAlternativeToChapter(viewedChapter()!)"
+                            class="px-2.5 py-1.5 bg-indigo-800 hover:bg-indigo-950 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">check_circle</mat-icon>
+                            <span>بەکارهێنانی دەقە چاککراوە بێ کێشەکە</span>
+                          </button>
+                        }
+                        <button 
+                          type="button" 
+                          (click)="checkChapterPlagiarism(viewedChapter()!)"
+                          [disabled]="isPlagiarismChecking()"
+                          class="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-950 disabled:bg-stone-400 text-white text-[10px] font-extrabold tracking-wide rounded cursor-pointer transition flex items-center gap-1 shadow">
+                          @if (isPlagiarismChecking()) {
+                            <div class="w-3 h-3 border-2 border-stone-300 border-t-white rounded-full animate-spin"></div>
+                            <span>پشکنین...</span>
+                          } @else {
+                            <mat-icon class="!text-xs">document_scanner</mat-icon>
+                            <span>دەستپێکردنی پشکنین</span>
+                          }
+                        </button>
+                      </div>
+                    </div>

@@ -1,0 +1,133 @@
+                    <!-- COMPONENT 7: DATASET SANDBOX & PYTHON CODE INTERPRETER -->
+                    <div id="pythonSandboxSection" class="p-4 bg-white border border-stone-300 rounded-xl shadow-sm space-y-3 flex flex-col justify-between col-span-1 lg:col-span-2">
+                      <div class="space-y-2">
+                        <div class="flex items-center gap-1 text-stone-900 border-b border-stone-100 pb-1.5 justify-between">
+                          <div class="flex items-center gap-1.5">
+                            <mat-icon class="!text-sm font-bold">terminal</mat-icon>
+                            <h4 class="text-xs font-serif font-extrabold font-bold">٧. شیکارکەری داتای ژمارەیی و تاتۆیی (Dataset Sandbox & Python Compiler)</h4>
+                          </div>
+                          <span class="text-[9px] font-mono bg-stone-100 text-stone-900 px-1.5 py-0.5 rounded font-bold">Python & Pandas Interpreter</span>
+                        </div>
+                        <p class="text-[10.5px] text-stone-600 leading-relaxed">
+                          داتابێسی ژمارەیی خۆت لە فۆرماتی CSV بنووسە یان لێرە دەستکاری بکە، پاشان کۆدی پایتۆن دابنێ تا شیکارکەری زیرەکی Pandas لێکۆڵینەوەی توند و خشتەکاری ئەنجام بدات.
+                        </p>
+
+                        <!-- Code inputs splits columns -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                          <!-- CSV sandbox inputs -->
+                          <div class="flex flex-col gap-1 text-[10.5px]">
+                            <label for="datasetInputArea" class="font-bold text-stone-750">داتای CSV لێکۆڵینەوە (Dataset Editor):</label>
+                            <textarea 
+                              id="datasetInputArea"
+                              rows="5"
+                              [value]="datasetInputCsv()"
+                              (input)="datasetInputCsv.set($any($event.target).value)"
+                              class="font-mono p-1.5 bg-stone-50 border border-stone-300 rounded text-[10px] w-full text-stone-850 focus:bg-white outline-none"
+                              placeholder="کۆد,نمرە_تاقیکردنەوە,کات_سەربەخۆ..."></textarea>
+                          </div>
+
+                          <!-- Python code sandbox screen -->
+                          <div class="flex flex-col gap-1 text-[10.5px]">
+                            <label for="pythonInterpreterArea" class="font-bold text-stone-750">کۆدی پایتۆنی شیکاری (Python Script Editor):</label>
+                            <textarea 
+                              id="pythonInterpreterArea"
+                              rows="5"
+                              [value]="pythonInterpreterCode()"
+                              (input)="pythonInterpreterCode.set($any($event.target).value)"
+                              class="font-mono p-1.5 bg-zinc-900 border border-stone-800 rounded text-[10px] w-full text-green-400 focus:bg-zinc-950 outline-none"
+                              placeholder="import pandas as pd..."></textarea>
+                          </div>
+                        </div>
+
+                        <!-- Error display -->
+                        @if (pythonSandboxError()) {
+                          <div class="text-[10.5px] text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                            {{ pythonSandboxError() }}
+                          </div>
+                        }
+
+                        <!-- Results output interface -->
+                        @if (pythonSandboxResult()) {
+                          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                            <!-- Python Terminal Output -->
+                            <div class="md:col-span-2 space-y-1">
+                              <span class="text-[10px] font-bold text-stone-700 block">دەرچووی فەرمی کۆمپیوتەر (Terminal Console Line):</span>
+                              <pre class="p-3 bg-zinc-950 text-emerald-400 text-[10px] rounded overflow-x-auto whitespace-pre font-mono leading-tight shadow border border-zinc-800 max-h-56">
+                                {{ pythonSandboxResult()?.terminalOutput }}
+                              </pre>
+                            </div>
+
+                            <!-- Statistical metrics bento -->
+                            <div class="space-y-2">
+                              <span class="text-[10px] font-bold text-stone-700 block">پێوەرە پێشنیارکراوەکان (Metric Parameters):</span>
+                              <div class="p-2.5 bg-stone-50 border border-stone-300 rounded space-y-2 font-serif text-[10.5px]">
+                                @for (stat of pythonSandboxResult()?.descriptiveStats || []; track $index) {
+                                  <div class="flex items-center justify-between border-b border-stone-200 pb-1">
+                                    <span class="text-stone-600">{{ stat.metric }}</span>
+                                    <span class="font-mono font-bold text-stone-900">{{ stat.value }}</span>
+                                  </div>
+                                }
+                              </div>
+
+                              <!-- Custom SVG descriptive trends matching D3 aesthetics -->
+                              <div class="p-2 bg-white border border-stone-200 rounded text-[9.5px]">
+                                <span class="font-serif text-stone-500 block pb-1">پۆلێنکاری و فۆڕمی دابەشبوون</span>
+                                <div class="pt-1 space-y-1.5 font-sans">
+                                  @for (pt of pythonSandboxResult()?.chartData || []; track $index) {
+                                    <div class="space-y-0.5">
+                                      <div class="flex justify-between text-[8px] text-stone-400">
+                                        <span>{{ pt.name }}</span>
+                                        <span>بڕ: {{ pt.yValue }}</span>
+                                      </div>
+                                      <div class="w-full h-2 bg-stone-100 rounded overflow-hidden">
+                                        <div class="h-full bg-indigo-900 rounded-r" [style.width.%]="pt.yValue"></div>
+                                      </div>
+                                    </div>
+                                  }
+                                </div>
+                              </div>
+                            </div>
+
+                            <!-- Kurdish Academic Interpretation split wide -->
+                            <div class="md:col-span-3 p-3 bg-stone-50 border border-stone-200 rounded text-stone-850">
+                              <span class="text-[10px] font-extrabold text-stone-900 block pb-0.5">لێکدانەوەی زانستی و فەلسەفەیی (Academic Interpretation):</span>
+                              <p class="text-[11.5px] text-stone-700 leading-relaxed font-serif text-justify">
+                                {{ pythonSandboxResult()?.academicInterpretation }}
+                              </p>
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+                      <div class="pt-2 flex items-center justify-end gap-2 border-t border-stone-100 flex-wrap">
+                        @if (pythonSandboxResult()) {
+                          <button 
+                            type="button" 
+                            (click)="exportSandboxPDF()"
+                            class="px-2.5 py-1.5 bg-indigo-900 hover:bg-slate-900 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">picture_as_pdf</mat-icon>
+                            <span>ناردنی داتاکان بە PDF</span>
+                          </button>
+                          <button 
+                            type="button" 
+                            (click)="appendPythonSandboxOutputToChapter(viewedChapter()!)"
+                            class="px-2.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">add_circle</mat-icon>
+                            <span>پێوەستکردنی شیکاریی پایتۆنی داتا بە نووسینەکەم</span>
+                          </button>
+                        }
+                        <button 
+                          type="button" 
+                          (click)="executePythonDatasetInterpreter(viewedChapter()!)"
+                          [disabled]="isExecutingPythonSandbox() || !datasetInputCsv().trim() || !pythonInterpreterCode().trim()"
+                          class="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-950 disabled:bg-stone-400 text-white text-[10px] font-extrabold tracking-wide rounded cursor-pointer transition flex items-center gap-1 shadow">
+                          @if (isExecutingPythonSandbox()) {
+                            <div class="w-3 h-3 border-2 border-stone-300 border-t-white rounded-full animate-spin"></div>
+                            <span>جێبەجێکردنی کۆد...</span>
+                          } @else {
+                            <mat-icon class="!text-xs">play_arrow</mat-icon>
+                            <span>جێبەجێکردنی کۆد و ڕیسێتی داتا</span>
+                          }
+                        </button>
+                      </div>
+                    </div>

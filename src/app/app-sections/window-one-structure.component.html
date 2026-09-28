@@ -1,0 +1,224 @@
+            <!-- ADVANCED ACADEMIC DOCUMENT STRUCTURE COMPONENTS -->
+            <div class="space-y-2.5 pt-2 border-t border-gray-100">
+              <span class="block text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                <mat-icon class="!text-sm text-neutral-600">account_tree</mat-icon>
+                بڕگە و پێکهاتە زانستییە پێویستەکان بۆ کارەکە (تەواوکاری ئەکادیمی):
+              </span>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <!-- Dedication Button -->
+                <button type="button" (click)="toggleAcademicSection('includeDedication')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="refineForm.get('includeDedication')?.value" [class.bg-amber-100]="refineForm.get('includeDedication')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-amber-600">military_tech</mat-icon>
+                    <span>📜 پێشکەشە</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="refineForm.get('includeDedication')?.value" [class.text-white]="refineForm.get('includeDedication')?.value" [class.bg-gray-100]="!refineForm.get('includeDedication')?.value">
+                    {{ refineForm.get('includeDedication')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+
+                <!-- Introduction Button -->
+                <button type="button" (click)="toggleAcademicSection('includeIntro')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="refineForm.get('includeIntro')?.value" [class.bg-amber-100]="refineForm.get('includeIntro')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-emerald-600">menu_book</mat-icon>
+                    <span>📋 پێشەکی</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="refineForm.get('includeIntro')?.value" [class.text-white]="refineForm.get('includeIntro')?.value" [class.bg-gray-100]="!refineForm.get('includeIntro')?.value">
+                    {{ refineForm.get('includeIntro')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+
+                <!-- TOC Button -->
+                <button type="button" (click)="toggleAcademicSection('includeTOC')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="refineForm.get('includeTOC')?.value" [class.bg-amber-100]="refineForm.get('includeTOC')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-blue-600">toc</mat-icon>
+                    <span>📊 ناوەڕۆک و پێڕست</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="refineForm.get('includeTOC')?.value" [class.text-white]="refineForm.get('includeTOC')?.value" [class.bg-gray-100]="!refineForm.get('includeTOC')?.value">
+                    {{ refineForm.get('includeTOC')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+
+                <!-- Conclusion Button -->
+                <button type="button" (click)="toggleAcademicSection('includeConclusion')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="refineForm.get('includeConclusion')?.value" [class.bg-amber-100]="refineForm.get('includeConclusion')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-cyan-600">track_changes</mat-icon>
+                    <span>🎯 ئەنجام و دەرئەنجام</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="refineForm.get('includeConclusion')?.value" [class.text-white]="refineForm.get('includeConclusion')?.value" [class.bg-gray-100]="!refineForm.get('includeConclusion')?.value">
+                    {{ refineForm.get('includeConclusion')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+
+                <!-- Recommendations Button -->
+                <button type="button" (click)="toggleAcademicSection('includeRecommendations')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="refineForm.get('includeRecommendations')?.value" [class.bg-amber-100]="refineForm.get('includeRecommendations')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-yellow-600">lightbulb</mat-icon>
+                    <span>💡 ڕاسپاردەکان</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="refineForm.get('includeRecommendations')?.value" [class.text-white]="refineForm.get('includeRecommendations')?.value" [class.bg-gray-100]="!refineForm.get('includeRecommendations')?.value">
+                    {{ refineForm.get('includeRecommendations')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+
+                <!-- References Button -->
+                <button type="button" (click)="toggleAcademicSection('includeReferences')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="refineForm.get('includeReferences')?.value" [class.bg-amber-100]="refineForm.get('includeReferences')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-purple-600">library_books</mat-icon>
+                    <span>📚 سەرچاوەکان</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="refineForm.get('includeReferences')?.value" [class.text-white]="refineForm.get('includeReferences')?.value" [class.bg-gray-100]="!refineForm.get('includeReferences')?.value">
+                    {{ refineForm.get('includeReferences')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- RAG PIPELINE & AI MODEL SETTINGS -->
+            <div class="space-y-3 pt-3 border-t border-gray-100 bg-stone-50/60 p-3 rounded-xl border border-stone-200">
+              <span class="block text-xs font-bold text-stone-900 flex items-center justify-between">
+                <span class="flex items-center gap-1">
+                  <mat-icon class="!text-sm text-amber-700">psychology</mat-icon>
+                  مۆدێلی ژیری و هەڵهێنجانی پایپلاینی RAG:
+                </span>
+                <span class="text-[9px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-mono font-extrabold">
+                  {{ refineForm.get('ragModel')?.value }}
+                </span>
+              </span>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- RAG Model Selector -->
+                <div>
+                  <label for="ragModelSelect" class="block text-[10px] font-bold text-stone-700 font-serif mb-1">
+                    جۆری مۆدێلی ژیری دەستکرد:
+                  </label>
+                  <select 
+                    id="ragModelSelect"
+                    formControlName="ragModel"
+                    (change)="updateRagModel($any($event.target).value)"
+                    class="w-full text-xs p-2 border border-stone-300 rounded-lg bg-white font-serif font-bold text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-600">
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (شیکاریی ئەکادیمیی بەهێز & قووڵ)</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (پەیڕەوی خێرا & بەردەست)</option>
+                  </select>
+                </div>
+
+                <!-- RAG Limit Selector -->
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label for="ragLimitInput" class="text-[10px] font-bold text-stone-700 font-serif">
+                      سەقفی پارچە داتای RAG (Limit):
+                    </label>
+                    <span class="text-[10px] font-mono font-bold text-amber-900">
+                      {{ refineForm.get('ragLimit')?.value }} پارچە
+                    </span>
+                  </div>
+                  <input 
+                    id="ragLimitInput"
+                    type="range"
+                    formControlName="ragLimit"
+                    (input)="updateRagLimit($any($event.target).valueAsNumber)"
+                    min="1"
+                    max="20"
+                    step="1"
+                    class="w-full accent-amber-700 cursor-pointer h-1.5 bg-stone-200 rounded-lg"/>
+                </div>
+              </div>
+            </div>
+
+            <!-- ROLE ON/OFF Switches -->
+            <div class="space-y-2 pt-2 border-t border-gray-100">
+              <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                <mat-icon class="!text-sm text-neutral-600">person_search</mat-icon>
+                ئایکۆنی ڕۆڵ (دەتوانیت هەر سێ لایەن بۆ نووسینی قووڵ هەڵبژێریت بە پێکەوەیی):
+              </span>
+              <div class="flex flex-wrap gap-2.5">
+                <button type="button" (click)="toggleRole('writer')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="refineForm.get('roleAuthor')?.value" [class.bg-neutral-50]="refineForm.get('roleAuthor')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4" [class.text-amber-600]="refineForm.get('roleAuthor')?.value">edit_note</mat-icon>
+                  <span>نوسەر</span>
+                  <span class="text-[8px] font-extrabold uppercase px-1 rounded" [class.bg-black]="refineForm.get('roleAuthor')?.value" [class.text-white]="refineForm.get('roleAuthor')?.value" [class.bg-gray-100]="!refineForm.get('roleAuthor')?.value">
+                    {{ refineForm.get('roleAuthor')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+
+                <button type="button" (click)="toggleRole('critic')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="refineForm.get('roleCritic')?.value" [class.bg-neutral-50]="refineForm.get('roleCritic')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4" [class.text-yellow-600]="refineForm.get('roleCritic')?.value">forum</mat-icon>
+                  <span>ڕەخنەگر</span>
+                  <span class="text-[8px] font-extrabold uppercase px-1 rounded" [class.bg-black]="refineForm.get('roleCritic')?.value" [class.text-white]="refineForm.get('roleCritic')?.value" [class.bg-gray-100]="!refineForm.get('roleCritic')?.value">
+                    {{ refineForm.get('roleCritic')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+
+                <button type="button" (click)="toggleRole('reviewer')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="refineForm.get('roleReviewer')?.value" [class.bg-neutral-50]="refineForm.get('roleReviewer')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4" [class.text-blue-600]="refineForm.get('roleReviewer')?.value">rate_review</mat-icon>
+                  <span>پێداچونەوە</span>
+                  <span class="text-[8px] font-extrabold uppercase px-1 rounded" [class.bg-black]="refineForm.get('roleReviewer')?.value" [class.text-white]="refineForm.get('roleReviewer')?.value" [class.bg-gray-100]="!refineForm.get('roleReviewer')?.value">
+                    {{ refineForm.get('roleReviewer')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+             <!-- DIALECT STYLE ON/OFF Switches -->
+            <div class="space-y-2 pt-2 border-t border-gray-100">
+              <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                <mat-icon class="!text-sm text-neutral-600">psychology_alt</mat-icon>
+                ئایکۆنی دیالێکتیک (دەتوانیت هەر سێ ڕوانگە بە پێکەوەیی بۆ شەن و کەوکردن چالاک بکەیت):
+              </span>
+              <div class="flex flex-wrap gap-2.5">
+                <button type="button" (click)="toggleDialect('thesis')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="refineForm.get('dialectThesis')?.value" [class.bg-neutral-50]="refineForm.get('dialectThesis')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4 text-emerald-600">emoji_objects</mat-icon>
+                  <span>تێز</span>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-black]="refineForm.get('dialectThesis')?.value" [class.text-white]="refineForm.get('dialectThesis')?.value" [class.bg-gray-100]="!refineForm.get('dialectThesis')?.value">
+                    {{ refineForm.get('dialectThesis')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+
+                <button type="button" (click)="toggleDialect('antithesis')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="refineForm.get('dialectAntithesis')?.value" [class.bg-neutral-50]="refineForm.get('dialectAntithesis')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4 text-red-600">gavel</mat-icon>
+                  <span>دژەتێز</span>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-black]="refineForm.get('dialectAntithesis')?.value" [class.text-white]="refineForm.get('dialectAntithesis')?.value" [class.bg-gray-100]="!refineForm.get('dialectAntithesis')?.value">
+                    {{ refineForm.get('dialectAntithesis')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+
+                <button type="button" (click)="toggleDialect('synthesis')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="refineForm.get('dialectSynthesis')?.value" [class.bg-neutral-50]="refineForm.get('dialectSynthesis')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4 text-indigo-700">alt_route</mat-icon>
+                  <span>سێنتێز</span>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-black]="refineForm.get('dialectSynthesis')?.value" [class.text-white]="refineForm.get('dialectSynthesis')?.value" [class.bg-gray-100]="!refineForm.get('dialectSynthesis')?.value">
+                    {{ refineForm.get('dialectSynthesis')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- COPY STYLE CUSTOM SEGMENT -->
+            <div class="space-y-4 pt-4 border-t-2 border-stone-800 bg-[#FCFBF7] p-4 rounded-xl border-2 border-stone-800 hover:border-black transition-all relative"
+                 (dragover)="onDragOver($event, 'copyStyle')"
+                 (dragleave)="onDragLeave($event, 'copyStyle')"
+                 (drop)="onFileDrop($event, 'copyStyle')"
+                 [class.bg-emerald-100]="isDraggingCopyStyle()">
+              
+              <div class="flex justify-between items-center">
+                <span class="block text-xs font-bold text-stone-900 flex items-center gap-1 bg-transparent">
+                  <mat-icon class="!text-sm text-neutral-800">article</mat-icon>
+                  ئایکۆنی کۆپی ستایل (شێوازی دەربڕین):
+                </span>
+                
+                <div class="flex items-center gap-2">
+                  @if (copyStyleFileName()) {
+                    <span class="text-[9px] text-emerald-950 bg-emerald-100 px-1.5 py-0.5 rounded border-2 border-emerald-800 font-mono font-bold truncate max-w-[120px]" [title]="copyStyleFileName()">
+                      {{ copyStyleFileName() }}
+                    </span>
+                  }
+                  <button type="button" (click)="fileInputCopyStyle.click()" class="text-[10px] text-amber-900 hover:underline flex items-center gap-0.5 cursor-pointer bg-transparent font-bold">
+                    <mat-icon class="!text-[11px] !w-3.5 !h-3.5 leading-none">upload_file</mat-icon>
+                    تێکست یان وۆرد بار بکە
+                  </button>
+                </div>
+              </div>
+              
+              <input type="file" #fileInputCopyStyle (change)="onFileSelected($event, 'copyStyle')" class="hidden" accept=".txt,.doc,.docx,.pdf,.md,.json">
+              
+              <textarea formControlName="copyStyleText" rows="2" class="w-full p-3 text-xs rounded-lg border-2 border-stone-850 bg-white focus:outline-none focus:border-amber-600 placeholder-stone-400 shadow-inner text-black font-semibold" placeholder="بۆ نموونە: شێوازی فەرمی فەلسەفەی کوردی کە دەتەوێت ئامێرەکە کۆپی بکات..."></textarea>
+            </div>
+
+

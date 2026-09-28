@@ -1,0 +1,27 @@
+              @if (viewedChapter()?.content) {
+                <div class="mt-8 pt-6 border-t-4 border-stone-800 space-y-6 font-serif">
+                  
+                  <!-- Section Header -->
+                  <div class="p-3 bg-amber-50 border-2 border-amber-950 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <mat-icon class="text-amber-900 font-bold">verified_user</mat-icon>
+                      <div>
+                        <h3 class="text-sm font-extrabold text-amber-950">تاقیکردنەوەی چوارچێوەی زانستی و ژیریی ئەکادیمی (Advanced Scholarly Alignment)</h3>
+                        <p class="text-[10px] text-stone-700 font-serif">ئاستی فەرمی گوتارەکەت بەرزبکەرەوە لەڕێی چوار میتۆدی نوێی وردبینی، خشتەکاری و بڕوانامەسازی ئەکادیمی.</p>
+                      </div>
+                    </div>
+                    <span class="text-[9px] bg-amber-900 text-white font-mono px-2.5 py-1 rounded font-extrabold uppercase">LEVEL 4 HIGH ACCREDITATION</span>
+                  </div>
+
+                  <!-- 4-BENTO GRID COLUMNS -->
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+<app-viewed-chapter-methodology></app-viewed-chapter-methodology>
+<app-viewed-chapter-stats></app-viewed-chapter-stats>
+<app-viewed-chapter-citation-export></app-viewed-chapter-citation-export>
+<app-viewed-chapter-plagiarism></app-viewed-chapter-plagiarism>
+<app-viewed-chapter-python></app-viewed-chapter-python>
+<app-viewed-chapter-elite></app-viewed-chapter-elite>
+<app-viewed-chapter-harvard></app-viewed-chapter-harvard>
+              }
+            </div>

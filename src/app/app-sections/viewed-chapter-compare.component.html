@@ -1,0 +1,150 @@
+          <!-- Side-by-Side Comparative Panes (Spans Full Width) -->
+          <div class="flex-1 overflow-y-auto mb-4 pr-1 flex flex-col gap-5 text-right min-h-0">
+            
+            <!-- Dynamic Document Selector Bar -->
+            <div class="bg-stone-50 border border-stone-200 p-3 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Left Selector -->
+              <div class="flex items-center gap-2 justify-between flex-wrap">
+                <span class="text-xs font-bold text-stone-700 font-serif">پەڕگە یان لایەنی یەکەم (چەپ):</span>
+                <select 
+                  [value]="compareLeftDoc()"
+                  (change)="compareLeftDoc.set(leftSel.value)"
+                  #leftSel
+                  class="text-xs p-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-600 font-serif">
+                  <option value="provided1">📂 بەڵگەی یەکپارچەی ١ (Uploaded 1)</option>
+                  <option value="provided2">📂 بەڵگەی یەکپارچەی ٢ (Uploaded 2)</option>
+                  <option value="manual">✍️ دەقنووسی لای چەپ (Manual Input)</option>
+                  @for (ch of chapters(); track ch.id) {
+                    <option [value]="'chapter_' + ch.id">📖 بەشی {{ ch.id }}: {{ ch.title }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Right Selector -->
+              <div class="flex items-center gap-2 justify-between flex-wrap">
+                <span class="text-xs font-bold text-stone-700 font-serif">پەڕگە یان لایەنی دووەم (ڕاست):</span>
+                <select 
+                  [value]="compareRightDoc()"
+                  (change)="compareRightDoc.set(rightSel.value)"
+                  #rightSel
+                  class="text-xs p-2 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-600 font-serif">
+                  <option value="active_chapter">📖 بەشی چالاک ئێستا (Current Chapter)</option>
+                  <option value="provided1">📂 بەڵگەی یەکپارچەی ١ (Uploaded 1)</option>
+                  <option value="provided2">📂 بەڵگەی یەکپارچەی ٢ (Uploaded 2)</option>
+                  <option value="manual">✍️ دەقنووسی لای ڕاست (Manual Input)</option>
+                  @for (ch of chapters(); track ch.id) {
+                    <option [value]="'chapter_' + ch.id">📖 بەشی {{ ch.id }}: {{ ch.title }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <!-- Side-by-Side Editors -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 min-h-[350px]">
+              <!-- Left Column Workspace -->
+              <div class="flex flex-col space-y-2">
+                <div class="text-[10px] text-stone-500 font-bold font-serif">دەستکاری یان پێداچوونەوە لە تێکستی لای چەپ:</div>
+                <textarea 
+                  #leftTextarea
+                  [value]="compareLeftText()"
+                  (input)="updateCompareLeftText(leftTextarea.value)"
+                  class="w-full flex-1 p-4 text-xs rounded-xl border border-stone-300 bg-[#E5E1DA]/10 focus:bg-white text-black leading-relaxed font-serif focus:outline-none focus:ring-1 focus:ring-stone-600 font-medium text-justify scrollbar-thin shadow-xs"
+                  placeholder="دەقەکە لێرە باربکە یان بنووسە بۆ شیکاری..."
+                  style="min-height: 280px;"></textarea>
+              </div>
+
+              <!-- Right Column Workspace -->
+              <div class="flex flex-col space-y-2">
+                <div class="text-[10px] text-stone-500 font-bold font-serif">دەستکاری یان پێداچوونەوە لە تێکستی لای ڕاست:</div>
+                <textarea 
+                  #rightTextarea
+                  [value]="compareRightText()"
+                  (input)="updateCompareRightText(rightTextarea.value)"
+                  class="w-full flex-1 p-4 text-xs rounded-xl border border-stone-300 bg-[#E5E1DA]/10 focus:bg-white text-black leading-relaxed font-serif focus:outline-none focus:ring-1 focus:ring-indigo-605 font-medium text-justify scrollbar-thin shadow-xs"
+                  placeholder="دەقەکە لێرە باربکە یان بنووسە بۆ شیکاری..."
+                  style="min-height: 280px;"></textarea>
+              </div>
+            </div>
+
+            <!-- Deep Academic Metrics & Comparer Sandbox Panel -->
+            <div class="bg-white border border-stone-200 rounded-xl p-4 space-y-4">
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-serif leading-relaxed text-stone-700">
+                <!-- Column 1: Structural Highlights -->
+                <div class="bg-stone-50 p-3 rounded-lg border border-stone-150 space-y-2">
+                  <span class="font-bold text-stone-900 block border-b border-stone-200 pb-1">📊 پێوەرە پێکهاتەییەکان (Structure)</span>
+                  <div class="space-y-1.5 text-[11px]">
+                    <div class="flex justify-between">
+                      <span>بڕی وشەکان:</span>
+                      <strong class="font-mono text-stone-950">{{ compareAnalysis().left.wordCount }} وشە vs {{ compareAnalysis().right.wordCount }} وشە</strong>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>پەرەگرافەکان:</span>
+                      <strong class="font-mono text-stone-950">{{ compareAnalysis().left.paragraphs }} vs {{ compareAnalysis().right.paragraphs }}</strong>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>سەردێڕەکان:</span>
+                      <strong class="font-mono text-stone-950">{{ compareAnalysis().left.headers }} vs {{ compareAnalysis().right.headers }}</strong>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>پیت بۆ هەر وشەیەک:</span>
+                      <strong class="font-mono text-stone-950">{{ compareAnalysis().left.avgWordLength }} vs {{ compareAnalysis().right.avgWordLength }}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Column 2: Vocabulary Complexity -->
+                <div class="bg-stone-50 p-3 rounded-lg border border-stone-150 space-y-2">
+                  <span class="font-bold text-stone-900 block border-b border-stone-200 pb-1">🧠 ئاڵۆزی زمانەوانی (Complexity)</span>
+                  <div class="space-y-2.5 text-[11px]">
+                    <div>
+                      <div class="flex justify-between mb-1">
+                        <span>قورسایی دەقی لای چەپ:</span>
+                        <strong class="font-mono">{{ compareAnalysis().left.complexityScore }}%</strong>
+                      </div>
+                      <div class="w-full bg-stone-200 h-1.5 rounded">
+                        <div class="h-full bg-stone-700 rounded" [style.width.%]="compareAnalysis().left.complexityScore"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="flex justify-between mb-1">
+                        <span>قورسایی دەقی لای ڕاست:</span>
+                        <strong class="font-mono">{{ compareAnalysis().right.complexityScore }}%</strong>
+                      </div>
+                      <div class="w-full bg-stone-200 h-1.5 rounded">
+                        <div class="h-full bg-indigo-700 rounded" [style.width.%]="compareAnalysis().right.complexityScore"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Column 3: Citation consistency -->
+                <div class="bg-stone-50 p-3 rounded-lg border border-stone-150 space-y-2">
+                  <span class="font-bold text-stone-900 block border-b border-stone-200 pb-1">📚 بەڵگەسازی و سەرچاوەکان (Citations)</span>
+                  <div class="space-y-2 text-[11px]">
+                    <div class="flex justify-between">
+                      <span>سەرچاوەی دەقی چەپ:</span>
+                      <strong class="font-mono text-stone-900">{{ compareAnalysis().left.citationsCount }} سەرچاوە</strong>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>سەرچاوەی دەقی ڕاست:</span>
+                      <strong class="font-mono text-stone-900">{{ compareAnalysis().right.citationsCount }} سەرچاوە</strong>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px] pt-1 border-t border-stone-200/80">
+                      <span>هاوئاهەنگی چەپ:</span>
+                      <span class="px-1.5 py-0.5 rounded font-bold" [class]="compareAnalysis().left.citationConsistencyScore >= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'">
+                        {{ compareAnalysis().left.citationConsistencyScore }}%
+                      </span>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px]">
+                      <span>هاوئاهەنگی ڕاست:</span>
+                      <span class="px-1.5 py-0.5 rounded font-bold" [class]="compareAnalysis().right.citationConsistencyScore >= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'">
+                        {{ compareAnalysis().right.citationConsistencyScore }}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
