@@ -4,6 +4,7 @@ import { resolveDoi } from '../../helpers/extended-academic-tools';
 export type TrustLevel = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
 
 export interface SourceVerificationReport {
+  sourceId: string;
   sourceTitle: string;
   author: string;
   publisher: string;
@@ -19,6 +20,8 @@ export interface SourceVerificationReport {
 }
 
 type InputSource = {
+  id?: string;
+  sourceId?: string;
   title: string;
   author?: string;
   year?: string | number;
@@ -125,6 +128,8 @@ export class SourceVerificationService {
       const inputDoi = normalizeDoi(source.doi);
       const external = inputDoi ? externallyResolved.get(inputDoi) : undefined;
 
+      const sourceId = String(source.id || source.sourceId || source.doi || source.title).trim();
+
       if (external) {
         const titleMatch = titleSimilarity(source.title, external.title) >= 0.72;
         const inputAuthor = (source.author || '').trim();
@@ -139,6 +144,7 @@ export class SourceVerificationService {
         const matches = titleMatch && authorMatch && yearMatch;
         if (!matches) {
           return {
+            sourceId,
             sourceTitle: source.title,
             author: source.author || 'نادیار',
             publisher: source.publisher || 'نادیار',
@@ -155,6 +161,7 @@ export class SourceVerificationService {
         }
 
         return {
+          sourceId,
           sourceTitle: external.title,
           author: external.authors.join(', ') || source.author || 'نادیار',
           publisher: external.publisher || source.publisher || 'نادیار',
@@ -170,6 +177,7 @@ export class SourceVerificationService {
       }
 
       return {
+        sourceId,
         sourceTitle: source.title,
         author: source.author || 'نادیار',
         publisher: source.publisher || 'نادیار',
