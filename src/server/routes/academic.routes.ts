@@ -20,6 +20,7 @@ import { resolveDoi, lookupIsbn, lookupIssn } from '../../helpers/extended-acade
 import { crawlerEngine } from '../../services/crawler-engine';
 import { academicSearchService } from '../../services/academic-search.service';
 import { sourceVerificationService } from '../services/source-verification.service';
+import { sourceVerificationService } from '../services/source-verification.service';
 
 export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -195,12 +196,23 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
       const sourceContext = sources.map(source => ({
         id: source.id,
         title: source.title,
+        author: Array.isArray(source.authors) ? source.authors.join(', ') : '',
+        year: source.publicationYear,
+        publisher: source.source,
+        doi: source.doi || ''
+      })), getGeminiClient);
+      const verifiedIds = new Set(verification.verifiedSources.map(source => source.sourceId));
+      const verifiedRecords = sources.filter(source => verifiedIds.has(String(source.id ?? source.doi ?? source.title)));
+      const sourceContext = verifiedRecords.map((source, index) => ({
+        id: source.id,
+        title: source.title,
         authors: source.authors,
         publicationYear: source.publicationYear,
         abstract: source.abstract || '',
         source: source.source,
         doi: source.doi || '',
-        url: source.url || ''
+        url: source.url || '',
+        verificationStatus: 'verified'
       }));
 
       if (sources.length === 0) {
@@ -272,7 +284,7 @@ ${JSON.stringify(sourceContext, null, 2)}
         keyFindings: stringArray(parsed['keyFindings']),
         theoreticalFramework: typeof parsed['theoreticalFramework'] === 'string' ? parsed['theoreticalFramework'] : '',
         methodologicalInsights: typeof parsed['methodologicalInsights'] === 'string' ? parsed['methodologicalInsights'] : '',
-        academicSources: sources.map(source => ({
+        academicSources: verifiedRecords.map(source => ({
           title: source.title,
           authors: source.authors.join(', '),
           year: source.publicationYear > 0 ? String(source.publicationYear) : 'n.d.',
