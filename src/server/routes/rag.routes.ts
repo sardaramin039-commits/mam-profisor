@@ -24,7 +24,7 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
         title.trim().length > 500 ||
         typeof content !== 'string' ||
         content.trim().length < 20 ||
-        content.length > 200_000
+        content.length > 2_000_000
       ) {
         res.status(400).json({ error: 'ناونیشان و ناوەڕۆکی بەڵگەنامەکە نادروستن.' });
         return;
