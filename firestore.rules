@@ -164,6 +164,44 @@ service cloud.firestore {
       allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId) && canUpdateSource(request.resource.data);
     }
 
+    // Research memory is isolated by Firebase user ID.
+    match /research_memory/{userId}/projects/{projectId} {
+      allow get, create, update: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(projectId);
+      allow delete: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(projectId);
+      allow list: if isVerifiedUser() && userId == request.auth.uid;
+
+      match /items/{itemId} {
+        allow get, create, update: if isVerifiedUser()
+          && userId == request.auth.uid
+          && isValidId(projectId)
+          && isValidId(itemId)
+          && request.resource.data.userId == request.auth.uid;
+        allow delete: if isVerifiedUser()
+          && userId == request.auth.uid
+          && isValidId(projectId)
+          && isValidId(itemId)
+          && resource.data.userId == request.auth.uid;
+        allow list: if isVerifiedUser() && userId == request.auth.uid;
+      }
+    }
+
+    // Research workspaces are isolated by Firebase user ID.
+    match /research_workspaces/{userId}/items/{workspaceId} {
+      allow get, create, update: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(workspaceId)
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(workspaceId)
+        && resource.data.userId == request.auth.uid;
+      allow list: if isVerifiedUser() && userId == request.auth.uid;
+    }
+
     // Match library_index collection
     match /library_index/{indexId} {
       allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(indexId);
