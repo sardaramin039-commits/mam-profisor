@@ -17,7 +17,7 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
         return;
       }
 
-      const { title, content, author, year } = req.body || {};
+      const { title, content, author, year, documentId } = req.body || {};
       if (
         typeof title !== 'string' ||
         title.trim().length < 3 ||
@@ -44,7 +44,8 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
         content: content.trim(),
         author: typeof author === 'string' ? author.trim().slice(0, 300) : undefined,
         year: parsedYear,
-        userId
+        userId,
+        documentId: typeof documentId === 'string' ? documentId.trim().slice(0, 200) : undefined
       });
 
       res.status(201).json({
@@ -52,7 +53,10 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
         title: indexed.title,
         retrievalStatus: indexed.retrievalStatus,
         verificationStatus: 'unverified',
-        embeddingDimensions: indexed.embedding?.length || 0
+        embeddingDimensions: indexed.embedding?.length || 0,
+        documentId: indexed.documentId || indexed.id,
+        chunkCount: indexed.chunkCount || 1,
+        indexingStatus: indexed.retrievalStatus
       });
     } catch (err: unknown) {
       console.error('RAG document indexing error:', err);
@@ -82,13 +86,13 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
       }
 
       const safeLimit = Math.max(1, Math.min(20, Number.isFinite(Number(limit)) ? Math.round(Number(limit)) : 5));
-      const results = await vectorStoreService.searchSimilarDocuments(query.trim(), userId, safeLimit);
+      const results = await vectorStoreService.searchSimilarDocuments(query.trim(), userId, safeLimit, typeof documentId === 'string' ? documentId.trim() : undefined);
 
       const candidates = results
         .filter(result => !verifiedOnly || result.verificationStatus === 'verified')
         .map(result => ({
           chunkId: result.id,
-          documentId: typeof documentId === 'string' ? documentId : 'DOC-UNKNOWN',
+          documentId: result.documentId || 'DOC-UNKNOWN',
           sourceId: result.id,
           sourceTitle: result.title,
           text: result.content,
@@ -108,7 +112,8 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
           lexicalMatchCount: candidates.filter(candidate => candidate.retrievalStatus === 'in-memory-index').length,
           semanticMatchCount: candidates.filter(candidate => candidate.retrievalStatus === 'persisted-vector').length,
           fusedCandidatesCount: candidates.length,
-          rerankedCount: candidates.length
+          rerankedCount: candidates.length,
+          chunkCount: candidates.length > 0 ? new Set(candidates.map(candidate => candidate.documentId)).size : 0
         },
         retrievalStatus: candidates.length > 0 ? 'available' : 'no-matching-indexed-content',
         verificationPolicy: 'retrieval-relevance-does-not-imply-source-verification'
