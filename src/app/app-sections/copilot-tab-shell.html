@@ -1,0 +1,18 @@
+        <div class="p-4 bg-stone-50 border border-stone-200 rounded-xl flex items-start gap-3 text-right text-stone-700 font-serif leading-relaxed shadow-inner">
+          <mat-icon class="text-amber-800 flex-none mt-0.5 animate-pulse">auto_awesome</mat-icon>
+          <div class="space-y-1">
+            @if (vm.copilotActiveTab() === 'multi_agent_debate') {
+              <strong class="text-xs text-stone-900 block">💬 دەمەتەقێی فرە-بریکاری فیکری (Multi-Agent Debate)</strong>
+              <p class="text-[11px] text-stone-600">ئەم مۆدیوڵە لێژنەیەکی زانستیی فرە-بریکاری (ڕەخنەگری توندی هارفه‌رد، نووسەری گەشبین، و کۆمەڵناسی چاند) پێکدەهێنێت بۆ تاوتوێکردن و دژەبەریی تیۆرییەکەت، بە ئامانجی پتەوکردنی هێڵی مشتومڕەکان.</p>
+            } @else if (vm.copilotActiveTab() === 'cross_lingual_gap') {
+              <strong class="text-xs text-stone-900 block">🌍 شیکاری بۆشایی مەعریفی فرە-زمان (Cross-Lingual Gap Analysis)</strong>
+              <p class="text-[11px] text-stone-600">ئەم مۆدیوڵە بیرۆکەکەت بەراوردی ژێدەر و ڕێبازە زمانەوانییەکانی (کوردی، عەرەبی، فارسی، و ئینگلیزی) دەکات بۆ دۆزینەوەی ئەو بۆشاییە زانستییەی کە تا ئێستا لێکۆڵینەوەی پێویستی لەسەر نەکراوە.</p>
+            } @else if (vm.copilotActiveTab() === 'logical_stress_test') {
+              <strong class="text-xs text-stone-900 block">⚖️ تاقیکردنەوەی سترێس و دژبەیی لۆجیکی (Logical Stress-Testing)</strong>
+              <p class="text-[11px] text-stone-600">ئەم مۆدیوڵە دەقەکەت یان گریمانەکەت شەن و کەو دەکات بۆ دەرهێنانی دژبەرییە ناوخۆیییەکان، هەڵە لۆژیکییەکان (Logical Fallacies)، و پێدانی نمرەی توندوتۆڵی فیکری لەسەر ١٠٠.</p>
+            } @else if (vm.copilotActiveTab() === 'ontological_mapping') {
+              <strong class="text-xs text-stone-900 block">⛓️ نەخشەسازیی ئۆنتۆلۆژی و تیۆری گڵۆباڵ (Ontological Concept Mapping)</strong>
+              <p class="text-[11px] text-stone-600">ئەم مۆدیوڵە چەمکە ڕەسەن و لۆکاڵییە کوردییەکان توند دەکاتەوە و دەیانبەستێتەوە بە تیۆرییە گشتی و سەرەکییەکانی فەلسەفە و کۆمەڵناسیی جیهانی (وەک لۆژیکی ماکس ڤیبەر، گوتاری فۆکۆ، یان هابیتوسی بۆردیۆ).</p>
+            }
+          </div>
+        </div>
