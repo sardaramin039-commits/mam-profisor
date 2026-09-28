@@ -98,7 +98,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
 {
   "advisorResponse": "پێشنیار و وەڵامی زانستی زۆر قووڵ بە کوردیی سۆرانی",
   "methodologicalSteps": ["هەنگاوی یەکەم", "هەنگاوی دووەم"],
-  "recommendedReadings": ["سەرچاوەی زانستی ١", "سەرچاوەی زانستی ٢"]
+  "recommendedReadings": [],
 }`;
 
       const response = await ai.models.generateContent({
