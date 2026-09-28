@@ -1,4 +1,4 @@
-import { signal, computed, inject } from '@angular/core';
+import { signal, computed, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Data } from './services/data';
 import { EditorService } from './features/editor/services/editor';
@@ -211,6 +211,10 @@ export abstract class AppControllerBase implements OnInit {
   isParaphrasing = signal<boolean>(false);
   paraphraseError = signal<string | null>(null);
   semanticDBResults = signal<any>(null);
+
+  getChapterTargetWords(chapter: ChapterItem, list: ChapterItem[], totalWords: number): number {
+    return calculateChapterTargetWords(chapter, list, totalWords);
+  }
 
   getChapterTarget(c: ChapterItem | null): number {
     if (!c) return 0;
