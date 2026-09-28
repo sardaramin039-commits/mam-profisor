@@ -21,7 +21,7 @@ export interface SourceVerificationReport {
 type InputSource = {
   title: string;
   author?: string;
-  year?: string;
+  year?: string | number;
   doi?: string;
   publisher?: string;
 };
