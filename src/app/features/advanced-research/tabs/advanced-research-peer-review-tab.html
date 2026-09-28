@@ -1,0 +1,73 @@
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <h3 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+            <mat-icon class="text-base text-cyan-400">rate_review</mat-icon>
+            AI Peer Reviewer (هەڵسەنگاندنی ئەکادیمی)
+          </h3>
+          <textarea
+            #peerInput
+            rows="4"
+            placeholder="دەقی توێژینەوەکەت بنووسە بۆ هەڵسەنگاندنی ڕەخنەیی..."
+            class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-3 focus:outline-none focus:border-cyan-500"
+          ></textarea>
+          <button
+            (click)="multiAgent.runPeerReview(peerInput.value)"
+            [disabled]="multiAgent.isPeerReviewing()"
+            class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2"
+          >
+            @if (multiAgent.isPeerReviewing()) {
+              <mat-icon class="animate-spin text-sm">sync</mat-icon>
+              هەڵسەنگاندن...
+            } @else {
+              <mat-icon class="text-sm">gavel</mat-icon>
+              ئەنجامدانی Peer Review
+            }
+          </button>
+
+          @if (multiAgent.peerReviewResult(); as pr) {
+            <div class="mt-3 p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2 text-xs">
+              <div class="flex items-center justify-between font-bold text-cyan-300">
+                <span>بریاری کۆتایی: {{ pr.overallVerdict }}</span>
+                <span>نمرە: {{ pr.reviewScore }}/100</span>
+              </div>
+              <p class="text-slate-300">{{ pr.detailedComments }}</p>
+            </div>
+          }
+        </div>
+
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <h3 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+            <mat-icon class="text-base text-rose-400">find_in_page</mat-icon>
+            AI Plagiarism & Originality Analysis
+          </h3>
+          <textarea
+            #plagInput
+            rows="4"
+            placeholder="دەق بنووسە بۆ شیکاری کۆپیکاری و کێشانی نەخشەی ڕەسەنایەتی..."
+            class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-3 focus:outline-none focus:border-rose-500"
+          ></textarea>
+          <button
+            (click)="multiAgent.runPlagiarismAnalysis(plagInput.value)"
+            [disabled]="multiAgent.isCheckingPlagiarism()"
+            class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2"
+          >
+            @if (multiAgent.isCheckingPlagiarism()) {
+              <mat-icon class="animate-spin text-sm">sync</mat-icon>
+              پشکنین...
+            } @else {
+              <mat-icon class="text-sm">spellcheck</mat-icon>
+              شیکاری Plagiarism
+            }
+          </button>
+
+          @if (multiAgent.plagiarismResult(); as plag) {
+            <div class="mt-3 p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2 text-xs">
+              <div class="flex items-center justify-between font-bold text-emerald-400">
+                <span>دۆخی ڕەسەنایەتی: {{ plag.verdict }}</span>
+                <span>ڕێژەی ڕەسەن: {{ plag.originalityScore }}%</span>
+              </div>
+              <div class="text-slate-400">ڕێژەی لێکچوو: {{ plag.similarityPercentage }}%</div>
+            </div>
+          }
+        </div>
+      </div>
