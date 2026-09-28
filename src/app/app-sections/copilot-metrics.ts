@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, Input } from '@angular/core';
-import { APP_VIEW_IMPORTS } from '../../app-view-imports';
+import { APP_VIEW_IMPORTS } from '../app-view-imports';
 
 @Component({
   selector: 'app-copilot-metrics',
