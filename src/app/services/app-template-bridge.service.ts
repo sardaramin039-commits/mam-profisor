@@ -6,6 +6,15 @@ import { Data } from './data';
 import { ChapterItemModel as ChapterItem } from '../domain/models';
 import { ACADEMIC_GLOSSARY as GLOSSARY_PROMPT } from '../../prompts/academic-glossary';
 
+function createSnapshotHash(text: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
 @Injectable({ providedIn: 'root' })
 export class AppTemplateBridgeService {
   private editorService = inject(EditorService);
@@ -554,7 +563,11 @@ export class AppTemplateBridgeService {
     });
   }
 
-  applyGeneratedTitle(title: string) {}
+  applyGeneratedTitle(title: string) {
+    const value = title.trim();
+    if (!value) return;
+    this.generatedTitleSummary.update(current => current ? { ...current, titles: [value, ...current.titles.filter(item => item !== value)] } : { titles: [value], summary: '' });
+  }
 
   copyTitleSummary(summary: string) {
     if (summary) {
@@ -577,8 +590,12 @@ export class AppTemplateBridgeService {
   onFileDrop(e: DragEvent, type: string) { e.preventDefault(); }
   onFileSelected(e: Event, type: string) {}
   onSendToSecondWindow() {}
-  activateAllAcademicRules() {}
-  deactivateAllAcademicRules() {}
+  activateAllAcademicRules() {
+    this.academicRules.update(rules => rules.map(rule => ({ ...rule, enabled: true })));
+  }
+  deactivateAllAcademicRules() {
+    this.academicRules.update(rules => rules.map(rule => ({ ...rule, enabled: false })));
+  }
   triggerComparison(result: any) {}
   searchLoadHistory(result: any) {}
   onRegisterVerifiedSource() {}
@@ -615,10 +632,45 @@ export class AppTemplateBridgeService {
   applySoranispellFixInViewedChapter() {}
   encryptChapterInVault(c: any, pwd: any) {}
   decryptChapterInVault(c: any, pwd: any) {}
-  createManualSnapshot(c: any) {}
-  verifyChapterIntegrityAgainstLastSnapshot(c: any) { return { isValid: true }; }
-  rollbackToSnapshot(c: any, sn: any) {}
-  scrollToSection(text: string, textarea: any) {}
+  createManualSnapshot(c: any) {
+    if (!c?.id) return;
+    try {
+      const snapshot = {
+        id: 'snap_' + Date.now(),
+        chapterId: c.id,
+        createdAt: new Date().toISOString(),
+        content: String(c.content || ''),
+        hash: createSnapshotHash(String(c.content || ''))
+      };
+      localStorage.setItem('mam-professor:snapshot:' + String(c.id), JSON.stringify(snapshot));
+    } catch (error) {
+      console.warn('Snapshot creation failed:', error);
+    }
+  }
+  verifyChapterIntegrityAgainstLastSnapshot(c: any): { isValid: boolean; status: 'verified' | 'not-verified' | 'mismatch'; hash?: string } {
+    if (!c?.id || typeof window === 'undefined') return { isValid: false, status: 'not-verified' };
+    try {
+      const raw = localStorage.getItem('mam-professor:snapshot:' + String(c.id));
+      if (!raw) return { isValid: false, status: 'not-verified' };
+      const snapshot = JSON.parse(raw) as { hash?: string };
+      const currentHash = createSnapshotHash(String(c.content || ''));
+      const isValid = snapshot.hash === currentHash;
+      return { isValid, status: isValid ? 'verified' : 'mismatch', hash: currentHash };
+    } catch {
+      return { isValid: false, status: 'not-verified' };
+    }
+  }
+  rollbackToSnapshot(c: any, sn: any) {
+    if (!c || typeof sn?.content !== 'string') return;
+    this.editorService.updateChapterContent(c.id, sn.content, 'گەڕانەوە بۆ وەشانی پێشووتر');
+  }
+  scrollToSection(text: string, textarea: HTMLTextAreaElement | null) {
+    if (!textarea || !text) return;
+    const index = textarea.value.indexOf(text);
+    if (index < 0) return;
+    textarea.focus();
+    textarea.setSelectionRange(index, index + text.length);
+  }
   verifyCitationsLive(c: any) {}
   runAcademicConsultation() {
     const question = this.consultationTextToProofread().trim() || this.consultationTopic().trim();
@@ -715,8 +767,18 @@ export class AppTemplateBridgeService {
     });
   }
   generateAcademicAdditions(chapter: any) {}
-  appendAdditionsToChapter(chapter: any, addition: any) {}
-  appendMethodologyLayoutToChapter(chapter: any) {}
+  appendAdditionsToChapter(chapter: any, addition: any) {
+    const text = String(addition || '').trim();
+    if (!chapter || !text) return;
+    this.editorService.updateChapterContent(chapter.id, (chapter.content || '').trim() + '\n\n' + text, 'زیادکردنی بڕگەی ئەکادیمی');
+  }
+  appendMethodologyLayoutToChapter(chapter: any) {
+    if (!chapter || !this.methodologyResult()) return;
+    const result = this.methodologyResult();
+    const parts = [result.methodologyText, ...(Array.isArray(result.dataCollectionTools) ? result.dataCollectionTools.map((x: unknown) => String(x)) : [])].filter(Boolean);
+    if (!parts.length) return;
+    this.editorService.updateChapterContent(chapter.id, (chapter.content || '').trim() + '\n\n' + parts.join('\n'), 'زیادکردنی پێکهاتەی مێتۆدۆلۆژی');
+  }
   analyzeSoraniPhoneticsAndDialect(chapter: any) {}
   constructMethodologyAndHypotheses(chapter: any) {
     if (!chapter) return;
@@ -740,8 +802,17 @@ export class AppTemplateBridgeService {
       }
     });
   }
-  appendStatsExplanationToChapter(chapter: any) {}
-  simulateEmpiricalStats(chapter: any) {}
+  appendStatsExplanationToChapter(chapter: any) {
+    const result = this.empiricalStatsResult();
+    if (!chapter || !result) return;
+    const text = typeof result.explanation === 'string' ? result.explanation.trim() : '';
+    if (!text) return;
+    this.editorService.updateChapterContent(chapter.id, (chapter.content || '').trim() + '\n\n### ڕوونکردنەوەی ئامار\n' + text, 'زیادکردنی ڕوونکردنەوەی ئامار');
+  }
+  simulateEmpiricalStats(chapter: any) {
+    this.statsError.set('ئاماری ئەزموونی خەیاڵی دروست ناکرێت. داتای ڕاستەقینە زیاد بکە یان dataset ـێکی پشتڕاستکراو بەکاربهێنە.');
+    this.empiricalStatsResult.set(null);
+  }
   generateMultiStyleCitation() {
     if (!this.citationForm.valid) {
       this.citationForm.markAllAsTouched();
