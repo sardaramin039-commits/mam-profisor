@@ -873,8 +873,8 @@ export class AppTemplateBridgeService {
       APA: CitationBuilder.formatAPA(source),
       MLA: CitationBuilder.formatMLA(source),
       Harvard: CitationBuilder.formatHarvard(source),
-      Chicago: CitationBuilder.formatHarvard(source),
-      IEEE: CitationBuilder.formatHarvard(source)
+      Chicago: CitationBuilder.formatChicago(source),
+      IEEE: CitationBuilder.formatIEEE(source)
     });
   }
   checkChapterPlagiarism(chapter: any) {}
