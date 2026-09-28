@@ -37,7 +37,14 @@ export class AcademicQAGateService {
   public async runQAGate(
     documentText: string,
     sources: any[],
-    getGeminiClient: () => GoogleGenAI
+    getGeminiClient: () => GoogleGenAI,
+    compliance?: {
+      confidence?: { overallScore?: number };
+      similarity?: { overallSimilarityScore?: number; highRiskMatches?: number };
+      contradictionCount?: number;
+      citationIntegrity?: number;
+      totalClaims?: number;
+    }
   ): Promise<QAGateResult> {
     const ai = getGeminiClient();
 
@@ -110,6 +117,53 @@ export class AcademicQAGateService {
           severity: 'critical',
           detailsKurdish: 'هیچ ئەنجامێکی پشتڕاستکراوی QA لە موتورەکەوە وەرنەگیرا.',
           recommendedActionKurdish: 'پشکنینی QA دووبارە بکەوە پێش Export.'
+        });
+      }
+
+      const confidenceScore = Number(compliance?.confidence?.overallScore);
+      const similarityScore = Number(compliance?.similarity?.overallSimilarityScore);
+      const highRiskSimilarity = Number(compliance?.similarity?.highRiskMatches) || 0;
+      const contradictionCount = Number(compliance?.contradictionCount) || 0;
+      const citationIntegrity = Number(compliance?.citationIntegrity);
+      const totalClaims = Number(compliance?.totalClaims) || 0;
+
+      if (Number.isFinite(confidenceScore) && confidenceScore < 70) {
+        checks.push({
+          ruleName: 'Academic Confidence',
+          passed: false,
+          severity: 'critical',
+          detailsKurdish: `ئەستەمەنی ئەکادیمی تەنها ${Math.round(confidenceScore)}% ـە.`,
+          recommendedActionKurdish: 'Evidence و citation ـەکان زیاد بکە و پێش Export پشکنینی مرۆیی بکە.'
+        });
+      }
+
+      if (highRiskSimilarity > 0 || (Number.isFinite(similarityScore) && similarityScore >= 35)) {
+        checks.push({
+          ruleName: 'Similarity Screening',
+          passed: false,
+          severity: 'critical',
+          detailsKurdish: 'شێوەی هاوشێوەیی بەرز لەگەڵ corpus ـی بەردەست دۆزرایەوە.',
+          recommendedActionKurdish: 'سەرچاوەی ڕاستەقینە citation بکە، quote ـەکان دیاری بکە، و دەقی خۆت دووبارە پشکنەوە.'
+        });
+      }
+
+      if (contradictionCount > 0) {
+        checks.push({
+          ruleName: 'Source Contradictions',
+          passed: false,
+          severity: 'critical',
+          detailsKurdish: `${contradictionCount} ناکۆکییە زانستییە پشتڕاستکراوەکان پێویستیان بە چارەسەرکردن هەیە.`,
+          recommendedActionKurdish: 'هەردوو دیدگا و بەڵگەکە هەڵسەنگێنە و پێش کۆتایی، جیاوازییەکە ڕوون بکە.'
+        });
+      }
+
+      if (totalClaims > 0 && Number.isFinite(citationIntegrity) && citationIntegrity / totalClaims < 0.9) {
+        checks.push({
+          ruleName: 'Citation Coverage',
+          passed: false,
+          severity: 'critical',
+          detailsKurdish: 'پوششی citation بۆ Claim ـەکان کەمتر لە ئاستی پێویستە.',
+          recommendedActionKurdish: 'هەر Claim ـێک بە Evidence ـی سەرچاوەی پشتڕاستکراو ببەستە.'
         });
       }
 
