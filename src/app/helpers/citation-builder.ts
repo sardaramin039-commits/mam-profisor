@@ -108,7 +108,7 @@ export class CitationBuilder {
       const doi = item.doi ? ` doi: ${item.doi.replace(/^https?:\/\/doi\.org\//, '')}` : '';
       body = `'${title}', *${item.journal}*${vol}${iss}${pp}.${doi}`;
     } else if (type === 'website') {
-      const accessed = item.accessedDate ? ` (Accessed: ${item.accessedDate})` : ` (Accessed: ${new Date().getFullYear()})`;
+      const accessed = item.accessedDate ? ` (Accessed: ${item.accessedDate})` : '';
       const url = item.url ? ` Available at: ${item.url}` : '';
       body = `*${title}*.${url}${accessed}.`;
     } else if (type === 'thesis') {
