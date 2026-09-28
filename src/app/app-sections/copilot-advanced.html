@@ -1,0 +1,67 @@
+          <div class="bg-white border border-[#E5E1DA] rounded-xl p-5 space-y-5 animate-expand-fade" id="copilot-result-ontology">
+            <div class="flex items-center gap-2 border-b border-stone-150 pb-3 justify-between">
+              <span class="text-xs font-bold text-stone-900 flex items-center gap-1">
+                <mat-icon class="text-[#A51C30] !text-sm">hub</mat-icon>
+                ئەنجامی نەخشەسازی و بەستنەوەی ئۆنتۆلۆژی لۆکاڵ بە جیهانی (Ontological Mapping):
+              </span>
+              <span class="text-[9px] font-mono bg-emerald-600/10 text-emerald-700 px-2 py-0.5 rounded border border-emerald-600/20 font-bold">Ontology Connected</span>
+            </div>
+
+            <!-- Concept, Etymology Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-4 bg-stone-50 border border-stone-200 rounded-xl space-y-1">
+                <span class="text-[10px] text-stone-500 font-bold font-serif uppercase">زاراوەی لۆکاڵی شیکراوە:</span>
+                <h4 class="text-sm font-extrabold text-[#A51C30]">{{ res.term }}</h4>
+              </div>
+              <div class="p-4 bg-stone-50 border border-stone-200 rounded-xl space-y-1">
+                <span class="text-[10px] text-stone-500 font-bold font-serif uppercase">نەژادناسی و زمانەوانیی چەمک (Etymology):</span>
+                <p class="text-xs text-stone-700 leading-relaxed font-serif">{{ res.etymology }}</p>
+              </div>
+            </div>
+
+            <!-- Parallel Theorists comparisons -->
+            <div class="space-y-2.5">
+              <span class="block text-xs font-extrabold text-stone-800 flex items-center gap-1">
+                <mat-icon class="!text-sm text-amber-700">link</mat-icon>
+                هاوتاکردن و پردکردنەوەی چەمکە کوردییەکە لەگەڵ تیۆرە جیهانییەکان (Global Parallels):
+              </span>
+              <div class="grid grid-cols-1 gap-3">
+                @for (parallel of res.parallels; track parallel.theorist) {
+                  <div class="p-3.5 bg-amber-50/20 border border-amber-200/50 rounded-xl space-y-1 font-serif text-justify">
+                    <strong class="text-xs text-amber-950 block">👤 {{ parallel.theorist }}:</strong>
+                    <p class="text-[11px] text-stone-700 leading-relaxed">{{ parallel.comparison }}</p>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Proposed Integration Block -->
+            <div class="p-4 bg-emerald-50/45 border-r-4 border-emerald-600 border border-emerald-100 rounded-lg space-y-1.5 font-serif text-justify">
+              <strong class="text-xs text-emerald-950 block flex items-center gap-1">
+                <mat-icon class="text-emerald-700 !text-sm">share</mat-icon>
+                پێشنیاری داڕشتنەوە و جێگیرکردنی یەکپارچەی زانستی لەناو تێزەکەدا (Proposed Synthesis Block):
+              </strong>
+              <p class="text-[11px] text-stone-850 leading-relaxed">{{ res.proposedIntegration }}</p>
+            </div>
+
+            <!-- Action Area: Apply to selected chapter -->
+            <div class="flex items-center justify-between border-t border-stone-150 pt-4 gap-3 flex-wrap bg-stone-50/60 p-3 rounded-lg">
+              <span class="text-[10px] text-stone-600 font-serif">ئەم پێشنیارە فیکری و نەخشەسازییە ئۆنتۆلۆژییە زیاد بکە بۆ تێکستی بەشی لێکۆڵینەوەکەت:</span>
+              <div class="flex items-center gap-2">
+                <select #chOntologySelector class="text-xs p-2 border border-stone-350 rounded focus:ring-1 focus:ring-harvard-crimson font-sans bg-white text-black font-semibold cursor-pointer">
+                  @for (ch of vm.chapters(); track ch.id) {
+                    <option [value]="ch.id">بەشی {{ vm.getKurdishNumberStr(ch.id) }}: {{ ch.title }}</option>
+                  }
+                </select>
+                <button 
+                  type="button" 
+                  [disabled]="vm.chapters().length === 0"
+                  (click)="vm.applyCopilotToChapter(vm.getChapterById(chOntologySelector.value)!)"
+                  class="px-3 py-2 bg-stone-900 hover:bg-black text-white rounded text-[10.5px] font-bold cursor-pointer transition flex items-center gap-1 disabled:opacity-50">
+                  <mat-icon class="!text-xs">add_circle</mat-icon>
+                  <span>تێکەڵکردن بە بەشی لێکۆڵینەوە</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
