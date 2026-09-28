@@ -15,7 +15,7 @@ export class CitationManagerService {
    */
   addSource(source: Partial<AcademicSourceModel>): AcademicSourceModel {
     const newSource: AcademicSourceModel = {
-      id: source.id || `source_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: source.id || createCitationId(),
       userId: source.userId || 'local_user',
       title: source.title || 'سەرچاوەی بێ ناو',
       author: source.author || 'نووسەری دیارینەکراو',
