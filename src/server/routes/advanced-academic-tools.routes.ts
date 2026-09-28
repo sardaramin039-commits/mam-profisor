@@ -84,7 +84,7 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
     try {
       const { concept, type = 'table' } = req.body;
       const ai = getGeminiClient();
-      const prompt = `داتای خشتە یان دیپۆزیتۆری نەخشەیی زانستی (${type}) دروست بکە بۆ: "${concept}" بە زمانی کوردی بە JSON.`;
+      const prompt = `خشتە یان شێوەی زانستی (${type}) تەنها لەسەر داتای پێدراو ڕێکبخە بۆ: "${concept}". ئەگەر ژمارە، پێوانە، دەرئەنجام یان dataset ـی ڕاستەقینە نەدراوە، هیچ داتای نوێ دروست مەکە؛ بە جێی ئەوە rows/values ـی بەتاڵ دابنێ و status=requires-real-data بنووسە. وەڵام بە JSON.`
 
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
