@@ -5,27 +5,19 @@
                 [glossaryCountInput]="12">
               </app-daily-research-pulse>
             } @else if (activeSubTab() === 'health_check') {
-} @else if (activeSubTab() === 'health_check') {
               <app-citation-health-check
                 [chapterText]="activeChapter()?.content || ''">
               </app-citation-health-check>
 } @else if (activeSubTab() === 'timeline') {
-            } @else if (activeSubTab() === 'timeline') {
               <app-chapter-timeline-view
                 [chapterId]="activeChapter()?.id || 1"
                 [chapterContent]="activeChapter()?.content || ''"
                 (restoreRequested)="updateActiveChapterContent($event)">
               </app-chapter-timeline-view>
 } @else if (activeSubTab() === 'grammar_panel') {
-            } @else if (activeSubTab() === 'grammar_panel') {
               <app-grammar-syntax-floating-panel
                 [chapterContent]="activeChapter()?.content || ''"
                 (textUpdated)="updateActiveChapterContent($event)">
               </app-grammar-syntax-floating-panel>
             }
-
-          </div>
-
-
-
 }
