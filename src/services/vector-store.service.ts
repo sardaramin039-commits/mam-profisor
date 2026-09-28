@@ -161,7 +161,7 @@ export class VectorStoreService {
           pageEnd: metadata.pageEnd,
           similarity: Number.isFinite(similarity) ? similarity : 0,
           score: Number.isFinite(similarity) ? similarity : 0,
-          retrievalStatus: 'persisted-vector',
+          retrievalStatus: 'persisted-vector' as const,
           verificationStatus: metadata.verificationStatus
         };
       });
