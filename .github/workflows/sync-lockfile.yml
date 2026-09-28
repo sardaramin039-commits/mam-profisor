@@ -32,8 +32,14 @@ jobs:
           cache: npm
           cache-dependency-path: package.json
 
+      - name: Configure npm lockfile mode
+        run: npm config set package-lock true
+
       - name: Generate lockfile
-        run: npm install --package-lock-only --ignore-scripts
+        run: npm install --package-lock-only --ignore-scripts --package-lock=true
+
+      - name: Verify lockfile exists
+        run: test -f package-lock.json
 
       - name: Commit lockfile when changed
         run: |
