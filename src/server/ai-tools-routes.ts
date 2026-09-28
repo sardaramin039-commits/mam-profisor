@@ -4,6 +4,8 @@ import { buildUserPromptForTool } from './ai-tools-prompts';
 import { centralizedPromptsManager, AcademicToneVariant } from './prompts/centralized-prompts-manager';
 import { apiConfigService } from './services/api-config.service';
 import { generateDynamicAcademicFallback } from './services/dynamic-academic-fallback.service';
+import { academicSearchService } from '../services/academic-search.service';
+import { resolveDoi, lookupIsbn, lookupIssn } from '../helpers/extended-academic-tools';
 import { z } from 'zod';
 
 interface OpenAiOrPerplexityResponse {
@@ -68,6 +70,39 @@ const fetchWithTimeout = async (url: string, init: RequestInit, timeoutMs = 45_0
   }
 };
 
+async function executeDirectIntegration(toolId: string, inputText: string): Promise<unknown | null> {
+  const query = inputText.trim();
+
+  switch (toolId) {
+    case 'openalex_api':
+      return {
+        integration: 'openalex',
+        records: await academicSearchService.searchOpenAlex(query, 10),
+        verificationStatus: 'retrieved-not-verified'
+      };
+    case 'crossref_api':
+      return {
+        integration: 'crossref',
+        records: await academicSearchService.searchCrossRef(query, 10),
+        verificationStatus: 'retrieved-not-verified'
+      };
+    case 'google_books_api':
+      return {
+        integration: 'googlebooks',
+        records: await academicSearchService.searchGoogleBooks(query, 10),
+        verificationStatus: 'retrieved-not-verified'
+      };
+    case 'doi_resolver':
+      return await resolveDoi(query);
+    case 'isbn_lookup':
+      return await lookupIsbn(query);
+    case 'issn_lookup':
+      return await lookupIssn(query);
+    default:
+      return null;
+  }
+}
+
 export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
 
@@ -93,6 +128,20 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
       const requestedVariant = options?.toneVariant as AcademicToneVariant | undefined;
       const { systemPrompt, variantUsed } = centralizedPromptsManager.getSystemPrompt(toolId, requestedVariant);
       selectedVariant = variantUsed;
+
+      const directIntegration = await executeDirectIntegration(toolId, inputText);
+      if (directIntegration !== null) {
+        centralizedPromptsManager.recordABMetric(selectedVariant, Date.now() - startTime, true);
+        res.json({
+          success: true,
+          toolId,
+          variantUsed: selectedVariant,
+          output: JSON.stringify(directIntegration),
+          integrationMode: 'direct',
+          sourceVerificationStatus: 'retrieved-not-verified'
+        });
+        return;
+      }
 
       const userPrompt = buildUserPromptForTool(toolId, inputText, options);
       const provider = (options?.provider || 'auto').toLowerCase();
