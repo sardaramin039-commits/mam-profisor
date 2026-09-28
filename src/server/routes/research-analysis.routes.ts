@@ -87,7 +87,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
       }
 
       const ai = getGeminiClient();
-      const userPrompt = `وەک ڕاوێژکارێکی باڵای ئەکادیمی (Harvard/Oxford Academic Advisor)، ڕێننمایی زانستی زۆر قووڵ بۆ ئەم پرسیارەی توێژەر بنووسە:
+      const userPrompt = `وەک ڕاوێژکارێکی ئەکادیمی و بێلایەن، ڕێننمایی زانستی زۆر قووڵ بۆ ئەم پرسیارەی توێژەر بنووسە:
 پرسیاری توێژەر: "${userQuestion}"
 کایەی زانستی: "${discipline || 'گشتی'}"
 ئاستی زانستی: "${academicLevel || 'ماستەر'}"
@@ -127,7 +127,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
 ناونیشان: "${title}"
 کایە: "${discipline}"
 جۆری توێژینەوە: "${researchType || 'چۆنایەتی و چەندایەتی'}"
-قەبارەی نموونە: "${sampleSize || '١٠٠ بەشداربوو'}"
+قەبارەی نموونە: "${sampleSize || 'دیارینەکراو'}"
 
 تکایە بە JSON وەڵام بدەرەوە:
 {
@@ -165,7 +165,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
 
       const ai = getGeminiClient();
 
-      const researchPrompt = `تۆ سەرپەرشتیاری تیمی Multi-Agent هەڵسەنگاندن و نووسینی ئەکادیمیت بۆ زانکۆی هارفارد.
+      const researchPrompt = `تۆ سەرپەرشتیاری تیمی Multi-Agent هەڵسەنگاندن و نووسینی ئەکادیمیت لە چوارچێوەی ناوخۆیی ئەپەکەیت.
 تکایە زنجیرە شیکاریی فرە-ئەجێنت (Research -> Evidence -> Writer -> Citation -> Reviewer) ئەنجام بدە بۆ بابەتی: "${topic}"
 ئاستی پرۆفیسۆر: ${professorMode}
 پاشخانی بیرگەی توێژینەوە: ${JSON.stringify(researchMemory || {})}
@@ -186,13 +186,11 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
     "خاڵی بەڵگەی یەکەم بە پشتیوانی سەرچاوەی ساغکراوە",
     "خاڵی بەڵگەی دووەم"
   ],
-  "verifiedCitations": [
-    { "citationKey": "(Smith, 2022)", "supportedClaim": "ادعای زانستی پشتیوانیکراو" }
-  ],
+  "verifiedCitations": [],
   "peerReviewAudit": {
-    "scholarlyScore": 92,
-    "rigorGrade": "A+",
-    "criticalFeedback": "پێداچوونەوەی ڕەخنەیی و ئامۆژگاری زانستی بۆ توێژەر"
+    "scholarlyScore": null,
+    "rigorGrade": null,
+    "criticalFeedback": "پێداچوونەوەی ڕەخنەیی و ئامۆژگاری زانستی بۆ توێژەر؛ هیچ citation یەک Verified ناکرێت لەم قۆناغەدا."
   }
 }`;
 
