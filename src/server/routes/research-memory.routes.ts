@@ -59,7 +59,7 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
         return;
       }
 
-      const newItem = researchMemoryService.addMemoryItem(userId, projectId, {
+      const newItem = await researchMemoryService.addMemoryItem(userId, projectId, {
         userId,
         topic: parsed.data.topic || 'توێژینەوەی ئەکادیمی',
         type: parsed.data.type,
