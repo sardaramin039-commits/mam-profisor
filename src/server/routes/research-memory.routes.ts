@@ -43,7 +43,7 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
    */
   router.post('/:projectId/items', async (req: AuthRequest, res) => {
     try {
-      const userId = (req as any).user?.uid;
+      const userId = req.user?.uid;
       if (!userId) {
         res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
         return;
