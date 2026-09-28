@@ -93,9 +93,7 @@ class ResearchProjectStateService {
       tags: [ws.activeChapter, 'workspace_auto_save']
     });
 
-    void this.persistWorkspace(ws).catch(error => {
-      console.warn('[ResearchWorkspace Firestore persist unavailable]:', (error as Error)?.message || error);
-    });
+    await this.persistWorkspace(ws);
     return ws;
   }
 
