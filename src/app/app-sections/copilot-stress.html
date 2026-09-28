@@ -9,7 +9,7 @@
 
             <!-- Traditions Grid Display -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              @for (trad of res.traditions; track trad.language) {
+              @for (trad of vm.traditions; track trad.language) {
                 <div class="p-4 bg-stone-50 border border-stone-200 rounded-xl space-y-1.5 flex flex-col justify-between">
                   <div class="flex items-center justify-between border-b border-stone-150 pb-1">
                     <span class="text-xs font-extrabold text-[#A51C30] flex items-center gap-1">
@@ -29,7 +29,7 @@
                 <mat-icon class="text-amber-700 !text-sm">warning_amber</mat-icon>
                 بۆشایی ناسراو لە ناوەندە مەعریفییەکاندا (Identified Research Gap):
               </strong>
-              <p class="text-[11px] text-stone-800 leading-relaxed font-bold">{{ res.identifiedGap }}</p>
+              <p class="text-[11px] text-stone-800 leading-relaxed font-bold">{{ vm.identifiedGap }}</p>
             </div>
 
             <!-- Bridging Strategy -->
@@ -38,7 +38,7 @@
                 <mat-icon class="text-emerald-700 !text-sm">alt_route</mat-icon>
                 ستراتیژیی پێشنیارکراوی توێژەر بۆ پڕکردنەوەی بۆشاییەکە (Bridging Strategy):
               </strong>
-              <p class="text-[11px] text-stone-850 leading-relaxed">{{ res.bridgingStrategy }}</p>
+              <p class="text-[11px] text-stone-850 leading-relaxed">{{ vm.bridgingStrategy }}</p>
             </div>
 
             <!-- Action Area: Apply to selected chapter -->
