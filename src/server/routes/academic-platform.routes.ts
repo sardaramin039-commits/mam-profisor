@@ -14,7 +14,14 @@ import { aiModelRouterService } from '../services/ai-model-router.service';
 import { z } from 'zod';
 
 const textField = (max: number) => z.string().trim().min(1).max(max);
-const sourceArray = z.array(z.record(z.string(), z.unknown())).max(100);
+const sourceSchema = z.object({
+  title: z.string().trim().min(1).max(1000),
+  author: z.string().max(500).optional(),
+  year: z.union([z.string(), z.number()]).optional(),
+  doi: z.string().max(500).optional(),
+  publisher: z.string().max(500).optional()
+}).strip();
+const sourceArray = z.array(sourceSchema).max(100);
 
 const evidenceGraphSchema = z.object({ topic: textField(500), draftText: z.string().max(250_000).default(''), sources: sourceArray.default([]) }).strict();
 const sourceVerificationSchema = z.object({ sources: sourceArray.default([]) }).strict();
@@ -29,7 +36,7 @@ const orchestrationSchema = z.object({
   draftText: z.string().max(250_000).default(''),
   rawSources: sourceArray.default([])
 }).strict();
-const modelRouterSchema = z.object({ taskType: textField(100).default('fast'), textLength: z.coerce.number().int().min(0).max(1_000_000).default(0) }).strict();
+const modelRouterSchema = z.object({ taskType: z.enum(['fast', 'reasoning', 'long_context', 'embedding']).default('fast'), textLength: z.coerce.number().int().min(0).max(1_000_000).default(0) }).strict();
 
 export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -139,7 +146,7 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         qa,
         sourceVerification: {
           verifiedSources: verification.verifiedSources,
-          unverifiableSources: verification.unverifiableSources,
+          unverifiedSources: verification.unverifiableSources,
           rejectedSources: verification.rejectedSources
         }
       });
