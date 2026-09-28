@@ -338,7 +338,7 @@ export class SourceVerificationService {
         const titleMatch = !issnExternal.journalTitle || titleSimilarity(source.title, issnExternal.journalTitle) >= 0.65;
         const publisherMatch = !source.publisher || !issnExternal.publisher ||
           normalize(source.publisher) === normalize(issnExternal.publisher);
-        const matched = titleMatch || publisherMatch;
+        const matched = titleMatch && publisherMatch;
         return {
           sourceId,
           sourceTitle: issnExternal.journalTitle || source.title,
