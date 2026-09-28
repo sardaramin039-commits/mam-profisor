@@ -82,11 +82,11 @@
           <div class="p-6 space-y-6 flex-1 min-h-[500px] max-h-[85vh] overflow-y-auto scrollbar-thin">
             
 @if (activeSubTab() === 'editor') {
-  <app-window-two-editor></app-window-two-editor>
+  <app-window-two-editor [host]="host"></app-window-two-editor>
 } @else if (activeSubTab() === 'chunks' || activeSubTab() === 'citations') {
-  <app-window-two-rag-citations></app-window-two-rag-citations>
+  <app-window-two-rag-citations [host]="host"></app-window-two-rag-citations>
 } @else {
-  <app-window-two-diagnostics></app-window-two-diagnostics>
+  <app-window-two-diagnostics [host]="host"></app-window-two-diagnostics>
 }
           <!-- Footer status diagnostic bar -->
           <div class="p-4 bg-[#F8F6F2] border-t border-[#E5E1DA] flex items-center justify-between text-[11px] font-sans">
