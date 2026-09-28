@@ -38,6 +38,7 @@ export class CitationIntelligenceService {
     let unmappedClaimCount = 0;
     let blockedCitationCount = 0;
     let citationNumber = 0;
+    const ieeeNumberBySource = new Map<string, number>();
 
     for (const paragraph of Array.isArray(paragraphs) ? paragraphs : []) {
       for (const claim of Array.isArray(paragraph?.claims) ? paragraph.claims : []) {
@@ -53,8 +54,21 @@ export class CitationIntelligenceService {
         const year = clean(source.year || source.publicationYear || 'n.d.');
         const title = clean(source.sourceTitle || source.title || 'Untitled');
         const page = clean(claim.page || claim.pageNumber);
-        citationNumber += 1;
-        const inText = this.formatInText(authors, year, page, style, citationNumber);
+        let referenceNumber = citationNumber + 1;
+        if (style === 'IEEE') {
+          const existingNumber = ieeeNumberBySource.get(sourceId);
+          if (existingNumber) {
+            referenceNumber = existingNumber;
+          } else {
+            citationNumber += 1;
+            referenceNumber = citationNumber;
+            ieeeNumberBySource.set(sourceId, referenceNumber);
+          }
+        } else {
+          citationNumber += 1;
+          referenceNumber = citationNumber;
+        }
+        const inText = this.formatInText(authors, year, page, style, referenceNumber);
         const bibliography = this.formatBibliography(authors, year, title, clean(source.publisher), clean(source.doiOrIsbn || source.doi), style);
         citations.push({
           citationId: clean(claim.citationId) || `CIT-${citations.length + 1}`,
