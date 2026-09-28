@@ -126,6 +126,44 @@ export class CitationBuilder {
   }
 
   /**
+   * Chicago Notes & Bibliography bibliography formatting.
+   */
+  public static formatChicago(item: CitationItem): string {
+    const authors = item.authors?.trim() || 'Unknown Author';
+    const title = item.title?.trim() || 'Untitled';
+    const year = item.year ? String(item.year) : 'n.d.';
+    if (item.journal) {
+      const volume = item.volume ? `, ${item.volume}` : '';
+      const issue = item.issue ? ` no. ${item.issue}` : '';
+      const pages = item.pages ? `: ${item.pages}` : '';
+      const doi = item.doi ? `, https://doi.org/${item.doi.replace(/^https?:\/\/doi\.org\//, '')}` : item.url ? `, ${item.url}` : '';
+      return `${authors}. "${title}." ${item.journal}${volume}${issue} (${year})${pages}${doi}.`;
+    }
+    const publisher = item.publisher ? `${item.publisher}, ` : '';
+    const place = item.place ? `${item.place}: ` : '';
+    return `${authors}. ${title}. ${place}${publisher}${year}.`;
+  }
+
+  /**
+   * IEEE reference-entry formatting. Numbering is intentionally left to the
+   * final document renderer because citation order is document-context dependent.
+   */
+  public static formatIEEE(item: CitationItem): string {
+    const authors = item.authors?.trim() || 'Unknown Author';
+    const title = item.title?.trim() || 'Untitled';
+    const year = item.year ? String(item.year) : 'n.d.';
+    if (item.journal) {
+      const volume = item.volume ? `, vol. ${item.volume}` : '';
+      const issue = item.issue ? `, no. ${item.issue}` : '';
+      const pages = item.pages ? `, pp. ${item.pages}` : '';
+      const doi = item.doi ? `, doi: ${item.doi.replace(/^https?:\/\/doi\.org\//, '')}` : '';
+      return `${authors}, "${title}," ${item.journal}${volume}${issue}${pages}, ${year}${doi}.`;
+    }
+    const publisher = item.publisher ? ", " + item.publisher : '';
+    return `${authors}, ${title}${publisher}, ${year}.`;
+  }
+
+  /**
    * Kurdish Academic Citation Formatting
    */
   public static formatKurdishAcademic(item: CitationItem): string {
