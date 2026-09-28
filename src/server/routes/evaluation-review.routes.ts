@@ -93,14 +93,14 @@ export function createEvaluationReviewRouter(getGeminiClient: () => GoogleGenAI)
     try {
       const { title, text, discipline } = req.body;
       const ai = getGeminiClient();
-      const userPrompt = `پێداچوونەوەی ئاستی زانکۆی هارڤەرد بۆ ئەم دەقە ئەنجام بدە:
+      const userPrompt = `پێداچوونەوەی ئەکادیمی بەپێی پێوەرە ناوخۆییەکانی ئەپ بۆ ئەم دەقە ئەنجام بدە:
 ناونیشان: "${title}"
 کایە: "${discipline}"
 دەق: "${(text || '').slice(0, 3000)}"
 
 تکایە بە JSON وەڵام بدەرەوە:
 {
-  "harvardRigorScore": 88,
+  "harvardRigorScore": null,
   "scholarFeedback": "شیکاری قووڵ و ڕەخنەیی بێ لایەن بۆ گوتاری زانستی",
   "methodologyPurity": "هەڵسەنگاندنی پاکیی مێتۆدۆلۆژی",
   "keyRefinements": ["داواکاری چاکسازی ١", "داواکاری چاکسازی ٢"]
