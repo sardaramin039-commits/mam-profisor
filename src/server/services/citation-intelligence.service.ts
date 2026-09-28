@@ -37,6 +37,7 @@ export class CitationIntelligenceService {
     const citations: CitationRecord[] = [];
     let unmappedClaimCount = 0;
     let blockedCitationCount = 0;
+    let citationNumber = 0;
 
     for (const paragraph of Array.isArray(paragraphs) ? paragraphs : []) {
       for (const claim of Array.isArray(paragraph?.claims) ? paragraph.claims : []) {
@@ -52,7 +53,8 @@ export class CitationIntelligenceService {
         const year = clean(source.year || source.publicationYear || 'n.d.');
         const title = clean(source.sourceTitle || source.title || 'Untitled');
         const page = clean(claim.page || claim.pageNumber);
-        const inText = this.formatInText(authors, year, page, style);
+        citationNumber += 1;
+        const inText = this.formatInText(authors, year, page, style, citationNumber);
         const bibliography = this.formatBibliography(authors, year, title, clean(source.publisher), clean(source.doiOrIsbn || source.doi), style);
         citations.push({
           citationId: clean(claim.citationId) || `CIT-${citations.length + 1}`,
@@ -74,12 +76,21 @@ export class CitationIntelligenceService {
     };
   }
 
-  private formatInText(authors: string, year: string, page: string, style: CitationStyle): string {
-    const author = authors.split(',')[0].trim();
-    if (style === 'IEEE') return '[verified]';
-    if (style === 'MLA9') return `(${author}${page ? ` ${page}` : ''})`;
-    if (style === 'ChicagoNB') return '[footnote-eligible]';
-    return `(${author}, ${year}${page ? `, p. ${page}` : ''})`;
+  private formatInText(
+    authors: string,
+    year: string,
+    page: string,
+    style: CitationStyle,
+    number: number
+  ): string {
+    const authorNames = authors.split(/[,;]+/).map(value => value.trim()).filter(Boolean);
+    const author = authorNames[0] || 'ن.د.';
+    const withEtAl = authorNames.length >= 3 ? `${author} et al.` : author;
+
+    if (style === 'IEEE' || style === 'ChicagoNB') return `[${number}]`;
+    if (style === 'MLA9') return `(${authorNames.length >= 2 ? withEtAl : author}${page ? ` ${page}` : ''})`;
+    if (style === 'ChicagoAD') return `(${author}, ${year}${page ? `, ${page}` : ''})`;
+    return `(${withEtAl}, ${year}${page ? `, p. ${page}` : ''})`;
   }
 
   private formatBibliography(
@@ -90,8 +101,9 @@ export class CitationIntelligenceService {
     identifier: string,
     style: CitationStyle
   ): string {
-    if (style === 'IEEE') return `${authors}. "${title}." ${publisher}, ${year}. ${identifier}`.trim();
-    if (style === 'MLA9') return `${authors}. ${title}. ${publisher}, ${year}. ${identifier}`.trim();
+    if (style === 'IEEE') return `${authors}. "${title}." ${publisher}, ${year}.${identifier ? ` ${identifier}` : ''}`.trim();
+    if (style === 'MLA9') return `${authors}. ${title}. ${publisher}, ${year}.${identifier ? ` ${identifier}` : ''}`.trim();
+    if (style === 'ChicagoNB') return `${authors}. ${title}. ${publisher}, ${year}.${identifier ? ` ${identifier}` : ''}`.trim();
     return `${authors} (${year}). ${title}. ${publisher}.${identifier ? ` ${identifier}` : ''}`.trim();
   }
 }
