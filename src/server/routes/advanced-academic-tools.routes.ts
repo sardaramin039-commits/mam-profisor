@@ -176,14 +176,14 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
 
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
-        contents: `پێوەر و ئاستی زانستیی هارڤارد (Harvard Standard) بەکاربهێنە بۆ دەقەکە: "${text}" (بوار: ${discipline || 'گشتی'})`,
+        contents: `پێوەرە ناوخۆییەکانی هەڵسەنگاندنی ئەکادیمی بەکاربهێنە بۆ دەقەکە: "${text}" (بوار: ${discipline || 'گشتی'})`,
         config: { systemInstruction: SYSTEM_PROMPT_HARVARD_FEATURES, responseMimeType: 'application/json', temperature: 0.2 }
       });
 
       return res.json(robustParseJson(response.text || '{}'));
     } catch (error) {
-      console.error('Harvard quality audit error:', error);
-      return res.status(500).json({ error: 'کێشەیەک لە هەڵسەنگاندنی هارڤارددا ڕوویدا.' });
+      console.error('Academic quality audit error:', error);
+      return res.status(500).json({ error: 'کێشەیەک لە هەڵسەنگاندنی ئەکادیمیدا ڕوویدا.' });
     }
   });
 
