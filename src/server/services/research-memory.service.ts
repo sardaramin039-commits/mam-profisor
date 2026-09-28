@@ -42,12 +42,12 @@ class ResearchMemoryService {
       const snapshot = await this.projectRef(userId, projectId).get();
       if (snapshot.exists) {
         const data = snapshot.data() || {};
-        cached.title = typeof data.title === 'string' ? data.title : cached.title;
-        cached.discipline = typeof data.discipline === 'string' ? data.discipline : cached.discipline;
-        cached.claimsCount = Number(data.claimsCount) || 0;
-        cached.sourcesCount = Number(data.sourcesCount) || 0;
-        cached.evidenceCoverage = Number(data.evidenceCoverage) || 0;
-        cached.lastUpdated = typeof data.lastUpdated === 'string' ? data.lastUpdated : cached.lastUpdated;
+        cached.title = typeof data['title'] === 'string' ? data['title'] : cached.title;
+        cached.discipline = typeof data['discipline'] === 'string' ? data['discipline'] : cached.discipline;
+        cached.claimsCount = Number(data['claimsCount']) || 0;
+        cached.sourcesCount = Number(data['sourcesCount']) || 0;
+        cached.evidenceCoverage = Number(data['evidenceCoverage']) || 0;
+        cached.lastUpdated = typeof data['lastUpdated'] === 'string' ? data['lastUpdated'] : cached.lastUpdated;
 
         const itemsSnapshot = await this.projectRef(userId, projectId)
           .collection('items')
