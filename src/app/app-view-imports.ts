@@ -90,4 +90,4 @@ export const APP_VIEW_IMPORTS = [
   AcademicAdditionsSidebarComponent,
   ConceptGraphComponent,
   GlobalToastContainerComponent,
-] as const;
+];
