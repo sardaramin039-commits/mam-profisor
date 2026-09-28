@@ -66,9 +66,6 @@ export class AppWorkspaceMainComponent extends AppTemplateSectionBase {}
 @Component({selector:'app-workspace-bottom-bar',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/workspace-bottom-bar.component.html'})
 export class AppWorkspaceBottomBarComponent extends AppTemplateSectionBase {}
 
-@Component({selector:'app-viewed-chapter-header',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,template: '<div></div>'})
-export class AppViewedChapterHeaderComponent extends AppTemplateSectionBase {}
-
 @Component({selector:'app-viewed-chapter-compare',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/viewed-chapter-compare.component.html'})
 export class AppViewedChapterCompareComponent extends AppTemplateSectionBase {}
 
