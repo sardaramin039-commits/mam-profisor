@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { AuthRequest } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { vectorStoreService } from '../../services/vector-store.service';
+import { sourceVerificationService } from '../services/source-verification.service';
 
 const indexSchema = z.object({
   title: z.string().trim().min(3).max(500),
@@ -10,6 +11,10 @@ const indexSchema = z.object({
   author: z.string().trim().max(300).optional(),
   year: z.coerce.number().int().min(1000).max(2100).optional(),
   documentId: z.string().trim().max(200).optional(),
+  doi: z.string().trim().max(500).optional(),
+  isbn: z.string().trim().max(50).optional(),
+  issn: z.string().trim().max(20).optional(),
+  publisher: z.string().trim().max(500).optional(),
   pages: z.array(z.object({
     pageNumber: z.coerce.number().int().min(1).max(100_000),
     text: z.string().trim().min(1).max(100_000)
@@ -44,7 +49,16 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
         return;
       }
 
-      const { title, content, author, year, documentId, pages } = parsed.data;
+      const { title, content, author, year, documentId, pages, doi, isbn, issn, publisher } = parsed.data;
+      const verification = await sourceVerificationService.verifySources([{
+        title: title.trim(),
+        author: author?.trim(),
+        year,
+        doi,
+        isbn,
+        issn,
+        publisher: publisher?.trim()
+      }], _getGeminiClient);
       const parsedYear = year;
       if (!content.trim() && (!pages || pages.length === 0)) {
         res.status(400).json({ error: 'ناوەڕۆک یان پەڕەکانی بەڵگەنامەکە پێویستن.' });
@@ -58,14 +72,15 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
         year: parsedYear,
         userId,
         documentId: typeof documentId === 'string' ? documentId.trim().slice(0, 200) : undefined,
-        pages
+        pages,
+        verificationStatus: verification.verifiedSources.length > 0 ? 'verified' : 'unverified'
       });
 
       res.status(201).json({
         id: indexed.id,
         title: indexed.title,
         retrievalStatus: indexed.retrievalStatus,
-        verificationStatus: 'unverified',
+        verificationStatus: verification.verifiedSources.length > 0 ? 'verified' : 'unverified',
         embeddingDimensions: indexed.embedding?.length || 0,
         documentId: indexed.documentId || indexed.id,
         chunkCount: indexed.chunkCount || 1,
