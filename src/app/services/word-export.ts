@@ -1,9 +1,88 @@
 import { Injectable } from '@angular/core';
+import { Document, HeadingLevel, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 
 @Injectable({
   providedIn: 'root'
 })
 export class WordExportService {
+  async generateDocxBlob(
+    title: string,
+    discipline: string,
+    academicLevel: string,
+    chapters: { title: string; content: string }[]
+  ): Promise<Blob> {
+    const children: Paragraph[] = [
+      new Paragraph({
+        children: [new TextRun({ text: title || 'توێژینەوەی زانستی', bold: true, size: 36, font: 'Noto Sans Arabic' })],
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER,
+        bidirectional: true
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `بوار: ${discipline || 'زانستە گشتییەکان'} | ئاست: ${academicLevel || 'ماستەر'}`,
+            size: 22,
+            font: 'Noto Sans Arabic'
+          })
+        ],
+        alignment: AlignmentType.CENTER,
+        bidirectional: true,
+        spacing: { after: 360 }
+      })
+    ];
+
+    chapters.forEach((chapter, index) => {
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `بەشی ${index + 1}: ${chapter.title}`,
+              bold: true,
+              size: 28,
+              font: 'Noto Sans Arabic'
+            })
+          ],
+          heading: HeadingLevel.HEADING_1,
+          bidirectional: true,
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 360, after: 180 }
+        })
+      );
+
+      const paragraphs = String(chapter.content || '').split(/\n{2,}|\r\n{2,}/);
+      paragraphs.filter(Boolean).forEach((paragraph) => {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: paragraph.replace(/\n/g, ' ').trim(),
+                size: 26,
+                font: 'Noto Sans Arabic'
+              })
+            ],
+            bidirectional: true,
+            alignment: AlignmentType.RIGHT,
+            spacing: { after: 180, line: 360 }
+          })
+        );
+      });
+    });
+
+    const document = new Document({
+      sections: [{
+        properties: {
+          page: {
+            margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+          }
+        },
+        children
+      }]
+    });
+
+    return Packer.toBlob(document);
+  }
+
   formatChapterForExport(title: string, content: string, chapterIndex: number): string {
     const formattedContent = (content || '<i>ناوەڕۆکی ئەم بەشە لە قۆناغی ئامادەکردندایە.</i>').replace(/\n/g, '</p><p>');
     return `
