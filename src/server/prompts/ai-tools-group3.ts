@@ -31,7 +31,7 @@ export function buildGroup3Prompt(toolId: string, text: string, styleOption: str
       return `[TOOL 130: AI PERSONAL ASSISTANT]\nUser Request: "${text}"\nInstructions:\n1. Serve as dedicated 24/7 senior academic advisor, guiding research, thesis writing, and scholarly publications.`;
 
     case 'ai_prompt_library':
-      return `[TOOL 131: AI PROMPT LIBRARY & OPTIMIZER]\nPrompt Concept: "${text}"\nInstructions:\n1. Optimize user prompt into Harvard-level zero-shot / few-shot prompt structure for LLMs.`;
+      return `[TOOL 131: AI PROMPT LIBRARY & OPTIMIZER]\nPrompt Concept: "${text}"\nInstructions:\n1. Optimize the user prompt into a high-rigor academic zero-shot / few-shot structure without claiming institutional endorsement.`;
 
     case 'citation_auto_repair':
       return `[TOOL 132: CITATION AUTO-REPAIR MATRIX]\nStyle: ${styleOption}\nCitations: "${text}"\nInstructions:\n1. Detect and repair missing punctuation, year formatting, journal capitalization, and DOI links strictly in ${styleOption} format.`;
@@ -121,6 +121,6 @@ export function buildGroup3Prompt(toolId: string, text: string, styleOption: str
       return `[TOOL 160: LONG-TERM MAINTENANCE & SYSTEM HEALTH INSPECTOR]\nSystem Component: "${text}"\nInstructions:\n1. Perform comprehensive system health audit: API uptime status, database index health, security vulnerability scan, and memory footprint.`;
 
     default:
-      return `[TOOL ${toolId.toUpperCase()}]\nInput text: "${text}"\nRequested Style: ${styleOption} | Language: ${targetLang} | Tone: ${toneOption}\nInstructions:\n1. Perform high-level Harvard-standard academic analysis and processing on the input.\n2. Output clean, structured Markdown in Sorani Kurdish / English as requested.`;
+      return `[TOOL ${toolId.toUpperCase()}]\nInput text: "${text}"\nRequested Style: ${styleOption} | Language: ${targetLang} | Tone: ${toneOption}\nInstructions:\n1. Perform high-rigor academic analysis and processing on the input without claiming institutional standards.\n2. Output clean, structured Markdown in Sorani Kurdish / English as requested.`;
   }
 }
