@@ -43,7 +43,7 @@ export class AppNotificationsService {
   }
 
   showToast(title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', durationMs = 4500) {
-    const id = 'toast_' + Math.random().toString(36).substring(2, 9);
+    const id = createNotificationId('toast');
     const item: ToastItem = {
       id,
       type,
