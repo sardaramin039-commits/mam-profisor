@@ -201,11 +201,11 @@ ${JSON.stringify(chaptersList)}
       let styleInstruction = '';
       if (currentStyle === 'harvard') {
         styleInstruction = '\n📚 **شێواز و ستایلی ئاماژەدان و نووسین: Harvard Academic Style (هارڤارد)**\n' +
-          '- **ئاماژەدانی ناو تێکست:** تەواو پابەندبە بە پێوەری نووسەر-ڕێکەوت لەناو دەق، وەک: (Smith, 2023) یان (ئەحمەد، ٢٠٢٢، ل. ٤٥). مەکە بە ژمارە یان نووسینی ناوی تەواو.\n' +
+          '- **ئاماژەدانی ناو تێکست:** لەم قۆناغی نووسینەدا هیچ citation ـێکی نوێ دروست مەکە؛ Citation Engine دوای verification ـی دەرەکی زیاد دەکات.\n' +
           '- **لیستی سەرچاوەکان (Bibliography):** لە کۆتایی کارەکەدا لە بەشی بەیبلۆگرافی سەرچاوەکان بەپێی ڕێزبەندی پاشناوی نووسەر بە فۆرماتی هارڤارد بنووسە.';
       } else if (currentStyle === 'apa7') {
         styleInstruction = '\n📚 **شێواز و ستایلی ئاماژەدان و نووسین: APA 7th Edition (ئەی پی ئەی - حەوتەم)**\n' +
-          '- **ئاماژەدانی ناو تێکست:** بەکارهێنانی (نووسەر، ساڵ)، وەک: (Aland, 2021) یان (فالح، ٢٠٢٠).\n' +
+          '- **ئاماژەدانی ناو تێکست:** لەم قۆناغی نووسینەدا هیچ citation ـێکی نوێ دروست مەکە؛ Citation Engine دوای verification ـی دەرەکی زیاد دەکات.\n' +
           '- **لیستی سەرچاوەکان (References):** نووسینی لیستی سەرچاوەکان بە ڕێکوپێکی پاشناوی نووسەران و بەکارهێنانی دێڕی دەرپەڕیۆ (Hanging Indent) لە دەربڕیندا.';
       } else if (currentStyle === 'chicago') {
         styleInstruction = `\n📚 **شێواز و ستایلی ئاماژەدان و نووسین: Chicago Manual of Style (شیکاگۆ)**\n` +
@@ -268,11 +268,17 @@ ${JSON.stringify(chaptersList)}
 - دەزگای چاپ: "${bookObj.publisher}"
 - بەستەر: "${bookObj.link}"
 
-دەبێت بە لایەنی کەمەوە لە ٣ شوێنی گرنگ لەناو دەقدا بە شێوازی فەرمی ئاماژە بەم کتێبە بکەیت بەپێی ستاندارد (بۆ نموونە: (${bookObj.author}, ${bookObj.year}))، و زانیاری و تێزەکان لەگەڵ بیرۆکەکانی ئەم کتێبە یەکبخەیت.`;
+لە تەنها بۆ context بەکاریبهێنە؛ هیچ citation ـێک بۆ ئەم تۆمارە دروست مەکە تا verification ـی دەرەکی تەواو بێت.`;
         }
       }
 
-      const userPrompt = `بەشی ژمارە ${currentChapterIndex + 1} دەستپێبکە بە درێژی بۆ ئەم تێزە:
+      const citationSafetyInstruction = [
+        'لەم قۆناغی writing ـدا هیچ citation، DOI، ISBN، quote یان reference ـی نوێ لە خۆتەوە دروست مەکە.',
+        'هیچ citation ـی نموونەیی وەک (Smith, 2023)، (ئەحمەد، ٢٠٢٢) یان [1] لە دەقەکەدا مەنووسە.',
+        'تەنها source context ـی دابینکراو وەک input بەکاربهێنە؛ citation eligibility دوای verification ـی دەرەکی دیاری دەکرێت.'
+      ].join('\n');
+
+      const userPrompt = `${citationSafetyInstruction}\n\nبەشی ژمارە ${currentChapterIndex + 1} دەستپێبکە بە درێژی بۆ ئەم تێزە:
 ناونیشانی تێز: "${title}"
 ناونیشانی بەشی ژمارە ${currentChapterIndex + 1}: "${chapterTitle}"
 بواری زانستی: ${discipline}
@@ -321,6 +327,13 @@ ${comparisonPrompt}
       const generatedContent = typeof parsed['content'] === 'string'
         ? parsed['content'].trim()
         : '';
+
+      const unverifiedCitationPattern =
+        /\([A-Z][^()]{1,80},\s*(?:19|20)\d{2}[a-z]?\)|\([^()\u0600-\u06ff]{2,80}،\s*[0-9٠-٩]{4}\)|\[[0-9٠-٩]{1,3}\]/;
+
+      if (unverifiedCitationPattern.test(generatedContent)) {
+        throw new Error('Generated chapter contains citation-like references before verification.');
+      }
 
       if (!generatedContent) {
         throw new Error('Chapter generator returned no usable content.');
