@@ -1,7 +1,7 @@
 import {
   ApplicationConfig,
   ErrorHandler,
-  provideExperimentalZonelessChangeDetection,
+  provideZonelessChangeDetection,
 } from '@angular/core';
 import {provideRouter} from '@angular/router';
 import {provideHttpClient, withFetch, withInterceptors} from '@angular/common/http';
