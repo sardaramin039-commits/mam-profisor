@@ -1,0 +1,68 @@
+<div class="space-y-6">
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <span class="block text-xs font-bold text-slate-300">گەڕانی هاوکات لە Semantic Scholar, PubMed, Open Library & Internet Archive:</span>
+          <div class="flex gap-2">
+            <input
+              #apiQueryInput
+              type="text"
+              placeholder="کلیک بکە بۆ گەڕانی خێرا لە سەدان ملیۆن وتار و کتێب..."
+              (keyup.enter)="multiAgent.runMultiApiSearch(apiQueryInput.value)"
+              class="flex-1 bg-slate-950 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 transition-all"
+            />
+            <button
+              (click)="multiAgent.runMultiApiSearch(apiQueryInput.value)"
+              [disabled]="multiAgent.isSearchingAPIs()"
+              class="bg-gradient-to-r from-blue-600 to-cyan-500 hover:opacity-90 text-slate-950 font-bold px-6 py-3 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md shadow-cyan-500/20 disabled:opacity-50"
+            >
+              @if (multiAgent.isSearchingAPIs()) {
+                <mat-icon class="animate-spin text-sm">sync</mat-icon>
+                گەڕان...
+              } @else {
+                <mat-icon class="text-sm">search</mat-icon>
+                گەڕان لە 4 API فەرمی
+              }
+            </button>
+          </div>
+        </div>
+
+        <!-- API Search Results -->
+        @if (multiAgent.isSearchingAPIs()) {
+          <div class="flex flex-col items-center justify-center py-16 text-center space-y-3">
+            <mat-icon class="animate-spin text-3xl text-cyan-400">sync</mat-icon>
+            <p class="text-xs text-cyan-300">پەیوەندیکردن بە Semantic Scholar, PubMed, Open Library و Internet Archive...</p>
+          </div>
+        } @else if (multiAgent.searchSources().length > 0) {
+          <div class="space-y-3">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>دۆزینەوەکان: {{ multiAgent.searchSources().length }} سەرچاوەی خاوەن بڕوا</span>
+              <span class="text-emerald-400 font-bold">تێکڕای Source Confidence Score: {{ multiAgent.averageConfidenceScore() }}%</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              @for (src of multiAgent.searchSources(); track src.id) {
+                <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-2 hover:border-cyan-500/50 transition-all">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" [class]="getSourceTypeClass(src.sourceType)">
+                      {{ src.sourceType }}
+                    </span>
+                    <span class="text-[11px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800/80">
+                      Confidence: {{ src.confidenceScore }}%
+                    </span>
+                  </div>
+                  <h4 class="text-xs font-bold text-slate-100 hover:text-cyan-400 cursor-pointer">
+                    <a [href]="src.url" target="_blank" class="hover:underline flex items-center gap-1">
+                      {{ src.title }}
+                      <mat-icon class="text-xs">open_in_new</mat-icon>
+                    </a>
+                  </h4>
+                  <p class="text-[11px] text-slate-400 leading-relaxed line-clamp-2">{{ src.snippet }}</p>
+                  <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-800/60">
+                    <span>نووسەران: {{ src.authors.join(', ') }}</span>
+                    <span>ساڵ: {{ src.year }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
