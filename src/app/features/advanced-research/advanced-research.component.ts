@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { ProfessorModeLevel } from './services/multi-agent.service';
+import { MultiAgentService, ProfessorModeLevel } from './services/multi-agent.service';
 import { AdvancedResearchOrchestratorTabComponent } from './tabs/advanced-research-orchestrator-tab';
 import { AdvancedResearchFactCheckerTabComponent } from './tabs/advanced-research-fact-checker-tab';
 import { AdvancedResearchMultiapiTabComponent } from './tabs/advanced-research-multiapi-tab';
