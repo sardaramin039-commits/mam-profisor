@@ -4,6 +4,7 @@ export interface AcademicPaper {
   id: string;
   title: string;
   doi?: string;
+  isbn?: string;
   authors: string[];
   publicationYear: number;
   abstract?: string;
@@ -126,9 +127,12 @@ export class AcademicSearchService {
         const yearMatch = info.publishedDate?.match(/\d{4}/);
         const year = yearMatch ? parseInt(yearMatch[0], 10) : 0;
 
+        const isbn = info.industryIdentifiers?.find((entry: any) => entry?.type === 'ISBN_13')?.identifier
+          || info.industryIdentifiers?.find((entry: any) => entry?.type === 'ISBN_10')?.identifier;
         return {
-          id: item.id || info.industryIdentifiers?.[0]?.identifier || `gbooks:${this.stableId(info.title || '')}`,
+          id: item.id || isbn || `gbooks:${this.stableId(info.title || '')}`,
           title: info.title || 'سەردێڕی دیارینەکراو',
+          isbn,
           authors: info.authors || [],
           publicationYear: year,
           source: 'googlebooks' as const,
