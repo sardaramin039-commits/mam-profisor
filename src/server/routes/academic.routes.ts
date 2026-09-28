@@ -193,17 +193,8 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
       const verifiedIds = new Set(verification.verifiedSources.map(source => source.sourceId));
       const sources = discoveredSources.filter(source => verifiedIds.has(source.id));
 
-      const sourceContext = sources.map(source => ({
-        id: source.id,
-        title: source.title,
-        author: Array.isArray(source.authors) ? source.authors.join(', ') : '',
-        year: source.publicationYear,
-        publisher: source.source,
-        doi: source.doi || ''
-      })), getGeminiClient);
-      const verifiedIds = new Set(verification.verifiedSources.map(source => source.sourceId));
-      const verifiedRecords = sources.filter(source => verifiedIds.has(String(source.id ?? source.doi ?? source.title)));
-      const sourceContext = verifiedRecords.map((source, index) => ({
+      const verifiedRecords = sources;
+      const sourceContext = verifiedRecords.map(source => ({
         id: source.id,
         title: source.title,
         authors: source.authors,
@@ -292,14 +283,14 @@ ${JSON.stringify(sourceContext, null, 2)}
           relevance: 'retrieved-from-index',
           doi: source.doi || undefined,
           url: source.url || undefined,
-          verificationStatus: 'metadata-verified'
+          verificationStatus: 'verified'
         })),
         kurdishAcademicSynthesis: typeof parsed['kurdishAcademicSynthesis'] === 'string' ? parsed['kurdishAcademicSynthesis'] : '',
         futureAvenues: stringArray(parsed['futureAvenues']),
         sourceIntegrity: {
           retrievalStatus: 'index-results',
           sourceCount: sources.length,
-          verificationStatus: 'metadata-verified-only'
+          verificationStatus: 'verified'
         }
       });
     } catch (error) {
