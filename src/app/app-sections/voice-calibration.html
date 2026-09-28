@@ -1,0 +1,76 @@
+        <div class="bg-stone-50 border-2 border-stone-800 rounded-xl p-5 space-y-4">
+          <div class="flex items-center gap-2 justify-between">
+            <div class="flex items-center gap-1.5">
+              <mat-icon class="text-harvard-crimson">fingerprint</mat-icon>
+              <h3 class="text-xs font-serif font-extrabold text-stone-900">کالیبرەکردنی پرۆفایلی دەنگی نووسەر (Authorial Voice Calibration)</h3>
+            </div>
+            <span class="text-[9px] bg-harvard-crimson text-white px-2 py-0.5 rounded font-extrabold uppercase font-sans">Humanization Engine</span>
+          </div>
+          <p class="text-[11px] text-stone-600 font-serif leading-relaxed">تکایە لێرەدا نموونەیەک لە نووسینی پێشووی خۆت یان گوتارێکی زانستیی خۆت بە زمانی کوردی دابنێ تا سیستەمی هارفەرد شێوازەکە بخوێنێتەوە و لە کاتی داڕشتنی دەقەکاندا بە تەواوی مۆرکی کەسیی تۆ بپارێزێت.</p>
+          
+          <div class="space-y-3">
+            <textarea 
+              [value]="vm.userVoiceSampleText()" 
+              (input)="vm.userVoiceSampleText.set($any($event.target).value)"
+              rows="3"
+              class="w-full text-xs p-3 border-2 border-stone-850 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-harvard-crimson leading-relaxed"
+              placeholder="نموونەیەک لە دەقە پێشووترەکانت لێرەدا بنووسە یان کۆپی بکە..."></textarea>
+              
+            <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+              @if (calibrationError()) {
+                <span class="text-[10px] font-bold text-red-850 flex items-center gap-1">
+                  <mat-icon class="!text-xs text-red-600">error</mat-icon>
+                  {{ calibrationError() }}
+                </span>
+              } @else if (vm.calibratedVoiceProfile()) {
+                <span class="text-[10px] font-bold text-emerald-800 flex items-center gap-1">
+                  <mat-icon class="!text-xs text-emerald-600">check_circle</mat-icon>
+                  شێوازی نووسینی تۆ بە سەرکەوتوویی کالیبەر کرا!
+                </span>
+              } @else {
+                <span></span>
+              }
+              
+              <button 
+                type="button" 
+                (click)="vm.calibrateAuthorVoice()"
+                [disabled]="isCalibratingVoice() || !vm.userVoiceSampleText().trim()"
+                class="w-full sm:w-auto px-5 py-2.5 bg-harvard-crimson hover:bg-harvard-dark text-white text-xs font-serif font-extrabold rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50">
+                @if (isCalibratingVoice()) {
+                  <span class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>خەریکی لێکۆڵینەوەیە لە شێوازی دەنگی تۆ...</span>
+                } @else {
+                  <mat-icon class="!text-sm">tune</mat-icon>
+                  <span>هاوتاکردنی دەنگی مرۆیی من (Calibrate Voice)</span>
+                }
+              </button>
+            </div>
+          </div>
+
+          @if (vm.calibratedVoiceProfile(); as profile) {
+            <div class="p-4 bg-white border border-stone-200 rounded-lg space-y-2.5 text-xs text-stone-800 animate-expand-fade">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span class="text-[10px] text-stone-500 font-bold block">📊 درێژی ڕستە و ڕیتم:</span>
+                  <p class="text-[11px] font-serif leading-relaxed text-stone-700">{{ profile.sentenceLength }}</p>
+                </div>
+                <div>
+                  <span class="text-[10px] text-stone-500 font-bold block">✨ ڕوانبێژی و فیکر:</span>
+                  <p class="text-[11px] font-serif leading-relaxed text-stone-700">{{ profile.rhetoricStyle }}</p>
+                </div>
+                <div>
+                  <span class="text-[10px] text-stone-500 font-bold block">📚 ئاستی فەرهەنگ و لۆژیک:</span>
+                  <p class="text-[11px] font-serif leading-relaxed text-stone-700">{{ profile.vocabularyLevel }}</p>
+                </div>
+                <div>
+                  <span class="text-[10px] text-stone-500 font-bold block">✍️ خاڵبەندی و تایبەتمەندی کوردی:</span>
+                  <p class="text-[11px] font-serif leading-relaxed text-stone-700">{{ profile.kurdishDialectFeatures }}</p>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-stone-100 bg-emerald-50/50 p-2.5 rounded text-[10.5px] text-emerald-950 font-mono">
+                <span class="font-bold block text-emerald-800 mb-1">💡 فەرمانی ژیریی دەستکردی کالیبەرکراو (AI System Prompt Addon):</span>
+                <code class="block leading-relaxed">{{ profile.promptInstruction }}</code>
+              </div>
+            </div>
+          }
+        </div>
