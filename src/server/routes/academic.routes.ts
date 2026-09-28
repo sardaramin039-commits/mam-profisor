@@ -250,10 +250,10 @@ ${JSON.stringify(sourceContext, null, 2)}
         topic: normalizedTopic,
         discipline: normalizedDiscipline,
         documentTitle: typeof documentTitle === 'string' ? documentTitle.trim().slice(0, 500) : '',
-        executiveSummary: typeof parsed.executiveSummary === 'string' ? parsed.executiveSummary : '',
-        keyFindings: stringArray(parsed.keyFindings),
-        theoreticalFramework: typeof parsed.theoreticalFramework === 'string' ? parsed.theoreticalFramework : '',
-        methodologicalInsights: typeof parsed.methodologicalInsights === 'string' ? parsed.methodologicalInsights : '',
+        executiveSummary: typeof parsed['executiveSummary'] === 'string' ? parsed['executiveSummary'] : '',
+        keyFindings: stringArray(parsed['keyFindings']),
+        theoreticalFramework: typeof parsed['theoreticalFramework'] === 'string' ? parsed['theoreticalFramework'] : '',
+        methodologicalInsights: typeof parsed['methodologicalInsights'] === 'string' ? parsed['methodologicalInsights'] : '',
         academicSources: sources.map(source => ({
           title: source.title,
           authors: source.authors.join(', '),
@@ -264,8 +264,8 @@ ${JSON.stringify(sourceContext, null, 2)}
           url: source.url || undefined,
           verificationStatus: 'not-verified'
         })),
-        kurdishAcademicSynthesis: typeof parsed.kurdishAcademicSynthesis === 'string' ? parsed.kurdishAcademicSynthesis : '',
-        futureAvenues: stringArray(parsed.futureAvenues),
+        kurdishAcademicSynthesis: typeof parsed['kurdishAcademicSynthesis'] === 'string' ? parsed['kurdishAcademicSynthesis'] : '',
+        futureAvenues: stringArray(parsed['futureAvenues']),
         sourceIntegrity: {
           retrievalStatus: 'index-results',
           sourceCount: sources.length,
