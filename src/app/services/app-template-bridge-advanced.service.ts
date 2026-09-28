@@ -16,7 +16,6 @@ function createSnapshotHash(text: string): string {
   return (hash >>> 0).toString(16).padStart(8, '0');
 }
 import { AppTemplateBridgeWritingService } from './app-template-bridge-writing.service';
-import { createSnapshotHash } from './app-template-bridge.utils';
 
 @Injectable()
 export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingService {
@@ -276,4 +275,3 @@ export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingSe
   }
 }
 
-}
