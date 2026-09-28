@@ -32,7 +32,7 @@ export class AppNotificationsService {
 
   addNotification(title: string, messageKurdish: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') {
     const newNotif: AppNotification = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: createNotificationId('notif'),
       title,
       messageKurdish,
       type,
