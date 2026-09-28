@@ -14,19 +14,20 @@ import { aiModelRouterService } from '../services/ai-model-router.service';
 import { z } from 'zod';
 
 const textField = (max: number) => z.string().trim().min(1).max(max);
-const sourceSchema = z.object({
+const rawSourceArray = z.array(z.record(z.string(), z.unknown())).max(100);
+const verificationSourceSchema = z.object({
   title: z.string().trim().min(1).max(1000),
   author: z.string().max(500).optional(),
   year: z.union([z.string(), z.number()]).optional(),
   doi: z.string().max(500).optional(),
   publisher: z.string().max(500).optional()
-}).passthrough();
-const sourceArray = z.array(sourceSchema).max(100);
+}).strict();
+const verificationSourceArray = z.array(verificationSourceSchema).max(100);
 
-const evidenceGraphSchema = z.object({ topic: textField(500), draftText: z.string().max(250_000).default(''), sources: sourceArray.default([]) }).strict();
-const sourceVerificationSchema = z.object({ sources: sourceArray.default([]) }).strict();
+const evidenceGraphSchema = z.object({ topic: textField(500), draftText: z.string().max(250_000).default(''), sources: rawSourceArray.default([]) }).strict();
+const sourceVerificationSchema = z.object({ sources: verificationSourceArray.default([]) }).strict();
 const academicReviewSchema = z.object({ draftText: textField(250_000), topic: textField(500) }).strict();
-const qaGateSchema = z.object({ documentText: textField(250_000), sources: sourceArray.default([]) }).strict();
+const qaGateSchema = z.object({ documentText: textField(250_000), sources: verificationSourceArray.default([]) }).strict();
 const kurdishLanguageSchema = z.object({ text: textField(250_000) }).strict();
 const knowledgeGraphSchema = z.object({ query: textField(500) }).strict();
 const argumentBuilderSchema = z.object({ topic: textField(500), discipline: textField(200) }).strict();
@@ -34,7 +35,7 @@ const orchestrationSchema = z.object({
   topic: textField(500),
   discipline: textField(200),
   draftText: z.string().max(250_000).default(''),
-  rawSources: sourceArray.default([])
+  rawSources: rawSourceArray.default([])
 }).strict();
 const modelRouterSchema = z.object({ taskType: z.enum(['fast', 'reasoning', 'long_context', 'embedding']).default('fast'), textLength: z.coerce.number().int().min(0).max(1_000_000).default(0) }).strict();
 
