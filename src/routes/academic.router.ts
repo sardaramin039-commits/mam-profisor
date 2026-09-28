@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { validateRequest } from '../middleware/validate.middleware';
+import { AuthRequest, requireAuth } from '../middleware/auth';
 import { academicSearchService } from '../services/academic-search.service';
 import { vectorStoreService } from '../services/vector-store.service';
 
@@ -90,14 +91,17 @@ academicRouter.get(
 // گەڕانی ڤێکتەری لە بەڵگەنامە باوەڕپێکراوەکان
 academicRouter.post(
   '/vector/search',
-  async (req: Request, res: Response, next: NextFunction) => {
+  requireAuth,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { query, limit } = req.body as { query?: string; limit?: number };
+      const userId = req.user?.uid;
       if (!query) {
         res.status(400).json({ success: false, error: 'دیاریکردنی query پێویستە.' });
         return;
       }
-      const results = await vectorStoreService.searchSimilarDocuments(query, limit || 5);
+      if (!userId) { res.status(401).json({ success: false, error: 'Unauthorized' }); return; }
+      const results = await vectorStoreService.searchSimilarDocuments(query, userId, limit || 5);
       res.json({ success: true, count: results.length, results });
     } catch (error) {
       next(error);
@@ -108,8 +112,11 @@ academicRouter.post(
 // ئیندێکسکردنی بەڵگەنامەی نوێ لە کۆگای ڤێکتەر
 academicRouter.post(
   '/vector/index',
-  async (req: Request, res: Response, next: NextFunction) => {
+  requireAuth,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+      const userId = req.user?.uid;
+      if (!userId) { res.status(401).json({ success: false, error: 'Unauthorized' }); return; }
       const { title, content, author, year } = req.body as {
         title?: string;
         content?: string;
@@ -128,6 +135,7 @@ academicRouter.post(
         content,
         author,
         year,
+        userId,
       });
       res.json({ success: true, document: indexed });
     } catch (error) {
