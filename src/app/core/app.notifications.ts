@@ -1,5 +1,10 @@
 import { Injectable, signal } from '@angular/core';
 
+function createNotificationId(prefix: string): string {
+  const uuid = globalThis.crypto?.randomUUID?.();
+  return uuid ? prefix + '_' + uuid : prefix + '_' + Date.now() + '_' + Math.trunc(globalThis.performance?.now?.() || 0);
+}
+
 export interface AppNotification {
   id: string;
   title: string;
