@@ -23,7 +23,7 @@ import { createMultiAgentRouter } from './server/routes/multi-agent.routes';
 import { createResearchMemoryRouter } from './server/routes/research-memory.routes';
 import { createResearchProjectStateRouter } from './server/routes/research-project-state.routes';
 import { getGeminiClient } from './server/services/gemini.service';
-import { rateLimiterMiddleware } from './server/middleware/rate-limiter.middleware';
+import { rateLimiterMiddleware, authenticatedRateLimiterMiddleware } from './server/middleware/rate-limiter.middleware';
 import { securityHeadersMiddleware, promptSanitizerMiddleware } from './server/middleware/security.middleware';
 import { requireAuth } from './middleware/auth';
 import { agentsRouter } from './routes/agents.router';
@@ -55,6 +55,9 @@ const angularApp = new AngularNodeAppEngine();
 
 // Mount API Routers (Public Docs vs Protected API Routes)
 app.use('/api/docs', createApiDocsRouter());
+
+// After public API docs, all API endpoints require authentication and receive a per-user rate limit.
+app.use('/api', requireAuth, authenticatedRateLimiterMiddleware);
 
 // Unified security middleware enforcing requireAuth for protected API endpoints & AI tools
 app.use('/api/ai-tools', requireAuth, createAiToolsRouter(getGeminiClient));
