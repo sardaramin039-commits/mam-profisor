@@ -278,7 +278,7 @@ export class LibraryAdminDashboardComponent {
       this.addBookForm.reset({
         title: '',
         author: '',
-        year: 0,
+        year: null,
         language: 'ckb',
         documentType: 'book',
         description: '',
