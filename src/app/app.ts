@@ -90,6 +90,7 @@ import { SplashScreenComponent } from './features/splash/splash-screen.component
 import { DashboardHeaderComponent } from './features/dashboard/dashboard-header.component';
 import { AcademicPlatformComponent } from './features/academic-platform/academic-platform.component';
 import { buildAcademicThesisOutline } from './helpers/outline-structure';
+import { AppCognitiveCopilotSectionComponent } from './app-sections/cognitive-copilot-section';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -111,13 +112,15 @@ import { buildAcademicThesisOutline } from './helpers/outline-structure';
     ThesisHealthReportComponent, EditorPomodoroTimerComponent,
     DailyResearchPulseComponent, CitationHealthCheckComponent, ChapterTimelineViewComponent,
     GrammarSyntaxFloatingPanelComponent, AcademicAdditionsSidebarComponent, ConceptGraphComponent,
-    GlobalToastContainerComponent
+    GlobalToastContainerComponent,
+    AppCognitiveCopilotSectionComponent
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class AppComponent implements OnInit {
   readonly Math = Math;
+  readonly view = this;
   private startupService = inject(ApplicationStartupService);
   private fb = inject(FormBuilder);
 
