@@ -1,5 +1,21 @@
 import { Router, Request, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
+import { validateRequest } from '../../middleware/validate.middleware';
+import {
+  researchTimelineSchema,
+  mindMapSchema,
+  autoOutlineSchema,
+  tableFigureSchema,
+  vivaSchema,
+  textOnlySchema,
+  harvardAuditSchema,
+  vivaDefenseSchema,
+  titleSummarySchema,
+  thesisContextSchema,
+  academicAdditionsSchema,
+  soraniPhoneticsSchema,
+  rigorRecalibrationSchema
+} from '../utils/advanced-tools.schemas';
 import { robustParseJson } from '../utils/json-repair';
 import { 
   SYSTEM_PROMPT_HARVARD_FEATURES, 
@@ -14,7 +30,7 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
   /**
    * Research Timeline Generator
    */
-  router.post('/research_timeline', async (req: Request, res: Response) => {
+  router.post('/research_timeline', validateRequest(researchTimelineSchema), async (req: Request, res: Response) => {
     try {
       const { topic, durationMonths = 12 } = req.body;
       const ai = getGeminiClient();
@@ -36,7 +52,7 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
   /**
    * Mind Map Generator
    */
-  router.post('/mind_map_generator', async (req: Request, res: Response) => {
+  router.post('/mind_map_generator', validateRequest(mindMapSchema), async (req: Request, res: Response) => {
     try {
       const { topic, depth = 3 } = req.body;
       const ai = getGeminiClient();
@@ -58,7 +74,7 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
   /**
    * Auto Outline Generator
    */
-  router.post('/auto_outline_generator', async (req: Request, res: Response) => {
+  router.post('/auto_outline_generator', validateRequest(autoOutlineSchema), async (req: Request, res: Response) => {
     try {
       const { topic, methodology, discipline } = req.body;
       const ai = getGeminiClient();
@@ -80,7 +96,7 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
   /**
    * Table & Figure Generator
    */
-  router.post('/table_figure_generator', async (req: Request, res: Response) => {
+  router.post('/table_figure_generator', validateRequest(tableFigureSchema), async (req: Request, res: Response) => {
     try {
       const { concept, type = 'table' } = req.body;
       const ai = getGeminiClient();
@@ -102,7 +118,7 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
   /**
    * Viva Simulation
    */
-  router.post('/simulate_viva', async (req: Request, res: Response) => {
+  router.post('/simulate_viva', validateRequest(vivaSchema), async (req: Request, res: Response) => {
     try {
       const { thesisTitle, abstract } = req.body;
       const ai = getGeminiClient();
@@ -124,7 +140,7 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
   /**
    * AI Integrity Audit
    */
-  router.post('/ai_integrity_audit', async (req: Request, res: Response) => {
+  router.post('/ai_integrity_audit', validateRequest(textOnlySchema), async (req: Request, res: Response) => {
     try {
       const { text } = req.body;
       if (!text) return res.status(400).json({ error: 'دەق پێویستە' });
@@ -146,7 +162,7 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
   /**
    * Anonymize Data Endpoint
    */
-  router.post('/anonymize_data', async (req: Request, res: Response) => {
+  router.post('/anonymize_data', validateRequest(textOnlySchema), async (req: Request, res: Response) => {
     try {
       const { text } = req.body;
       if (!text) return res.status(400).json({ error: 'دەق پێویستە' });
@@ -168,7 +184,7 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
   /**
    * Harvard Quality Audit Endpoint
    */
-  router.post('/harvard_quality_audit', async (req: Request, res: Response) => {
+  router.post('/harvard_quality_audit', validateRequest(harvardAuditSchema), async (req: Request, res: Response) => {
     try {
       const { text, discipline } = req.body;
       if (!text) return res.status(400).json({ error: 'دەق پێویستە' });
