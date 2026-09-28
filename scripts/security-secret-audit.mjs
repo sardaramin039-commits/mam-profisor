@@ -13,6 +13,7 @@ const patterns = [
 ];
 
 const excluded = new Set(['.env.example', 'scripts/security-secret-audit.mjs']);
+const publicFirebaseConfigFiles = new Set(['firebase-applet-config.json', 'src/app/firebase.ts']);
 const findings = [];
 
 for (const file of trackedFiles) {
@@ -26,7 +27,9 @@ for (const file of trackedFiles) {
 
   const lines = text.split(/\r?\n/);
   for (let index = 0; index < lines.length; index += 1) {
-    if (patterns.some(pattern => pattern.test(lines[index]))) {
+    const isPublicFirebaseApiKey = publicFirebaseConfigFiles.has(file) && /AIza[0-9A-Za-z_-]{20,}/.test(lines[index]);
+    const hasCredentialPattern = patterns.some(pattern => pattern.test(lines[index]));
+    if (hasCredentialPattern && !isPublicFirebaseApiKey) {
       findings.push({ file, line: index + 1 });
     }
   }
