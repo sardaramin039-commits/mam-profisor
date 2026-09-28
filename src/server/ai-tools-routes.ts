@@ -174,8 +174,8 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
 
       let outputText = '';
 
-      // Perplexity AI provider execution
-      if (provider === 'perplexity' || provider === 'pplx' || (provider === 'auto' && process.env['PERPLEXITY_API_KEY'])) {
+      // Perplexity AI provider execution (explicit only; auto prefers the primary Gemini provider).
+      if (provider === 'perplexity' || provider === 'pplx') {
         apiConfigService.validateProvider('perplexity');
         const apiKey = apiConfigService.getApiKey('perplexity')!;
         const config = apiConfigService.getProviderConfig('perplexity');
@@ -205,7 +205,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         outputText = pData.choices?.[0]?.message?.content || 'هیچ وەڵامێک لە Perplexity AI سەرچاوە نەگرت.';
 
       // OpenAI provider execution
-      } else if (provider === 'openai' || (provider === 'auto' && process.env['OPENAI_API_KEY'] && !process.env['GEMINI_API_KEY'])) {
+      } else if (provider === 'openai' || (provider === 'auto' && !process.env['GEMINI_API_KEY'] && process.env['OPENAI_API_KEY'])) {
         apiConfigService.validateProvider('openai');
         const apiKey = apiConfigService.getApiKey('openai')!;
         const config = apiConfigService.getProviderConfig('openai');
@@ -240,7 +240,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
           || 'هیچ وەڵامێک لە OpenAI وەرنەگیرا.';
 
       // Anthropic / Claude provider execution
-      } else if (provider === 'claude' || provider === 'anthropic' || (provider === 'auto' && (process.env['ANTHROPIC_API_KEY'] || process.env['CLAUDE_API_KEY']) && !process.env['GEMINI_API_KEY'])) {
+      } else if (provider === 'claude' || provider === 'anthropic' || (provider === 'auto' && !process.env['GEMINI_API_KEY'] && !process.env['OPENAI_API_KEY'] && (process.env['ANTHROPIC_API_KEY'] || process.env['CLAUDE_API_KEY']))) {
         apiConfigService.validateProvider('claude');
         const apiKey = apiConfigService.getApiKey('claude')!;
         const config = apiConfigService.getProviderConfig('claude');
@@ -271,7 +271,7 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         const claudeData = (await claudeRes.json()) as ClaudeResponse;
         outputText = claudeData.content?.[0]?.text || 'هیچ وەڵامێک لە Claude سەرچاوە نەگرت.';
 
-      // Gemini provider execution (default)
+      // Gemini provider execution (primary auto provider)
       } else if (provider === 'auto' || provider === 'gemini') {
         const client = getGeminiClient();
         const response = await client.models.generateContent({
