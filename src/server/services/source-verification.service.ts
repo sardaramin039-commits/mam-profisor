@@ -137,16 +137,8 @@ export class SourceVerificationService {
           try { issnResolved.set(issn.replace(/-/g, '').toUpperCase(), await lookupIssn(issn)); } catch {}
         })
     ]);
-    /*
-      DOI/ISBN/ISSN lookups are authoritative metadata checks. Each provider's
-      absence leaves the source unverified rather than inventing metadata.
-    */
-    /*
-    await Promise.all(
-      uniqueSources
-        .filter(source => Boolean(source.doi?.trim()))
-        .slice(0, 20)
-    */
+    // DOI/ISBN/ISSN lookups are authoritative metadata checks. Provider
+    // absence leaves the source unverified rather than inventing metadata.
 
     const reports = uniqueSources.map((source): SourceVerificationReport => {
       const inputDoi = normalizeDoi(source.doi);
@@ -175,6 +167,7 @@ export class SourceVerificationService {
             sourceId,
             sourceTitle: source.title,
             author: source.author || 'نادیار',
+            year: String(source.year || ''),
             publisher: source.publisher || 'نادیار',
             doiOrIsbn: source.doi || '',
             integrityScore: 0,
