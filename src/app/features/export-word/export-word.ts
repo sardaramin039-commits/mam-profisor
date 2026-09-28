@@ -26,12 +26,18 @@ import { Data } from '../../services/data';
         placeholder="ناونیشانی فایلی Word..."
         class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
       />
+      @if (exportError()) {
+        <div class="rounded-lg border border-rose-300 bg-rose-50 text-rose-800 px-3 py-2 text-xs leading-relaxed">
+          {{ exportError() }}
+        </div>
+      }
       <button
         (click)="exportToWord()"
-        class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-2"
+        [disabled]="isExporting()"
+        class="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-2"
       >
         <mat-icon class="!w-4 !h-4 text-base">download</mat-icon>
-        <span>دابەزاندنی فایلی Word (.docx)</span>
+        <span>{{ isExporting() ? 'پشکنین و ئامادەکردن...' : 'دابەزاندنی فایلی Word (.docx)' }}</span>
       </button>
     </div>
   `
