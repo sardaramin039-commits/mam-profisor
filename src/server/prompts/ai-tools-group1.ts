@@ -82,7 +82,7 @@ export function buildGroup1Prompt(toolId: string, text: string, styleOption: str
       return `[TOOL 27: GOOGLE SCHOLAR METADATA SEARCH]\nQuery / Article Title: "${text}"\nInstructions:\n1. Extract citation counts, bibtex metadata, and related academic articles from Google Scholar.`;
 
     case 'doi_resolver':
-      return `[TOOL 28: DOI RESOLVER]\nDOI String: "${text}"\nInstructions:\n1. Resolve DOI, fetch full article metadata, and generate citations in APA, Harvard, and Chicago.`;
+      return `[TOOL 28: DOI RESOLVER]\nDOI String: "${text}"\nInstructions:\n1. Resolve DOI and format the authoritative returned metadata in APA, Harvard, and Chicago; never invent missing fields.`;
 
     case 'isbn_lookup':
       return `[TOOL 29: ISBN LOOKUP]\nISBN Number: "${text}"\nInstructions:\n1. Look up book metadata by ISBN and output full cataloging record.`;
@@ -127,7 +127,7 @@ export function buildGroup1Prompt(toolId: string, text: string, styleOption: str
       return `[TOOL 42: H-INDEX LOOKUP]\nAuthor Name / Subject: "${text}"\nInstructions:\n1. Calculate and analyze H-Index metrics, total citations, i10-index, and research trajectory.`;
 
     case 'academic_writing_templates':
-      return `[TOOL 43: ACADEMIC WRITING TEMPLATES]\nTemplate Requested / Section: "${text}"\nInstructions:\n1. Provide a fill-in-the-blank Harvard-standard academic writing template with transition phrases and sentence starters.`;
+      return `[TOOL 43: ACADEMIC WRITING TEMPLATES]\nTemplate Requested / Section: "${text}"\nInstructions:\n1. Provide a fill-in-the-blank academic writing template aligned with the requested citation style with transition phrases and sentence starters.`;
 
     case 'ai_debate':
       return `[TOOL 44: AI DEBATE]\nTopic / Thesis Statement: "${text}"\nInstructions:\n1. Conduct a structured academic debate presenting Thesis Argument (Pro), Antithesis Argument (Con), and Synthesis Conclusion.`;
@@ -151,7 +151,7 @@ export function buildGroup1Prompt(toolId: string, text: string, styleOption: str
       return `[TOOL 50: AI BOOK WRITER]\nBook Topic / Context: "${text}"\nInstructions:\n1. Draft academic book content with structured chapters, engaging exposition, and scholarly rigor.`;
 
     case 'ai_thesis_writer':
-      return `[TOOL 51: AI THESIS WRITER]\nMaster's Thesis Topic / Section: "${text}"\nInstructions:\n1. Draft Master's thesis section adhering strictly to Harvard academic style and thorough citations.`;
+      return `[TOOL 51: AI THESIS WRITER]\nMaster's Thesis Topic / Section: "${text}"\nInstructions:\n1. Draft Master's thesis section in rigorous academic prose; citations must come only from verified supplied sources.`;
 
     case 'ai_dissertation_writer':
       return `[TOOL 52: AI DISSERTATION WRITER]\nPhD Dissertation Topic / Section: "${text}"\nInstructions:\n1. Draft PhD dissertation section with deep theoretical framework, original synthesis, and academic prose.`;
