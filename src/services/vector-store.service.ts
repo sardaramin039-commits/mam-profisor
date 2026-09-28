@@ -17,9 +17,9 @@ export interface VectorDocument {
   userId?: string;
 }
 
-function stableId(title: string, content: string): string {
+function stableId(userId: string, title: string, content: string): string {
   let hash = 2166136261;
-  const value = `${title.normalize('NFKC')}::${content.normalize('NFKC')}`;
+  const value = `${userId}::${title.normalize('NFKC')}::${content.normalize('NFKC')}`;
   for (let index = 0; index < value.length; index += 1) {
     hash ^= value.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
@@ -114,7 +114,7 @@ export class VectorStoreService {
     }
 
     const newDoc: VectorDocument = {
-      id: stableId(doc.title, doc.content),
+      id: stableId(doc.userId, doc.title, doc.content),
       title: doc.title,
       content: doc.content,
       author: doc.author,
