@@ -129,7 +129,7 @@ export class AcademicSearchService {
         return {
           id: item.id || info.industryIdentifiers?.[0]?.identifier || `gbooks:${this.stableId(info.title || '')}`,
           title: info.title || 'سەردێڕی دیارینەکراو',
-          authors: info.authors || ['نووسەری دیارینەکراو'],
+          authors: info.authors || [],
           publicationYear: year,
           source: 'googlebooks' as const,
           url: info.infoLink,
