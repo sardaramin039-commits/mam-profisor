@@ -59,7 +59,7 @@
 
               <!-- Expansions for active controls (Textareas with dynamic descriptions) -->
               <!-- Custom Sources Textarea -->
-              @vm.if (vm.refineForm.get('customSourcesOn')?.value) {
+              @if (vm.refineForm.get('customSourcesOn')?.value) {
                 <div class="space-y-1 bg-amber-50/5 p-3 rounded-lg border-2 border-amber-600/30 animate-expand-fade">
                   <div class="flex justify-between items-center text-[11px] font-bold text-amber-900">
                     <span class="flex items-center gap-1">
@@ -78,7 +78,7 @@
                               placeholder="سەرچاوەکان لێرە بنووسە یان لکێنە (بۆ نموونە: ئەمین، ٢٠٢٤؛ بارزانی، ٢٠٢٢...) تا نووسەر تەنها سوود لەمانە وەرگرێت."></textarea>
                     
                     <!-- Quick-Preview Popover -->
-                    @vm.if (isQuickPreviewVisible()) {
+                    @if (isQuickPreviewVisible()) {
                       <div [style.top.px]="vm.quickPreviewPos().top + 20"
                            [style.left.px]="vm.quickPreviewPos().left"
                            class="absolute z-50 w-72 bg-white border-2 border-amber-500/60 p-3 rounded-lg shadow-lg text-right font-serif animate-fade-in-badge text-stone-900 select-none">
@@ -92,16 +92,16 @@
                           </button>
                         </div>
                         
-                        @vm.if (vm.quickPreviewLoading()) {
+                        @if (vm.quickPreviewLoading()) {
                           <div class="flex items-center justify-center py-4 gap-2 text-xs text-stone-500">
                             <span class="w-3.5 h-3.5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></span>
                             خەریکی گەڕان و هێنانە...
                           </div>
-                        } @else vm.if (quickPreviewError()) {
+                        } @else if (quickPreviewError()) {
                           <div class="text-[10px] text-red-600 py-2">
                             {{ quickPreviewError() }}
                           </div>
-                        } @else vm.if (quickPreviewSuggestions().length === 0) {
+                        } @else if (quickPreviewSuggestions().length === 0) {
                           <div class="text-[10px] text-stone-500 py-2">
                             هیچ پێشنیارێک بەردەست نییە. تکایە دڵنیابە ناونیشانی تێزەکە دروستە.
                           </div>
