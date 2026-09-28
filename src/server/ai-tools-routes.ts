@@ -6,6 +6,16 @@ import { apiConfigService } from './services/api-config.service';
 import { generateDynamicAcademicFallback } from './services/dynamic-academic-fallback.service';
 import { academicSearchService } from '../services/academic-search.service';
 import { resolveDoi, lookupIsbn, lookupIssn } from '../helpers/extended-academic-tools';
+import {
+  fetchSemanticScholar,
+  fetchPubMed,
+  fetchOpenLibrary,
+  fetchInternetArchive,
+  fetchDOAJ,
+  fetchWorldCat,
+  fetchEuropeana,
+  fetchLibraryOfCongress
+} from '../helpers/academic-integrations';
 import { z } from 'zod';
 
 interface OpenAiOrPerplexityResponse {
@@ -98,6 +108,22 @@ async function executeDirectIntegration(toolId: string, inputText: string): Prom
       return await lookupIsbn(query);
     case 'issn_lookup':
       return await lookupIssn(query);
+    case 'semantic_scholar_api':
+      return { integration: 'semantic-scholar', records: await fetchSemanticScholar(query), verificationStatus: 'retrieved-not-verified' };
+    case 'pubmed_api':
+      return { integration: 'pubmed', records: await fetchPubMed(query), verificationStatus: 'retrieved-not-verified' };
+    case 'open_library_api':
+      return { integration: 'open-library', records: await fetchOpenLibrary(query), verificationStatus: 'retrieved-not-verified' };
+    case 'internet_archive_api':
+      return { integration: 'internet-archive', records: await fetchInternetArchive(query), verificationStatus: 'retrieved-not-verified' };
+    case 'doaj_api':
+      return { integration: 'doaj', records: await fetchDOAJ(query), verificationStatus: 'retrieved-not-verified' };
+    case 'worldcat_api':
+      return { integration: 'worldcat', records: await fetchWorldCat(query), verificationStatus: 'retrieved-not-verified' };
+    case 'europeana_api':
+      return { integration: 'europeana', records: await fetchEuropeana(query), verificationStatus: 'retrieved-not-verified' };
+    case 'loc_api':
+      return { integration: 'library-of-congress', records: await fetchLibraryOfCongress(query), verificationStatus: 'retrieved-not-verified' };
     default:
       return null;
   }
