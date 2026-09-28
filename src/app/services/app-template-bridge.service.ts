@@ -858,7 +858,7 @@ export class AppTemplateBridgeService {
     const value = this.citationForm.getRawValue();
     const source: CitationItem = {
       id: '',
-      author: String(value.author || ''),
+      authors: String(value.author || ''),
       title: String(value.title || ''),
       year: Number(value.year || 0),
       publisher: String(value.publisher || value.journalOrPublisher || ''),
