@@ -20,7 +20,6 @@ import { resolveDoi, lookupIsbn, lookupIssn } from '../../helpers/extended-acade
 import { crawlerEngine } from '../../services/crawler-engine';
 import { academicSearchService } from '../../services/academic-search.service';
 import { sourceVerificationService } from '../services/source-verification.service';
-import { sourceVerificationService } from '../services/source-verification.service';
 
 export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
