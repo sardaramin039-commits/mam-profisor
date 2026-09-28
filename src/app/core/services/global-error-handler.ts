@@ -29,7 +29,7 @@ export class GlobalErrorHandlerService implements ErrorHandler {
     console.error('[GlobalErrorHandler]', message, error);
 
     const log: AppErrorLog = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: createErrorLogId(),
       timestamp,
       message,
       stack,
