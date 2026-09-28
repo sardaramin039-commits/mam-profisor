@@ -428,17 +428,43 @@ export class AppTemplateBridgeService {
   isEvaluatingDefense = signal<boolean>(false);
 
   runCognitiveCopilot() {
-    if (!this.copilotInputText().trim()) return;
+    const input = this.copilotInputText().trim();
+    if (!input) return;
+
     this.isCopilotRunning.set(true);
     this.copilotError.set(null);
-    setTimeout(() => {
-      this.copilotDebateResult.set({
-        thesisText: 'دەقی پێشنیارکراوی ئەکادیمی',
-        criticText: 'ڕەخنەی بونیادی لەسەر مێتۆدۆلۆژیا',
-        synthesisText: 'سینتێزی دروستکراو بۆ بەشەکە'
-      });
-      this.isCopilotRunning.set(false);
-    }, 1000);
+
+    this.http.post<any>('/api/ai-tools/execute', {
+      toolId: 'ai_debate',
+      inputText: input,
+      options: {
+        discipline: 'گشتی',
+        academicLevel: 'ماستەر',
+        language: 'ckb',
+        tone: 'formal_academic'
+      }
+    }).subscribe({
+      next: result => {
+        const output = typeof result?.output === 'string' ? result.output.trim() : '';
+        const thesisMatch = output.match(/(?:Thesis Argument|Pro)[:\\n]+([\\s\\S]*?)(?=\\n(?:Antithesis Argument|Con|Synthesis)|$)/i);
+        const criticMatch = output.match(/(?:Antithesis Argument|Con)[:\\n]+([\\s\\S]*?)(?=\\n(?:Synthesis|Conclusion)|$)/i);
+        const synthesisMatch = output.match(/(?:Synthesis(?: Conclusion)?|Conclusion)[:\\n]+([\\s\\S]*)/i);
+
+        this.copilotDebateResult.set({
+          thesisText: thesisMatch?.[1]?.trim() || output,
+          criticText: criticMatch?.[1]?.trim() || '',
+          synthesisText: synthesisMatch?.[1]?.trim() || output,
+          rawOutput: output,
+          status: result?.isFallback ? 'degraded' : 'generated'
+        });
+        this.isCopilotRunning.set(false);
+      },
+      error: error => {
+        console.error('Cognitive Copilot error:', error);
+        this.copilotError.set('Cognitive Copilot سەرکەوتوو نەبوو.');
+        this.isCopilotRunning.set(false);
+      }
+    });
   }
 
   getChapterById(id: any): ChapterItem | null {
@@ -466,9 +492,16 @@ export class AppTemplateBridgeService {
   }
 
   applyCopilotToChapter(chapter: ChapterItem | null) {
-    if (!chapter) return;
-    const text = 'شیکاری زانستی نوێ بۆ بەشەکە';
-    this.editorService.updateChapterContent(chapter.id, (chapter.content || '') + text, 'جێبەجێکردنی کۆپایڵۆت');
+    const result = this.copilotDebateResult();
+    if (!chapter || !result) return;
+    const text = String(result.synthesisText || result.rawOutput || '').trim();
+    if (!text) return;
+
+    this.editorService.updateChapterContent(
+      chapter.id,
+      `${(chapter.content || '').trim()}\\n\\n${text}`,
+      'جێبەجێکردنی کۆپایڵۆت'
+    );
   }
 
   generateTitleAndSummary(topic: string) {
