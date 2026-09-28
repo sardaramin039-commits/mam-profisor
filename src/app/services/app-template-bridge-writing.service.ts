@@ -87,7 +87,7 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
         });
         this.isCopilotRunning.set(false);
       },
-      error: error => {
+      error: (error: unknown) => {
         console.error('Cognitive Copilot error:', error);
         this.copilotError.set('Cognitive Copilot سەرکەوتوو نەبوو.');
         this.isCopilotRunning.set(false);
