@@ -1,5 +1,10 @@
 import { ErrorHandler, Injectable, signal } from '@angular/core';
 
+function createErrorLogId(): string {
+  const uuid = globalThis.crypto?.randomUUID?.();
+  return uuid ? 'ERR_' + uuid : 'ERR_' + Date.now() + '_' + Math.trunc(globalThis.performance?.now?.() || 0);
+}
+
 export interface AppErrorLog {
   id: string;
   timestamp: string;
