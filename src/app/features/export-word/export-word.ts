@@ -1,9 +1,12 @@
 import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { WordExportService } from '../../services/word-export';
 import { EditorService } from '../editor/services/editor';
+import { Data } from '../../services/data';
 
 @Component({
   selector: 'app-export-word',
@@ -36,7 +39,11 @@ import { EditorService } from '../editor/services/editor';
 export class ExportWordComponent {
   private wordExportService = inject(WordExportService);
   private editorService = inject(EditorService);
+  private data = inject(Data);
+  private http = inject(HttpClient);
   title = signal<string>('توێژینەوەی_زانستی');
+  isExporting = signal<boolean>(false);
+  exportError = signal<string | null>(null);
 
   async exportToWord(): Promise<void> {
     const chapters = this.editorService.chapters()
@@ -47,21 +54,51 @@ export class ExportWordComponent {
       }));
 
     if (chapters.length === 0) {
+      this.exportError.set('هیچ ناوەڕۆکێکی ئامادە بۆ Export نییە.');
       return;
     }
 
-    const blob = await this.wordExportService.generateDocxBlob(
-      this.title().trim() || 'توێژینەوەی_زانستی',
-      'زانستە گشتییەکان',
-      'ماستەر',
-      chapters
-    );
+    this.isExporting.set(true);
+    this.exportError.set(null);
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${this.title().replace(/\s+/g, '_')}.docx`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const documentText = chapters
+        .map(chapter => `### ${chapter.title}\n${chapter.content}`)
+        .join('\n\n');
+
+      const qa = await firstValueFrom(
+        this.http.post<any>('/api/platform/qa-gate', {
+          documentText,
+          sources: this.data.sourcesList()
+        })
+      );
+
+      if (qa?.qaResult?.exportBlocked === true) {
+        this.exportError.set(
+          qa.qaResult.kurdishSummaryStatus ||
+          'Export بەهۆی پشکنینی سەلامەتی و بەڵگەی ئەکادیمی بلۆک کرا.'
+        );
+        return;
+      }
+
+      const blob = await this.wordExportService.generateDocxBlob(
+        this.title().trim() || 'توێژینەوەی_زانستی',
+        'زانستە گشتییەکان',
+        'ماستەر',
+        chapters
+      );
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(this.title().trim() || 'توێژینەوەی_زانستی').replace(/\\s+/g, '_')}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Secure Word export failed:', error);
+      this.exportError.set('پشکنینی Export یان دروستکردنی فایل سەرکەوتوو نەبوو.');
+    } finally {
+      this.isExporting.set(false);
+    }
   }
 }
