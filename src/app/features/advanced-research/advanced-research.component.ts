@@ -1,13 +1,31 @@
 import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MultiAgentService, ProfessorModeLevel } from './services/multi-agent.service';
+import { ProfessorModeLevel } from './services/multi-agent.service';
+import { AdvancedResearchOrchestratorTabComponent } from './tabs/advanced-research-orchestrator-tab';
+import { AdvancedResearchFactCheckerTabComponent } from './tabs/advanced-research-fact-checker-tab';
+import { AdvancedResearchMultiapiTabComponent } from './tabs/advanced-research-multiapi-tab';
+import { AdvancedResearchKnowledgeGraphTabComponent } from './tabs/advanced-research-knowledge-graph-tab';
+import { AdvancedResearchOcrTabComponent } from './tabs/advanced-research-ocr-tab';
+import { AdvancedResearchPeerReviewTabComponent } from './tabs/advanced-research-peer-review-tab';
+import { AdvancedResearchCitationExportTabComponent } from './tabs/advanced-research-citation-export-tab';
+import { AdvancedResearchExtendedToolsTabComponent } from './tabs/advanced-research-extended-tools-tab';
+import { AdvancedResearchMemoryTabComponent } from './tabs/advanced-research-memory-tab';
 
 @Component({
   selector: 'app-advanced-research-hub',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, MatIconModule,
+    AdvancedResearchOrchestratorTabComponent,
+    AdvancedResearchFactCheckerTabComponent,
+    AdvancedResearchMultiapiTabComponent,
+    AdvancedResearchKnowledgeGraphTabComponent,
+    AdvancedResearchOcrTabComponent,
+    AdvancedResearchPeerReviewTabComponent,
+    AdvancedResearchCitationExportTabComponent,
+    AdvancedResearchExtendedToolsTabComponent,
+    AdvancedResearchMemoryTabComponent
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './advanced-research.component.html'
 })
@@ -73,23 +91,4 @@ export class AdvancedResearchHubComponent {
     { level: 'پڕۆفیسۆر', icon: '👑', activeClass: 'bg-amber-950 text-amber-300 border border-amber-800 font-bold' },
   ];
 
-  runOrchestrator(topic: string) {
-    if (!topic.trim() || this.multiAgent.isLoadingPipeline()) return;
-    this.multiAgent.runMultiAgentPipeline(topic.trim());
-  }
-
-  validateCitationsInput(rawText: string) {
-    if (!rawText) return;
-    const list = rawText.split('\n').map(s => s.trim()).filter(Boolean);
-    this.multiAgent.validateCitations(list);
-  }
-
-  getSourceTypeClass(type: string): string {
-    switch (type) {
-      case 'PubMed': return 'bg-emerald-950 text-emerald-300 border border-emerald-800';
-      case 'SemanticScholar': return 'bg-indigo-950 text-indigo-300 border border-indigo-800';
-      case 'OpenLibrary': return 'bg-amber-950 text-amber-300 border border-amber-800';
-      default: return 'bg-slate-800 text-slate-300 border border-slate-700';
-    }
-  }
 }
