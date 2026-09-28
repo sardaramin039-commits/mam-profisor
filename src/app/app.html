@@ -14,7 +14,7 @@
     </app-splash-screen>
   } @else if (viewMode() === 'workspace') {
     <!-- 2. WORKSPACE / MAIN TOOL SCREEN -->
-    <app-workspace-header></app-workspace-header>
+    <app-workspace-header [host]="this"></app-workspace-header>
     <app-workspace-main [host]="this"></app-workspace-main>
     <app-workspace-bottom-bar [host]="this"></app-workspace-bottom-bar>
     <!-- Academic footer -->
