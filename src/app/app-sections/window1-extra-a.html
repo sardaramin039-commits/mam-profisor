@@ -235,7 +235,7 @@
                  (dragover)="vm.onDragOver($event, 'copyStyle')"
                  (dragleave)="vm.onDragLeave($event, 'copyStyle')"
                  (drop)="vm.onFileDrop($event, 'copyStyle')"
-                 [class.bg-emerald-100]="isDraggingCopyStyle()">
+                 [class.bg-emerald-100]="vm.isDraggingCopyStyle()">
               
               <div class="flex justify-between items-center">
                 <span class="block text-xs font-bold text-stone-900 flex items-center gap-1 bg-transparent">
@@ -244,9 +244,9 @@
                 </span>
                 
                 <div class="flex items-center gap-2">
-                  @if (copyStyleFileName()) {
-                    <span class="text-[9px] text-emerald-950 bg-emerald-100 px-1.5 py-0.5 rounded border-2 border-emerald-800 font-mono font-bold truncate max-w-[120px]" [title]="copyStyleFileName()">
-                      {{ copyStyleFileName() }}
+                  @if (vm.copyStyleFileName()) {
+                    <span class="text-[9px] text-emerald-950 bg-emerald-100 px-1.5 py-0.5 rounded border-2 border-emerald-800 font-mono font-bold truncate max-w-[120px]" [title]="vm.copyStyleFileName()">
+                      {{ vm.copyStyleFileName() }}
                     </span>
                   }
                   <button type="button" (click)="fileInputCopyStyle.click()" class="text-[10px] text-amber-900 hover:underline flex items-center gap-0.5 cursor-pointer bg-transparent font-bold">
@@ -299,8 +299,8 @@
                      (dragover)="vm.onDragOver($event, 'comp2')"
                      (dragleave)="vm.onDragLeave($event, 'comp2')"
                      (drop)="vm.onFileDrop($event, 'comp2')"
-                     [class.bg-emerald-100]="isDraggingComp2()"
-                     [class.border-emerald-500]="isDraggingComp2()"
+                     [class.bg-emerald-100]="vm.isDraggingComp2()"
+                     [class.border-emerald-500]="vm.isDraggingComp2()"
                      (click)="fileInputComp2.click()"
                      (keydown.enter)="fileInputComp2.click()"
                      tabindex="0"
@@ -309,8 +309,8 @@
                   <input type="file" #fileInputComp2 (change)="vm.onFileSelected($event, 'comp2')" class="hidden" accept=".docx,.doc,.pdf,.txt,.md,.json">
                   
                   <span class="text-xs font-bold text-stone-900 line-clamp-2 leading-tight">
-                    @if (compareFile2Name()) {
-                      📂 {{ compareFile2Name() }}
+                    @if (vm.compareFile2Name()) {
+                      📂 {{ vm.compareFile2Name() }}
                     } @else {
                       📂 فایلێک باربکە یان لێرە دایبنێ
                     }
