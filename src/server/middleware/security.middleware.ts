@@ -1,7 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
 
-// Strict ALLOWED_ORIGINS allowlist validation
+// Local development fallback only.
+// Production deployments should configure ALLOWED_ORIGINS or APP_URL explicitly.
 const DEFAULT_ALLOWED_DOMAINS = ['localhost', '127.0.0.1'];
+
+function normalizeAllowedOrigin(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = new URL(
+      trimmed.startsWith('http://') || trimmed.startsWith('https://')
+        ? trimmed
+        : `https://${trimmed}`
+    );
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
 
 export function securityHeadersMiddleware(req: Request, res: Response, next: NextFunction) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -19,38 +36,32 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   const rawEnvOrigins = process.env['ALLOWED_ORIGINS'] || process.env['APP_URL'] || '';
   const envAllowedOrigins = rawEnvOrigins
     .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
+    .map(normalizeAllowedOrigin)
+    .filter((origin): origin is string => origin !== null);
 
   let isAllowed = false;
 
   if (!originHeader) {
-    // Same-origin or server-to-server internal request
+    // Same-origin or server-to-server internal request.
     isAllowed = true;
   } else {
     try {
-      const urlObj = new URL(originHeader);
-      const hostname = urlObj.hostname;
+      const requestOrigin = new URL(originHeader);
+      const requestHost = (req.get('host') || '').toLowerCase();
 
-      const requestHost = (req.get('host') || '').split(':')[0].toLowerCase();
-      const sameHost = requestHost !== '' && hostname === requestHost;
+      // Same-origin requests must match the complete origin, including scheme and port.
+      const sameOrigin =
+        requestHost !== '' &&
+        `${req.protocol}://${requestHost}` === requestOrigin.origin;
 
-      if (sameHost) {
+      if (sameOrigin) {
         isAllowed = true;
       } else if (envAllowedOrigins.length > 0) {
-        isAllowed = envAllowedOrigins.some(allowed => {
-          if (allowed === originHeader) return true;
-          try {
-            const allowedUrl = new URL(allowed.startsWith('http') ? allowed : `https://${allowed}`);
-            return hostname === allowedUrl.hostname || hostname.endsWith('.' + allowedUrl.hostname);
-          } catch {
-            return hostname === allowed || hostname.endsWith('.' + allowed);
-          }
-        });
+        // Explicit production allowlist: exact-origin match only.
+        isAllowed = envAllowedOrigins.includes(requestOrigin.origin);
       } else {
-        isAllowed = DEFAULT_ALLOWED_DOMAINS.some(domain =>
-          hostname === domain || hostname.endsWith('.' + domain)
-        );
+        // Development fallback: permit only localhost/loopback origins.
+        isAllowed = DEFAULT_ALLOWED_DOMAINS.includes(requestOrigin.hostname);
       }
     } catch {
       isAllowed = false;
@@ -60,15 +71,17 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   if (isAllowed && originHeader) {
     res.setHeader('Access-Control-Allow-Origin', originHeader);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-  } else if (!originHeader) {
-    // Same origin
-  } else {
-    // Untrusted origin: restrict access by returning null origin
+    res.setHeader('Vary', 'Origin');
+  } else if (originHeader) {
+    // Untrusted origin: explicitly deny cross-origin browser access.
     res.setHeader('Access-Control-Allow-Origin', 'null');
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Kurdish-Library-Sanitized, X-RAG-Pipeline-Access');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-Requested-With, X-Kurdish-Library-Sanitized, X-RAG-Pipeline-Access'
+  );
 
   if (req.method === 'OPTIONS') {
     res.sendStatus(204);
@@ -83,9 +96,8 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
  */
 export function promptSanitizerMiddleware(req: Request, res: Response, next: NextFunction) {
   if (req.body && typeof req.body === 'object') {
-    const sanitizeValue = (val: any): any => {
+    const sanitizeValue = (val: unknown): unknown => {
       if (typeof val === 'string') {
-        // Strip common prompt injection control characters and aggressive prompt overrides
         return val
           .replace(/ignore\s+all\s+previous\s+instructions/gi, '[ sanitized instruction override ]')
           .replace(/system\s+prompt\s+reveal/gi, '[ sanitized prompt reveal ]')
@@ -95,7 +107,7 @@ export function promptSanitizerMiddleware(req: Request, res: Response, next: Nex
         return val.map(sanitizeValue);
       }
       if (val && typeof val === 'object') {
-        const sanitizedObj: Record<string, any> = {};
+        const sanitizedObj: Record<string, unknown> = {};
         for (const [k, v] of Object.entries(val)) {
           sanitizedObj[k] = sanitizeValue(v);
         }
@@ -119,4 +131,3 @@ export function geminiApiKeyCheckMiddleware(req: Request, res: Response, next: N
   }
   next();
 }
-
