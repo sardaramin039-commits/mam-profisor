@@ -92,32 +92,53 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
 
 /**
  * Prompt Injection Protection Middleware
- * Sanitizes untrusted inputs to reduce common prompt injection patterns before AI processing.
+ *
+ * Academic source text, drafts, citations, and uploaded content must remain byte-for-byte
+ * semantically intact. Only fields explicitly intended to carry instructions are inspected.
+ * This is a defense-in-depth signal; authorization and trusted system prompts remain authoritative.
  */
 export function promptSanitizerMiddleware(req: Request, res: Response, next: NextFunction) {
-  if (req.body && typeof req.body === 'object') {
-    const sanitizeValue = (val: unknown): unknown => {
-      if (typeof val === 'string') {
-        return val
-          .replace(/ignore\s+all\s+previous\s+instructions/gi, '[ sanitized instruction override ]')
-          .replace(/system\s+prompt\s+reveal/gi, '[ sanitized prompt reveal ]')
-          .replace(/you\s+are\s+now\s+a\s+DAN/gi, '[ sanitized DAN override ]');
-      }
-      if (Array.isArray(val)) {
-        return val.map(sanitizeValue);
-      }
-      if (val && typeof val === 'object') {
-        const sanitizedObj: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(val)) {
-          sanitizedObj[k] = sanitizeValue(v);
-        }
-        return sanitizedObj;
-      }
-      return val;
-    };
+  const instructionFields = new Set([
+    'prompt',
+    'userPrompt',
+    'userQuestion',
+    'instructions',
+    'additionalInstructions',
+    'instruction'
+  ]);
 
-    req.body = sanitizeValue(req.body);
+  let detected = false;
+
+  const inspectValue = (key: string, value: unknown): unknown => {
+    if (!instructionFields.has(key) || typeof value !== 'string') {
+      return value;
+    }
+
+    const injectionPatterns = [
+      /ignore\s+all\s+previous\s+instructions/gi,
+      /system\s+prompt\s+reveal/gi,
+      /you\s+are\s+now\s+a\s+DAN/gi
+    ];
+
+    let sanitized = value;
+    for (const pattern of injectionPatterns) {
+      if (pattern.test(sanitized)) {
+        detected = true;
+        sanitized = sanitized.replace(pattern, '[ instruction override removed ]');
+      }
+      pattern.lastIndex = 0;
+    }
+    return sanitized;
+  };
+
+  if (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) {
+    const body = req.body as Record<string, unknown>;
+    for (const [key, value] of Object.entries(body)) {
+      body[key] = inspectValue(key, value);
+    }
   }
+
+  res.setHeader('X-Prompt-Injection-Detected', detected ? 'true' : 'false');
   next();
 }
 
