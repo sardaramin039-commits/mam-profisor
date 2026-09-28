@@ -3,11 +3,6 @@ import type { AppComponent } from './app';
 
 @Directive()
 export abstract class AppTemplateSectionBase {
-  // Template proxy: preserves the existing AppComponent API while physically splitting
-  // the monolithic template into independently compiled sections.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
-
   private _host!: AppComponent;
 
   @Input({ required: true })
@@ -28,10 +23,9 @@ export abstract class AppTemplateSectionBase {
         const host = target._host;
         if (!host) return undefined;
         const value = host[property as keyof AppComponent] as unknown;
-        if (typeof value === 'function' && !('set' in value) && !('update' in value)) {
-          return value.bind(host);
-        }
-        return value;
+        return typeof value === 'function'
+          ? value.bind(host)
+          : value;
       },
       set: (target, property, value, receiver) => {
         if (property === 'host' || Reflect.has(target, property)) {
@@ -43,7 +37,9 @@ export abstract class AppTemplateSectionBase {
           return true;
         }
         return Reflect.set(target, property, value, receiver);
-      },
+      }
     });
   }
 }
+
+export interface AppTemplateSectionBase extends AppComponent {}
