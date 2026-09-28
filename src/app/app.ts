@@ -11,7 +11,7 @@ import { AppControllerActions } from './app-controller-actions';
   styleUrl: './app.css',
 })
 export class AppComponent extends AppControllerActions implements OnInit {
-  ngOnInit(): void {
+  override ngOnInit(): void {
     super.ngOnInit();
   }
 }
