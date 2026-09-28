@@ -1,0 +1,109 @@
+          <div class="bg-white border border-[#E5E1DA] rounded-xl p-5 space-y-5 animate-expand-fade" id="copilot-result-stress">
+            <div class="flex items-center gap-2 border-b border-stone-150 pb-3 justify-between flex-wrap">
+              <span class="text-xs font-bold text-stone-900 flex items-center gap-1">
+                <mat-icon class="text-[#A51C30] !text-sm">gavel</mat-icon>
+                شیکاری دژبەری و تاقیکردنەوەی سترێسی لۆجیکی (Logical Stress-Test Result):
+              </span>
+              
+              <!-- Real-time Rigor level Badge -->
+              <span class="text-[10.5px] bg-[#FAF9F5] px-3.5 py-1 rounded-lg border border-stone-300 flex items-center gap-1.5">
+                <span class="font-serif font-bold text-stone-700">پلەی توندوتۆڵی لۆجیکی:</span>
+                <span class="font-mono font-extrabold" [class.text-emerald-700]="res.strengthScore >= 80" [class.text-amber-700]="res.strengthScore < 80 && res.strengthScore >= 50" [class.text-red-700]="res.strengthScore < 50">{{ res.strengthScore }}/100</span>
+              </span>
+            </div>
+
+            <!-- Dynamic Gauge/Indicator card -->
+            <div class="p-4 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-between gap-4 flex-wrap">
+              <div class="space-y-1">
+                <strong class="text-xs text-stone-900 block font-serif">شیکاری گشتی ڕەوانبێژی:</strong>
+                <p class="text-[11px] text-stone-600">
+                  @if (res.strengthScore >= 80) {
+                    ✅ پیرۆزە! دەقەکەت خاوەن بونیادێکی لۆجیکی زۆر بەهێزە و تێکڕای دژبەرییەکانی لە نزمترین ئاستدایە. گونجاوە بۆ پێشکەشکردن بە لێژنەی دکتۆرا.
+                  } @else if (res.strengthScore >= 50) {
+                    ⚠️ دەقەکەت خاوەن تەمومژە یان هەڵەی زمانەوانی لۆجیکی تێدایە، دەبێت سەرنج بدەیتە خاڵەکانی خوارەوە بۆ بەرزکردنەوەی توندوتۆڵیەکەی.
+                  } @else {
+                    🚨 هۆشداری! بونیادی فیکری دەقەکە تووشی لادانی لۆجیکی یان ناکۆکی چەمکی کوشندە بووەتەوە. پێویستە دەستبەجێ بەپێی ڕێنماییەکان دابڕێژرێتەوە.
+                  }
+                </p>
+              </div>
+            </div>
+
+            <!-- Contradictions & Fallacies Columns -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <!-- Contradictions Card -->
+              <div class="p-4 bg-red-50/40 border border-red-200/60 rounded-xl space-y-2.5">
+                <div class="flex items-center gap-1.5 border-b border-red-150 pb-1.5 text-red-950">
+                  <mat-icon class="text-red-700 !text-sm">compare</mat-icon>
+                  <span class="text-xs font-extrabold font-serif">دژبەرییە ناوخۆیییەکان (Internal Contradictions):</span>
+                </div>
+                @if (res.internalContradictions.length > 0) {
+                  <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    @for (item of res.internalContradictions; track item.issue) {
+                      <div class="text-[11px] leading-relaxed text-justify">
+                        <strong class="text-red-900 block">📌 {{ item.issue }}:</strong>
+                        <span class="text-stone-700">{{ item.explanation }}</span>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <p class="text-[10.5px] text-stone-500 italic">هیچ دژبەرییەکی چەمکیی کوشندە لە دەقەکەدا نەدۆزرایەوە.</p>
+                }
+              </div>
+
+              <!-- Logical Fallacies Card -->
+              <div class="p-4 bg-amber-50/40 border border-amber-200/60 rounded-xl space-y-2.5">
+                <div class="flex items-center gap-1.5 border-b border-amber-150 pb-1.5 text-amber-950">
+                  <mat-icon class="text-amber-700 !text-sm">warning_amber</mat-icon>
+                  <span class="text-xs font-extrabold font-serif">هەڵە لۆژیکییەکان (Logical Fallacies):</span>
+                </div>
+                @if (res.logicalFallacies.length > 0) {
+                  <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    @for (item of res.logicalFallacies; track item.fallacy) {
+                      <div class="text-[11px] leading-relaxed text-justify">
+                        <strong class="text-amber-900 block">⚡ {{ item.fallacy }}:</strong>
+                        <span class="text-stone-700">{{ item.explanation }}</span>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <p class="text-[10.5px] text-stone-500 italic">هیچ هەڵەیەکی توندوتۆڵی لۆجیکی نەدۆزرایەوە.</p>
+                }
+              </div>
+
+            </div>
+
+            <!-- Mitigation Advice -->
+            <div class="p-4 bg-indigo-50/45 border border-indigo-200 rounded-lg space-y-2">
+              <strong class="text-xs text-indigo-950 block flex items-center gap-1 font-serif">
+                <mat-icon class="text-indigo-700 !text-sm">lightbulb</mat-icon>
+                ڕێنمایی و چارەسەری پێشنیارکراو بۆ بەهێزکردن (Mitigation & Hardening Advice):
+              </strong>
+              <ul class="space-y-1.5 text-[11px] text-stone-700 pr-4 list-disc">
+                @for (adv of res.mitigationAdvice; track adv) {
+                  <li>{{ adv }}</li>
+                }
+              </ul>
+            </div>
+
+            <!-- Action Area: Apply to selected chapter -->
+            <div class="flex items-center justify-between border-t border-stone-150 pt-4 gap-3 flex-wrap bg-stone-50/60 p-3 rounded-lg">
+              <span class="text-[10px] text-stone-600 font-serif">ئەم ڕاپۆرتی لۆجیکییە زیاد بکە بۆ تێبینییەکان یان دەقی سەرەکی بەشەکە بۆ چاکسازییەکانی دواتر:</span>
+              <div class="flex items-center gap-2">
+                <select #chStressSelector class="text-xs p-2 border border-stone-350 rounded focus:ring-1 focus:ring-harvard-crimson font-sans bg-white text-black font-semibold cursor-pointer">
+                  @for (ch of vm.chapters(); track ch.id) {
+                    <option [value]="ch.id">بەشی {{ vm.getKurdishNumberStr(ch.id) }}: {{ ch.title }}</option>
+                  }
+                </select>
+                <button 
+                  type="button" 
+                  [disabled]="vm.chapters().length === 0"
+                  (click)="vm.applyCopilotToChapter(vm.getChapterById(chStressSelector.value)!)"
+                  class="px-3 py-2 bg-stone-900 hover:bg-black text-white rounded text-[10.5px] font-bold cursor-pointer transition flex items-center gap-1 disabled:opacity-50">
+                  <mat-icon class="!text-xs">add_circle</mat-icon>
+                  <span>تێکەڵکردن بە بەشی لێکۆڵینەوە</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
