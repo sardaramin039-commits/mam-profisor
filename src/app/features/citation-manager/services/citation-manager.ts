@@ -19,7 +19,7 @@ export class CitationManagerService {
       userId: source.userId || 'local_user',
       title: source.title || 'سەرچاوەی بێ ناو',
       author: source.author || 'نووسەری دیارینەکراو',
-      year: typeof source.year === 'number' ? source.year : 2024,
+      year: typeof source.year === 'number' ? source.year : 0,
       publisher: source.publisher || '',
       sourceType: (source.sourceType as any) || 'book',
       doi: source.doi,
@@ -42,7 +42,7 @@ export class CitationManagerService {
     const citationItem: CitationItem = {
       id: srcAny['id'],
       authors: srcAny['author'] || srcAny['authors'] || 'نووسەری دیارینەکراو',
-      year: srcAny['year'] || srcAny['publicationYear'] || new Date().getFullYear(),
+      year: srcAny['year'] ?? srcAny['publicationYear'] ?? 'n.d.',
       title: srcAny['title'] || srcAny['bookTitle'] || srcAny['articleTitle'] || 'سەرناوی بێ ناو',
       publisher: srcAny['publisher'],
       journal: srcAny['journal'] || srcAny['journalName'] || srcAny['periodical'],
