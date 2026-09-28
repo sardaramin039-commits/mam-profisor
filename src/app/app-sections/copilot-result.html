@@ -29,8 +29,8 @@
               <div class="space-y-1">
                 <span class="block text-[11px] font-bold text-stone-600">قۆناغ/تیۆری فەلسەفی هاوتا:</span>
                 <select 
-                  [value]="copilotExtraInfo()"
-                  (change)="copilotExtraInfo.set($any($event.target).value)"
+                  [value]="vm.copilotExtraInfo()"
+                  (change)="vm.copilotExtraInfo.set($any($event.target).value)"
                   class="w-full text-xs p-3 border-2 border-stone-800 rounded-lg bg-white focus:outline-none cursor-pointer font-sans font-medium"
                   id="copilot-theorist-selector">
                   <option value="weber">ماکس ڤیبەر (Max Weber) - کۆمەڵناسیی تێگەیشتن و ڕاسیۆنالیزم</option>
@@ -48,8 +48,8 @@
                 <span class="block text-[11px] font-bold text-stone-600">تێبینی یان کایەی زانستی زیادە:</span>
                 <input 
                   type="text" 
-                  [value]="copilotExtraInfo()"
-                  (input)="copilotExtraInfo.set($any($event.target).value)"
+                  [value]="vm.copilotExtraInfo()"
+                  (input)="vm.copilotExtraInfo.set($any($event.target).value)"
                   class="w-full text-xs p-3 border-2 border-stone-800 rounded-lg focus:outline-none font-sans"
                   placeholder="بۆ نموونە: کۆمەڵناسی، فەلسەفە، زمانەوانی..."
                   id="copilot-extra-info-input" />
