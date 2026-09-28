@@ -31,14 +31,14 @@ class ResearchProjectStateService {
       const snapshot = await this.workspaceRef(userId, workspaceId).get();
       if (snapshot.exists) {
         const data = snapshot.data() || {};
-        workspace.projectName = typeof data.projectName === 'string' ? data.projectName : workspace.projectName;
-        workspace.activeChapter = typeof data.activeChapter === 'string' ? data.activeChapter : workspace.activeChapter;
-        workspace.draftContent = typeof data.draftContent === 'string' ? data.draftContent : workspace.draftContent;
-        workspace.citationsList = Array.isArray(data.citationsList) ? data.citationsList : workspace.citationsList;
-        workspace.integrityScore = Number.isFinite(Number(data.integrityScore))
-          ? Math.max(0, Math.min(100, Number(data.integrityScore)))
+        workspace.projectName = typeof data['projectName'] === 'string' ? data['projectName'] : workspace.projectName;
+        workspace.activeChapter = typeof data['activeChapter'] === 'string' ? data['activeChapter'] : workspace.activeChapter;
+        workspace.draftContent = typeof data['draftContent'] === 'string' ? data['draftContent'] : workspace.draftContent;
+        workspace.citationsList = Array.isArray(data['citationsList']) ? data['citationsList'] : workspace.citationsList;
+        workspace.integrityScore = Number.isFinite(Number(data['integrityScore']))
+          ? Math.max(0, Math.min(100, Number(data['integrityScore'])))
           : workspace.integrityScore;
-        workspace.lastSavedAt = typeof data.lastSavedAt === 'string' ? data.lastSavedAt : workspace.lastSavedAt;
+        workspace.lastSavedAt = typeof data['lastSavedAt'] === 'string' ? data['lastSavedAt'] : workspace.lastSavedAt;
       } else {
         await this.persistWorkspace(workspace);
       }
