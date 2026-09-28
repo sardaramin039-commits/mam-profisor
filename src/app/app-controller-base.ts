@@ -218,10 +218,6 @@ export abstract class AppControllerBase implements OnInit {
     return calculateChapterTargetWords(chapter, list, totalWords);
   }
 
-  getChapterTargetWords(chapter: ChapterItem, list: ChapterItem[], totalWords: number): number {
-    return calculateChapterTargetWords(chapter, list, totalWords);
-  }
-
   getChapterTarget(c: ChapterItem | null): number {
     if (!c) return 0;
     const list = this.chapters();
