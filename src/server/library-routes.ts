@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { requireRole, ExtendedAuthRequest } from './middleware/rbac.middleware';
 import { GoogleGenAI } from '@google/genai';
 import { crawlerEngine } from '../services/crawler-engine';
 
@@ -81,7 +82,7 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 4. POST /api/library/sync - Trigger 24h Crawler Sync
-  router.post('/sync', async (_req: Request, res: Response) => {
+  router.post('/sync', requireRole('admin', 'professor'), async (_req: ExtendedAuthRequest, res: Response) => {
     try {
       const log = await crawlerEngine.triggerSync();
       res.json({
@@ -123,7 +124,7 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 6. GET /api/library/admin/stats - Admin Metrics
-  router.get('/admin/stats', (_req: Request, res: Response) => {
+  router.get('/admin/stats', requireRole('admin', 'professor'), (_req: ExtendedAuthRequest, res: Response) => {
     try {
       const stats = crawlerEngine.getAdminStats();
       res.json(stats);
