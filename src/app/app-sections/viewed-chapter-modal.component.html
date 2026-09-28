@@ -57,20 +57,20 @@
         </div>
 
 @if (isComparisonModeActive()) {
-  <app-viewed-chapter-compare></app-viewed-chapter-compare>
+  <app-viewed-chapter-compare [host]="host"></app-viewed-chapter-compare>
 } @else {
   <div class="flex-1 overflow-y-auto mb-4 pr-1 grid grid-cols-1 md:grid-cols-3 gap-5 text-right min-h-0">
-    <app-viewed-chapter-editor-security></app-viewed-chapter-editor-security>
+    <app-viewed-chapter-editor-security [host]="host"></app-viewed-chapter-editor-security>
   </div>
 }
         <div class="space-y-4">
-<app-viewed-chapter-integrity></app-viewed-chapter-integrity>
-<app-viewed-chapter-context></app-viewed-chapter-context>
-<app-viewed-chapter-rigor></app-viewed-chapter-rigor>
-<app-viewed-chapter-viva></app-viewed-chapter-viva>
-<app-viewed-chapter-additions></app-viewed-chapter-additions>
-<app-viewed-chapter-consultation></app-viewed-chapter-consultation>
-<app-viewed-chapter-advanced></app-viewed-chapter-advanced>
+<app-viewed-chapter-integrity [host]="host"></app-viewed-chapter-integrity>
+<app-viewed-chapter-context [host]="host"></app-viewed-chapter-context>
+<app-viewed-chapter-rigor [host]="host"></app-viewed-chapter-rigor>
+<app-viewed-chapter-viva [host]="host"></app-viewed-chapter-viva>
+<app-viewed-chapter-additions [host]="host"></app-viewed-chapter-additions>
+<app-viewed-chapter-consultation [host]="host"></app-viewed-chapter-consultation>
+<app-viewed-chapter-advanced [host]="host"></app-viewed-chapter-advanced>
           </div>
         }
       </div>
