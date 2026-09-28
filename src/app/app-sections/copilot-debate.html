@@ -1,0 +1,120 @@
+          <div class="bg-white border border-[#E5E1DA] rounded-xl p-5 space-y-5 animate-expand-fade" id="copilot-result-debate">
+            <div class="flex items-center gap-2 border-b border-stone-150 pb-3 justify-between">
+              <span class="text-xs font-bold text-stone-900 flex items-center gap-1">
+                <mat-icon class="text-[#A51C30] !text-sm">forum</mat-icon>
+                ئەنجامی دەمەتەقێی زانستی و مشتومڕی فرە-بریکاری (Debate Findings):
+              </span>
+              <span class="text-[9px] font-mono bg-harvard-crimson/10 text-harvard-crimson px-2 py-0.5 rounded border border-harvard-crimson/20 font-bold">Consensus Reached</span>
+            </div>
+
+            <!-- Agents Conversations layout -->
+            <div class="space-y-4">
+              @for (agent of res.agents; track agent.name) {
+                <div class="flex items-start gap-3 text-right">
+                  <!-- Agent Avatar Frame -->
+                  <div class="w-10 h-10 rounded-full flex-none bg-stone-100 border border-stone-200 flex items-center justify-center font-bold text-stone-700 text-base shadow-2xs">
+                    {{ agent.avatar }}
+                  </div>
+                  <!-- Agent Bubble Content -->
+                  <div class="flex-1 bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-1 font-serif text-justify relative">
+                    <span class="block text-xs font-extrabold text-[#A51C30]">{{ agent.name }}</span>
+                    <p class="text-[11.5px] text-stone-800 leading-relaxed">{{ agent.argument }}</p>
+                    <div class="absolute top-4 left-4 text-stone-300 font-mono text-[8px] uppercase select-none">Scholarly Voice</div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Consensus Block -->
+            <div class="p-4 bg-emerald-50/50 border-r-4 border-emerald-600 border border-emerald-100 rounded-lg space-y-1.5 font-serif text-justify">
+              <strong class="text-xs text-emerald-950 block flex items-center gap-1">
+                <mat-icon class="text-emerald-700 !text-sm">done_all</mat-icon>
+                یەکدەنگی کۆتایی لێژنەی فیکری (Scholarly Consensus):
+              </strong>
+              <p class="text-[11px] text-stone-800 leading-relaxed">{{ res.consensus }}</p>
+            </div>
+
+            <!-- Hardening Steps -->
+            <div class="p-4 bg-amber-50/45 border border-amber-200 rounded-lg space-y-2">
+              <strong class="text-xs text-amber-950 block flex items-center gap-1 font-serif">
+                <mat-icon class="text-amber-700 !text-sm">gavel</mat-icon>
+                هەنگاوە پێشنیارکراوەکان بۆ توندوتۆڵکردنی تێزەکە (Hardening Measures):
+              </strong>
+              <ul class="space-y-1.5 text-[11px] text-stone-700 pr-4 list-disc">
+                @for (step of res.hardeningSteps; track step) {
+                  <li>{{ step }}</li>
+                }
+              </ul>
+            </div>
+
+            <!-- 👮 کابینەی بڕیاردانی فیکریی توێژەر (Human-in-the-Loop Cockpit) -->
+            <div class="border-2 border-[#A51C30]/50 rounded-xl p-4 bg-stone-50 space-y-4">
+              <div class="flex items-center gap-1.5 border-b border-stone-200 pb-2">
+                <mat-icon class="text-harvard-crimson">security</mat-icon>
+                <strong class="text-xs text-stone-900 font-serif">کابینەی بڕیاردانی فیکریی توێژەر (Human-in-the-Loop Cockpit)</strong>
+              </div>
+              <p class="text-[11px] text-stone-600 font-serif leading-relaxed">دەمەتەقێی فرە-بریکاری ئێستا وەستاوە و چاوەڕێی بڕیاری مێتۆدی و لێکۆڵینەوەیی مرۆیی تۆ دەکات. تکایە بەشێک دیاری بکە و ئاراستەیەک هەڵبژێرە تا تێکەڵ بە دەقەکە بکرێت:</p>
+            
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-[11px] text-stone-700 font-bold">بەشی مەبەست:</span>
+                <select #chDebateSelector class="text-xs p-2 border border-stone-350 rounded focus:ring-1 focus:ring-harvard-crimson font-sans bg-white text-black font-semibold cursor-pointer">
+                  @for (ch of vm.chapters(); track ch.id) {
+                    <option [value]="ch.id">بەشی {{ vm.getKurdishNumberStr(ch.id) }}: {{ ch.title }}</option>
+                  }
+                </select>
+              </div>
+            
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                <!-- Option 1: Accept consensus -->
+                <button 
+                  type="button" 
+                  [disabled]="vm.chapters().length === 0"
+                  (click)="vm.applyCockpitAccept(vm.getChapterById(chDebateSelector.value)!)"
+                  class="p-3 bg-white hover:bg-emerald-50 border border-stone-250 hover:border-emerald-500 rounded-lg text-right space-y-1 cursor-pointer transition text-black">
+                  <span class="block text-xs font-bold text-emerald-800 flex items-center gap-1">
+                    <mat-icon class="!text-sm">check_circle</mat-icon>
+                    قبوڵکردنی کۆدەنگی نووسەران (Accept Consensus)
+                  </span>
+                  <span class="block text-[10px] text-stone-500 font-serif leading-tight">تەنها لێکۆڵینەوە و بڕیاری کۆتایی نووسەر لکێنە بە بەشەکەت.</span>
+                </button>
+            
+                <!-- Option 2: Incorporate Critic -->
+                <button 
+                  type="button" 
+                  [disabled]="vm.chapters().length === 0"
+                  (click)="vm.applyCockpitCritic(vm.getChapterById(chDebateSelector.value)!)"
+                  class="p-3 bg-white hover:bg-amber-50 border border-stone-250 hover:border-amber-500 rounded-lg text-right space-y-1 cursor-pointer transition text-black">
+                  <span class="block text-xs font-bold text-amber-800 flex items-center gap-1">
+                    <mat-icon class="!text-sm">gavel</mat-icon>
+                    یەکخستنی بیروڕای ڕەخنەگر و نووسەر (Incorporate Critic)
+                  </span>
+                  <span class="block text-[10px] text-stone-500 font-serif leading-tight">ڕەخنە توندەکانی بریکاری هارفەرد لەگەڵ کۆدەنگییەکە تێکەڵ بکە.</span>
+                </button>
+              </div>
+            
+              <!-- Option 3: Manual override -->
+              <div class="space-y-2 pt-2 border-t border-stone-200">
+                <span class="block text-xs font-bold text-stone-700 flex items-center gap-1">
+                  <mat-icon class="!text-sm">edit</mat-icon>
+                  دەستێوەردانی دەستی و چارەسەری خۆم (Manual Intervention Override)
+                </span>
+                <textarea 
+                  [value]="vm.cockpitManualResolution()"
+                  (input)="vm.cockpitManualResolution.set($any($event.target).value)"
+                  rows="2"
+                  class="w-full text-xs p-2.5 border-2 border-stone-300 rounded-lg bg-white focus:outline-none"
+                  placeholder="وەڵام یان چارەسەری تایبەتی خۆت بنووسە بۆ تێکەڵکردن..."></textarea>
+                <div class="flex justify-end">
+                  <button 
+                    type="button" 
+                    [disabled]="vm.chapters().length === 0 || !vm.cockpitManualResolution().trim()"
+                    (click)="vm.applyCockpitManual(vm.getChapterById(chDebateSelector.value)!)"
+                    class="px-4 py-2 bg-[#A51C30] hover:bg-harvard-dark text-white rounded text-[10.5px] font-bold cursor-pointer transition flex items-center gap-1 disabled:opacity-50">
+                    <mat-icon class="!text-xs">send</mat-icon>
+                    <span>جێبەجێکردنی دەستێوەردانی دەستی</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
