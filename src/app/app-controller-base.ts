@@ -1,4 +1,4 @@
-import { signal, computed, inject, OnInit } from '@angular/core';
+import { Directive, signal, computed, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Data } from './services/data';
 import { EditorService } from './features/editor/services/editor';
@@ -30,7 +30,9 @@ import { AppStateFacadeService } from './services/app-state-facade.service';
 import { ACADEMIC_GLOSSARY } from '../prompts/academic-glossary';
 import { calculateBookProgressSummary, BookProgressSummary } from './helpers/book-progress';
 import { ChapterItemModel as ChapterItem, StructureReviewResult } from './domain/models';
+import { calculateChapterTargetWords } from './helpers/chapter-calculator';
 
+@Directive()
 export abstract class AppControllerBase implements OnInit {
 
   readonly Math = Math;
@@ -211,6 +213,10 @@ export abstract class AppControllerBase implements OnInit {
   isParaphrasing = signal<boolean>(false);
   paraphraseError = signal<string | null>(null);
   semanticDBResults = signal<any>(null);
+
+  getChapterTargetWords(chapter: ChapterItem, list: ChapterItem[], totalWords: number): number {
+    return calculateChapterTargetWords(chapter, list, totalWords);
+  }
 
   getChapterTargetWords(chapter: ChapterItem, list: ChapterItem[], totalWords: number): number {
     return calculateChapterTargetWords(chapter, list, totalWords);
