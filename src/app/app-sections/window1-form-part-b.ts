@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, Input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, Input, ControlContainer, FormGroupDirective } from '@angular/core';
 import { APP_VIEW_IMPORTS } from '../app-view-imports';
 
 @Component({
@@ -6,6 +6,7 @@ import { APP_VIEW_IMPORTS } from '../app-view-imports';
   standalone: true,
   imports: APP_VIEW_IMPORTS,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
   templateUrl: './window1-form-part-b.html'
 })
 export class AppWindow1FormPartBComponent {
