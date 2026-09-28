@@ -6,9 +6,10 @@ import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
  * Includes local storage fallbacks for offline resilience.
  */
 export async function saveAcademicData(collectionPath: string, data: Record<string, unknown>): Promise<void> {
+  // The authenticated Firebase identity is authoritative. Never trust a client-supplied userId.
+  const uid = auth.currentUser?.uid || undefined;
+
   try {
-    // The authenticated Firebase identity is authoritative. Never trust a client-supplied userId.
-    const uid = auth.currentUser?.uid || undefined;
 
     const docRefId = doc(collection(db, collectionPath)).id;
     const docRef = doc(db, collectionPath, docRefId);
