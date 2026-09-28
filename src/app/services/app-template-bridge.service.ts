@@ -845,16 +845,42 @@ export class AppTemplateBridgeService {
     this.vivaUserDefenseInput.set('');
   }
   submitVivaDefense(c: ChapterItem) {
-    if (!this.vivaUserDefenseInput().trim()) return;
+    const defense = this.vivaUserDefenseInput().trim();
+    if (!c || !defense) return;
+
     this.isEvaluatingDefense.set(true);
-    setTimeout(() => {
-      this.vivaEvaluationResult.set({
-        isPassed: true,
-        score: 88,
-        feedbackText: 'دۆزی توێژینەوەکە بە شێوەیەکی زانستی و بڕواپێکراو پارێزگاری لێکرا.'
-      });
-      this.isEvaluatingDefense.set(false);
-    }, 1000);
+    this.vivaErrorMessage.set(null);
+
+    this.http.post<any>('/api/ai-tools/execute', {
+      toolId: 'ai_defense_preparation',
+      inputText: [
+        'ناونیشانی بەش: ' + (c.title || 'بەش'),
+        'دەقی بەش: ' + (c.content || '').slice(0, 12000),
+        'وەڵامی بەرگریی خوێندکار: ' + defense
+      ].join('\n'),
+      options: {
+        language: 'ckb',
+        tone: 'formal_academic',
+        academicLevel: 'ماستەر'
+      }
+    }).subscribe({
+      next: result => {
+        this.vivaEvaluationResult.set({
+          status: 'reviewed-not-scored',
+          score: null,
+          isPassed: null,
+          feedbackText: typeof result?.output === 'string'
+            ? result.output
+            : JSON.stringify(result?.output || {})
+        });
+        this.isEvaluatingDefense.set(false);
+      },
+      error: error => {
+        console.error('Viva defense evaluation error:', error);
+        this.vivaErrorMessage.set('هەڵسەنگاندنی وەڵامی Viva سەرکەوتوو نەبوو.');
+        this.isEvaluatingDefense.set(false);
+      }
+    });
   }
 }
 
