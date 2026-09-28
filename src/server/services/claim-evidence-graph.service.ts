@@ -1,5 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 
+export type EvidenceProvenance = 'server-verified-fulltext' | 'user-supplied-content' | 'unknown';
+
 export interface ClaimNode {
   claimId: string;
   text: string;
@@ -11,6 +13,7 @@ export interface ClaimNode {
   verificationStatus: 'verified' | 'unverified' | 'rejected' | 'synthetic_blocked';
   citationId: string;
   syntheticCitationBlocked?: boolean;
+  evidenceProvenance?: EvidenceProvenance;
 }
 
 export interface EvidenceNode {
@@ -20,6 +23,7 @@ export interface EvidenceNode {
   sourceTitle: string;
   doiOrIsbn?: string;
   pageNumber?: string;
+  provenance?: EvidenceProvenance;
 }
 
 export interface ClaimEvidenceGraph {
@@ -151,7 +155,10 @@ export class ClaimEvidenceGraphService {
           contextSnippet: String(raw.contextSnippet || ''),
           sourceTitle: String(source.title || ''),
           doiOrIsbn: source.doiOrIsbn || source.doi || undefined,
-          pageNumber: raw.pageNumber ? String(raw.pageNumber) : undefined
+          pageNumber: raw.pageNumber ? String(raw.pageNumber) : undefined,
+          provenance: source?.evidenceProvenance === 'server-verified-fulltext'
+            ? 'server-verified-fulltext'
+            : 'user-supplied-content'
         });
       }
 
@@ -167,6 +174,7 @@ export class ClaimEvidenceGraphService {
           : undefined;
 
         const grounded = Boolean(source && evidence && containsGroundedQuote(source, raw));
+        const provenance = evidence?.provenance || 'unknown';
         const actualSourceId = source
           ? String(source.id || source.sourceId || source.doiOrIsbn || source.doi || '')
           : '';
@@ -180,9 +188,10 @@ export class ClaimEvidenceGraphService {
           confidence: grounded ? Math.max(0, Math.min(100, Number(raw.confidence) || 0)) : 0,
           page: raw.page ? String(raw.page) : undefined,
           quote: grounded ? String(raw.quote || '') : '',
-          verificationStatus: grounded ? 'verified' : 'unverified',
+          verificationStatus: grounded && provenance === 'server-verified-fulltext' ? 'verified' : 'unverified',
           citationId: grounded ? String(raw.citationId || '') : '',
-          syntheticCitationBlocked: !grounded
+          syntheticCitationBlocked: !(grounded && provenance === 'server-verified-fulltext'),
+          evidenceProvenance: provenance
         };
       });
 
