@@ -4,6 +4,21 @@ import type { AuthRequest } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { vectorStoreService } from '../../services/vector-store.service';
 
+const indexSchema = z.object({
+  title: z.string().trim().min(3).max(500),
+  content: z.string().trim().min(20).max(2_000_000),
+  author: z.string().trim().max(300).optional(),
+  year: z.coerce.number().int().min(1000).max(2100).optional(),
+  documentId: z.string().trim().max(200).optional()
+}).strict();
+
+const retrieveSchema = z.object({
+  query: z.string().trim().min(2).max(5000),
+  documentId: z.string().trim().max(200).optional(),
+  verifiedOnly: z.boolean().default(false),
+  limit: z.coerce.number().int().min(1).max(20).default(5)
+}).strict();
+
 export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
 
@@ -19,27 +34,14 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
         return;
       }
 
-      const { title, content, author, year, documentId } = req.body || {};
-      if (
-        typeof title !== 'string' ||
-        title.trim().length < 3 ||
-        title.trim().length > 500 ||
-        typeof content !== 'string' ||
-        content.trim().length < 20 ||
-        content.length > 2_000_000
-      ) {
-        res.status(400).json({ error: 'ناونیشان و ناوەڕۆکی بەڵگەنامەکە نادروستن.' });
+      const parsed = indexSchema.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        res.status(400).json({ error: 'داتای بەڵگەنامە نادروستە.', issues: parsed.error.issues });
         return;
       }
 
-      const parsedYear = year === undefined || year === null || year === ''
-        ? undefined
-        : Number(year);
-
-      if (parsedYear !== undefined && (!Number.isInteger(parsedYear) || parsedYear < 1000 || parsedYear > 2100)) {
-        res.status(400).json({ error: 'ساڵی بڵاوکردنەوە نادروستە.' });
-        return;
-      }
+      const { title, content, author, year, documentId } = parsed.data;
+      const parsedYear = year;
 
       const indexed = await vectorStoreService.indexDocument({
         title: title.trim(),
@@ -84,11 +86,6 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
       const userId = req.user?.uid;
       if (!userId) {
         res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
-        return;
-      }
-
-      if (!query || typeof query !== 'string' || query.trim().length < 2) {
-        res.status(400).json({ error: 'داواکاری گەڕان (query) پێویستە.' });
         return;
       }
 
