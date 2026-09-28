@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { resolveDoi } from '../../helpers/extended-academic-tools';
+import { lookupIsbn, lookupIssn, resolveDoi } from '../../helpers/extended-academic-tools';
 
 export type TrustLevel = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
 
@@ -7,6 +7,7 @@ export interface SourceVerificationReport {
   sourceId: string;
   sourceTitle: string;
   author: string;
+  year?: string;
   publisher: string;
   doiOrIsbn?: string;
   integrityScore: number;
@@ -26,6 +27,8 @@ type InputSource = {
   author?: string;
   year?: string | number;
   doi?: string;
+  isbn?: string;
+  issn?: string;
   publisher?: string;
 };
 
@@ -109,24 +112,49 @@ export class SourceVerificationService {
     const uniqueSources = sources.filter(source => source && typeof source.title === 'string');
 
     const externallyResolved = new Map<string, Awaited<ReturnType<typeof resolveDoi>>>();
-    await Promise.all(
-      uniqueSources
+    const isbnResolved = new Map<string, Awaited<ReturnType<typeof lookupIsbn>>>();
+    const issnResolved = new Map<string, Awaited<ReturnType<typeof lookupIssn>>>();
+    await Promise.all([
+      ...uniqueSources
         .filter(source => Boolean(source.doi?.trim()))
         .slice(0, 20)
         .map(async source => {
           const doi = normalizeDoi(source.doi);
-          try {
-            const resolved = await resolveDoi(doi);
-            externallyResolved.set(doi, resolved);
-          } catch {
-            // No external proof: remain unverified.
-          }
+          try { externallyResolved.set(doi, await resolveDoi(doi)); } catch {}
+        }),
+      ...uniqueSources
+        .filter(source => Boolean(source.isbn?.trim()))
+        .slice(0, 20)
+        .map(async source => {
+          const isbn = String(source.isbn).replace(/[^0-9X]/gi, '').toUpperCase();
+          try { isbnResolved.set(isbn, await lookupIsbn(isbn)); } catch {}
+        }),
+      ...uniqueSources
+        .filter(source => Boolean(source.issn?.trim()))
+        .slice(0, 20)
+        .map(async source => {
+          const issn = String(source.issn).trim();
+          try { issnResolved.set(issn.replace(/-/g, '').toUpperCase(), await lookupIssn(issn)); } catch {}
         })
-    );
+    ]);
+    /*
+      DOI/ISBN/ISSN lookups are authoritative metadata checks. Each provider's
+      absence leaves the source unverified rather than inventing metadata.
+    */
+    /*
+    await Promise.all(
+      uniqueSources
+        .filter(source => Boolean(source.doi?.trim()))
+        .slice(0, 20)
+    */
 
     const reports = uniqueSources.map((source): SourceVerificationReport => {
       const inputDoi = normalizeDoi(source.doi);
+      const inputIsbn = String(source.isbn || '').replace(/[^0-9X]/gi, '').toUpperCase();
+      const inputIssn = String(source.issn || '').replace(/-/g, '').toUpperCase();
       const external = inputDoi ? externallyResolved.get(inputDoi) : undefined;
+      const isbnExternal = inputIsbn ? isbnResolved.get(inputIsbn) : undefined;
+      const issnExternal = inputIssn ? issnResolved.get(inputIssn) : undefined;
 
       const sourceId = String(source.id || source.sourceId || source.doi || source.title).trim();
 
@@ -164,6 +192,7 @@ export class SourceVerificationService {
           sourceId,
           sourceTitle: external.title,
           author: external.authors.join(', ') || source.author || 'نادیار',
+          year: external.publishedYear || String(source.year || ''),
           publisher: external.publisher || source.publisher || 'نادیار',
           doiOrIsbn: external.doi,
           integrityScore: 80,
@@ -173,6 +202,53 @@ export class SourceVerificationService {
           peerReviewed: false,
           rejectedAsFabricated: false,
           kurdishVerificationDetails: 'بونی سەرچاوە و metadata ـی سەرەکی بە DOI/Crossref پشتڕاستکرایەوە. ئەمە بە تەنها پشتڕاستکردنەوەی Peer Review نییە.'
+        };
+      }
+
+      if (isbnExternal) {
+        const titleMatch = titleSimilarity(source.title, isbnExternal.title) >= 0.65;
+        const authorMatch = !source.author || isbnExternal.authors.length === 0
+          ? true
+          : authorOverlap(source.author, isbnExternal.authors) >= 0.5;
+        const matched = titleMatch && authorMatch;
+        return {
+          sourceId,
+          sourceTitle: isbnExternal.title,
+          author: isbnExternal.authors.join(', ') || source.author || 'نادیار',
+          year: isbnExternal.publishDate || String(source.year || ''),
+          publisher: isbnExternal.publisher || source.publisher || 'نادیار',
+          doiOrIsbn: isbnExternal.isbn,
+          integrityScore: matched ? 82 : 0,
+          trustLevel: matched ? 'C' : 'F',
+          existenceVerified: true,
+          metadataAccuracy: Math.round((Number(titleMatch) + Number(authorMatch)) / 2 * 100),
+          peerReviewed: false,
+          rejectedAsFabricated: !matched,
+          rejectionReasonKurdish: matched ? undefined : 'ناونیشان یان نووسەر لەگەڵ تۆماری ISBN ناگونجێت.',
+          kurdishVerificationDetails: 'ISBN بە Open Library پشتڕاستکرایەوە؛ ئەمە بە تەنها Peer Review ـی سەرچاوەکە پشتڕاست ناکات.'
+        };
+      }
+
+      if (issnExternal) {
+        const titleMatch = !issnExternal.journalTitle || titleSimilarity(source.title, issnExternal.journalTitle) >= 0.65;
+        const publisherMatch = !source.publisher || !issnExternal.publisher ||
+          normalize(source.publisher) === normalize(issnExternal.publisher);
+        const matched = titleMatch || publisherMatch;
+        return {
+          sourceId,
+          sourceTitle: issnExternal.journalTitle || source.title,
+          author: source.author || 'نادیار',
+          year: String(source.year || ''),
+          publisher: issnExternal.publisher || source.publisher || 'نادیار',
+          doiOrIsbn: issnExternal.issn,
+          integrityScore: matched ? 75 : 0,
+          trustLevel: matched ? 'C' : 'F',
+          existenceVerified: true,
+          metadataAccuracy: Math.round((Number(titleMatch) + Number(publisherMatch)) / 2 * 100),
+          peerReviewed: false,
+          rejectedAsFabricated: !matched,
+          rejectionReasonKurdish: matched ? undefined : 'تۆماری ISSN لەگەڵ ناونیشان/دەرکەرەوەی پێدراو ناگونجێت.',
+          kurdishVerificationDetails: 'ISSN بە Crossref پشتڕاستکرایەوە؛ ئەمە بە تەنها peer-review بوونی وتارێک پشتڕاست ناکات.'
         };
       }
 
