@@ -9,9 +9,25 @@ export const academicRouter = Router();
 
 const searchSchema = z.object({
   query: z.object({
-    q: z.string().min(2, 'دەبێت کەمتر لە ٢ پیت نەبێت'),
-    limit: z.string().optional(),
+    q: z.string().trim().min(2).max(500),
+    limit: z.string().regex(/^\\d{1,2}$/).optional(),
   }),
+});
+
+const vectorSearchSchema = z.object({
+  body: z.object({
+    query: z.string().trim().min(2).max(5000),
+    limit: z.number().int().min(1).max(50).optional(),
+  }).strict(),
+});
+
+const vectorIndexSchema = z.object({
+  body: z.object({
+    title: z.string().trim().min(3).max(500),
+    content: z.string().trim().min(20).max(2_000_000),
+    author: z.string().trim().max(300).optional(),
+    year: z.number().int().min(1000).max(2100).optional(),
+  }).strict(),
 });
 
 // گەڕانی فرە-ناوەندی لەناو هەموو داتابەیسە جیهانییەکان بە Zod Validation
@@ -92,6 +108,7 @@ academicRouter.get(
 academicRouter.post(
   '/vector/search',
   requireAuth,
+  validateRequest(vectorSearchSchema),
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { query, limit } = req.body as { query?: string; limit?: number };
@@ -113,6 +130,7 @@ academicRouter.post(
 academicRouter.post(
   '/vector/index',
   requireAuth,
+  validateRequest(vectorIndexSchema),
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?.uid;
