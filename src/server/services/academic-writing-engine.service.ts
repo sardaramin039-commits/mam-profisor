@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { disciplineProfileService } from './discipline-profile.service';
 
 export interface ArgumentNode {
   id: string;
@@ -26,10 +27,12 @@ export class AcademicWritingEngineService {
     getGeminiClient: () => GoogleGenAI
   ): Promise<ThesisStructurePlan> {
     const ai = getGeminiClient();
+    const profile = disciplineProfileService.getProfile(discipline);
 
     const prompt = `تۆ سەرنووسەری ئەکادیمی باڵای زانکۆی هارفەردیت. بونیادێکی بەهێزی بەڵگەداری ئارگومێنتی (Argument Architecture) بۆ ئەم بابەتە بنووسە:
 بابەت: ${topic}
 بوار: ${discipline}
+پرۆفایلی بوار: ${JSON.stringify(profile)}
 
 بونیادەکە بە پێوەرەکانی هارفەرد:
 1. Research Question (پرسیاری سەرەکی توێژینەوە)
