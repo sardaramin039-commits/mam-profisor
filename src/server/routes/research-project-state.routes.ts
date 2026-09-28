@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { researchProjectStateService } from '../services/research-project-state.service';
+import type { AuthRequest } from '../../middleware/auth';
 
 export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -8,9 +9,9 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
   /**
    * GET /api/workspace/:workspaceId
    */
-  router.get('/:workspaceId', async (req, res) => {
+  router.get('/:workspaceId', async (req: AuthRequest, res) => {
     try {
-      const userId = (req as any).user?.uid;
+      const userId = req.user?.uid;
       if (!userId) {
         res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
         return;
