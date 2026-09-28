@@ -15,7 +15,7 @@ export abstract class AppTemplateSectionBase extends AppControllerActions {
     this._host = value;
   }
 
-  ngOnInit(): void {
+  override ngOnInit(): void {
     // Section components must not execute the root application's startup lifecycle.
   }
 
