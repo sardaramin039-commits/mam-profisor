@@ -11,6 +11,14 @@ import { robustParseJson } from '../utils/json-repair';
 import { getDigitalLibraryContextPrompt } from '../services/digital-library-context.service';
 import { generateDynamicAcademicFallback } from '../services/dynamic-academic-fallback.service';
 import { evidenceGroundingService } from '../services/evidence-grounding.service';
+import { validateRequest } from '../../middleware/validate.middleware';
+import {
+  thesisRefineSchema,
+  structureReviewSchema,
+  chapterGenerationSchema,
+  glossaryExpansionSchema,
+  groundedGenerationSchema
+} from '../utils/thesis-writing.schemas';
 
 export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -18,7 +26,7 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
   /**
    * Academic Kurdish Text Refinement and Enrichment Endpoint
    */
-  router.post('/refine', async (req, res) => {
+  router.post('/refine', validateRequest(thesisRefineSchema), async (req, res) => {
     const { text, discipline, tone, goal } = req.body;
     try {
       if (!text || typeof text !== 'string') {
@@ -130,7 +138,7 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
   /**
    * Structure Review Endpoint
    */
-  router.post('/review_structure', async (req, res) => {
+  router.post('/review_structure', validateRequest(structureReviewSchema), async (req, res) => {
     try {
       const { title, discipline, writingType, academicLevel, size, chaptersList } = req.body;
       const ai = getGeminiClient();
@@ -179,7 +187,7 @@ ${JSON.stringify(chaptersList)}
   /**
    * AI Generate Chapter Endpoint
    */
-  router.post('/generate_chapter', async (req, res) => {
+  router.post('/generate_chapter', validateRequest(chapterGenerationSchema), async (req, res) => {
     try {
       const { 
         title, discipline, writingType, academicLevel, pages,
@@ -377,7 +385,7 @@ ${comparisonPrompt}
   /**
    * AI Expand Glossary Term Endpoint
    */
-  router.post('/expand_glossary_term', async (req, res) => {
+  router.post('/expand_glossary_term', validateRequest(glossaryExpansionSchema), async (req, res) => {
     try {
       const { term, definition, category } = req.body;
       if (!term || typeof term !== 'string') {
@@ -421,7 +429,7 @@ ${comparisonPrompt}
   /**
    * P5 Evidence Intelligence & Grounded Content Generation Endpoint
    */
-  router.post('/grounded_generate', async (req, res) => {
+  router.post('/grounded_generate', validateRequest(groundedGenerationSchema), async (req, res) => {
     try {
       const { topic, prompt, evidenceChunks } = req.body;
       if (!topic || !prompt) {
