@@ -26,6 +26,15 @@ type InputSource = {
   publisher?: string;
 };
 
+function normalize(value: string): string {
+  return value
+    .toLocaleLowerCase()
+    .normalize('NFKC')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function normalizeTitle(value: string): string {
   return value
     .toLocaleLowerCase()
