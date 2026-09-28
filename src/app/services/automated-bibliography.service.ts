@@ -59,9 +59,9 @@ export class AutomatedBibliographyService {
           const formatted = this.formatSingleSource(src, style);
           sourceMap.set(key, {
             id: src.id || key,
-            author: src.author || 'نووسەری دیارینەکراو',
+            author: src.author || '',
             year: src.year || 'بێ ساڵ',
-            title: src.title || 'سەرچاوەی بێ ناونیشان',
+            title: src.title || '',
             formattedText: formatted,
             style: style.toString(),
             citationCount: 1,
@@ -76,40 +76,10 @@ export class AutomatedBibliographyService {
       }
     }
 
-    // Process citations found in text that weren't in the registered bibliography
+    // Citations that are present in the manuscript but have no registered source
+    // remain unresolved. Never invent a bibliographic record from an author/year string.
     for (const missing of audit.missingInTextCitations) {
-      const key = `${this.normalizeKey(missing.authorQuery)}_${missing.yearQuery || '0'}`;
-      if (!sourceMap.has(key)) {
-        // Auto-infer citation entry
-        const inferredSource: AcademicSourceModel = {
-          id: `inferred_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-          userId: 'system',
-          title: `توێژینەوە یان پەڕتووکی (${missing.authorQuery})`,
-          author: missing.authorQuery,
-          year: missing.yearQuery || 2024,
-          publisher: 'چاپکراوە زانستییەکان',
-          sourceType: 'journal',
-          isVerified: false
-        };
-
-        const formatted = this.formatSingleSource(inferredSource, style);
-        sourceMap.set(key, {
-          id: inferredSource.id,
-          author: missing.authorQuery,
-          year: missing.yearQuery || 'بێ ساڵ',
-          title: inferredSource.title,
-          formattedText: formatted,
-          style: style.toString(),
-          citationCount: 1,
-          inTextSnippet: missing.snippet,
-          sourceType: 'journal',
-          isAutoInferred: true
-        });
-        unresolved.push(missing);
-      } else {
-        const item = sourceMap.get(key)!;
-        item.citationCount += 1;
-      }
+      unresolved.push(missing);
     }
 
     // Also include any registered sources that haven't been cited yet if needed
