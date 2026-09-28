@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { claimEvidenceGraphService } from './claim-evidence-graph.service';
+import type { EvidenceProvenance } from './claim-evidence-graph.service';
 
 export interface GroundedClaim {
   claimId: string;
@@ -51,9 +52,9 @@ export class EvidenceGroundingService {
    * Citation Eligibility Gate
    * Enforces that ONLY VERIFIED sources with actual evidence chunks are eligible for citations.
    */
-  public evaluateCitationEligibility(sourceStatus: string, hasEvidence: boolean): { eligible: boolean; status: 'verified' | 'partially_verified' | 'unverified' } {
+  public evaluateCitationEligibility(sourceStatus: string, hasEvidence: boolean, provenance: EvidenceProvenance = 'unknown'): { eligible: boolean; status: 'verified' | 'partially_verified' | 'unverified' } {
     const normalized = (sourceStatus || '').toLowerCase();
-    if (normalized === 'verified' && hasEvidence) {
+    if (normalized === 'verified' && hasEvidence && provenance === 'server-verified-fulltext') {
       return { eligible: true, status: 'verified' };
     }
     if (normalized === 'partially_verified') {
@@ -76,22 +77,25 @@ export class EvidenceGroundingService {
       pageNumber?: string;
       author?: string;
       year?: string;
+      provenance?: EvidenceProvenance;
     }>,
     getGeminiClient: () => GoogleGenAI
   ): Promise<GroundedGenerationResult> {
     const ai = getGeminiClient();
 
-    // Filter evidence chunks through Citation Eligibility Gate
-    const eligibleChunks = verifiedEvidenceChunks.filter(c => {
-      const gate = this.evaluateCitationEligibility(c.verificationStatus, !!c.chunkText);
-      return gate.eligible;
-    });
+    const contextChunks = verifiedEvidenceChunks.filter(chunk =>
+      !!chunk.chunkText?.trim() && !!chunk.sourceId && !!chunk.sourceTitle
+    );
+    const citationEligibleChunks = contextChunks.filter(chunk =>
+      this.evaluateCitationEligibility(
+        chunk.verificationStatus,
+        !!chunk.chunkText?.trim(),
+        chunk.provenance || 'unknown'
+      ).eligible
+    );
 
-    if (eligibleChunks.length === 0) {
-      return this.createFallbackGroundedResult(
-        topic,
-        verifiedEvidenceChunks
-      );
+    if (contextChunks.length === 0) {
+      return this.createFallbackGroundedResult(topic, verifiedEvidenceChunks);
     }
 
     const prompt = `تۆ سەرنووسەرێکی ئەکادیمی و بەرپرسی بزوێنەری Evidence Intelligence یت.
@@ -103,9 +107,9 @@ export class EvidenceGroundingService {
 ${JSON.stringify(eligibleChunks, null, 2)}
 
 یاسای نەگۆڕی Citation Eligibility Gate:
-1. تەنها ئەو ادعانەی (Claims) کە بەڵگەی سەلمێنراوی VERIFIED یان لە لیستەکەدا هەیە مافی Citationیان هەیە.
+1. تەنها ئەو ادعانەی کە لە full-text ـی لەلایەن server ـەوە پشتڕاستکراوەوە هەن مافی Citation ـی Verified ـیان هەیە.
 2. بۆ هەر ئیدعایەک کە بەڵگەی سەلمێنراوی نییە، gapDetected: true دیاری بکە و ئاگاداری "Evidence required" بنووسە.
-3. بە هیچ شێوەیەک سەرچاوە، ساڵ، یان نووسەری دروستکراو (Synthetic/Fake Citation) لە خۆتەوە بەرهەم مەهێنە.
+3. بۆ context-only هیچ citation، DOI، ساڵ، نووسەر یان reference ـێکی نوێ دروست مەکە.
 
 وەڵامەکەت تەنها بە یەک ئۆبجێکتی ڕێکی JSON بێت لەسەر ئەم ساختارە:
 {
@@ -241,7 +245,7 @@ ${JSON.stringify(eligibleChunks, null, 2)}
       await claimEvidenceGraphService.buildGraph(
         topic,
         paragraphs.map(paragraph => paragraph.text).join('\\n\\n'),
-        eligibleChunks,
+        citationEligibleChunks,
         getGeminiClient
       );
 
