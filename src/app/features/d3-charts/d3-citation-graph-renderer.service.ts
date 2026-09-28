@@ -17,14 +17,13 @@ export class D3CitationGraphRendererService {
     const width = container.clientWidth || 650;
     const height = 380;
 
-    const filterType = filterType;
     let nodesToRender = [...allNodes];
     if (filterType !== 'all') {
       nodesToRender = nodesToRender.filter((n) => n.type === filterType);
     }
 
-    if (this.searchQuery.trim()) {
-      const q = this.searchQuery.toLowerCase().trim();
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
       nodesToRender = nodesToRender.filter(
         (n) => n.label.toLowerCase().includes(q) || (n.subLabel && n.subLabel.toLowerCase().includes(q))
       );
