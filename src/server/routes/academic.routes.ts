@@ -19,6 +19,7 @@ import {
 import { resolveDoi, lookupIsbn, lookupIssn } from '../../helpers/extended-academic-tools.js';
 import { crawlerEngine } from '../../services/crawler-engine';
 import { academicSearchService } from '../../services/academic-search.service';
+import { sourceVerificationService } from '../services/source-verification.service';
 
 export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -175,8 +176,22 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
         ? `${normalizedTopic} ${normalizedDiscipline}`
         : normalizedTopic;
 
-      const sources = await academicSearchService.searchAll(searchQuery, 10);
-      const sourceContext = sources.map((source, index) => ({
+      const discoveredSources = await academicSearchService.searchAll(searchQuery, 10);
+      const verificationInput = discoveredSources.map(source => ({
+        id: source.id,
+        title: source.title,
+        author: source.authors.join(', '),
+        year: source.publicationYear || undefined,
+        doi: source.doi || undefined
+      }));
+      const verification = await sourceVerificationService.verifySources(
+        verificationInput,
+        getGeminiClient
+      );
+      const verifiedIds = new Set(verification.verifiedSources.map(source => source.sourceId));
+      const sources = discoveredSources.filter(source => verifiedIds.has(source.id));
+
+      const sourceContext = sources.map(source => ({
         id: source.id,
         title: source.title,
         authors: source.authors,
@@ -200,11 +215,13 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
           kurdishAcademicSynthesis: '',
           futureAvenues: [],
           sourceIntegrity: {
-            retrievalStatus: 'no-results',
-            sourceCount: 0,
-            verificationStatus: 'not-verified'
+            retrievalStatus: discoveredSources.length ? 'results-but-unverified' : 'no-results',
+            sourceCount: discoveredSources.length,
+            verificationStatus: discoveredSources.length ? 'none-verified' : 'not-verified'
           },
-          message: 'هیچ تۆمارێکی لە index ـە ئەکادیمییەکاندا بۆ ئەم بابەتە نەدۆزرایەوە؛ هیچ سەرچاوەی ساختە دروست نەکرا.'
+          message: discoveredSources.length
+            ? 'سەرچاوەکان دۆزرایەوە، بەڵام هیچ یەکێکیان بە verification ـی دەرەکی نەگەیشت؛ بۆیە synthesis دروست نەکرا.'
+            : 'هیچ تۆمارێکی لە index ـە ئەکادیمییەکاندا بۆ ئەم بابەتە نەدۆزرایەوە؛ هیچ سەرچاوەی ساختە دروست نەکرا.'
         });
         return;
       }
@@ -262,7 +279,7 @@ ${JSON.stringify(sourceContext, null, 2)}
           relevance: 'retrieved-from-index',
           doi: source.doi || undefined,
           url: source.url || undefined,
-          verificationStatus: 'not-verified'
+          verificationStatus: 'verified'
         })),
         kurdishAcademicSynthesis: typeof parsed['kurdishAcademicSynthesis'] === 'string' ? parsed['kurdishAcademicSynthesis'] : '',
         futureAvenues: stringArray(parsed['futureAvenues']),
