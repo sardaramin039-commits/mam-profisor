@@ -87,7 +87,13 @@ export class SourceVerificationService {
   public async verifySources(
     sources: InputSource[],
     _getGeminiClient: () => GoogleGenAI
-  ): Promise<{ verifiedSources: SourceVerificationReport[]; rejectedSourcesCount: number }> {
+  ): Promise<{
+    verifiedSources: SourceVerificationReport[];
+    rejectedSources: SourceVerificationReport[];
+    unverifiedSources: SourceVerificationReport[];
+    allReports: SourceVerificationReport[];
+    rejectedSourcesCount: number;
+  }> {
     const uniqueSources = sources.filter(source => source && typeof source.title === 'string');
 
     const externallyResolved = new Map<string, Awaited<ReturnType<typeof resolveDoi>>>();
