@@ -7,18 +7,15 @@ import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
  */
 export async function saveAcademicData(collectionPath: string, data: Record<string, unknown>): Promise<void> {
   try {
-    // Determine active authenticated user or default to anonymous
-    let uid = 'anonymous';
-    if (auth.currentUser) {
-      uid = auth.currentUser.uid;
-    }
+    // The authenticated Firebase identity is authoritative. Never trust a client-supplied userId.
+    const uid = auth.currentUser?.uid || undefined;
 
     const docRefId = doc(collection(db, collectionPath)).id;
     const docRef = doc(db, collectionPath, docRefId);
 
     const payload = {
       ...data,
-      userId: (data['userId'] as string | undefined) || uid,
+      ...(uid ? { userId: uid } : {}),
       createdAt: serverTimestamp()
     };
 
@@ -34,6 +31,7 @@ export async function saveAcademicData(collectionPath: string, data: Record<stri
         const existingData = JSON.parse(localStorage.getItem(fallbackKey) || '[]');
         existingData.unshift({
           ...data,
+          ...(uid ? { userId: uid } : {}),
           processedAt: new Date().toISOString()
         });
         localStorage.setItem(fallbackKey, JSON.stringify(existingData.slice(0, 100)));
