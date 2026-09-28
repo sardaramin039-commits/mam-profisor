@@ -20,6 +20,8 @@ const verificationSourceSchema = z.object({
   author: z.string().max(500).optional(),
   year: z.union([z.string(), z.number()]).optional(),
   doi: z.string().max(500).optional(),
+  isbn: z.string().max(32).optional(),
+  issn: z.string().max(32).optional(),
   publisher: z.string().max(500).optional()
 }).strict();
 const verificationSourceArray = z.array(verificationSourceSchema).max(100);
