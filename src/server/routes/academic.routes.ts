@@ -280,14 +280,14 @@ ${JSON.stringify(sourceContext, null, 2)}
           relevance: 'retrieved-from-index',
           doi: source.doi || undefined,
           url: source.url || undefined,
-          verificationStatus: 'verified'
+          verificationStatus: 'metadata-verified'
         })),
         kurdishAcademicSynthesis: typeof parsed['kurdishAcademicSynthesis'] === 'string' ? parsed['kurdishAcademicSynthesis'] : '',
         futureAvenues: stringArray(parsed['futureAvenues']),
         sourceIntegrity: {
           retrievalStatus: 'index-results',
           sourceCount: sources.length,
-          verificationStatus: 'verified-only'
+          verificationStatus: 'metadata-verified-only'
         }
       });
     } catch (error) {
