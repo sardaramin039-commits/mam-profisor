@@ -12,6 +12,8 @@ export interface VectorDocument {
   year?: number;
   chunkIndex?: number;
   chunkCount?: number;
+  pageStart?: number;
+  pageEnd?: number;
   score?: number;
   similarity?: number;
   embedding?: number[];
@@ -86,6 +88,8 @@ type StoredMetadata = {
   year?: number;
   chunkIndex?: number;
   chunkCount?: number;
+  pageStart?: number;
+  pageEnd?: number;
 };
 
 function parseMetadata(value: unknown): StoredMetadata {
@@ -100,7 +104,9 @@ function parseMetadata(value: unknown): StoredMetadata {
     author: typeof metadata['author'] === 'string' ? metadata['author'] : undefined,
     year: Number.isInteger(year) ? year : undefined,
     chunkIndex: Number.isInteger(chunkIndex) ? chunkIndex : undefined,
-    chunkCount: Number.isInteger(chunkCount) ? chunkCount : undefined
+    chunkCount: Number.isInteger(chunkCount) ? chunkCount : undefined,
+    pageStart: Number.isInteger(Number(metadata['pageStart'])) ? Number(metadata['pageStart']) : undefined,
+    pageEnd: Number.isInteger(Number(metadata['pageEnd'])) ? Number(metadata['pageEnd']) : undefined
   };
 }
 
@@ -149,6 +155,8 @@ export class VectorStoreService {
           year: metadata.year,
           chunkIndex: metadata.chunkIndex,
           chunkCount: metadata.chunkCount,
+          pageStart: metadata.pageStart,
+          pageEnd: metadata.pageEnd,
           similarity: Number.isFinite(similarity) ? similarity : 0,
           score: Number.isFinite(similarity) ? similarity : 0,
           retrievalStatus: 'persisted-vector',
@@ -168,13 +176,25 @@ export class VectorStoreService {
     year?: number;
     userId: string;
     documentId?: string;
+    pages?: Array<{ pageNumber: number; text: string }>;
   }): Promise<VectorDocument> {
-    const chunks = chunkContent(doc.content);
+    const normalizedPages = Array.isArray(doc.pages)
+      ? doc.pages
+        .filter(page => Number.isInteger(page?.pageNumber) && typeof page?.text === 'string' && page.text.trim())
+        .slice(0, 5000)
+        .sort((a, b) => a.pageNumber - b.pageNumber)
+      : [];
+
+    const pageAwareSource = normalizedPages.length
+      ? normalizedPages.map(page => `\\n[PAGE:${page.pageNumber}]\\n${page.text.trim()}`).join('\\n')
+      : doc.content;
+
+    const chunks = chunkContent(pageAwareSource);
     if (chunks.length === 0) {
       throw new Error('Document content produced no indexable chunks.');
     }
 
-    const stableDocumentId = doc.documentId?.trim() || stableId(doc.userId, doc.title, doc.content);
+    const stableDocumentId = doc.documentId?.trim() || stableId(doc.userId, doc.title, pageAwareSource);
     const indexedChunks: VectorDocument[] = [];
 
     for (let index = 0; index < chunks.length; index += 1) {
@@ -188,15 +208,21 @@ export class VectorStoreService {
         throw new Error(`Unexpected embedding dimension: ${embedding.length}; expected 768.`);
       }
 
+      const pageNumbers = [...chunk.matchAll(/\\[PAGE:(\\d+)\\]/g)].map(match => Number(match[1])).filter(Number.isInteger);
+      const pageStart = pageNumbers.length ? Math.min(...pageNumbers) : undefined;
+      const pageEnd = pageNumbers.length ? Math.max(...pageNumbers) : undefined;
+
       indexedChunks.push({
         id: `memory-${stableDocumentId}-${index + 1}`,
         documentId: stableDocumentId,
         title: doc.title,
-        content: chunk,
+        content: chunk.replace(/\\[PAGE:\\d+\\]\\s*/g, '').trim(),
         author: doc.author,
         year: doc.year,
         chunkIndex: index,
         chunkCount: chunks.length,
+        pageStart,
+        pageEnd,
         embedding,
         retrievalStatus: 'in-memory-index',
         verificationStatus: 'unverified',
@@ -229,7 +255,9 @@ export class VectorStoreService {
                 author: chunk.author,
                 year: chunk.year,
                 chunkIndex: chunk.chunkIndex,
-                chunkCount: chunk.chunkCount
+                chunkCount: chunk.chunkCount,
+                pageStart: chunk.pageStart,
+                pageEnd: chunk.pageEnd
               }
             }))
           );
@@ -259,6 +287,64 @@ export class VectorStoreService {
     };
   }
 
+  private async searchLexicalContent(
+    query: string,
+    userId: string,
+    limit: number,
+    documentId?: string
+  ): Promise<VectorDocument[]> {
+    try {
+      const ownerFilter = eq(libraryIndex.ownerUid, userId);
+      const documentFilter = documentId
+        ? sql`${libraryIndex.metadata}->>'documentId' = ${documentId}`
+        : undefined;
+      const filters = documentFilter ? and(ownerFilter, documentFilter) : ownerFilter;
+
+      const lexical = sql<number>`
+        ts_rank_cd(
+          to_tsvector('simple', ${libraryIndex.content}),
+          plainto_tsquery('simple', ${query})
+        )
+      `;
+
+      const rows = await db
+        .select({
+          id: libraryIndex.id,
+          title: libraryIndex.title,
+          content: libraryIndex.content,
+          metadata: libraryIndex.metadata,
+          lexicalScore: lexical
+        })
+        .from(libraryIndex)
+        .where(filters)
+        .orderBy(sql`${lexical} DESC`)
+        .limit(limit);
+
+      return rows.map(row => {
+        const metadata = parseMetadata(row.metadata);
+        return {
+          id: String(row.id),
+          documentId: metadata.documentId,
+          title: row.title,
+          content: row.content,
+          author: metadata.author,
+          year: metadata.year,
+          chunkIndex: metadata.chunkIndex,
+          chunkCount: metadata.chunkCount,
+          pageStart: metadata.pageStart,
+          pageEnd: metadata.pageEnd,
+          score: Math.max(0, Math.min(1, Number(row.lexicalScore) || 0)),
+          similarity: undefined,
+          retrievalStatus: 'persisted-vector',
+          verificationStatus: 'unverified'
+        };
+      }).filter(result => (result.score || 0) > 0);
+    } catch (error) {
+      console.warn('[VectorStore lexical retrieval unavailable]:', (error as Error)?.message || error);
+      return [];
+    }
+  }
+
   async searchSimilarDocuments(
     query: string,
     userId: string,
@@ -269,17 +355,43 @@ export class VectorStoreService {
     const safeLimit = Math.max(1, Math.min(50, Math.round(limit)));
     if (!normalizedQuery || !userId) return [];
 
-    let queryVector: number[] = [];
+    const candidateLimit = Math.min(50, safeLimit * 4);
+    let semantic: VectorDocument[] = [];
+    let lexical: VectorDocument[] = [];
+
     try {
-      queryVector = await generateEmbedding(normalizedQuery);
+      const queryVector = await generateEmbedding(normalizedQuery);
+      if (queryVector.length === 768) {
+        semantic = await this.searchSimilarContent(queryVector, userId, candidateLimit, documentId);
+      }
     } catch (error) {
       console.warn('[VectorStore query embedding unavailable]:', (error as Error)?.message || error);
     }
 
-    if (queryVector.length === 768) {
-      const dbResults = await this.searchSimilarContent(queryVector, userId, safeLimit, documentId);
-      if (dbResults.length > 0) return dbResults;
+    lexical = await this.searchLexicalContent(normalizedQuery, userId, candidateLimit, documentId);
+
+    const merged = new Map<string, VectorDocument>();
+    for (const result of semantic) merged.set(result.id, { ...result, score: Number(result.similarity) || 0 });
+    for (const result of lexical) {
+      const existing = merged.get(result.id);
+      if (existing) {
+        const semanticScore = Math.max(0, Math.min(1, Number(existing.similarity) || Number(existing.score) || 0));
+        const lexicalScoreValue = Math.max(0, Math.min(1, Number(result.score) || 0));
+        merged.set(result.id, {
+          ...existing,
+          score: semanticScore * 0.65 + lexicalScoreValue * 0.35,
+          retrievalStatus: 'persisted-vector'
+        });
+      } else {
+        merged.set(result.id, result);
+      }
     }
+
+    const fused = [...merged.values()]
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, safeLimit);
+
+    if (fused.length > 0) return fused;
 
     return this.inMemoryDocs
       .filter(doc => doc.userId === userId && (!documentId || doc.documentId === documentId))
