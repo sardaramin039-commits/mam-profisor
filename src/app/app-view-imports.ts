@@ -1,4 +1,6 @@
 import { CommonModule } from '@angular/common';
+import { DashboardHeaderComponent } from './features/dashboard/dashboard-header.component';
+import { SplashScreenComponent } from './features/splash/splash-screen.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { SearchEngineComponent } from './features/search-engine/search-engine';
@@ -44,6 +46,8 @@ import { GlobalToastContainerComponent } from './components/global-toast-contain
 
 export const APP_VIEW_IMPORTS = [
   CommonModule,
+  DashboardHeaderComponent,
+  SplashScreenComponent,
   ReactiveFormsModule,
   MatIconModule,
   SearchEngineComponent,
