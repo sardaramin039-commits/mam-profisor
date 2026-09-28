@@ -1,7 +1,6 @@
 import type { AiToolItem } from '../ai-tools-catalog';
 
 export const CATALOG_PART2_A: AiToolItem[] = [
-export const CATALOG_PART2: AiToolItem[] = [
   // Block 3: 51–100
   {
     num: 51,
