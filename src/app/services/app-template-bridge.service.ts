@@ -92,7 +92,7 @@ export class AppTemplateBridgeService {
     title: ['', Validators.required],
     publisher: [''],
     journalOrPublisher: [''],
-    year: [new Date().getFullYear(), Validators.required],
+    year: [null, Validators.required],
     volume: [''],
     pages: [''],
     doi: ['']
@@ -103,7 +103,7 @@ export class AppTemplateBridgeService {
     title: ['', Validators.required],
     author: ['', Validators.required],
     publisher: [''],
-    year: [new Date().getFullYear(), Validators.required],
+    year: [null, Validators.required],
     sourceType: ['book', Validators.required],
     doi: [''],
     doiOrUrl: [''],
