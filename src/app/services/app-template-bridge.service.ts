@@ -579,7 +579,18 @@ export class AppTemplateBridgeService {
 
   setPageSizeMode(mode: string) {}
   closeQuickPreview() { this.isQuickPreviewVisible.set(false); }
-  applySourceSuggestion(s: any) {}
+  applySourceSuggestion(s: any) {
+    if (!s) return;
+    this.citationForm.patchValue({
+      author: Array.isArray(s.authors) ? s.authors.join(', ') : (s.author || ''),
+      title: s.title || '',
+      publisher: s.publisher || '',
+      journalOrPublisher: s.journal || s.publisher || '',
+      year: Number(s.year || s.publicationYear || 0) || null,
+      doi: s.doi || ''
+    });
+    this.sourceMessage.set({ type: 'success', text: 'تەنها metadata هێنرا؛ source هێشتا Verified نییە.' });
+  }
   toggleAcademicSection(sec: string) {}
   updateRagModel(model: string) {}
   updateRagLimit(limit: number) {}
@@ -598,7 +609,24 @@ export class AppTemplateBridgeService {
   }
   triggerComparison(result: any) {}
   searchLoadHistory(result: any) {}
-  onRegisterVerifiedSource() {}
+  onRegisterVerifiedSource() {
+    if (!this.verifiedSourceForm.valid) {
+      this.verifiedSourceForm.markAllAsTouched();
+      return;
+    }
+    const value = this.verifiedSourceForm.getRawValue();
+    void this.data.saveSourceToCloud({
+      author: String(value.author || ''),
+      title: String(value.title || ''),
+      publisher: String(value.publisher || ''),
+      year: Number(value.year || 0),
+      sourceType: value.sourceType || 'book',
+      doi: value.doi || value.doiOrUrl || '',
+      isbn: value.isbn || '',
+      isVerified: false
+    });
+    this.sourceMessage.set({ type: 'success', text: 'سەرچاوەکە وەک Unverified تۆمارکرا و پێویستی بە verification ـی دەرەکییە.' });
+  }
   expandGlossaryTerm(entry: any) {
     if (!entry) return;
     const current = this.expandedTerms();
@@ -620,7 +648,14 @@ export class AppTemplateBridgeService {
     }
   }
   applyGlossaryRealtimeFix(orig: string, fix: string) {}
-  injectAcademicSourceCitation(source: any, mode: 'inline' | 'bibliography' = 'inline') {}
+  injectAcademicSourceCitation(source: any, mode: 'inline' | 'bibliography' = 'inline') {
+    if (!source?.isVerified) {
+      this.sourceMessage.set({ type: 'error', text: 'ئەم source ـە هێشتا Verified نییە؛ citation injection ڕەتکرایەوە.' });
+      return;
+    }
+    const citation = source.formattedCitation || `${source.author} (${source.year || 'n.d.'}). ${source.title}.`;
+    this.citationResult.set(mode === 'inline' ? citation : citation + '\\n');
+  }
   toggleFaq(index: number) {
     this.expandedFaqIndex.set(this.expandedFaqIndex() === index ? null : index);
   }
@@ -880,15 +915,39 @@ export class AppTemplateBridgeService {
       this.citationResult.set(`${v.author} (${v.year}). ${v.title}. ${v.journalOrPublisher || ''}.`);
     }
   }
-  importPdf4KurdBookToForm(book: any) {}
+  importPdf4KurdBookToForm(book: any) {
+    if (!book) return;
+    this.verifiedSourceForm.patchValue({
+      title: book.title || '',
+      author: book.author || '',
+      publisher: book.publisher || '',
+      year: Number(book.year || 0) || null,
+      sourceType: 'book',
+      doi: '',
+      doiOrUrl: book.link || '',
+      isVerified: false
+    });
+  }
   importPdf4KurdBookToVerified(book: any) {}
-  deleteVerifiedSource(id: string) {}
+  deleteVerifiedSource(id: string) {
+    if (!id) return;
+    void this.data.deleteSource(id);
+  }
   onSearchChange(event: Event) {
     const val = (event.target as HTMLInputElement).value;
     this.glossarySearchQuery.set(val);
   }
   onFilterCategory(cat: string) { this.glossaryCategoryFilter.set(cat); }
-  useGlossaryTerm(entry: any) {}
+  useGlossaryTerm(entry: any) {
+    if (!entry) return;
+    this.activeGlossaryTerm.set({
+      kurdish: entry.kurdish || entry.sorani || '',
+      english: entry.english || entry.foreign || '',
+      category: entry.category || 'general',
+      desc: entry.desc || entry.definition || ''
+    });
+    this.glossaryUserDraft.set(entry.kurdish || entry.sorani || entry.foreign || '');
+  }
   analyzeChapterRigor(c: ChapterItem) {
     if (!c) return;
     this.isAnalyzingRigorForChapterId.set(c.id);
