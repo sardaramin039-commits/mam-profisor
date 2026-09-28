@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { APP_VIEW_IMPORTS } from './app-view-imports';
 import { AppTemplateSectionBase } from './app-template-section-base';
 import { AppCognitiveCopilotSectionComponent } from './app-sections/cognitive-copilot-section';
+import { AcademicPlatformComponent } from './features/academic-platform/academic-platform.component';
 
-const VIEW_IMPORTS = [...APP_VIEW_IMPORTS, AppCognitiveCopilotSectionComponent];
+const VIEW_IMPORTS = [...APP_VIEW_IMPORTS, AppCognitiveCopilotSectionComponent, AcademicPlatformComponent];
 
 @Component({selector:'app-workspace-header',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/workspace-header.component.html'})
 export class AppWorkspaceHeaderComponent extends AppTemplateSectionBase {}
