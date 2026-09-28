@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { z } from 'zod';
+import type { AuthRequest } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { vectorStoreService } from '../../services/vector-store.service';
 
@@ -9,9 +11,9 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
    * POST /api/rag/index-document
    * Indexes caller-owned content into the private pgvector library.
    */
-  router.post('/index-document', async (req, res) => {
+  router.post('/index-document', async (req: AuthRequest, res) => {
     try {
-      const userId = (req as any).user?.uid;
+      const userId = req.user?.uid;
       if (!userId) {
         res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
         return;
@@ -71,10 +73,15 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
    * process-local cache of documents explicitly indexed by the caller.
    * Retrieval relevance is not source verification.
    */
-  router.post('/hybrid-retrieve', async (req, res) => {
+  router.post('/hybrid-retrieve', async (req: AuthRequest, res) => {
     try {
-      const { query, documentId, verifiedOnly = false, limit = 5 } = req.body || {};
-      const userId = (req as any).user?.uid;
+      const parsed = retrieveSchema.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        res.status(400).json({ error: 'داتای retrieval نادروستە.', issues: parsed.error.issues });
+        return;
+      }
+      const { query, documentId, verifiedOnly, limit } = parsed.data;
+      const userId = req.user?.uid;
       if (!userId) {
         res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
         return;
