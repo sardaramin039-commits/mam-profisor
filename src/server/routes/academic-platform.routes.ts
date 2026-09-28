@@ -120,12 +120,29 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         return;
       }
       const { documentText, sources } = qaGateSchemaParsed.data;
-      const qa = await academicQAGateService.runQAGate(
-        documentText || '',
+
+      // Never trust a client-provided verification flag. Re-run authoritative
+      // source verification on the server before allowing the QA gate to pass.
+      const verification = await sourceVerificationService.verifySources(
         sources || [],
         getGeminiClient
       );
-      res.json({ success: true, qa });
+
+      const qa = await academicQAGateService.runQAGate(
+        documentText || '',
+        verification.verifiedSources,
+        getGeminiClient
+      );
+
+      res.json({
+        success: true,
+        qa,
+        sourceVerification: {
+          verifiedSources: verification.verifiedSources,
+          unverifiableSources: verification.unverifiableSources,
+          rejectedSources: verification.rejectedSources
+        }
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'خەتای ئامێری QA' });
     }
