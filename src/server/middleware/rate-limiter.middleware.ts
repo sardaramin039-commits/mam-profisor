@@ -45,6 +45,10 @@ function getLimit(path: string): number {
 }
 
 export function rateLimiterMiddleware(req: Request, res: Response, next: NextFunction): void {
+  if (req.method === 'OPTIONS') {
+    next();
+    return;
+  }
   const clientIp = req.ip || 'anonymous';
   const now = Date.now();
   const maxRequests = getLimit(req.path);
@@ -94,6 +98,10 @@ export function rateLimiterMiddleware(req: Request, res: Response, next: NextFun
 
 
 export function authenticatedRateLimiterMiddleware(req: Request, res: Response, next: NextFunction): void {
+  if (req.method === 'OPTIONS') {
+    next();
+    return;
+  }
   const user = (req as Request & { user?: { uid?: string } }).user;
   const uid = typeof user?.uid === 'string' ? user.uid.trim() : '';
   if (!uid) {
