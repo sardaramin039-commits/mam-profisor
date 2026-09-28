@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { researchMemoryService } from '../services/research-memory.service';
 import { z } from 'zod';
+import type { AuthRequest } from '../../middleware/auth';
 
 const memoryItemSchema = z.object({
   topic: z.string().trim().max(500).optional(),
@@ -17,9 +18,9 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
   /**
    * GET /api/research-memory/:projectId
    */
-  router.get('/:projectId', async (req, res) => {
+  router.get('/:projectId', async (req: AuthRequest, res) => {
     try {
-      const userId = (req as any).user?.uid;
+      const userId = req.user?.uid;
       if (!userId) {
         res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
         return;
@@ -40,7 +41,7 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
   /**
    * POST /api/research-memory/:projectId/items
    */
-  router.post('/:projectId/items', async (req, res) => {
+  router.post('/:projectId/items', async (req: AuthRequest, res) => {
     try {
       const userId = (req as any).user?.uid;
       if (!userId) {
@@ -78,7 +79,7 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
   /**
    * POST /api/research-memory/:projectId/summarize
    */
-  router.post('/:projectId/summarize', async (req, res) => {
+  router.post('/:projectId/summarize', async (req: AuthRequest, res) => {
     try {
       const userId = (req as any).user?.uid;
       if (!userId) {
