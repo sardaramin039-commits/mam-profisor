@@ -2,7 +2,7 @@ import { FormalityToneConfig } from './features/editor/components/formality-tone
 import { TextLineageNode } from './features/editor/components/text-lineage-connector.component';
 import { AppAcademicActions } from './helpers/app-academic-actions';
 import { calculateChapterTargetWords } from './helpers/chapter-calculator';
-import { buildAcademicThesisOutline } from './helpers/thesis-outline-builder';
+import { buildAcademicThesisOutline } from './helpers/outline-structure';
 import { calculateWordValidationStatus } from './helpers/word-validation.helper';
 import { ChapterItemModel as ChapterItem } from './domain/models';
 import { AppControllerBase } from './app-controller-base';
