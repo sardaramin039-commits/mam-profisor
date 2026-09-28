@@ -90,6 +90,7 @@ type StoredMetadata = {
   chunkCount?: number;
   pageStart?: number;
   pageEnd?: number;
+  verificationStatus?: 'verified' | 'unverified';
 };
 
 function parseMetadata(value: unknown): StoredMetadata {
@@ -106,7 +107,8 @@ function parseMetadata(value: unknown): StoredMetadata {
     chunkIndex: Number.isInteger(chunkIndex) ? chunkIndex : undefined,
     chunkCount: Number.isInteger(chunkCount) ? chunkCount : undefined,
     pageStart: Number.isInteger(Number(metadata['pageStart'])) ? Number(metadata['pageStart']) : undefined,
-    pageEnd: Number.isInteger(Number(metadata['pageEnd'])) ? Number(metadata['pageEnd']) : undefined
+    pageEnd: Number.isInteger(Number(metadata['pageEnd'])) ? Number(metadata['pageEnd']) : undefined,
+    verificationStatus: metadata['verificationStatus'] === 'verified' ? 'verified' : 'unverified'
   };
 }
 
@@ -160,7 +162,7 @@ export class VectorStoreService {
           similarity: Number.isFinite(similarity) ? similarity : 0,
           score: Number.isFinite(similarity) ? similarity : 0,
           retrievalStatus: 'persisted-vector',
-          verificationStatus: 'unverified'
+          verificationStatus: metadata.verificationStatus
         };
       });
     } catch (error) {
@@ -177,6 +179,7 @@ export class VectorStoreService {
     userId: string;
     documentId?: string;
     pages?: Array<{ pageNumber: number; text: string }>;
+    verificationStatus?: 'verified' | 'unverified';
   }): Promise<VectorDocument> {
     const normalizedPages = Array.isArray(doc.pages)
       ? doc.pages
@@ -225,7 +228,7 @@ export class VectorStoreService {
         pageEnd,
         embedding,
         retrievalStatus: 'in-memory-index',
-        verificationStatus: 'unverified',
+        verificationStatus: doc.verificationStatus || 'unverified',
         userId: doc.userId
       });
     }
@@ -257,7 +260,8 @@ export class VectorStoreService {
                 chunkIndex: chunk.chunkIndex,
                 chunkCount: chunk.chunkCount,
                 pageStart: chunk.pageStart,
-                pageEnd: chunk.pageEnd
+                pageEnd: chunk.pageEnd,
+                verificationStatus: chunk.verificationStatus
               }
             }))
           );
