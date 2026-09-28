@@ -17,7 +17,7 @@ import {CORE_PROVIDERS} from './core/providers';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideClientHydration(withEventReplay()),
-    provideExperimentalZonelessChangeDetection(),
+    provideZonelessChangeDetection(),
     provideRouter(routes),
     provideHttpClient(
       withFetch(),
