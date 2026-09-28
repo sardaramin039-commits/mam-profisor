@@ -1,4 +1,5 @@
 name: Sync npm Lockfile
+# Lockfile and dependency safety are validated by the Quality Gate after this workflow completes.
 
 on:
   push:
