@@ -6,10 +6,14 @@ import { vectorStoreService } from '../../services/vector-store.service';
 
 const indexSchema = z.object({
   title: z.string().trim().min(3).max(500),
-  content: z.string().trim().min(20).max(2_000_000),
+  content: z.string().trim().max(2_000_000).default(''),
   author: z.string().trim().max(300).optional(),
   year: z.coerce.number().int().min(1000).max(2100).optional(),
-  documentId: z.string().trim().max(200).optional()
+  documentId: z.string().trim().max(200).optional(),
+  pages: z.array(z.object({
+    pageNumber: z.coerce.number().int().min(1).max(100_000),
+    text: z.string().trim().min(1).max(100_000)
+  }).strict()).max(5000).optional()
 }).strict();
 
 const retrieveSchema = z.object({
@@ -40,8 +44,12 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
         return;
       }
 
-      const { title, content, author, year, documentId } = parsed.data;
+      const { title, content, author, year, documentId, pages } = parsed.data;
       const parsedYear = year;
+      if (!content.trim() && (!pages || pages.length === 0)) {
+        res.status(400).json({ error: 'ناوەڕۆک یان پەڕەکانی بەڵگەنامەکە پێویستن.' });
+        return;
+      }
 
       const indexed = await vectorStoreService.indexDocument({
         title: title.trim(),
@@ -49,7 +57,8 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
         author: typeof author === 'string' ? author.trim().slice(0, 300) : undefined,
         year: parsedYear,
         userId,
-        documentId: typeof documentId === 'string' ? documentId.trim().slice(0, 200) : undefined
+        documentId: typeof documentId === 'string' ? documentId.trim().slice(0, 200) : undefined,
+        pages
       });
 
       res.status(201).json({
@@ -104,7 +113,9 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
           score: Math.max(0, Math.min(1, Number(result.score) || 0)),
           provenance: {
             author: result.author,
-            year: result.year ? String(result.year) : undefined
+            year: result.year ? String(result.year) : undefined,
+            pageStart: result.pageStart,
+            pageEnd: result.pageEnd
           },
           retrievalStatus: result.retrievalStatus || 'in-memory-index'
         }));
