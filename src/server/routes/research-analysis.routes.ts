@@ -3,6 +3,13 @@ import { GoogleGenAI } from '@google/genai';
 import { SYSTEM_PROMPT_ANALYZE_RIGOR } from '../../prompts/system-prompts';
 import { robustParseJson } from '../utils/json-repair';
 import { multiAgentOrchestratorService } from '../services/multi-agent-orchestrator.service';
+import { validateRequest } from '../../middleware/validate.middleware';
+import {
+  academicRigorSchema,
+  academicConsultationSchema,
+  methodologySchema,
+  multiAgentPipelineSchema
+} from '../utils/academic-analysis.schemas';
 
 export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -10,7 +17,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
   /**
    * Academic Rigor & Four-Module Analysis Endpoint
    */
-  router.post('/analyze_academic_rigor', async (req, res) => {
+  router.post('/analyze_academic_rigor', validateRequest(academicRigorSchema), async (req, res) => {
     try {
       const { title, content, discipline, theoreticalFramework, academicStyle } = req.body;
       if (!content || typeof content !== 'string') {
@@ -79,7 +86,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
   /**
    * Academic Consultation Assistant Endpoint
    */
-  router.post('/academic_consultation', async (req, res) => {
+  router.post('/academic_consultation', validateRequest(academicConsultationSchema), async (req, res) => {
     try {
       const { userQuestion, discipline, academicLevel, currentThesisContext } = req.body;
       if (!userQuestion) {
@@ -120,7 +127,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
   /**
    * Methodology Construction Endpoint
    */
-  router.post('/construct_methodology', async (req, res) => {
+  router.post('/construct_methodology', validateRequest(methodologySchema), async (req, res) => {
     try {
       const { title, discipline, researchType, sampleSize } = req.body;
       const ai = getGeminiClient();
@@ -156,7 +163,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
   /**
    * Real Sequential Multi-Agent Pipeline Execution Endpoint
    */
-  router.post('/multi_agent_pipeline', async (req, res) => {
+  router.post('/multi_agent_pipeline', validateRequest(multiAgentPipelineSchema), async (req, res) => {
     try {
       const { topic, discipline = 'گشتی', draftText = '', rawSources = [] } = req.body || {};
 
