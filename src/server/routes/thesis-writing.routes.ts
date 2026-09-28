@@ -260,15 +260,15 @@ ${JSON.stringify(chaptersList)}
       if (selectedBook) {
         const bookObj = PDF4KURD_BOOKS_ARCHIVE.find((b: any) => b.title === selectedBook);
         if (bookObj) {
-          selectedBookPrompt = `\n⚠️ **یاسای چەسپاندنی سەرچاوەی فیزیکی ڕاستەقینە (Physical Grounding Rule)**:
-پێویستە ئەم بەشە بە تەواوی بەسترابێتەوە بە کتێب و ژانی نووسینی ئەم سەرچاوە فەرمییەی خوارەوە:
+          selectedBookPrompt = `\n⚠️ **تۆماری کتێبی هەڵبژێردراو (Candidate Metadata — Unverified)**:
+ئەم تۆمارە تەنها بۆ context ـە و هیچ verification ـی دەرەکی یان peer-review ـی لەوێدا نەسەلمێنراوە:
 - ناونیشانی سەرچاوە: "${bookObj.title}"
 - نووسەر: "${bookObj.author}"
 - ساڵی چاپ: ${bookObj.year}
 - دەزگای چاپ: "${bookObj.publisher}"
 - بەستەر: "${bookObj.link}"
 
-لە تەنها بۆ context بەکاریبهێنە؛ هیچ citation ـێک بۆ ئەم تۆمارە دروست مەکە تا verification ـی دەرەکی تەواو بێت.`;
+ئەم metadata ـە تەنها بۆ context بەکاربهێنە؛ هیچ citation ـێک بۆ ئەم تۆمارە دروست مەکە تا verification ـی دەرەکی تەواو بێت.`;
         }
       }
 
