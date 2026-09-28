@@ -32,7 +32,8 @@ export function isInternalApiUrl(url: string): boolean {
  * Rules:
  * 1. Omitted for all third-party endpoints (OpenAlex, Crossref, Google Books, etc.).
  * 2. Avoids browser-side APIs during SSR (Server-Side Rendering).
- * 3. Leaves unauthenticated requests untouched so protected APIs can return 401.
+ * 3. Waits until Firebase has settled the initial auth state, preventing startup races.
+ * 4. Leaves unauthenticated requests untouched so protected APIs can return 401.
  */
 export const firebaseAuthInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
@@ -55,25 +56,32 @@ export const firebaseAuthInterceptor: HttpInterceptorFn = (
     return next(req);
   }
 
-  // Check current Firebase User on the client side
-  const currentUser = auth?.currentUser;
+  // Firebase can briefly expose currentUser === null while restoring persisted auth.
+  // Wait for the initial auth state to settle before deciding whether to attach a token.
+  return from(auth.authStateReady()).pipe(
+    switchMap(() => {
+      const currentUser = auth.currentUser;
 
-  if (currentUser) {
-    return from(currentUser.getIdToken()).pipe(
-      switchMap((token: string) => {
-        if (token) {
-          const authorizedReq = req.clone({
-            setHeaders: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-          return next(authorizedReq);
-        }
+      if (!currentUser) {
+        // No authenticated Firebase user: let the protected API return 401.
         return next(req);
-      })
-    );
-  }
+      }
 
-  // No authenticated Firebase user: let the protected API return 401.
-  return next(req);
+      return from(currentUser.getIdToken()).pipe(
+        switchMap((token: string) => {
+          if (!token) {
+            return next(req);
+          }
+
+          return next(
+            req.clone({
+              setHeaders: {
+                Authorization: `Bearer ${token}`
+              }
+            })
+          );
+        })
+      );
+    })
+  );
 };
