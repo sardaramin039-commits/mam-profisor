@@ -1,0 +1,338 @@
+              <!-- Custom TOC Textarea -->
+              @vm.if (vm.refineForm.get('customTOCOn')?.value) {
+                <div class="space-y-1 bg-emerald-50/5 p-3 rounded-lg border-2 border-emerald-600/30 animate-expand-fade">
+                  <div class="flex justify-between items-center text-[11px] font-bold text-emerald-900">
+                    <span class="flex items-center gap-1">
+                      <mat-icon class="!text-sm text-emerald-800">toc</mat-icon>
+                      بۆشایی داڕشتنی پێڕست و هێڵکاری تایبەت (Outline)
+                    </span>
+                    <span class="text-[9px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded font-extrabold">باری پێڕستی تایبەت چالاکە</span>
+                  </div>
+                  <textarea formControlName="customTOCText" rows="3" 
+                            class="w-full p-3 text-xs rounded-lg border-2 border-stone-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-black placeholder-stone-400 shadow-inner" 
+                            placeholder="بۆ نموونە:&#10;١. پێشەکی مێژوویی&#10;٢. شیکاری چەمکی دەق&#10;٣. لێکەوتە کۆمەڵایەتییەکان..."></textarea>
+                  <div class="text-[10px] text-stone-600 font-serif leading-tight">
+                    تێبینی: ئەگەر ئەم بژاردەیە چالاک بێت، مەکینەی هۆشمەندی زمانەکە ناچاردەبێت تەواوی بونیاد و بەشەکانی تێزەکە بەپێی ئەم پێڕستەی سەرەوە دیزاین بکات. ئەگەر بەتاڵ بێت، سیستەمەکە پێڕستێکی خۆکاری زانستی بەرهەم دەهێنێت.
+                  </div>
+                </div>
+              }
+
+              <!-- Field Work Textarea -->
+              @vm.if (vm.refineForm.get('fieldWorkOn')?.value) {
+                <div class="space-y-1 bg-indigo-50/5 p-3 rounded-lg border-2 border-indigo-600/30 animate-expand-fade">
+                  <div class="flex justify-between items-center text-[11px] font-bold text-indigo-900">
+                    <span class="flex items-center gap-1">
+                      <mat-icon class="!text-sm text-indigo-800">explore</mat-icon>
+                      بۆشایی تێکەڵکردنی داتاکانی کاری مەیدانی (Field Work Data)
+                    </span>
+                    <span class="text-[9px] text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded font-extrabold">کاری مەیدانی چالاکە</span>
+                  </div>
+                  <textarea formControlName="fieldWorkText" rows="3" 
+                            class="w-full p-3 text-xs rounded-lg border-2 border-stone-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-black placeholder-stone-400 shadow-inner" 
+                            placeholder="داتا مەیدانییەکان لێرە بنووسە (بۆ نموونە: ڕێژەی بەشداربووان لە ڕاپرسییەکە، چاوپێکەوتنەکان، شیکارییە بینراوەکان یان دەستکەوتە سەرەتاییەکان...) تا لە نێو نوسینەکەدا شیبکرێنەوە."></textarea>
+                  <div class="text-[10px] text-stone-600 font-serif leading-tight">
+                    تێبینی: ئەم داتا یان ئامار و تێبینییە لێکۆڵینەوەییانەی لێرەدا دەینوسیت لەگەڵ بەشە لۆژیکی و زانستییە هاوتاکان شەن و کەو دەکرێن و بە شێوازێکی هاوسەنگ لە فاکتەری شیکاری دەرئەنجامدا جێگیر دەبن.
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- ADVANCED ACADEMIC DOCUMENT STRUCTURE COMPONENTS -->
+            <div class="space-y-2.5 pt-2 border-t border-gray-100">
+              <span class="block text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                <mat-icon class="!text-sm text-neutral-600">account_tree</mat-icon>
+                بڕگە و پێکهاتە زانستییە پێویستەکان بۆ کارەکە (تەواوکاری ئەکادیمی):
+              </span>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <!-- Dedication Button -->
+                <button type="button" (click)="vm.toggleAcademicSection('includeDedication')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="vm.refineForm.get('includeDedication')?.value" [class.bg-amber-100]="vm.refineForm.get('includeDedication')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-amber-600">military_tech</mat-icon>
+                    <span>📜 پێشکەشە</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="vm.refineForm.get('includeDedication')?.value" [class.text-white]="vm.refineForm.get('includeDedication')?.value" [class.bg-gray-100]="!vm.refineForm.get('includeDedication')?.value">
+                    {{ vm.refineForm.get('includeDedication')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+
+                <!-- Introduction Button -->
+                <button type="button" (click)="vm.toggleAcademicSection('includeIntro')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="vm.refineForm.get('includeIntro')?.value" [class.bg-amber-100]="vm.refineForm.get('includeIntro')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-emerald-600">menu_book</mat-icon>
+                    <span>📋 پێشەکی</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="vm.refineForm.get('includeIntro')?.value" [class.text-white]="vm.refineForm.get('includeIntro')?.value" [class.bg-gray-100]="!vm.refineForm.get('includeIntro')?.value">
+                    {{ vm.refineForm.get('includeIntro')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+
+                <!-- TOC Button -->
+                <button type="button" (click)="vm.toggleAcademicSection('includeTOC')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="vm.refineForm.get('includeTOC')?.value" [class.bg-amber-100]="vm.refineForm.get('includeTOC')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-blue-600">toc</mat-icon>
+                    <span>📊 ناوەڕۆک و پێڕست</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="vm.refineForm.get('includeTOC')?.value" [class.text-white]="vm.refineForm.get('includeTOC')?.value" [class.bg-gray-100]="!vm.refineForm.get('includeTOC')?.value">
+                    {{ vm.refineForm.get('includeTOC')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+
+                <!-- Conclusion Button -->
+                <button type="button" (click)="vm.toggleAcademicSection('includeConclusion')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="vm.refineForm.get('includeConclusion')?.value" [class.bg-amber-100]="vm.refineForm.get('includeConclusion')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-cyan-600">track_changes</mat-icon>
+                    <span>🎯 ئەنجام و دەرئەنجام</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="vm.refineForm.get('includeConclusion')?.value" [class.text-white]="vm.refineForm.get('includeConclusion')?.value" [class.bg-gray-100]="!vm.refineForm.get('includeConclusion')?.value">
+                    {{ vm.refineForm.get('includeConclusion')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+
+                <!-- Recommendations Button -->
+                <button type="button" (click)="vm.toggleAcademicSection('includeRecommendations')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="vm.refineForm.get('includeRecommendations')?.value" [class.bg-amber-100]="vm.refineForm.get('includeRecommendations')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-yellow-600">lightbulb</mat-icon>
+                    <span>💡 ڕاسپاردەکان</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="vm.refineForm.get('includeRecommendations')?.value" [class.text-white]="vm.refineForm.get('includeRecommendations')?.value" [class.bg-gray-100]="!vm.refineForm.get('includeRecommendations')?.value">
+                    {{ vm.refineForm.get('includeRecommendations')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+
+                <!-- References Button -->
+                <button type="button" (click)="vm.toggleAcademicSection('includeReferences')" class="px-2 py-2 border rounded-lg text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-white hover:bg-stone-50" [class.border-amber-600]="vm.refineForm.get('includeReferences')?.value" [class.bg-amber-100]="vm.refineForm.get('includeReferences')?.value">
+                  <div class="flex items-center gap-1">
+                    <mat-icon class="!text-sm !w-4 !h-4 text-purple-600">library_books</mat-icon>
+                    <span>📚 سەرچاوەکان</span>
+                  </div>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-amber-600]="vm.refineForm.get('includeReferences')?.value" [class.text-white]="vm.refineForm.get('includeReferences')?.value" [class.bg-gray-100]="!vm.refineForm.get('includeReferences')?.value">
+                    {{ vm.refineForm.get('includeReferences')?.value ? 'چالاکە' : 'ناچالاک' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- RAG PIPELINE & AI MODEL SETTINGS -->
+            <div class="space-y-3 pt-3 border-t border-gray-100 bg-stone-50/60 p-3 rounded-xl border border-stone-200">
+              <span class="block text-xs font-bold text-stone-900 flex items-center justify-between">
+                <span class="flex items-center gap-1">
+                  <mat-icon class="!text-sm text-amber-700">psychology</mat-icon>
+                  مۆدێلی ژیری و هەڵهێنجانی پایپلاینی RAG:
+                </span>
+                <span class="text-[9px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-mono font-extrabold">
+                  {{ vm.refineForm.get('ragModel')?.value }}
+                </span>
+              </span>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- RAG Model Selector -->
+                <div>
+                  <label for="ragModelSelect" class="block text-[10px] font-bold text-stone-700 font-serif mb-1">
+                    جۆری مۆدێلی ژیری دەستکرد:
+                  </label>
+                  <select 
+                    id="ragModelSelect"
+                    formControlName="ragModel"
+                    (change)="vm.updateRagModel($any($event.target).value)"
+                    class="w-full text-xs p-2 border border-stone-300 rounded-lg bg-white font-serif font-bold text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-600">
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (شیکاریی ئەکادیمیی بەهێز & قووڵ)</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (پەیڕەوی خێرا & بەردەست)</option>
+                  </select>
+                </div>
+
+                <!-- RAG Limit Selector -->
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label for="ragLimitInput" class="text-[10px] font-bold text-stone-700 font-serif">
+                      سەقفی پارچە داتای RAG (Limit):
+                    </label>
+                    <span class="text-[10px] font-mono font-bold text-amber-900">
+                      {{ vm.refineForm.get('ragLimit')?.value }} پارچە
+                    </span>
+                  </div>
+                  <input 
+                    id="ragLimitInput"
+                    type="range"
+                    formControlName="ragLimit"
+                    (input)="vm.updateRagLimit($any($event.target).valueAsNumber)"
+                    min="1"
+                    max="20"
+                    step="1"
+                    class="w-full accent-amber-700 cursor-pointer h-1.5 bg-stone-200 rounded-lg"/>
+                </div>
+              </div>
+            </div>
+
+            <!-- ROLE ON/OFF Switches -->
+            <div class="space-y-2 pt-2 border-t border-gray-100">
+              <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                <mat-icon class="!text-sm text-neutral-600">person_search</mat-icon>
+                ئایکۆنی ڕۆڵ (دەتوانیت هەر سێ لایەن بۆ نووسینی قووڵ هەڵبژێریت بە پێکەوەیی):
+              </span>
+              <div class="flex flex-wrap gap-2.5">
+                <button type="button" (click)="vm.toggleRole('writer')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="vm.refineForm.get('roleAuthor')?.value" [class.bg-neutral-50]="vm.refineForm.get('roleAuthor')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4" [class.text-amber-600]="vm.refineForm.get('roleAuthor')?.value">edit_note</mat-icon>
+                  <span>نوسەر</span>
+                  <span class="text-[8px] font-extrabold uppercase px-1 rounded" [class.bg-black]="vm.refineForm.get('roleAuthor')?.value" [class.text-white]="vm.refineForm.get('roleAuthor')?.value" [class.bg-gray-100]="!vm.refineForm.get('roleAuthor')?.value">
+                    {{ vm.refineForm.get('roleAuthor')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+
+                <button type="button" (click)="vm.toggleRole('critic')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="vm.refineForm.get('roleCritic')?.value" [class.bg-neutral-50]="vm.refineForm.get('roleCritic')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4" [class.text-yellow-600]="vm.refineForm.get('roleCritic')?.value">forum</mat-icon>
+                  <span>ڕەخنەگر</span>
+                  <span class="text-[8px] font-extrabold uppercase px-1 rounded" [class.bg-black]="vm.refineForm.get('roleCritic')?.value" [class.text-white]="vm.refineForm.get('roleCritic')?.value" [class.bg-gray-100]="!vm.refineForm.get('roleCritic')?.value">
+                    {{ vm.refineForm.get('roleCritic')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+
+                <button type="button" (click)="vm.toggleRole('reviewer')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="vm.refineForm.get('roleReviewer')?.value" [class.bg-neutral-50]="vm.refineForm.get('roleReviewer')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4" [class.text-blue-600]="vm.refineForm.get('roleReviewer')?.value">rate_review</mat-icon>
+                  <span>پێداچونەوە</span>
+                  <span class="text-[8px] font-extrabold uppercase px-1 rounded" [class.bg-black]="vm.refineForm.get('roleReviewer')?.value" [class.text-white]="vm.refineForm.get('roleReviewer')?.value" [class.bg-gray-100]="!vm.refineForm.get('roleReviewer')?.value">
+                    {{ vm.refineForm.get('roleReviewer')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+             <!-- DIALECT STYLE ON/OFF Switches -->
+            <div class="space-y-2 pt-2 border-t border-gray-100">
+              <span class="block text-xs font-bold text-gray-700 flex items-center gap-1">
+                <mat-icon class="!text-sm text-neutral-600">psychology_alt</mat-icon>
+                ئایکۆنی دیالێکتیک (دەتوانیت هەر سێ ڕوانگە بە پێکەوەیی بۆ شەن و کەوکردن چالاک بکەیت):
+              </span>
+              <div class="flex flex-wrap gap-2.5">
+                <button type="button" (click)="vm.toggleDialect('thesis')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="vm.refineForm.get('dialectThesis')?.value" [class.bg-neutral-50]="vm.refineForm.get('dialectThesis')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4 text-emerald-600">emoji_objects</mat-icon>
+                  <span>تێز</span>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-black]="vm.refineForm.get('dialectThesis')?.value" [class.text-white]="vm.refineForm.get('dialectThesis')?.value" [class.bg-gray-100]="!vm.refineForm.get('dialectThesis')?.value">
+                    {{ vm.refineForm.get('dialectThesis')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+
+                <button type="button" (click)="vm.toggleDialect('antithesis')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="vm.refineForm.get('dialectAntithesis')?.value" [class.bg-neutral-50]="vm.refineForm.get('dialectAntithesis')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4 text-red-600">gavel</mat-icon>
+                  <span>دژەتێز</span>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-black]="vm.refineForm.get('dialectAntithesis')?.value" [class.text-white]="vm.refineForm.get('dialectAntithesis')?.value" [class.bg-gray-100]="!vm.refineForm.get('dialectAntithesis')?.value">
+                    {{ vm.refineForm.get('dialectAntithesis')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+
+                <button type="button" (click)="vm.toggleDialect('synthesis')" class="flex-1 px-3 py-2.5 border rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white" [class.border-black]="vm.refineForm.get('dialectSynthesis')?.value" [class.bg-neutral-50]="vm.refineForm.get('dialectSynthesis')?.value">
+                  <mat-icon class="!text-sm !w-4 !h-4 text-indigo-700">alt_route</mat-icon>
+                  <span>سێنتێز</span>
+                  <span class="text-[8px] font-extrabold px-1 rounded" [class.bg-black]="vm.refineForm.get('dialectSynthesis')?.value" [class.text-white]="vm.refineForm.get('dialectSynthesis')?.value" [class.bg-gray-100]="!vm.refineForm.get('dialectSynthesis')?.value">
+                    {{ vm.refineForm.get('dialectSynthesis')?.value ? 'ئۆن' : 'ئۆف' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- COPY STYLE CUSTOM SEGMENT -->
+            <div class="space-y-4 pt-4 border-t-2 border-stone-800 bg-[#FCFBF7] p-4 rounded-xl border-2 border-stone-800 hover:border-black transition-all relative"
+                 (dragover)="vm.onDragOver($event, 'copyStyle')"
+                 (dragleave)="vm.onDragLeave($event, 'copyStyle')"
+                 (drop)="vm.onFileDrop($event, 'copyStyle')"
+                 [class.bg-emerald-100]="isDraggingCopyStyle()">
+              
+              <div class="flex justify-between items-center">
+                <span class="block text-xs font-bold text-stone-900 flex items-center gap-1 bg-transparent">
+                  <mat-icon class="!text-sm text-neutral-800">article</mat-icon>
+                  ئایکۆنی کۆپی ستایل (شێوازی دەربڕین):
+                </span>
+                
+                <div class="flex items-center gap-2">
+                  @vm.if (copyStyleFileName()) {
+                    <span class="text-[9px] text-emerald-950 bg-emerald-100 px-1.5 py-0.5 rounded border-2 border-emerald-800 font-mono font-bold truncate max-w-[120px]" [title]="copyStyleFileName()">
+                      {{ copyStyleFileName() }}
+                    </span>
+                  }
+                  <button type="button" (click)="fileInputCopyStyle.click()" class="text-[10px] text-amber-900 hover:underline flex items-center gap-0.5 cursor-pointer bg-transparent font-bold">
+                    <mat-icon class="!text-[11px] !w-3.5 !h-3.5 leading-none">upload_file</mat-icon>
+                    تێکست یان وۆرد بار بکە
+                  </button>
+                </div>
+              </div>
+              
+              <input type="file" #fileInputCopyStyle (change)="vm.onFileSelected($event, 'copyStyle')" class="hidden" accept=".txt,.doc,.docx,.pdf,.md,.json">
+              
+              <textarea formControlName="copyStyleText" rows="2" class="w-full p-3 text-xs rounded-lg border-2 border-stone-850 bg-white focus:outline-none focus:border-amber-600 placeholder-stone-400 shadow-inner text-black font-semibold" placeholder="بۆ نموونە: شێوازی فەرمی فەلسەفەی کوردی کە دەتەوێت ئامێرەکە کۆپی بکات..."></textarea>
+            </div>
+
+
+
+            <!-- TWO COMPARISON SPACES (ئایکۆنی بەراورد) -->
+            <div class="space-y-3 pt-3 border-t-2 border-stone-800">
+              <span class="block text-xs font-bold text-stone-900 flex items-center gap-1">
+                <mat-icon class="!text-sm text-neutral-800">compare_arrows</mat-icon>
+                ئایکۆنی بەراورد (بۆشایی بەراوردکردنی دوو بابەت بە فایلی سەرچاوە):
+              </span>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <!-- Word 1 Card Simulated upload containing Drag Drop and real input -->
+                <div class="relative p-3.5 border-2 border-dashed border-stone-850 rounded-xl hover:border-black transition-all text-right cursor-pointer h-24 flex flex-col justify-between bg-stone-50"
+                     (dragover)="vm.onDragOver($event, 'comp1')"
+                     (dragleave)="vm.onDragLeave($event, 'comp1')"
+                     (drop)="vm.onFileDrop($event, 'comp1')"
+                     [class.bg-emerald-100]="vm.isDraggingComp1()"
+                     [class.border-emerald-500]="vm.isDraggingComp1()"
+                     (click)="fileInputComp1.click()"
+                     (keydown.enter)="fileInputComp1.click()"
+                     tabindex="0"
+                     role="button">
+                  <span class="text-[9px] text-stone-600 font-bold block">فایلی یەکەم (.docx / .pdf / .txt)</span>
+                  <input type="file" #fileInputComp1 (change)="vm.onFileSelected($event, 'comp1')" class="hidden" accept=".docx,.doc,.pdf,.txt,.md,.json">
+                  
+                  <span class="text-xs font-bold text-stone-900 line-clamp-2 leading-tight">
+                    @vm.if (vm.compareFile1Name()) {
+                      📂 {{ vm.compareFile1Name() }}
+                    } @else {
+                      📂 فایلێک باربکە یان لێرە دایبنێ
+                    }
+                  </span>
+                </div>
+
+                <!-- Word 2 Card Simulated upload containing Drag Drop and real input -->
+                <div class="relative p-3.5 border-2 border-dashed border-stone-850 rounded-xl hover:border-black transition-all text-right cursor-pointer h-24 flex flex-col justify-between bg-stone-50"
+                     (dragover)="vm.onDragOver($event, 'comp2')"
+                     (dragleave)="vm.onDragLeave($event, 'comp2')"
+                     (drop)="vm.onFileDrop($event, 'comp2')"
+                     [class.bg-emerald-100]="isDraggingComp2()"
+                     [class.border-emerald-500]="isDraggingComp2()"
+                     (click)="fileInputComp2.click()"
+                     (keydown.enter)="fileInputComp2.click()"
+                     tabindex="0"
+                     role="button">
+                  <span class="text-[9px] text-stone-600 font-bold block">فایلی دووەم (.docx / .pdf / .txt)</span>
+                  <input type="file" #fileInputComp2 (change)="vm.onFileSelected($event, 'comp2')" class="hidden" accept=".docx,.doc,.pdf,.txt,.md,.json">
+                  
+                  <span class="text-xs font-bold text-stone-900 line-clamp-2 leading-tight">
+                    @vm.if (compareFile2Name()) {
+                      📂 {{ compareFile2Name() }}
+                    } @else {
+                      📂 فایلێک باربکە یان لێرە دایبنێ
+                    }
+                  </span>
+                </div>
+              </div>
+
+              <!-- Extra aspect of comparison text box -->
+              <input type="text" formControlName="compareAspect" class="w-full text-xs p-3.5 border-2 border-stone-850 rounded-lg focus:outline-none focus:border-amber-600 text-black font-semibold placeholder-stone-400" placeholder="ڕووی بەراوردکاری دیاریکراو بنووسە (بۆ نموونە: خاڵی لێکچوون و جیاوازی)" />
+            </div>
+
+            <!-- Temperature creativity slider -->
+            <div class="pt-2 border-t border-gray-100 space-y-1">
+              <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                <span class="flex items-center gap-1">
+                  <mat-icon class="!text-sm !w-4 !h-4 text-[#D4AF37]">thermostat</mat-icon>
+                  پلەی گەرمی نووسینی زانستی (Temperature):
+                </span>
+                <span class="font-mono bg-stone-100 px-1.5 py-0.5 rounded text-neutral-800">{{ vm.refineForm.get('temperature')?.value }}</span>
+              </div>
+              <input type="range" min="0.1" max="1.0" step="0.1" formControlName="temperature" class="w-full accent-black cursor-pointer" />
+              <div class="flex justify-between text-[9px] text-[#8C8273]">
+                <span>یاسایی و بێلایەنی زانستی (0.1)</span>
+                <span>داهێنەر و دەوڵەمەندی ڕەخنەیی (1.0)</span>
+              </div>
+            </div>
