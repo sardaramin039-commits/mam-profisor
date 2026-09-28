@@ -1,0 +1,64 @@
+<div class="space-y-6">
+        <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <span class="block text-xs font-bold text-slate-300">دەق یان بانگەشەی زانستی بۆ پشکنین (Fact Check):</span>
+          <div class="flex gap-2">
+            <textarea
+              #factInput
+              rows="3"
+              placeholder="بۆ نموونە: بیردۆزی کوانتەم و ژیری دەستکرد هەمان لۆژیکی بنەڕەتی ماتماتیکی بەکاردەهێنن..."
+              class="flex-1 bg-slate-950 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-all"
+            ></textarea>
+          </div>
+          <button
+            (click)="multiAgent.runFactCheck(factInput.value)"
+            [disabled]="multiAgent.isFactChecking()"
+            class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md shadow-cyan-500/20 disabled:opacity-50"
+          >
+            @if (multiAgent.isFactChecking()) {
+              <mat-icon class="animate-spin text-sm">sync</mat-icon>
+              لە پشکنیندایە...
+            } @else {
+              <mat-icon class="text-sm">verified</mat-icon>
+              پشتڕاستکردنەوە لە جیهانی زانستی
+            }
+          </button>
+        </div>
+
+        <!-- Fact Check Result -->
+        @if (multiAgent.factCheckResult(); as fact) {
+          <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" [class.bg-emerald-400]="fact.factualityScore >= 80" [class.bg-amber-400]="fact.factualityScore < 80"></span>
+                <h3 class="text-sm font-bold text-slate-200">بارودۆخی ڕاستییەتی: {{ fact.status }}</h3>
+              </div>
+              <span class="text-xs font-bold bg-cyan-950 text-cyan-300 border border-cyan-800 px-3 py-1 rounded-full">
+                Factuality Score: {{ fact.factualityScore }}%
+              </span>
+            </div>
+
+            <div class="space-y-2 text-xs text-slate-300">
+              <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <span class="font-bold text-cyan-400">شیکاریی لۆژیکی و زانستی:</span>
+                <p class="mt-1 leading-relaxed">{{ fact.explanation }}</p>
+              </div>
+
+              @if (fact.correctedStatement) {
+                <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                  <span class="font-bold text-emerald-400">تێکستی ڕاستکراوە (Corrected Form):</span>
+                  <p class="mt-1 leading-relaxed text-emerald-200">{{ fact.correctedStatement }}</p>
+                </div>
+              }
+
+              <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <span class="font-bold text-amber-400">سەرچاوە و بەڵگە زانستییە بەکارهاتووەکان:</span>
+                <ul class="mt-1 list-disc list-inside space-y-1 text-slate-400">
+                  @for (src of fact.verifiedSources; track $index) {
+                    <li>{{ src }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
