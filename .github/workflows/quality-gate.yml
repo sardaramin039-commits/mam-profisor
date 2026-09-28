@@ -51,5 +51,8 @@ jobs:
       - name: Secret audit
         run: node scripts/security-secret-audit.mjs
 
+      - name: Runtime dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Production build
         run: npm run build
