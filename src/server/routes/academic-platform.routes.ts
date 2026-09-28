@@ -35,7 +35,8 @@ const orchestrationSchema = z.object({
   topic: textField(500),
   discipline: textField(200),
   draftText: z.string().max(250_000).default(''),
-  rawSources: rawSourceArray.default([])
+  rawSources: rawSourceArray.default([]),
+  citationStyle: z.enum(['APA7', 'MLA9', 'ChicagoAD', 'ChicagoNB', 'Harvard', 'IEEE']).default('APA7')
 }).strict();
 const modelRouterSchema = z.object({ taskType: z.enum(['fast', 'reasoning', 'long_context', 'embedding']).default('fast'), textLength: z.coerce.number().int().min(0).max(1_000_000).default(0) }).strict();
 
@@ -199,9 +200,9 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         res.status(400).json({ error: 'داتای ناردراو بۆ ئەم کارە نادروستە.', details: orchestrationSchemaParsed.error.issues });
         return;
       }
-      const { topic, discipline, draftText, rawSources } = orchestrationSchemaParsed.data;
+      const { topic, discipline, draftText, rawSources, citationStyle } = orchestrationSchemaParsed.data;
       const result = await multiAgentOrchestratorService.executePipeline(
-        { topic, discipline, draftText, rawSources },
+        { topic, discipline, draftText, rawSources, citationStyle },
         getGeminiClient
       );
       res.json({ success: true, result });
