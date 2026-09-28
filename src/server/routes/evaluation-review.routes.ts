@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { robustParseJson } from '../utils/json-repair';
+import { validateRequest } from '../../middleware/validate.middleware';
+import { peerReviewSchema, literatureGapSchema, harvardReviewSchema } from '../utils/academic-analysis.schemas';
 
 export function createEvaluationReviewRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -8,7 +10,7 @@ export function createEvaluationReviewRouter(getGeminiClient: () => GoogleGenAI)
   /**
    * AI Peer Review Endpoint
    */
-  router.post('/ai_peer_review', async (req, res) => {
+  router.post('/ai_peer_review', validateRequest(peerReviewSchema), async (req, res) => {
     try {
       const { title, text, discipline } = req.body;
       if (!text) {
@@ -49,7 +51,7 @@ export function createEvaluationReviewRouter(getGeminiClient: () => GoogleGenAI)
   /**
    * Literature Gap Analysis Endpoint
    */
-  router.post('/analyze_literature_gap', async (req, res) => {
+  router.post('/analyze_literature_gap', validateRequest(literatureGapSchema), async (req, res) => {
     try {
       const { topic, discipline, existingLiterature } = req.body;
       const ai = getGeminiClient();
@@ -89,7 +91,7 @@ export function createEvaluationReviewRouter(getGeminiClient: () => GoogleGenAI)
   /**
    * Harvard Academic Review Endpoint
    */
-  router.post('/harvard_academic_review', async (req, res) => {
+  router.post('/harvard_academic_review', validateRequest(harvardReviewSchema), async (req, res) => {
     try {
       const { title, text, discipline } = req.body;
       const ai = getGeminiClient();
