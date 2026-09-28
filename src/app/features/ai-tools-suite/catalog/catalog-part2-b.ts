@@ -1,4 +1,4 @@
-import { AiToolItem } from '../ai-tools-catalog';
+import type { AiToolItem } from '../ai-tools-catalog';
 
 export const CATALOG_PART2_B: AiToolItem[] = [
 {
