@@ -146,7 +146,7 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         qa,
         sourceVerification: {
           verifiedSources: verification.verifiedSources,
-          unverifiedSources: verification.unverifiableSources,
+          unverifiedSources: verification.unverifiedSources,
           rejectedSources: verification.rejectedSources
         }
       });
