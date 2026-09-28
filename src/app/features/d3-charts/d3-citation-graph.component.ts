@@ -16,6 +16,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { CitationLink, CitationNode } from './d3-citation-graph.models';
 import { D3CitationGraphRendererService } from './d3-citation-graph-renderer.service';
+import { AcademicSourceModel, ChapterItemModel } from '../../domain/models';
 @Component({
   selector: 'app-d3-citation-graph',
   standalone: true,
