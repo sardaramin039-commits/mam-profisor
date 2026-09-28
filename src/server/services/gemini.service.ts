@@ -74,7 +74,7 @@ export function getGeminiClient(): GoogleGenAI {
         const originalModel = typedParams?.model || 'gemini-3.8-flash';
 
         const modelSequence = [originalModel];
-        const textModelsBackup = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'];
+        const textModelsBackup = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
         for (const m of textModelsBackup) {
           if (!modelSequence.includes(m)) {
             modelSequence.push(m);
@@ -85,7 +85,7 @@ export function getGeminiClient(): GoogleGenAI {
           let currentParams = { ...typedParams, model: targetModel };
           if (currentParams.config && typeof currentParams.config === 'object') {
             const cleanedConfig = { ...currentParams.config } as Record<string, unknown>;
-            if (!targetModel.startsWith('gemini-3.8') && !targetModel.startsWith('gemini-3.5') && !targetModel.startsWith('gemini-3.1')) {
+            if (!targetModel.startsWith('gemini-3.8') && !targetModel.startsWith('gemini-3.7') && !targetModel.startsWith('gemini-3.6') && !targetModel.startsWith('gemini-3.5')) {
               delete cleanedConfig['thinkingConfig'];
             }
             const tools = cleanedConfig['tools'];
