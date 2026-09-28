@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { WordExportService } from '../../services/word-export';
+import { EditorService } from '../editor/services/editor';
 
 @Component({
   selector: 'app-export-word',
@@ -34,14 +35,26 @@ import { WordExportService } from '../../services/word-export';
 })
 export class ExportWordComponent {
   private wordExportService = inject(WordExportService);
+  private editorService = inject(EditorService);
   title = signal<string>('توێژینەوەی_زانستی');
 
   exportToWord(): void {
+    const chapters = this.editorService.chapters()
+      .filter(chapter => typeof chapter.content === 'string' && chapter.content.trim().length > 0)
+      .map(chapter => ({
+        title: chapter.title,
+        content: chapter.content
+      }));
+
+    if (chapters.length === 0) {
+      return;
+    }
+
     const blob = this.wordExportService.generateManuscriptTextBlob(
-      this.title(),
+      this.title().trim() || 'توێژینەوەی_زانستی',
       'زانستە گشتییەکان',
       'ماستەر',
-      [{ title: 'بەشی یەکەم', content: 'ناوەڕۆکی بەشی یەکەم' }]
+      chapters
     );
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
