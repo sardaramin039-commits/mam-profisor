@@ -1,0 +1,67 @@
+<div class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+            <h4 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+              <mat-icon class="text-base text-sky-400">sync</mat-icon>
+              Zotero & Mendeley Sync
+            </h4>
+            <input #zoteroInput type="text" placeholder="تەوەرەی گەڕانی Reference..." class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:outline-none focus:border-sky-500" />
+            <div class="flex gap-2">
+              <button (click)="multiAgent.syncZoteroMendeley(zoteroInput.value, 'Zotero')" [disabled]="multiAgent.isSyncingZotero()" class="bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                Zotero
+              </button>
+              <button (click)="multiAgent.syncZoteroMendeley(zoteroInput.value, 'Mendeley')" [disabled]="multiAgent.isSyncingZotero()" class="bg-red-600 hover:bg-red-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                Mendeley
+              </button>
+            </div>
+            @if (multiAgent.zoteroItems().length > 0) {
+              <div class="mt-2 text-[11px] space-y-1 bg-slate-950 p-2 rounded-lg border border-slate-800 max-h-36 overflow-y-auto">
+                @for (item of multiAgent.zoteroItems(); track item.key) {
+                  <div class="text-slate-300 border-b border-slate-800/60 pb-1">
+                    <div class="font-bold text-sky-300 truncate">{{ item.title }}</div>
+                    <div class="text-[10px] text-slate-500">{{ item.date }} | {{ item.doi }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+            <h4 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+              <mat-icon class="text-base text-emerald-400">badge</mat-icon>
+              ORCID Researcher Profile
+            </h4>
+            <input #orcidIdInput type="text" placeholder="ID (m.g., 0000-0002-1825-0097)..." class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:outline-none focus:border-emerald-500" />
+            <button (click)="multiAgent.lookupOrcid(orcidIdInput.value)" [disabled]="multiAgent.isFetchingOrcid()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1">
+              پشکنینی ORCID
+            </button>
+            @if (multiAgent.orcidProfile(); as orcid) {
+              <div class="p-2 bg-slate-950 rounded-lg border border-slate-800 text-[11px] space-y-1">
+                <div class="font-bold text-emerald-300">{{ orcid.creditName }} ({{ orcid.orcidId }})</div>
+                <div class="text-slate-400">{{ orcid.institution }}</div>
+              </div>
+            }
+          </div>
+
+          <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+            <h4 class="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+              <mat-icon class="text-base text-amber-400">travel_explore</mat-icon>
+              Google Scholar Metadata
+            </h4>
+            <input #scholarInput type="text" placeholder="ناوی توێژینەوە یان کلیلەواشە..." class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:outline-none focus:border-amber-500" />
+            <button (click)="multiAgent.searchGoogleScholar(scholarInput.value)" [disabled]="multiAgent.isSearchingScholar()" class="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs flex items-center gap-1">
+              گەڕانی Google Scholar
+            </button>
+            @if (multiAgent.scholarResults().length > 0) {
+              <div class="mt-2 text-[11px] space-y-1 bg-slate-950 p-2 rounded-lg border border-slate-800 max-h-36 overflow-y-auto">
+                @for (item of multiAgent.scholarResults(); track item.link) {
+                  <div class="text-slate-300 border-b border-slate-800 pb-1">
+                    <a [href]="item.link" target="_blank" class="font-bold text-amber-300 hover:underline block truncate">{{ item.title }}</a>
+                    <div class="text-[10px] text-slate-500">سایتاشن: {{ item.citedByCount }} | {{ item.publicationYear }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
