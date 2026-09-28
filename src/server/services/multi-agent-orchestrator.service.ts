@@ -10,7 +10,8 @@ import { disciplineProfileService } from './discipline-profile.service';
 import { contradictionDetectionService } from './contradiction-detection.service';
 import { academicConfidenceService } from './academic-confidence.service';
 import { humanScholarlyProseService } from './human-scholarly-prose.service';
-import { citationIntelligenceService, CitationStyle } from './citation-intelligence.service';
+import { citationIntelligenceService } from './citation-intelligence.service';
+import type { CitationStyle } from './citation-intelligence.service';
 import { textSimilarityService } from './text-similarity.service';
 import { observabilityService } from './observability.service';
 
@@ -105,7 +106,7 @@ export class MultiAgentOrchestratorService {
           verificationStatus: 'verified' as const,
           pageNumber: String(source.pageNumber ?? source.page ?? '').trim() || undefined,
           author: verified.author,
-          year: String(source.year ?? verified['year'] ?? '').trim() || undefined
+          year: String(source.year ?? '').trim() || undefined
         };
       })
       .filter((item): item is NonNullable<typeof item> => Boolean(item));
