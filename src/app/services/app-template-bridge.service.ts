@@ -5,6 +5,7 @@ import { EditorService } from '../features/editor/services/editor';
 import { Data } from './data';
 import { ChapterItemModel as ChapterItem } from '../domain/models';
 import { ACADEMIC_GLOSSARY as GLOSSARY_PROMPT } from '../../prompts/academic-glossary';
+import { CitationBuilder, CitationItem } from '../helpers/citation-builder';
 
 function createSnapshotHash(text: string): string {
   let hash = 2166136261;
@@ -855,7 +856,7 @@ export class AppTemplateBridgeService {
     }
 
     const value = this.citationForm.getRawValue();
-    const source: AcademicSourceModel = {
+    const source: CitationItem = {
       id: '',
       userId: '',
       author: String(value.author || ''),
@@ -865,15 +866,15 @@ export class AppTemplateBridgeService {
       sourceType: 'book',
       journal: String(value.journalOrPublisher || ''),
       doi: value.doi || undefined,
-      isVerified: false
+      type: 'book'
     };
 
     this.formattedMultiStyle.set({
-      APA: this.data.formatCitation(source, 'APA'),
-      MLA: this.data.formatCitation(source, 'MLA'),
-      Harvard: this.data.formatCitation(source, 'Harvard'),
-      Chicago: this.data.formatCitation(source, 'Chicago'),
-      IEEE: this.data.formatCitation(source, 'IEEE')
+      APA: CitationBuilder.formatAPA(source),
+      MLA: CitationBuilder.formatMLA(source),
+      Harvard: CitationBuilder.formatHarvard(source),
+      Chicago: CitationBuilder.formatHarvard(source),
+      IEEE: CitationBuilder.formatHarvard(source)
     });
   }
   checkChapterPlagiarism(chapter: any) {}
