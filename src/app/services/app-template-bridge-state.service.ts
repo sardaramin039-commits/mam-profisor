@@ -7,20 +7,10 @@ import { ChapterItemModel as ChapterItem } from '../domain/models';
 import { ACADEMIC_GLOSSARY as GLOSSARY_PROMPT } from '../../prompts/academic-glossary';
 import { CitationBuilder, CitationItem } from '../helpers/citation-builder';
 
-function createSnapshotHash(text: string): string {
-  let hash = 2166136261;
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16).padStart(8, '0');
-}
 import { createSnapshotHash } from './app-template-bridge.utils';
 
-@Injectable()
-export class AppTemplateBridgeStateService {
 @Injectable({ providedIn: 'root' })
-export class AppTemplateBridgeService {
+export class AppTemplateBridgeStateService {
   protected editorService = inject(EditorService);
   protected data = inject(Data);
   protected fb = inject(FormBuilder);
