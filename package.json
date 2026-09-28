@@ -12,7 +12,8 @@
     "lint": "ng lint",
     "test": "ng test --watch=false --runner=vitest",
     "integrity:audit": "node scripts/anti-hallucination-audit.mjs",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
     "@angular/cdk": "^19.1.0",
