@@ -4,6 +4,11 @@ import { AcademicStyle } from '../../../domain/enums';
 import { CitationBuilder, CitationItem } from '../../../helpers/citation-builder';
 import { AcademicStoreService } from '../../../services/academic-store.service';
 
+function createCitationId(): string {
+  const uuid = globalThis.crypto?.randomUUID?.();
+  return uuid ? `source_${uuid}` : `source_${Date.now()}_${globalThis.performance?.now?.() || 0}`;
+}
+
 @Injectable({
   providedIn: 'root'
 })
