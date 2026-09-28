@@ -35,7 +35,7 @@ export class AiModelRouterService {
     if (taskType === 'embedding') {
       return {
         taskType: 'embedding',
-        selectedModelName: 'text-embedding-004',
+        selectedModelName: 'gemini-embedding-2',
         temperature: 0.0,
         kurdishReason: 'بۆ دروستکردنی ڤێکتەری فەزایی و گەڕانی RAG لەناو کتێبخانەی ئەکادیمی.'
       };
