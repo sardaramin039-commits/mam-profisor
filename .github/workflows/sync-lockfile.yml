@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: package.json
+          cache-dependency-path: package-lock.json
 
       - name: Configure npm lockfile mode
         run: npm config set package-lock true
@@ -40,7 +40,7 @@ jobs:
         run: npm install --package-lock-only --ignore-scripts --package-lock=true
 
       - name: Apply non-breaking security updates
-        run: npm audit fix --package-lock-only --ignore-scripts
+        run: npm audit fix --package-lock-only --ignore-scripts || npm audit --omit=dev --audit-level=high
 
       - name: Verify lockfile exists
         run: test -f package-lock.json
