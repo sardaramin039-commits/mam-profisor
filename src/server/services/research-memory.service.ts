@@ -88,8 +88,24 @@ class ResearchMemoryService {
     project: ResearchProjectState,
     item: ResearchMemoryItem
   ): Promise<void> {
-    await this.projectRef(project.userId, project.projectId).collection('items').doc(item.id).set(item, { merge: true });
-    await this.persistProjectState(project);
+    const db = adminDb;
+    const projectRef = this.projectRef(project.userId, project.projectId);
+    const itemRef = projectRef.collection('items').doc(item.id);
+    const batch = db.batch();
+
+    batch.set(itemRef, item, { merge: true });
+    batch.set(projectRef, {
+      projectId: project.projectId,
+      userId: project.userId,
+      title: project.title,
+      discipline: project.discipline,
+      claimsCount: project.claimsCount,
+      sourcesCount: project.sourcesCount,
+      evidenceCoverage: project.evidenceCoverage,
+      lastUpdated: project.lastUpdated
+    }, { merge: true });
+
+    await batch.commit();
   }
 
   public getOrCreateProjectState(userId: string, projectId: string, title: string, discipline: string): ResearchProjectState {
@@ -118,19 +134,25 @@ class ResearchMemoryService {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    project.memoryItems.push(newItem);
-    project.lastUpdated = new Date().toISOString();
-    
-    // Update stats
+    const previousLastUpdated = project.lastUpdated;
+    const previousClaimsCount = project.claimsCount;
+    const previousSourcesCount = project.sourcesCount;
+
+    project.lastUpdated = newItem.updatedAt;
     if (item.type === 'claim') project.claimsCount++;
     if (item.type === 'source') project.sourcesCount++;
-    
+
     try {
       await this.persistMemoryItem(project, newItem);
+      project.memoryItems.push(newItem);
+      return newItem;
     } catch (error) {
-      console.warn('[ResearchMemory Firestore persist unavailable]:', (error as Error)?.message || error);
+      project.lastUpdated = previousLastUpdated;
+      project.claimsCount = previousClaimsCount;
+      project.sourcesCount = previousSourcesCount;
+      console.error('[ResearchMemory Firestore persist failed]:', (error as Error)?.message || error);
+      throw new Error('Research memory persistence failed.');
     }
-    return newItem;
   }
 
   public getProjectMemory(userId: string, projectId: string): ResearchProjectState {
