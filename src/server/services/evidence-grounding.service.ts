@@ -98,13 +98,18 @@ export class EvidenceGroundingService {
       return this.createFallbackGroundedResult(topic, verifiedEvidenceChunks);
     }
 
+    const preparedContextChunks = contextChunks.map((chunk, index) => ({
+      ...chunk,
+      evidenceId: `EVI-${index + 1}`
+    }));
+
     const prompt = `تۆ سەرنووسەرێکی ئەکادیمی و بەرپرسی بزوێنەری Evidence Intelligence یت.
 ئەرکی تۆ: دروستکردنی دەقێکی زانستیی فەرمی بە کوردی بۆ:
 تەوەرە: ${topic}
 داواکاری: ${promptText}
 
 بەڵگە بڕواپێکراوەکان (VERIFIED EVIDENCE):
-${JSON.stringify(eligibleChunks, null, 2)}
+${JSON.stringify(preparedContextChunks, null, 2)}
 
 یاسای نەگۆڕی Citation Eligibility Gate:
 1. تەنها ئەو ادعانەی کە لە full-text ـی لەلایەن server ـەوە پشتڕاستکراوەوە هەن مافی Citation ـی Verified ـیان هەیە.
@@ -167,7 +172,9 @@ ${JSON.stringify(eligibleChunks, null, 2)}
       const evidenceGaps = Array.isArray(parsed.evidenceGaps) ? parsed.evidenceGaps : [];
 
       const eligibleBySourceId = new Map(
-        eligibleChunks.map(chunk => [String(chunk.sourceId), chunk])
+        preparedContextChunks
+          .filter(chunk => citationEligibleChunks.some(eligible => eligible.sourceId === chunk.sourceId && eligible.sourceTitle === chunk.sourceTitle))
+          .map(chunk => [String(chunk.sourceId), chunk])
       );
 
       const normalized = (value: string) => value.normalize('NFKC').toLocaleLowerCase().trim();
