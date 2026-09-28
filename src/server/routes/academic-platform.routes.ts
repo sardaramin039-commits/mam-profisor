@@ -20,7 +20,7 @@ const sourceSchema = z.object({
   year: z.union([z.string(), z.number()]).optional(),
   doi: z.string().max(500).optional(),
   publisher: z.string().max(500).optional()
-}).strip();
+}).passthrough();
 const sourceArray = z.array(sourceSchema).max(100);
 
 const evidenceGraphSchema = z.object({ topic: textField(500), draftText: z.string().max(250_000).default(''), sources: sourceArray.default([]) }).strict();
