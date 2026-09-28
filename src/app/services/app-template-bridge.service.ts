@@ -617,7 +617,7 @@ export class AppTemplateBridgeService {
     }
     const value = this.verifiedSourceForm.getRawValue();
     void this.data.saveSourceToCloud({
-      authors: String(value.author || ''),
+      author: String(value.author || ''),
       title: String(value.title || ''),
       publisher: String(value.publisher || ''),
       year: Number(value.year || 0),
