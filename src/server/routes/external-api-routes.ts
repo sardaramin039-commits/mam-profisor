@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { apiConfigService, AiProvider } from '../services/api-config.service';
 import { externalApiTester } from '../services/external-api-tester';
 import { centralizedPromptsManager, AcademicToneVariant } from '../prompts/centralized-prompts-manager';
+import { requireRole } from '../middleware/rbac.middleware';
 
 export function createExternalApiRouter(): Router {
   const router = Router();
@@ -10,7 +11,7 @@ export function createExternalApiRouter(): Router {
    * GET /api/external-integrations/config-status
    * Returns current status and masked keys for all AI providers
    */
-  router.get('/config-status', (_req: Request, res: Response) => {
+  router.get('/config-status', requireRole('admin', 'professor'), (_req: Request, res: Response) => {
     try {
       const providersConfig = apiConfigService.getAllProvidersConfig();
       const abReport = centralizedPromptsManager.getABTestReport();
@@ -31,7 +32,7 @@ export function createExternalApiRouter(): Router {
    * POST /api/external-integrations/test-single
    * Runs connectivity & health test on a single provider
    */
-  router.post('/test-single', async (req: Request, res: Response) => {
+  router.post('/test-single', requireRole('admin', 'professor'), async (req: Request, res: Response) => {
     try {
       const provider = (req.body?.provider || 'gemini') as AiProvider;
       const testPrompt = req.body?.prompt || 'پرسیاری تاقیکاری زانستی: پوختەیەک بنووسە.';
@@ -51,7 +52,7 @@ export function createExternalApiRouter(): Router {
    * POST /api/external-integrations/test-all
    * Runs connectivity & health test on all 4 providers
    */
-  router.post('/test-all', async (req: Request, res: Response) => {
+  router.post('/test-all', requireRole('admin', 'professor'), async (req: Request, res: Response) => {
     try {
       const results = await externalApiTester.testAllProviders();
       res.json({
@@ -69,7 +70,7 @@ export function createExternalApiRouter(): Router {
    * POST /api/external-integrations/set-ab-variant
    * Set or reset the manual A/B testing tone override
    */
-  router.post('/set-ab-variant', (req: Request, res: Response) => {
+  router.post('/set-ab-variant', requireRole('admin', 'professor'), (req: Request, res: Response) => {
     try {
       const variant = req.body?.variant as AcademicToneVariant | undefined;
       centralizedPromptsManager.setOverrideVariant(variant);
