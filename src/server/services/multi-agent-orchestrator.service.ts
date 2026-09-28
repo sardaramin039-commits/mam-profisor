@@ -59,35 +59,15 @@ export class MultiAgentOrchestratorService {
     const rawSources = Array.isArray(request.rawSources) ? request.rawSources.slice(0, 100) : [];
 
     log('01', 'Research Planner Agent', 'Creating discipline-specific research framework');
-    log('02', 'Source Discovery Agent', 'Using caller-provided source records only');
-
     const verification = await sourceVerificationService.verifySources(rawSources, getGeminiClient);
-    log('03', 'Source Verification Agent', `${verification.verifiedSources.length} sources verified`);
-
-    const graph = await claimEvidenceGraphService.buildGraph(
-      request.topic,
-      request.draftText || request.topic,
-      verification.verifiedSources,
-      getGeminiClient
-    );
-    log('04', 'Claim-Evidence Agent', `${graph.claims.length} claims analyzed`);
-
-    const contradictions = await contradictionDetectionService.analyze(
-      request.topic,
-      graph.claims,
-      verification.verifiedSources,
-      getGeminiClient
-    );
-    log('05', 'Contradiction Agent', contradictions.contradictionCount
-      ? `${contradictions.contradictionCount} contradiction(s) require review`
-      : 'No supported contradictions found');
+    log('02', 'Source Verification Agent', `${verification.verifiedSources.length} source metadata records verified`);
 
     const structure = await academicWritingEngineService.generateArgumentArchitecture(
       request.topic,
       request.discipline,
       getGeminiClient
     );
-    log('06', 'Argument & Methodology Agent', 'Built discipline-specific argument architecture');
+    log('03', 'Argument & Methodology Agent', 'Built discipline-specific argument architecture');
 
     const verifiedByKey = new Map(
       verification.verifiedSources.map(source => [source.sourceId, source])
@@ -97,8 +77,12 @@ export class MultiAgentOrchestratorService {
         const id = sourceKey(source);
         const verified = verifiedByKey.get(id);
         if (!verified) return null;
-        const chunkText = String(source.content ?? source.fullText ?? source.text ?? source.chunkText ?? '').trim();
+
+        const chunkText = String(
+          source.content ?? source.fullText ?? source.text ?? source.chunkText ?? ''
+        ).trim();
         if (!chunkText) return null;
+
         return {
           sourceId: id,
           sourceTitle: verified.sourceTitle,
@@ -106,40 +90,75 @@ export class MultiAgentOrchestratorService {
           verificationStatus: 'verified' as const,
           pageNumber: String(source.pageNumber ?? source.page ?? '').trim() || undefined,
           author: verified.author,
-          year: String(source.year ?? '').trim() || undefined
+          year: verified.year || String(source.year ?? '').trim() || undefined,
+          provenance: 'user-supplied-content' as const
         };
       })
       .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
-    const grounded = await evidenceGroundingService.generateGroundedContent(
-      request.topic,
-      request.draftText || `بەڵگە و پێکهاتەی نووسین بۆ ${structure.thesisStatement}`,
-      evidenceChunks,
+    const candidateDraft = request.draftText?.trim()
+      || `${structure.thesisStatement}\\n\\n${structure.overallConclusion}`;
+
+    const humanProse = await humanScholarlyProseService.refine(
+      candidateDraft,
+      profile,
       getGeminiClient
     );
-    log('07', 'Evidence-Grounded Writer Agent', `${grounded.integrityMetrics.verifiedClaims}/${grounded.integrityMetrics.totalClaims} claims grounded`);
-
-    const groundedText = grounded.paragraphs.map(paragraph => paragraph.text).join('\n\n').trim();
-    const candidateText = grounded.integrityMetrics.eligibilityGateStatus === 'FAIL'
-      ? (request.draftText || `${structure.thesisStatement}\n\n${structure.overallConclusion}`)
-      : groundedText;
-
-    const humanProse = await humanScholarlyProseService.refine(candidateText, profile, getGeminiClient);
-    log('08', 'Human Scholarly Prose Agent', 'Applied natural scholarly prose without adding evidence');
+    log('04', 'Human Scholarly Prose Agent', 'Applied natural scholarly prose without inventing sources');
 
     const languageAnalysis = await kurdishAcademicLanguageService.analyzeAndRefineLanguage(
       humanProse.refinedText,
       getGeminiClient
     );
-    log('09', 'Kurdish Academic Language Agent', 'Validated Sorani grammar and academic terminology');
+    log('05', 'Kurdish Academic Language Agent', 'Validated Sorani grammar and academic terminology');
 
-    const similarity = textSimilarityService.screen(languageAnalysis.refinedTextKurdish, rawSources);
+    const grounded = await evidenceGroundingService.generateGroundedContent(
+      request.topic,
+      languageAnalysis.refinedTextKurdish,
+      evidenceChunks,
+      getGeminiClient
+    );
+    log('06', 'Evidence-Grounded Writer Agent',
+      `${grounded.integrityMetrics.verifiedClaims}/${grounded.integrityMetrics.totalClaims} claims citation-grounded`);
+
+    const finalText = grounded.paragraphs.length
+      ? grounded.paragraphs.map(paragraph => paragraph.text).join('\\n\\n').trim()
+      : languageAnalysis.refinedTextKurdish;
+
+    const graphSources = rawSources.map(source => {
+      const verified = verifiedByKey.get(sourceKey(source));
+      return {
+        ...source,
+        ...(verified || {}),
+        evidenceProvenance: 'user-supplied-content'
+      };
+    });
+
+    const graph = await claimEvidenceGraphService.buildGraph(
+      request.topic,
+      finalText,
+      graphSources,
+      getGeminiClient
+    );
+    log('07', 'Claim-Evidence Graph Agent', `${graph.claims.length} final claims analyzed`);
+
+    const contradictions = await contradictionDetectionService.analyze(
+      request.topic,
+      graph.claims,
+      verification.verifiedSources,
+      getGeminiClient
+    );
+    log('08', 'Contradiction Agent', contradictions.contradictionCount
+      ? `${contradictions.contradictionCount} contradiction(s) require review`
+      : 'No supported contradictions found');
+
     const citationIntelligence = citationIntelligenceService.build(
       grounded.paragraphs,
       verification.verifiedSources,
       request.citationStyle || 'APA7'
     );
 
+    const similarity = textSimilarityService.screen(finalText, rawSources);
     const confidence = academicConfidenceService.assess({
       verifiedClaims: grounded.integrityMetrics.verifiedClaims,
       totalClaims: grounded.integrityMetrics.totalClaims,
@@ -150,17 +169,17 @@ export class MultiAgentOrchestratorService {
         ? (verification.verifiedSources.length / rawSources.length) * 100
         : 0
     });
-    log('10', 'Academic Confidence Agent', confidence.labelKurdish);
+    log('09', 'Academic Confidence Agent', confidence.labelKurdish);
 
     const review = await academicReviewerService.evaluateThesis(
-      languageAnalysis.refinedTextKurdish,
+      finalText,
       request.topic,
       getGeminiClient
     );
-    log('11', 'Professor Reviewer Agent', 'Completed independent academic review');
+    log('10', 'Professor Reviewer Agent', 'Completed independent academic review');
 
     const qa = await academicQAGateService.runQAGate(
-      languageAnalysis.refinedTextKurdish,
+      finalText,
       verification.verifiedSources,
       getGeminiClient,
       {
@@ -171,7 +190,9 @@ export class MultiAgentOrchestratorService {
         totalClaims: grounded.integrityMetrics.totalClaims
       }
     );
-    log('12', 'Final Academic QA Gate', qa.exportBlocked ? 'Export blocked pending evidence/review' : 'QA passed');
+    log('11', 'Final Academic QA Gate', qa.exportBlocked
+      ? 'Export blocked pending evidence/review'
+      : 'QA passed');
 
     observabilityService.logEvent({
       endpoint: '/api/platform/multi-agent-orchestrate',
@@ -181,7 +202,9 @@ export class MultiAgentOrchestratorService {
       tokensCompletion: 0,
       estimatedCostUsd: 0,
       success: !qa.exportBlocked,
-      citationFailuresCount: grounded.integrityMetrics.blockedSyntheticCitations + citationIntelligence.blockedCitationCount,
+      citationFailuresCount:
+        grounded.integrityMetrics.blockedSyntheticCitations +
+        citationIntelligence.blockedCitationCount,
       ragQualityScore: graph.graphIntegrityScore
     });
 
@@ -200,7 +223,7 @@ export class MultiAgentOrchestratorService {
       qaGateResult: qa,
       kurdishLanguageAnalysis: languageAnalysis,
       disciplineProfile: profile,
-      finalThesisDraftKurdish: languageAnalysis.refinedTextKurdish
+      finalThesisDraftKurdish: finalText
     };
   }
 }
