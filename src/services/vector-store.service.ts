@@ -339,7 +339,7 @@ export class VectorStoreService {
           pageEnd: metadata.pageEnd,
           score: Math.max(0, Math.min(1, Number(row.lexicalScore) || 0)),
           similarity: undefined,
-          retrievalStatus: 'persisted-vector',
+          retrievalStatus: 'persisted-vector' as const,
           verificationStatus: 'unverified'
         };
       }).filter(result => (result.score || 0) > 0);
