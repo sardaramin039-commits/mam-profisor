@@ -38,7 +38,7 @@ export class ExportWordComponent {
   private editorService = inject(EditorService);
   title = signal<string>('توێژینەوەی_زانستی');
 
-  exportToWord(): void {
+  async exportToWord(): Promise<void> {
     const chapters = this.editorService.chapters()
       .filter(chapter => typeof chapter.content === 'string' && chapter.content.trim().length > 0)
       .map(chapter => ({
@@ -50,12 +50,13 @@ export class ExportWordComponent {
       return;
     }
 
-    const blob = this.wordExportService.generateManuscriptTextBlob(
+    const blob = await this.wordExportService.generateDocxBlob(
       this.title().trim() || 'توێژینەوەی_زانستی',
       'زانستە گشتییەکان',
       'ماستەر',
       chapters
     );
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
