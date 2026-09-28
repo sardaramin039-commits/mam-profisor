@@ -243,7 +243,7 @@ export class LibraryAdminDashboardComponent {
   public addBookForm = this.fb.group({
     title: ['', Validators.required],
     author: ['', Validators.required],
-    year: [new Date().getFullYear(), Validators.required],
+    year: [null, Validators.required],
     language: ['ckb' as SupportedLanguage, Validators.required],
     documentType: ['book' as DocumentType, Validators.required],
     description: [''],
@@ -267,7 +267,7 @@ export class LibraryAdminDashboardComponent {
       crawlerEngine.addBook({
         title: val.title || '',
         author: val.author || '',
-        year: val.year || new Date().getFullYear(),
+        year: val.year ?? 0,
         language: val.language as SupportedLanguage,
         documentType: val.documentType as DocumentType,
         description: val.description || '',
@@ -278,7 +278,7 @@ export class LibraryAdminDashboardComponent {
       this.addBookForm.reset({
         title: '',
         author: '',
-        year: new Date().getFullYear(),
+        year: 0,
         language: 'ckb',
         documentType: 'book',
         description: '',
