@@ -1,5 +1,5 @@
               <!-- Custom TOC Textarea -->
-              @vm.if (vm.refineForm.get('customTOCOn')?.value) {
+              @if (vm.refineForm.get('customTOCOn')?.value) {
                 <div class="space-y-1 bg-emerald-50/5 p-3 rounded-lg border-2 border-emerald-600/30 animate-expand-fade">
                   <div class="flex justify-between items-center text-[11px] font-bold text-emerald-900">
                     <span class="flex items-center gap-1">
@@ -18,7 +18,7 @@
               }
 
               <!-- Field Work Textarea -->
-              @vm.if (vm.refineForm.get('fieldWorkOn')?.value) {
+              @if (vm.refineForm.get('fieldWorkOn')?.value) {
                 <div class="space-y-1 bg-indigo-50/5 p-3 rounded-lg border-2 border-indigo-600/30 animate-expand-fade">
                   <div class="flex justify-between items-center text-[11px] font-bold text-indigo-900">
                     <span class="flex items-center gap-1">
@@ -243,7 +243,7 @@
                 </span>
                 
                 <div class="flex items-center gap-2">
-                  @vm.if (copyStyleFileName()) {
+                  @if (copyStyleFileName()) {
                     <span class="text-[9px] text-emerald-950 bg-emerald-100 px-1.5 py-0.5 rounded border-2 border-emerald-800 font-mono font-bold truncate max-w-[120px]" [title]="copyStyleFileName()">
                       {{ copyStyleFileName() }}
                     </span>
@@ -285,7 +285,7 @@
                   <input type="file" #fileInputComp1 (change)="vm.onFileSelected($event, 'comp1')" class="hidden" accept=".docx,.doc,.pdf,.txt,.md,.json">
                   
                   <span class="text-xs font-bold text-stone-900 line-clamp-2 leading-tight">
-                    @vm.if (vm.compareFile1Name()) {
+                    @if (vm.compareFile1Name()) {
                       📂 {{ vm.compareFile1Name() }}
                     } @else {
                       📂 فایلێک باربکە یان لێرە دایبنێ
@@ -308,7 +308,7 @@
                   <input type="file" #fileInputComp2 (change)="vm.onFileSelected($event, 'comp2')" class="hidden" accept=".docx,.doc,.pdf,.txt,.md,.json">
                   
                   <span class="text-xs font-bold text-stone-900 line-clamp-2 leading-tight">
-                    @vm.if (compareFile2Name()) {
+                    @if (compareFile2Name()) {
                       📂 {{ compareFile2Name() }}
                     } @else {
                       📂 فایلێک باربکە یان لێرە دایبنێ
