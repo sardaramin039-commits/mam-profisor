@@ -5,9 +5,12 @@ import { Request, Response, NextFunction } from 'express';
 type RateState = { count: number; lastReset: number };
 
 const rateLimitMap = new Map<string, RateState>();
+const authenticatedRateLimitMap = new Map<string, RateState>();
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const DEFAULT_MAX_REQUESTS = 120;
 const AI_MAX_REQUESTS = 20;
+const AUTHENTICATED_MAX_REQUESTS = 90;
+const AUTHENTICATED_AI_MAX_REQUESTS = 30;
 const MAX_TRACKED_CLIENTS = 10_000;
 
 function isAiPath(path: string): boolean {
@@ -80,6 +83,46 @@ export function rateLimiterMiddleware(req: Request, res: Response, next: NextFun
     res.status(429).json({
       success: false,
       error: 'داواکارییەکانت زۆرن. تکایە دوای کەمێک هەوڵ بدەرەوە.',
+      retryAfterSeconds
+    });
+    return;
+  }
+
+  rateInfo.count++;
+  next();
+}
+
+
+export function authenticatedRateLimiterMiddleware(req: Request, res: Response, next: NextFunction): void {
+  const user = (req as Request & { user?: { uid?: string } }).user;
+  const uid = typeof user?.uid === 'string' ? user.uid.trim() : '';
+  if (!uid) {
+    res.status(401).json({ success: false, error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
+    return;
+  }
+
+  const aiRequest = isAiPath(req.path);
+  const key = `uid:${uid}:${aiRequest ? 'ai' : 'default'}`;
+  const maxRequests = aiRequest ? AUTHENTICATED_AI_MAX_REQUESTS : AUTHENTICATED_MAX_REQUESTS;
+  const now = Date.now();
+  let rateInfo = authenticatedRateLimitMap.get(key);
+
+  if (!rateInfo || now - rateInfo.lastReset > RATE_LIMIT_WINDOW_MS) {
+    rateInfo = { count: 1, lastReset: now };
+    authenticatedRateLimitMap.set(key, rateInfo);
+    next();
+    return;
+  }
+
+  if (rateInfo.count >= maxRequests) {
+    const retryAfterSeconds = Math.max(
+      1,
+      Math.ceil((RATE_LIMIT_WINDOW_MS - (now - rateInfo.lastReset)) / 1000)
+    );
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    res.status(429).json({
+      success: false,
+      error: 'ژمارەی داواکارییەکانی ئەکاونتەکەت زۆرە. تکایە دواتر هەوڵ بدەرەوە.',
       retryAfterSeconds
     });
     return;
