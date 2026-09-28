@@ -182,7 +182,8 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
         title: source.title,
         author: source.authors.join(', '),
         year: source.publicationYear || undefined,
-        doi: source.doi || undefined
+        doi: source.doi || undefined,
+        isbn: source.isbn || undefined
       }));
       const verification = await sourceVerificationService.verifySources(
         verificationInput,
@@ -286,7 +287,7 @@ ${JSON.stringify(sourceContext, null, 2)}
         sourceIntegrity: {
           retrievalStatus: 'index-results',
           sourceCount: sources.length,
-          verificationStatus: 'not-verified'
+          verificationStatus: 'verified-only'
         }
       });
     } catch (error) {
