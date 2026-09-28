@@ -98,14 +98,14 @@
                           {{ rule.title }}
                         </span>
                         <div class="flex items-center gap-1.5">
-                          @vm.if (rule.isCustom) {
+                          @if (rule.isCustom) {
                             <button type="button" (click)="$event.stopPropagation(); vm.removeCustomRule(rule.id)"
                               class="text-red-500 hover:text-red-700 p-0.5 rounded hover:bg-red-50 cursor-pointer transition-colors flex items-center justify-center shrink-0" 
                               title="سڕینەوەی ئەم مەرجە">
                               <mat-icon class="!w-3.5 !h-3.5 !text-xs leading-none">delete_outline</mat-icon>
                             </button>
                           }
-                          @vm.if (rule.active) {
+                          @if (rule.active) {
                             <span class="text-[7.5px] font-bold uppercase bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded border border-emerald-200">کارایە</span>
                           } @else {
                             <span class="text-[7.5px] font-bold uppercase bg-stone-100 text-stone-500 px-1.5 py-0.2 rounded">ناچالاک</span>
@@ -139,7 +139,7 @@
               </div>
 
               <!-- Notifications area when global feedback occurs -->
-              @vm.if (vm.searchFeedbackMessage()) {
+              @if (vm.searchFeedbackMessage()) {
                 <div class="p-2 bg-emerald-50 text-emerald-900 border border-emerald-200 text-[10px] text-center font-bold rounded-lg animate-fade-in animate-pulse">
                   {{ vm.searchFeedbackMessage() }}
                 </div>
@@ -153,7 +153,7 @@
                   <mat-icon class="!text-sm !w-4 !h-4">cloud_done</mat-icon>
                   دەستنووسە هاوکاتکراوەکانی پێشوو
                 </span>
-                @vm.if (vm.currentUser()) {
+                @if (vm.currentUser()) {
                   <span class="text-[8px] bg-emerald-100 text-emerald-800 border border-emerald-250 px-2 py-0.5 rounded">هاوکاتی هەور</span>
                 } @else {
                   <span class="text-[8px] bg-gray-150 text-gray-500 px-2 py-0.5 rounded">نەبەستراوەوە</span>
@@ -204,10 +204,10 @@
                 </div>
               </div>
 
-              @vm.if (vm.isHistoryLoading()) {
+              @if (vm.isHistoryLoading()) {
                 <div class="text-center py-4 text-xs text-gray-400">هاوکاتکردنی فایەربەیس...</div>
               } @else {
-                @vm.if (filteredHistoryList().length === 0) {
+                @if (filteredHistoryList().length === 0) {
                   <div class="text-center py-2 text-[10px] text-gray-400 font-serif leading-tight">
                     هیچ دەستنووسێک نەدۆزرایەوە کە لەگەڵ ئەم فلتەرانەدا بگونجێت.
                   </div>
