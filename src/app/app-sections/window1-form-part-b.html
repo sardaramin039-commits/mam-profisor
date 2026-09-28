@@ -78,7 +78,7 @@
                               placeholder="سەرچاوەکان لێرە بنووسە یان لکێنە (بۆ نموونە: ئەمین، ٢٠٢٤؛ بارزانی، ٢٠٢٢...) تا نووسەر تەنها سوود لەمانە وەرگرێت."></textarea>
                     
                     <!-- Quick-Preview Popover -->
-                    @if (isQuickPreviewVisible()) {
+                    @if (vm.isQuickPreviewVisible()) {
                       <div [style.top.px]="vm.quickPreviewPos().top + 20"
                            [style.left.px]="vm.quickPreviewPos().left"
                            class="absolute z-50 w-72 bg-white border-2 border-amber-500/60 p-3 rounded-lg shadow-lg text-right font-serif animate-fade-in-badge text-stone-900 select-none">
@@ -97,17 +97,17 @@
                             <span class="w-3.5 h-3.5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></span>
                             خەریکی گەڕان و هێنانە...
                           </div>
-                        } @else if (quickPreviewError()) {
+                        } @else if (vm.quickPreviewError()) {
                           <div class="text-[10px] text-red-600 py-2">
-                            {{ quickPreviewError() }}
+                            {{ vm.quickPreviewError() }}
                           </div>
-                        } @else if (quickPreviewSuggestions().length === 0) {
+                        } @else if (vm.quickPreviewSuggestions().length === 0) {
                           <div class="text-[10px] text-stone-500 py-2">
                             هیچ پێشنیارێک بەردەست نییە. تکایە دڵنیابە ناونیشانی تێزەکە دروستە.
                           </div>
                         } @else {
                           <div class="space-y-1.5 max-h-40 overflow-y-auto scrollbar-thin">
-                            @for (s of quickPreviewSuggestions(); track s) {
+                            @for (s of vm.quickPreviewSuggestions(); track s) {
                               <div (click)="vm.applySourceSuggestion(s)" 
                                    tabindex="0"
                                    (keydown.enter)="vm.applySourceSuggestion(s)"
