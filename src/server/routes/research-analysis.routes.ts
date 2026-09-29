@@ -3,13 +3,15 @@ import { GoogleGenAI } from '@google/genai';
 import { SYSTEM_PROMPT_ANALYZE_RIGOR } from '../../prompts/system-prompts';
 import { robustParseJson } from '../utils/json-repair';
 import { multiAgentOrchestratorService } from '../services/multi-agent-orchestrator.service';
+import { researchMethodsLabService } from '../services/research-methods-lab.service';
 import { validateRequest } from '../../middleware/validate.middleware';
 import {
   academicRigorSchema,
   academicConsultationSchema,
   methodologySchema,
   multiAgentPipelineSchema,
-  researchIntegrityAuditSchema
+  researchIntegrityAuditSchema,
+  researchMethodsLabSchema
 } from '../utils/academic-analysis.schemas';
 
 export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI): Router {
@@ -239,6 +241,17 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
     }
   });
 
+
+  router.post('/research_methods_lab', validateRequest(researchMethodsLabSchema), async (req, res) => {
+    try {
+      const mode = req.body.mode;
+      const result = researchMethodsLabService.run(mode, req.body.payload || {});
+      res.json({ mode, result, generatedAt: new Date().toISOString() });
+    } catch (error) {
+      console.error('Research methods lab error:', error);
+      res.status(400).json({ error: 'نەتوانرا شیکردنەوەی methodology تەواو بکرێت.' });
+    }
+  });
   /**
    * Real Sequential Multi-Agent Pipeline Execution Endpoint
    */
