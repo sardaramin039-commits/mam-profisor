@@ -212,6 +212,10 @@ export class ResearchApiClientService {
     return this.http.post<ResearchIntegrityAuditResult>('/api/research_integrity_audit', payload);
   }
 
+  runResearchMethodsLab(mode: 'prisma' | 'power' | 'claim_map' | 'provenance', payload: Record<string, unknown>): Observable<{ mode: string; result: any; generatedAt: string }> {
+    return this.http.post<{ mode: string; result: any; generatedAt: string }>('/api/research_methods_lab', { mode, payload });
+  }
+
   findAcademicReferences(topic: string): Observable<{ references: AcademicReferenceItem[] }> {
     return this.http.post<{ references: AcademicReferenceItem[] }>('/api/ai_reference_finder', { topic });
   }
