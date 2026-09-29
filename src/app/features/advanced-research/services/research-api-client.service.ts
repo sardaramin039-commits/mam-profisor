@@ -212,6 +212,14 @@ export class ResearchApiClientService {
     return this.http.post<ResearchIntegrityAuditResult>('/api/research_integrity_audit', payload);
   }
 
+  assessScholarship55(payload: Record<string, unknown>): Observable<any> {
+    return this.http.post('/api/scholarship_55', { payload });
+  }
+
+  getScholarship55Catalog(): Observable<any> {
+    return this.http.get('/api/scholarship_55/catalog');
+  }
+
   runResearchMethodsLab(mode: 'prisma' | 'power' | 'claim_map' | 'provenance', payload: Record<string, unknown>): Observable<{ mode: string; result: any; generatedAt: string }> {
     return this.http.post<{ mode: string; result: any; generatedAt: string }>('/api/research_methods_lab', { mode, payload });
   }
