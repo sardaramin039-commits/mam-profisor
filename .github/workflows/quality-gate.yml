@@ -49,6 +49,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Source file size audit
+        run: npm run lint:file-size
+
       - name: Academic integrity audit
         run: npm run integrity:audit
 
