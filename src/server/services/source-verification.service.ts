@@ -18,6 +18,9 @@ export interface SourceVerificationReport {
   rejectedAsFabricated: boolean;
   rejectionReasonKurdish?: string;
   kurdishVerificationDetails: string;
+  verificationBasis?: 'doi-resolution' | 'isbn-resolution' | 'issn-resolution' | 'metadata-match' | 'not-verified';
+  peerReviewEvidence?: 'not-established' | 'explicitly-confirmed';
+  verifiedAt?: string;
 }
 
 type InputSource = {
@@ -374,14 +377,33 @@ export class SourceVerificationService {
       };
     });
 
-    const verifiedSources = reports.filter(report =>
+    const timestampedReports = reports.map(report => {
+      const identifier = report.doiOrIsbn || '';
+      const verificationBasis =
+        report.existenceVerified === false
+          ? 'not-verified'
+          : identifier.startsWith('10.')
+            ? 'doi-resolution'
+            : /^\\d{8,13}$/.test(identifier.replace(/[^0-9X]/gi, ''))
+              ? 'isbn-resolution'
+              : 'metadata-match';
+
+      return {
+        ...report,
+        verificationBasis,
+        peerReviewEvidence: 'not-established' as const,
+        verifiedAt: new Date().toISOString()
+      };
+    });
+
+    const verifiedSources = timestampedReports.filter(report =>
       report.existenceVerified === true &&
       report.rejectedAsFabricated !== true &&
       report.trustLevel !== 'D' &&
       report.trustLevel !== 'F'
     );
-    const rejectedSources = reports.filter(report => report.rejectedAsFabricated);
-    const unverifiedSources = reports.filter(report =>
+    const rejectedSources = timestampedReports.filter(report => report.rejectedAsFabricated);
+    const unverifiedSources = timestampedReports.filter(report =>
       !report.existenceVerified && !report.rejectedAsFabricated
     );
 
@@ -389,7 +411,7 @@ export class SourceVerificationService {
       verifiedSources,
       rejectedSources,
       unverifiedSources,
-      allReports: reports,
+      allReports: timestampedReports,
       rejectedSourcesCount: rejectedSources.length
     };
   }
