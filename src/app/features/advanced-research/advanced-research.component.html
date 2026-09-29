@@ -120,30 +120,6 @@
     </button>
 
     <button
-      (click)="activeTab.set('journal_metrics')"
-      [class.border-cyan-500]="activeTab() === 'journal_metrics'"
-      [class.text-cyan-400]="activeTab() === 'journal_metrics'"
-      [class.border-transparent]="activeTab() !== 'journal_metrics'"
-      [class.text-slate-400]="activeTab() !== 'journal_metrics'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">stars</mat-icon>
-      Journal Finder, Q1-Q4, Impact Factor & H-Index
-    </button>
-
-    <button
-      (click)="activeTab.set('ultimate_ai')"
-      [class.border-purple-500]="activeTab() === 'ultimate_ai'"
-      [class.text-purple-400]="activeTab() === 'ultimate_ai'"
-      [class.border-transparent]="activeTab() !== 'ultimate_ai'"
-      [class.text-slate-400]="activeTab() !== 'ultimate_ai'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">psychology</mat-icon>
-      AI Academic Suite (دیبایت، تێز، هەڵسەنگاندن، PDF Chat, Quiz)
-    </button>
-
-    <button
       (click)="activeTab.set('knowledgegraph')"
       [class.border-cyan-500]="activeTab() === 'knowledgegraph'"
       [class.text-cyan-400]="activeTab() === 'knowledgegraph'"
@@ -156,17 +132,16 @@
     </button>
 
     <button
-      (click)="activeTab.set('myth_synthesis')"
-      [class.border-amber-500]="activeTab() === 'myth_synthesis'"
-      [class.text-amber-400]="activeTab() === 'myth_synthesis'"
-      [class.border-transparent]="activeTab() !== 'myth_synthesis'"
-      [class.text-slate-400]="activeTab() !== 'myth_synthesis'"
+      (click)="activeTab.set('integrity_audit')"
+      [class.border-emerald-500]="activeTab() === 'integrity_audit'"
+      [class.text-emerald-400]="activeTab() === 'integrity_audit'"
+      [class.border-transparent]="activeTab() !== 'integrity_audit'"
+      [class.text-slate-400]="activeTab() !== 'integrity_audit'"
       class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
     >
-      <mat-icon class="text-base text-amber-400">auto_awesome_motion</mat-icon>
-      تەکنەلۆژیای سێنتێزی مێژوویی و ئەفسانەیی
+      <mat-icon class="text-base">fact_check</mat-icon>
+      پشکنینی ژێربەمای توێژینەوە
     </button>
-
     <button
       (click)="activeTab.set('memory')"
       [class.border-cyan-500]="activeTab() === 'memory'"
@@ -204,6 +179,9 @@
     }
     @if (activeTab() === 'extended_tools') {
       <app-advanced-research-extended-tools-tab></app-advanced-research-extended-tools-tab>
+    }
+    @if (activeTab() === 'integrity_audit') {
+      <app-advanced-research-integrity-audit-tab></app-advanced-research-integrity-audit-tab>
     }
     @if (activeTab() === 'memory') {
       <app-advanced-research-memory-tab></app-advanced-research-memory-tab>
