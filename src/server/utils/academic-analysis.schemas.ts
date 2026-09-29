@@ -88,3 +88,5 @@ export const researchMethodsLabSchema = z.object({
     payload: z.record(z.string(), z.unknown()).default({})
   })
 });
+
+export const scholarship55Schema = z.object({ body: z.object({ payload: z.record(z.string(), z.unknown()).default({}) }).passthrough() });
