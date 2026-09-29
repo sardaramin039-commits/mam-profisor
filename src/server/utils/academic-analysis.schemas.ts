@@ -39,6 +39,25 @@ export const multiAgentPipelineSchema = z.object({
   }).passthrough()
 });
 
+export const researchIntegrityAuditSchema = z.object({
+  body: z.object({
+    title: text(500),
+    discipline: z.string().trim().max(200).optional(),
+    academicLevel: z.string().trim().max(100).optional(),
+    researchQuestion: text(10_000).optional(),
+    objectives: z.string().max(20_000).optional(),
+    hypotheses: z.string().max(20_000).optional(),
+    methodology: z.string().max(40_000).optional(),
+    populationSample: z.string().max(20_000).optional(),
+    variables: z.string().max(20_000).optional(),
+    dataCollection: z.string().max(20_000).optional(),
+    analysisPlan: z.string().max(20_000).optional(),
+    ethics: z.string().max(20_000).optional(),
+    draftText: z.string().max(150_000).optional(),
+    bibliography: z.string().max(100_000).optional()
+  }).passthrough()
+});
+
 export const peerReviewSchema = z.object({
   body: z.object({
     title: z.string().trim().max(500).optional(),
