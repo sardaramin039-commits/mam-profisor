@@ -142,6 +142,7 @@
       <mat-icon class="text-base">fact_check</mat-icon>
       پشکنینی ژێربەمای توێژینەوە
     </button>
+    <button (click)="activeTab.set('methods_lab')" [class.border-emerald-500]="activeTab() === 'methods_lab'" [class.text-emerald-400]="activeTab() === 'methods_lab'" class="px-4 py-3 text-xs font-semibold border-b-2 border-transparent whitespace-nowrap flex items-center gap-2"><mat-icon class="text-base">science</mat-icon> Research Methods Lab</button>
     <button
       (click)="activeTab.set('memory')"
       [class.border-cyan-500]="activeTab() === 'memory'"
@@ -182,6 +183,9 @@
     }
     @if (activeTab() === 'integrity_audit') {
       <app-advanced-research-integrity-audit-tab></app-advanced-research-integrity-audit-tab>
+    }
+    @if (activeTab() === 'methods_lab') {
+      <app-advanced-research-methods-lab-tab></app-advanced-research-methods-lab-tab>
     }
     @if (activeTab() === 'memory') {
       <app-advanced-research-memory-tab></app-advanced-research-memory-tab>
