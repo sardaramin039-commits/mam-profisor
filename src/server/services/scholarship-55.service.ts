@@ -30,7 +30,7 @@ F('F09','Evidence','Negative-result preservation','Prevent null or contrary find
 F('F10','Evidence','Evidence uncertainty ledger','Store uncertainty separately from factual claims.',['claims','uncertainty']),
 F('F11','Review','Adversarial peer reviewer','Generate a structured hostile-but-fair challenge set before submission.',['manuscript','claims']),
 F('F12','Review','Reviewer-response matrix','Map every reviewer comment to an exact manuscript change or justified response.',['reviewComments','manuscript']),
-F('13','Review','Blind-review leakage check','Detect author-identifying text, acknowledgements and self-identifying metadata.',['manuscript']),
+F('F13','Review','Blind-review leakage check','Detect author-identifying text, acknowledgements and self-identifying metadata.',['manuscript']),
 F('F14','Review','Journal-fit fingerprint','Compare manuscript structure against a target journal profile.',['manuscript','journalProfile']),
 F('F15','Review','Desk-rejection radar','Check common structural and scope failure conditions before submission.',['manuscript','journalProfile']),
 F('F16','Review','Reviewer disagreement map','Separate disagreements caused by evidence, method, interpretation or terminology.',['reviewComments']),
