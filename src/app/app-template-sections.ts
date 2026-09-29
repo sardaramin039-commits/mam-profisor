@@ -10,6 +10,10 @@ import { AppCognitiveCopilotSectionComponent } from './app-sections/cognitive-co
 import { AutomatedBibliographyGeneratorComponent } from './features/citation-manager/components/automated-bibliography-generator.component';
 import { SourceVerificationComponent } from './features/citation-manager/source-verification.component';
 import { LiteratureGapComponent } from './features/literature-gap/literature-gap';
+import { DailyResearchPulseComponent } from './features/editor/components/daily-research-pulse.component';
+import { CitationHealthCheckComponent } from './features/editor/components/citation-health-check.component';
+import { ChapterTimelineViewComponent } from './features/editor/components/chapter-timeline-view.component';
+import { GrammarSyntaxFloatingPanelComponent } from './features/editor/components/grammar-syntax-floating-panel.component';
 
 const BASIC = [...BASIC_VIEW_IMPORTS];
 const FORMS = [...BASIC_VIEW_IMPORTS, ...FORM_VIEW_IMPORTS];
