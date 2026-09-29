@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
-import { CommonModule, NgClass } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MultiAgentService } from '../services/multi-agent.service';
@@ -7,7 +7,7 @@ import { MultiAgentService } from '../services/multi-agent.service';
 @Component({
   selector: 'app-advanced-research-multiapi-tab',
   standalone: true,
-  imports: [CommonModule, NgClass, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './advanced-research-multiapi-tab.html'
 })
