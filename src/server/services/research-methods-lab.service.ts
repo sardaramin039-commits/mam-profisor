@@ -51,7 +51,7 @@ function prisma(p: Record<string, unknown>) {
 
 function claimMap(p: Record<string, unknown>) {
   const claims=Array.isArray(p['claims'])?p['claims'] as Record<string,unknown>[]:[];
-  return {claims:claims.map((claim,index)=>{ const sources=Array.isArray(claim['sources'])?claim['sources']:[]; const verified=sources.filter((s:any)=>s?.verified===true).length; return {claimId:String(claim['id']||('CLM-'+(index+1))),text:String(claim['text']||''),sourceCount:sources.length,verifiedSourceCount:verified,evidenceStatus:sources.length===0?'missing':verified>0?'supported':'unverified',pageOrLocationRequired:Boolean(claim['requiresLocation'])}; }),unmappedClaims:claims.filter(c=>!Array.isArray(c.sources)||(c.sources as unknown[]).length===0).length};
+  return {claims:claims.map((claim,index)=>{ const sources=Array.isArray(claim['sources'])?claim['sources']:[]; const verified=sources.filter((s:any)=>s?.verified===true).length; return {claimId:String(claim['id']||('CLM-'+(index+1))),text:String(claim['text']||''),sourceCount:sources.length,verifiedSourceCount:verified,evidenceStatus:sources.length===0?'missing':verified>0?'supported':'unverified',pageOrLocationRequired:Boolean(claim['requiresLocation'])}; }),unmappedClaims:claims.filter(c=>!Array.isArray(c['sources'])||(c['sources'] as unknown[]).length===0).length};
 }
 
 function provenance(p: Record<string, unknown>) {
