@@ -32,9 +32,9 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
   /**
    * POST /api/workspace/:workspaceId/save
    */
-  router.post('/:workspaceId/save', async (req, res) => {
+  router.post('/:workspaceId/save', async (req: AuthRequest, res) => {
     try {
-      const userId = (req as any).user?.uid;
+      const userId = req.user?.uid;
       if (!userId) {
         res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
         return;
@@ -59,9 +59,9 @@ export function createResearchProjectStateRouter(getGeminiClient: () => GoogleGe
   /**
    * POST /api/workspace/:workspaceId/orchestrate
    */
-  router.post('/:workspaceId/orchestrate', async (req, res) => {
+  router.post('/:workspaceId/orchestrate', async (req: AuthRequest, res) => {
     try {
-      const userId = (req as any).user?.uid;
+      const userId = req.user?.uid;
       if (!userId) {
         res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
         return;
