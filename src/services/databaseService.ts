@@ -21,7 +21,7 @@ export async function saveAcademicData(collectionPath: string, data: Record<stri
     };
 
     await setDoc(docRef, payload);
-    console.log(`سەرکەوتوو: داتا پاشەکەوتکرا لە کۆکراوەی '${collectionPath}' بە ناسنامەی ${docRefId}`);
+    console.log(`سەرکەوتوو: داتا پاشەکەوتکرا لە کۆکراوەی '${collectionPath}' بە ناسنامەی تۆماری ${docRefId}`);
   } catch (error) {
     console.error('هەڵە لە پاشەکەوتکردنی داتا لە داتابەیس:', error);
     
