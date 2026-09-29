@@ -43,7 +43,59 @@ import { GrammarSyntaxFloatingPanelComponent } from './features/editor/component
 import { AcademicAdditionsSidebarComponent } from './features/editor/components/academic-additions-sidebar.component';
 import { ConceptGraphComponent } from './features/d3-charts/concept-graph.component';
 import { GlobalToastContainerComponent } from './components/global-toast-container';
+import { AcademicPlatformComponent } from './features/academic-platform/academic-platform.component';
 
+export const BASIC_VIEW_IMPORTS = [
+  CommonModule,
+  MatIconModule,
+] as const;
+
+export const FORM_VIEW_IMPORTS = [
+  ReactiveFormsModule,
+] as const;
+
+export const WORKSPACE_FEATURE_IMPORTS = [
+  AcademicPlatformComponent,
+  SearchEngineComponent,
+  PlagiarismComponent,
+  PythonSandboxComponent,
+  HarvardReviewComponent,
+  EliteReviewComponent,
+  ResearchFeatureComponent,
+  GlossaryComponent,
+  ExportWordComponent,
+  LatexComponent,
+  CitationFeatureComponent,
+  VivaSimulationComponent,
+  LiteratureGapComponent,
+  AdvancedResearchHubComponent,
+  SystemMaintenancePanelComponent,
+  GoogleDriveIntegrationComponent,
+  GmailIntegrationComponent,
+  GoogleKeepIntegrationComponent,
+  GoogleSheetsIntegrationComponent,
+  GoogleTasksIntegrationComponent,
+  AiToolsSuiteComponent,
+  SplitViewEditorComponent,
+  SpeechDictationComponent,
+  D3ChordDiagramComponent,
+  FormalityToneControlComponent,
+  TextLineageConnectorComponent,
+  AcademicRigorBannerComponent,
+  KurdishAcademicEvaluatorComponent,
+  AcademicGlossaryTableComponent,
+  LogicalConsistencyCheckerComponent,
+  ThesisHealthReportComponent,
+  EditorPomodoroTimerComponent,
+  DailyResearchPulseComponent,
+  CitationHealthCheckComponent,
+  ChapterTimelineViewComponent,
+  GrammarSyntaxFloatingPanelComponent,
+  AcademicAdditionsSidebarComponent,
+  ConceptGraphComponent,
+] as const;
+
+/** Legacy aggregate kept for compatibility with feature code outside template sections. */
 export const APP_VIEW_IMPORTS = [
   CommonModule,
   DashboardHeaderComponent,
