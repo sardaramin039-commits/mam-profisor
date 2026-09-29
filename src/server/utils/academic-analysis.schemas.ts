@@ -81,3 +81,10 @@ export const harvardReviewSchema = z.object({
     discipline: z.string().trim().max(200).optional()
   }).passthrough()
 });
+
+export const researchMethodsLabSchema = z.object({
+  body: z.object({
+    mode: z.enum(['prisma', 'power', 'claim_map', 'provenance']),
+    payload: z.record(z.string(), z.unknown()).default({})
+  })
+});
