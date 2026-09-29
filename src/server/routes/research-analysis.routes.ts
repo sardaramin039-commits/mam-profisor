@@ -8,7 +8,8 @@ import {
   academicRigorSchema,
   academicConsultationSchema,
   methodologySchema,
-  multiAgentPipelineSchema
+  multiAgentPipelineSchema,
+  researchIntegrityAuditSchema
 } from '../utils/academic-analysis.schemas';
 
 export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI): Router {
@@ -157,6 +158,84 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
     } catch (err) {
       console.error('Construct methodology error:', err);
       res.status(500).json({ error: 'کێشەیەک لە بونیادنانی مێتۆدۆلۆژی ڕوویدا' });
+    }
+  });
+
+  /**
+   * Research Integrity Audit: one professor-grade gate for study design and evidence hygiene.
+   */
+  router.post('/research_integrity_audit', validateRequest(researchIntegrityAuditSchema), async (req, res) => {
+    try {
+      const {
+        title, discipline, academicLevel, researchQuestion, objectives, hypotheses,
+        methodology, populationSample, variables, dataCollection, analysisPlan, ethics,
+        draftText, bibliography
+      } = req.body;
+
+      const ai = getGeminiClient();
+      const draft = typeof draftText === 'string' ? draftText.slice(0, 120000) : '';
+      const refs = typeof bibliography === 'string' ? bibliography : '';
+      const citationMarkers = (draft.match(/\([^)]+\)|\[[0-9,;\s-]+\]/g) || []).length;
+      const bibliographyEntryCount = refs.split(/\n+/).map((item: string) => item.trim()).filter(Boolean).length;
+
+      const prompt = [
+        'وەک پڕۆفیسۆرێکی توێژینەوە و داوەری ئەکادیمی، Research Integrity Audit ئەنجام بدە.',
+        'هیچ سەرچاوە، داتا، statistic، citation یان دەرئەنجامی نوێ لە خۆتەوە دروست مەکە.',
+        'ئەگەر زانیارییەک نەدابینکراوە، بە ڕوونی نیشانی بدە کە کەمە یان پێویستی بە پشتڕاستکردنەوەی مرۆیی هەیە.',
+        '',
+        'ناونیشان: \${title}',
+        'کایە: \${discipline || 'گشتی'}',
+        'ئاست: \${academicLevel || 'دیارینەکراو'}',
+        'پرسیاری توێژینەوە: \${researchQuestion || 'نەدابینکراو'}',
+        'ئامانجەکان: \${objectives || 'نەدابینکراو'}',
+        'فرضیەکان: \${hypotheses || 'نەدابینکراو'}',
+        'مێتۆدۆلۆژیا: \${methodology || 'نەدابینکراو'}',
+        'کۆمەڵگە/نموونە: \${populationSample || 'نەدابینکراو'}',
+        'گۆڕاوەکان: \${variables || 'نەدابینکراو'}',
+        'کۆکردنەوەی داتا: \${dataCollection || 'نەدابینکراو'}',
+        'پلانی شیکردنەوە: \${analysisPlan || 'نەدابینکراو'}',
+        'ئەخلاقی توێژینەوە: \${ethics || 'نەدابینکراو'}',
+        'ژمارەی citation-marker: \${citationMarkers}',
+        'ژمارەی bibliography entry: \${bibliographyEntryCount}',
+        'دەقی draft: \${draft}',
+        '',
+        'تەنها JSON بدەرەوە:',
+        JSON.stringify({
+          status: 'sound|needs_revision|insufficient_information',
+          executiveAssessment: 'پوختەی پشکنین',
+          alignment: [{ area: '...', status: 'aligned|partial|missing', finding: '...' }],
+          criticalGaps: [{ area: 'methodology|sampling|measurement|analysis|ethics|evidence|citation|theory', severity: 'critical|major|minor', problem: '...', requiredAction: '...' }],
+          claimsNeedingEvidence: [{ claim: '...', evidenceStatus: 'source_required|empirical_data_required|supported_by_provided_text|not_a_factual_claim', note: '...' }],
+          reproducibilityChecklist: [{ item: '...', status: 'complete|partial|missing' }],
+          citationAudit: {
+            markerCount: citationMarkers,
+            bibliographyEntryCount,
+            interpretation: 'ئەم ژمارانە تەنها preflight ـن؛ بوونی citation بە مانای پشتڕاستبوونەوەی سەرچاوە نییە.'
+          },
+          nextActions: ['هەنگاوی یەکەم', 'هەنگاوی دووەم', 'هەنگاوی سێیەم']
+        }, null, 2)
+      ].join('\n');
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: { responseMimeType: 'application/json', temperature: 0.1 }
+      });
+
+      const parsed = robustParseJson(response.text || '{}') as Record<string, unknown>;
+      res.json({
+        ...parsed,
+        auditMeta: {
+          model: 'gemini-3.8-flash',
+          citationMarkerCount: citationMarkers,
+          bibliographyEntryCount,
+          evidencePolicy: 'no-invented-sources-or-data',
+          generatedAt: new Date().toISOString()
+        }
+      });
+    } catch (err) {
+      console.error('Research integrity audit error:', err);
+      res.status(500).json({ error: 'کێشەیەک لە Research Integrity Audit ـدا ڕوویدا.' });
     }
   });
 
