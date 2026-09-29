@@ -1,0 +1,49 @@
+<div class="space-y-5">
+  <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl">
+    <h3 class="text-sm font-bold text-cyan-300 flex items-center gap-2"><mat-icon>science</mat-icon> Research Methods Lab</h3>
+    <p class="text-[11px] text-slate-400 mt-1">ئامرازێکی قووڵ بۆ systematic review، sample-size، evidence mapping و provenance.</p>
+    <div class="flex flex-wrap gap-2 mt-4">
+      @for (item of [{k:'prisma',l:'PRISMA 2020'},{k:'power',l:'Power & Effect Size'},{k:'claim_map',l:'Claim → Citation'},{k:'provenance',l:'Full-text Provenance'}]; track item.k) {
+        <button (click)="mode.set($any(item.k))" class="px-3 py-2 rounded-xl text-xs border" [class.border-cyan-500]="mode()===item.k" [class.text-cyan-300]="mode()===item.k">{{item.l}}</button>
+      }
+    </div>
+  </div>
+
+  @if (mode()==='prisma') {
+    <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+      <input [(ngModel)]="title" placeholder="ناونیشان" class="input">
+      <div class="grid md:grid-cols-2 gap-2">
+        @for (f of [
+          ['rationale','هۆکار و gap'],['question','پرسیار / PICO'],['eligibility','Inclusion / Exclusion'],
+          ['informationSources','Database و بەرواری گەڕان'],['searchStrategy','Search strategy'],['selectionProcess','Screening process'],
+          ['dataCollection','Data extraction'],['riskOfBias','Risk of bias'],['synthesis','Synthesis / meta-analysis'],
+          ['reportingBias','Reporting bias'],['certainty','Certainty of evidence'],['protocol','Protocol / registration'],
+          ['funding','Funding'],['conflicts','Competing interests'],['dataCode','Data / code availability']
+        ]; track f[0]) { <textarea [(ngModel)]="$any(this)[f[0]]" rows="2" [placeholder]="f[1]" class="area"></textarea> }
+      </div>
+      <div class="grid grid-cols-5 gap-2">
+        <input [(ngModel)]="identified" type="number" placeholder="Identified" class="input"><input [(ngModel)]="screened" type="number" placeholder="Screened" class="input">
+        <input [(ngModel)]="retrieved" type="number" placeholder="Retrieved" class="input"><input [(ngModel)]="excluded" type="number" placeholder="Excluded" class="input"><input [(ngModel)]="included" type="number" placeholder="Included" class="input">
+      </div>
+    </div>
+  } @else if (mode()==='power') {
+    <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl grid md:grid-cols-3 gap-3">
+      <select [(ngModel)]="design" class="input"><option value="two_group_t">Two-group</option><option value="correlation">Correlation</option></select>
+      <input [(ngModel)]="effect" type="number" step="0.01" placeholder="Effect size" class="input"><input [(ngModel)]="alpha" type="number" step="0.01" class="input" placeholder="Alpha">
+      <input [(ngModel)]="power" type="number" step="0.01" class="input" placeholder="Power"><input [(ngModel)]="mean1" type="number" class="input" placeholder="Mean 1"><input [(ngModel)]="mean2" type="number" class="input" placeholder="Mean 2">
+      <input [(ngModel)]="sd1" type="number" class="input" placeholder="SD 1"><input [(ngModel)]="sd2" type="number" class="input" placeholder="SD 2">
+      <input [(ngModel)]="n1" type="number" class="input" placeholder="N1"><input [(ngModel)]="n2" type="number" class="input" placeholder="N2">
+    </div>
+  } @else if (mode()==='claim_map') {
+    <textarea [(ngModel)]="claimsJson" rows="12" class="area" placeholder='[{"id":"CLM-1","text":"...","requiresLocation":true,"sources":[{"id":"S1","verified":true}]}]'></textarea>
+  } @else {
+    <textarea [(ngModel)]="provenanceJson" rows="12" class="area" placeholder='[{"evidenceId":"E1","sourceId":"S1","documentFingerprint":"sha256...","locator":"page:12","excerptHash":"...","retrievedAt":"2026-09-29T...","verified":true}]'></textarea>
+  }
+
+  <button (click)="run()" [disabled]="running()" class="px-5 py-2.5 rounded-xl bg-cyan-600 text-slate-950 font-bold text-xs">{{running()?'پشکنین...':'Run research analysis'}}</button>
+  @if (error()) { <div class="p-3 bg-rose-950 border border-rose-800 text-rose-300 rounded-xl text-xs">{{error()}}</div> }
+  @if (result(); as r) {
+    <pre class="p-4 bg-slate-950 border border-slate-800 rounded-2xl text-[11px] text-slate-300 overflow-auto max-h-[500px]">{{r | json}}</pre>
+  }
+</div>
+<style>.input,.area{width:100%;background:#020617;border:1px solid #334155;color:#e2e8f0;border-radius:.75rem;padding:.65rem;font-size:.75rem}.input:focus,.area:focus{outline:none;border-color:#06b6d4}</style>
