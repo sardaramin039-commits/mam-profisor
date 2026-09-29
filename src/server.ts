@@ -60,26 +60,26 @@ app.use('/api/docs', createApiDocsRouter());
 app.use('/api', requireAuth, authenticatedRateLimiterMiddleware);
 
 // Unified security middleware enforcing requireAuth for protected API endpoints & AI tools
-app.use('/api/ai-tools', requireAuth, createAiToolsRouter(getGeminiClient));
-app.use('/api/library', requireAuth, createLibraryRouter(getGeminiClient));
-app.use('/api/external-integrations', requireAuth, createExternalApiRouter());
-app.use('/api', requireAuth, createAcademicRouter(getGeminiClient));
-app.use('/api', requireAuth, createThesisWritingRouter(getGeminiClient));
-app.use('/api', requireAuth, createResearchAnalysisRouter(getGeminiClient));
-app.use('/api', requireAuth, createEvaluationReviewRouter(getGeminiClient));
-app.use('/api', requireAuth, createAcademicSearchIntegrationsRouter(getGeminiClient));
-app.use('/api/chatgpt-sources', requireAuth, createChatGptAcademicSourcesRouter());
-app.use('/api', requireAuth, createAdvancedAcademicToolsRouter(getGeminiClient));
-app.use('/api/platform', requireAuth, createAcademicPlatformRouter(getGeminiClient));
-app.use('/api/rag', requireAuth, createRagRouter(getGeminiClient));
-app.use('/api/multi-agent', requireAuth, createMultiAgentRouter(getGeminiClient));
-app.use('/api/research-memory', requireAuth, createResearchMemoryRouter(getGeminiClient));
-app.use('/api/workspace', requireAuth, createResearchProjectStateRouter(getGeminiClient));
+app.use('/api/ai-tools', createAiToolsRouter(getGeminiClient));
+app.use('/api/library', createLibraryRouter(getGeminiClient));
+app.use('/api/external-integrations', createExternalApiRouter());
+app.use('/api', createAcademicRouter(getGeminiClient));
+app.use('/api', createThesisWritingRouter(getGeminiClient));
+app.use('/api', createResearchAnalysisRouter(getGeminiClient));
+app.use('/api', createEvaluationReviewRouter(getGeminiClient));
+app.use('/api', createAcademicSearchIntegrationsRouter(getGeminiClient));
+app.use('/api/chatgpt-sources', createChatGptAcademicSourcesRouter());
+app.use('/api', createAdvancedAcademicToolsRouter(getGeminiClient));
+app.use('/api/platform', createAcademicPlatformRouter(getGeminiClient));
+app.use('/api/rag', createRagRouter(getGeminiClient));
+app.use('/api/multi-agent', createMultiAgentRouter(getGeminiClient));
+app.use('/api/research-memory', createResearchMemoryRouter(getGeminiClient));
+app.use('/api/workspace', createResearchProjectStateRouter(getGeminiClient));
 
 // Modular Services & Routers (Agents, Scholarly Search, Digital Library Catalog)
-app.use('/api/agents', requireAuth, agentsRouter);
-app.use('/api/scholarly', requireAuth, modularAcademicRouter);
-app.use('/api/library-catalog', requireAuth, modularLibraryRouter);
+app.use('/api/agents', agentsRouter);
+app.use('/api/scholarly', modularAcademicRouter);
+app.use('/api/library-catalog', modularLibraryRouter);
 
 // Global Error Handler Middleware for API routes
 app.use('/api', errorMiddleware);
@@ -101,7 +101,7 @@ app.use(
 app.use((req, res, next) => {
   angularApp
     .handle(req)
-    .then((response: any) =>
+    .then((response) =>
       response ? writeResponseToNodeResponse(response, res) : next(),
     )
     .catch(next);
