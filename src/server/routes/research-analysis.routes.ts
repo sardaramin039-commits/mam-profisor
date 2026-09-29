@@ -4,6 +4,7 @@ import { SYSTEM_PROMPT_ANALYZE_RIGOR } from '../../prompts/system-prompts';
 import { robustParseJson } from '../utils/json-repair';
 import { multiAgentOrchestratorService } from '../services/multi-agent-orchestrator.service';
 import { researchMethodsLabService } from '../services/research-methods-lab.service';
+import { scholarship55Service } from '../services/scholarship-55.service';
 import { validateRequest } from '../../middleware/validate.middleware';
 import {
   academicRigorSchema,
@@ -11,7 +12,8 @@ import {
   methodologySchema,
   multiAgentPipelineSchema,
   researchIntegrityAuditSchema,
-  researchMethodsLabSchema
+  researchMethodsLabSchema,
+  scholarship55Schema
 } from '../utils/academic-analysis.schemas';
 
 export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI): Router {
@@ -251,6 +253,19 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
       console.error('Research methods lab error:', error);
       res.status(400).json({ error: 'نەتوانرا شیکردنەوەی methodology تەواو بکرێت.' });
     }
+  });
+
+  router.post('/scholarship_55', validateRequest(scholarship55Schema), async (req, res) => {
+    try {
+      res.json(scholarship55Service.assess(req.body.payload || {}));
+    } catch (error) {
+      console.error('Scholarship 55 error:', error);
+      res.status(400).json({ error: 'پشکنینی ٥٥ تایبەتمەندییە زانستییەکان سەرکەوتوو نەبوو.' });
+    }
+  });
+
+  router.get('/scholarship_55/catalog', (_req, res) => {
+    res.json({ version: '1.0', featureCount: scholarship55Service.list().length, features: scholarship55Service.list() });
   });
   /**
    * Real Sequential Multi-Agent Pipeline Execution Endpoint
