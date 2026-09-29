@@ -14,7 +14,8 @@
     "integrity:audit": "node scripts/anti-hallucination-audit.mjs",
     "db:migrate": "drizzle-kit migrate",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "line-limit": "node scripts/verify-file-line-limits.mjs"
+    "line-limit": "node scripts/verify-file-line-limits.mjs",
+    "lint:file-size": "node scripts/verify-file-line-limits.mjs"
   },
   "dependencies": {
     "@angular/cdk": "^20.2.14",
