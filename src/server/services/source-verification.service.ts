@@ -379,7 +379,7 @@ export class SourceVerificationService {
 
     const timestampedReports = reports.map(report => {
       const identifier = report.doiOrIsbn || '';
-      const verificationBasis =
+      const verificationBasis: NonNullable<SourceVerificationReport['verificationBasis']> =
         report.existenceVerified === false
           ? 'not-verified'
           : identifier.startsWith('10.')
