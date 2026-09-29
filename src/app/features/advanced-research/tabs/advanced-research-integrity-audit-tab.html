@@ -1,0 +1,150 @@
+<div class="space-y-5">
+  <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h3 class="text-sm font-bold text-cyan-300 flex items-center gap-2">
+          <mat-icon class="text-base">fact_check</mat-icon>
+          پشکنینی ژێربەمای توێژینەوە
+        </h3>
+        <p class="text-[11px] text-slate-400 mt-1">
+          پرسیار، ئامانج، فرضیە، مێتۆد، نموونە، داتا، ئەخلاق و evidence بەیەکەوە پشکنین دەکات.
+        </p>
+      </div>
+      <span class="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-1 rounded-full">Professor Research Gate</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <input [(ngModel)]="title" placeholder="ناونیشانی توێژینەوە *" class="input" />
+      <input [(ngModel)]="discipline" placeholder="کایەی زانستی" class="input" />
+      <select [(ngModel)]="academicLevel" class="input">
+        <option>سەرەتایی</option>
+        <option>بەکالۆریۆس</option>
+        <option>ماستەر</option>
+        <option>دکتۆرا</option>
+        <option>پڕۆفیسۆر</option>
+      </select>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <textarea [(ngModel)]="researchQuestion" rows="3" placeholder="پرسیاری سەرەکیی توێژینەوە" class="area"></textarea>
+      <textarea [(ngModel)]="objectives" rows="3" placeholder="ئامانجەکان" class="area"></textarea>
+      <textarea [(ngModel)]="hypotheses" rows="3" placeholder="فرضیەکان / research propositions" class="area"></textarea>
+      <textarea [(ngModel)]="methodology" rows="3" placeholder="مێتۆدۆلۆژیا و design" class="area"></textarea>
+      <textarea [(ngModel)]="populationSample" rows="3" placeholder="کۆمەڵگە و نموونە" class="area"></textarea>
+      <textarea [(ngModel)]="variables" rows="3" placeholder="گۆڕاوەکان و operational definitions" class="area"></textarea>
+      <textarea [(ngModel)]="dataCollection" rows="3" placeholder="کۆکردنەوەی داتا / instrument" class="area"></textarea>
+      <textarea [(ngModel)]="analysisPlan" rows="3" placeholder="پلانی شیکردنەوەی داتا" class="area"></textarea>
+      <textarea [(ngModel)]="ethics" rows="3" placeholder="مۆڵەت، ڕەزامەندی و ethical safeguards" class="area"></textarea>
+      <textarea [(ngModel)]="bibliography" rows="3" placeholder="Bibliography ـی بەردەست" class="area"></textarea>
+    </div>
+
+    <textarea [(ngModel)]="draftText" rows="8" placeholder="دەقی draft ـی توێژینەوە؛ بۆ دۆزینەوەی بانگەشە پێویست بە بەڵگە..." class="area"></textarea>
+
+    <div class="flex flex-wrap gap-2">
+      <button (click)="runAudit()" [disabled]="isRunning() || !title.trim()" class="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2">
+        @if (isRunning()) {
+          <mat-icon class="animate-spin text-sm">sync</mat-icon>
+          پشکنین...
+        } @else {
+          <mat-icon class="text-sm">policy</mat-icon>
+          دەستپێکردنی پشکنین
+        }
+      </button>
+      <button (click)="reset()" type="button" class="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 text-xs font-semibold">
+        پاککردنەوەی ئەنجام
+      </button>
+    </div>
+  </div>
+
+  @if (error(); as message) {
+    <div class="p-3 rounded-xl border border-rose-800 bg-rose-950/40 text-rose-300 text-xs">{{ message }}</div>
+  }
+
+  @if (result(); as audit) {
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <h4 class="text-xs font-bold text-emerald-300">ئەنجامی گشتی</h4>
+          <span class="text-[10px] px-2 py-1 rounded-full border border-emerald-800 bg-emerald-950 text-emerald-300">{{ audit.status }}</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-6">{{ audit.executiveAssessment }}</p>
+      </div>
+
+      <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl">
+        <h4 class="text-xs font-bold text-cyan-300 mb-3">Alignment</h4>
+        <div class="space-y-2">
+          @for (item of audit.alignment || []; track $index) {
+            <div class="p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs">
+              <div class="flex items-center justify-between gap-2 font-semibold text-slate-200">
+                <span>{{ item.area }}</span>
+                <span class="text-[10px]">{{ item.status }}</span>
+              </div>
+              <p class="text-slate-400 mt-1">{{ item.finding }}</p>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl">
+        <h4 class="text-xs font-bold text-rose-300 mb-3">کەلێنە گرنگەکان</h4>
+        <div class="space-y-2">
+          @for (gap of audit.criticalGaps || []; track $index) {
+            <div class="p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs">
+              <div class="font-semibold text-slate-200">{{ gap.area }} · {{ gap.severity }}</div>
+              <p class="text-slate-400 mt-1">{{ gap.problem }}</p>
+              <p class="text-cyan-300 mt-1">{{ gap.requiredAction }}</p>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl">
+        <h4 class="text-xs font-bold text-amber-300 mb-3">Reproducibility</h4>
+        <div class="space-y-2">
+          @for (item of audit.reproducibilityChecklist || []; track $index) {
+            <div class="flex items-center justify-between gap-2 text-xs border-b border-slate-800 pb-2">
+              <span class="text-slate-300">{{ item.item }}</span>
+              <span class="text-slate-400">{{ item.status }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl lg:col-span-2">
+        <h4 class="text-xs font-bold text-purple-300 mb-3">بانگەشەکانی پێویست بە بەڵگە</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+          @for (claim of audit.claimsNeedingEvidence || []; track $index) {
+            <div class="p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs">
+              <div class="font-semibold text-slate-200">{{ claim.evidenceStatus }}</div>
+              <p class="text-slate-300 mt-1">{{ claim.claim }}</p>
+              <p class="text-slate-500 mt-1">{{ claim.note }}</p>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl lg:col-span-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h4 class="text-xs font-bold text-sky-300">Citation preflight</h4>
+            <p class="text-[10px] text-slate-500 mt-1">{{ audit.citationAudit?.interpretation }}</p>
+          </div>
+          <div class="flex gap-2 text-[10px]">
+            <span class="px-2 py-1 rounded-lg bg-slate-950 border border-slate-800">Markers: {{ audit.citationAudit?.markerCount }}</span>
+            <span class="px-2 py-1 rounded-lg bg-slate-950 border border-slate-800">Bibliography: {{ audit.citationAudit?.bibliographyEntryCount }}</span>
+          </div>
+        </div>
+        <div class="mt-3 text-xs text-slate-300">
+          @for (action of audit.nextActions || []; track $index) {
+            <div class="border-b border-slate-800 py-2">{{ $index + 1 }}. {{ action }}</div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<style>
+  .input,.area{width:100%;background:#020617;border:1px solid #334155;color:#e2e8f0;border-radius:.75rem;padding:.7rem;font-size:.75rem}
+  .input:focus,.area:focus{outline:none;border-color:#06b6d4}
+</style>
