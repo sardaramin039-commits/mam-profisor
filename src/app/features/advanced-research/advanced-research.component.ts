@@ -11,6 +11,7 @@ import { AdvancedResearchPeerReviewTabComponent } from './tabs/advanced-research
 import { AdvancedResearchCitationExportTabComponent } from './tabs/advanced-research-citation-export-tab';
 import { AdvancedResearchExtendedToolsTabComponent } from './tabs/advanced-research-extended-tools-tab';
 import { AdvancedResearchMemoryTabComponent } from './tabs/advanced-research-memory-tab';
+import { AdvancedResearchIntegrityAuditTabComponent } from './tabs/advanced-research-integrity-audit-tab';
 
 @Component({
   selector: 'app-advanced-research-hub',
@@ -24,7 +25,8 @@ import { AdvancedResearchMemoryTabComponent } from './tabs/advanced-research-mem
     AdvancedResearchPeerReviewTabComponent,
     AdvancedResearchCitationExportTabComponent,
     AdvancedResearchExtendedToolsTabComponent,
-    AdvancedResearchMemoryTabComponent
+    AdvancedResearchMemoryTabComponent,
+    AdvancedResearchIntegrityAuditTabComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './advanced-research.component.html'
@@ -32,7 +34,7 @@ import { AdvancedResearchMemoryTabComponent } from './tabs/advanced-research-mem
 export class AdvancedResearchHubComponent {
   multiAgent = inject(MultiAgentService);
 
-  activeTab = signal<'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' | 'peer_review' | 'citation_export' | 'extended_tools' | 'journal_metrics' | 'ultimate_ai' | 'knowledgegraph' | 'myth_synthesis' | 'memory'>('orchestrator');
+  activeTab = signal<'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' | 'peer_review' | 'citation_export' | 'extended_tools' | 'journal_metrics' | 'ultimate_ai' | 'knowledgegraph' | 'memory' | 'integrity_audit'>('orchestrator');
 
   // Signals for Historical & Mythological Synthesis Technology
   selectedEpicScene = signal<string>('dimdim');
