@@ -10,12 +10,12 @@
           </div>
 
           <!-- Subtab Navigation Switcher Bar -->
-          <div class="px-4 py-2 bg-[#F1EEEC] border-b border-[#E5E1DA] flex items-center gap-1.5 overflow-x-auto select-none">
+          <div class="px-4 py-2 bg-[var(--mam-surface-2)] border-b border-[var(--mam-border)] flex items-center gap-1.5 overflow-x-auto select-none">
             <button 
               type="button"
               (click)="activeSubTab.set('editor')"
               [class]="'px-3.5 py-1.5 text-xs font-serif font-extrabold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ' + 
-                (activeSubTab() === 'editor' ? 'bg-black text-white shadow-xs' : 'bg-white/80 text-stone-700 hover:bg-stone-200 border border-stone-250')">
+                (activeSubTab() === 'editor' ? 'bg-[var(--mam-accent)] text-white shadow-xs' : 'bg-[var(--mam-surface)] text-[var(--mam-text)] hover:bg-[var(--mam-surface-2)] border border-[var(--mam-border)]')">
               <mat-icon class="!text-xs !w-4 !h-4">menu_book</mat-icon>
               <span>بەشەکانی توێژینەوە</span>
             </button>
@@ -49,7 +49,7 @@
               (click)="activeSubTab.set('pulse')"
               [class]="'px-3.5 py-1.5 text-xs font-serif font-extrabold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ' + 
                 (activeSubTab() === 'pulse' ? 'bg-black text-white shadow-xs' : 'bg-white/80 text-stone-700 hover:bg-stone-200 border border-stone-250')">
-              <mat-icon class="!text-xs !w-4 !h-4 text-cyan-500">pulse_alert</mat-icon>
+              <mat-icon class="!text-xs !w-4 !h-4 text-cyan-500">insights</mat-icon>
               <span>نبزی توێژینەوە (Pulse)</span>
             </button>
             <button 
