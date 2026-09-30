@@ -8,7 +8,7 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
   standalone: true,
   imports: [MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: \`
+  template: `
     <div class="mam-sidebar-backdrop" [class.is-open]="mobileNavOpen()" (click)="closeMobileNav()"></div>
 
     <aside class="mam-sidebar" [class.is-open]="mobileNavOpen()" aria-label="ناڤیگەیشنی مام پڕۆفیسۆر">
@@ -139,7 +139,7 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
         }
       </div>
     </header>
-  \`
+  `
 })
 export class DashboardHeaderComponent {
   mainTab = input<MainTab>('editor');
