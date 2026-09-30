@@ -4,6 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { ResearchApiClientService } from '../services/research-api-client.service';
 
+interface ControlPlaneState {
+  metrics: { sources: number; claims: number; evidence: number; decisions: number; evidenceCoverage: number };
+  gates: { methodologyReady: boolean; evidenceReady: boolean; decisionTraceable: boolean; reviewRequired: boolean; exportBlocked: boolean };
+  stage: string;
+}
+
 @Component({
   selector: 'app-advanced-research-methods-lab-tab',
   standalone: true,
@@ -11,11 +17,6 @@ import { ResearchApiClientService } from '../services/research-api-client.servic
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './advanced-research-methods-lab-tab.html'
 })
-interface ControlPlaneState {
-  metrics: { sources: number; claims: number; evidence: number; decisions: number; evidenceCoverage: number };
-  gates: { methodologyReady: boolean; evidenceReady: boolean; decisionTraceable: boolean; reviewRequired: boolean; exportBlocked: boolean };
-  stage: string;
-}
 export class AdvancedResearchMethodsLabTabComponent {
   private readonly api = inject(ResearchApiClientService);
   mode = signal<'prisma'|'power'|'claim_map'|'provenance'|'framework'|'risk_bias'|'evidence_grade'>('prisma');
