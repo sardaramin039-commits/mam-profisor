@@ -10,6 +10,21 @@
         <button (click)="mode.set($any(item.k))" class="px-3 py-2 rounded-xl text-xs border" [class.border-cyan-500]="mode()===item.k" [class.text-cyan-300]="mode()===item.k">{{item.l}}</button>
       }
     </div>
+    <div class="mt-4 p-3 rounded-xl bg-slate-950 border border-emerald-900/60">
+      <div class="flex items-center justify-between gap-2">
+        <div><strong class="text-xs text-emerald-300">Research Control Plane</strong><span class="block text-[10px] text-slate-500">دۆخی سەرانسەری پڕۆژە و export gate</span></div>
+        <button (click)="loadControlPlane()" [disabled]="controlRunning()" class="px-3 py-1.5 rounded-lg border border-slate-700 text-[10px]">نوێکردنەوە</button>
+      </div>
+      @if (controlPlane(); as cp) {
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mt-3">
+          <span class="stat">Source: {{cp['metrics']?.['sources']}}</span>
+          <span class="stat">Claim: {{cp['metrics']?.['claims']}}</span>
+          <span class="stat">Evidence: {{cp['metrics']?.['evidence']}}</span>
+          <span class="stat">Decision: {{cp['metrics']?.['decisions']}}</span>
+          <span class="stat" [class.text-rose-300]="cp['gates']?.['exportBlocked']">Export: {{cp['gates']?.['exportBlocked'] ? 'Blocked' : 'Reviewable'}}</span>
+        </div>
+      }
+    </div>
   </div>
 
   @if (mode()==='prisma') {
@@ -103,4 +118,4 @@
     }
   </section>
 </div>
-<style>.input,.area{width:100%;background:#020617;border:1px solid #334155;color:#e2e8f0;border-radius:.75rem;padding:.65rem;font-size:.75rem}.input:focus,.area:focus{outline:none;border-color:#06b6d4}</style>
+<style>.input,.area{width:100%;background:#020617;border:1px solid #334155;color:#e2e8f0;border-radius:.75rem;padding:.65rem;font-size:.75rem}.input:focus,.area:focus{outline:none;border-color:#06b6d4}.stat{padding:.4rem .5rem;border:1px solid #1e293b;border-radius:.6rem;font-size:.65rem;color:#94a3b8;text-align:center}</style>
