@@ -2,6 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import { adminDb } from '../../lib/firebase-admin';
 import { researchMemoryService, ResearchProjectState } from './research-memory.service';
 import { multiAgentOrchestratorService } from './multi-agent-orchestrator.service';
+import { researchVersionHistoryService } from './research-version-history.service';
 
 export interface WorkspaceSession {
   workspaceId: string;
@@ -94,6 +95,18 @@ class ResearchProjectStateService {
     });
 
     await this.persistWorkspace(ws);
+    try {
+      await researchVersionHistoryService.create(userId, {
+        projectId: workspaceId,
+        workspaceId,
+        chapter: ws.activeChapter,
+        content: ws.draftContent,
+        summary: ws.projectName,
+        source: 'autosave'
+      });
+    } catch (error) {
+      console.warn('[ResearchVersionHistory save skipped]:', (error as Error)?.message || error);
+    }
     return ws;
   }
 
@@ -122,6 +135,18 @@ class ResearchProjectStateService {
     ws.lastSavedAt = new Date().toISOString();
 
     await this.persistWorkspace(ws);
+    try {
+      await researchVersionHistoryService.create(userId, {
+        projectId: workspaceId,
+        workspaceId,
+        chapter: ws.activeChapter,
+        content: ws.draftContent,
+        summary: topic,
+        source: 'orchestration'
+      });
+    } catch (error) {
+      console.warn('[ResearchVersionHistory orchestration skipped]:', (error as Error)?.message || error);
+    }
 
     return {
       workspace: ws,
