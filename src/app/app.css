@@ -370,3 +370,22 @@
 .mam-module-header h3{margin:0;font-size:12px;font-weight:900;color:var(--mam-text)}
 .mam-module-tag{padding:5px 8px;border-radius:7px;background:#e8f5f3;color:#0d5551;font-size:8px;font-weight:900}
 .academic-dark .mam-module-tag{background:rgba(58,166,160,.12);color:#8edbd5}
+
+.mam-action-dock{position:fixed;left:0;right:278px;bottom:0;z-index:60;padding:8px 16px;background:rgba(255,255,255,.94);border-top:1px solid var(--mam-border);backdrop-filter:blur(14px);box-shadow:0 -8px 25px rgba(20,45,52,.06)}
+.academic-dark .mam-action-dock{background:rgba(21,31,43,.94)}
+.mam-action-dock-inner{width:min(1500px,100%);margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mam-dock-status{display:flex;align-items:center;gap:7px;color:var(--mam-muted);font-size:9px;white-space:nowrap}
+.mam-dock-status mat-icon{font-size:17px;color:var(--mam-accent)}
+.mam-dock-count{color:var(--mam-text);font-weight:900}
+.mam-dock-subtitle{color:var(--mam-muted)}
+.mam-dock-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.mam-dock-btn{min-height:34px;border:1px solid var(--mam-border);background:var(--mam-surface);color:var(--mam-text);border-radius:8px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:8.5px;font-weight:900;cursor:pointer}
+.mam-dock-btn mat-icon{font-size:15px}
+.mam-dock-btn:hover:not(:disabled){border-color:var(--mam-accent);color:var(--mam-accent-dark)}
+.mam-dock-btn:disabled{opacity:.45;cursor:not-allowed}
+.mam-dock-primary{background:var(--mam-accent);border-color:var(--mam-accent);color:white}
+.mam-dock-primary:hover:not(:disabled){background:var(--mam-accent-dark);color:white}
+.mam-dock-review{background:#f7f3e9}
+.mam-dock-save{background:#16333c;border-color:#16333c;color:white}
+@media(max-width:900px){.mam-action-dock{right:0;padding:7px 10px}.mam-action-dock-inner{justify-content:center}.mam-dock-status{display:none}}
+@media(max-width:520px){.mam-dock-actions{width:100%;display:grid;grid-template-columns:repeat(4,1fr)}.mam-dock-btn{padding:0 5px}.mam-dock-btn span{display:none}.mam-dock-btn mat-icon{margin:0}}
