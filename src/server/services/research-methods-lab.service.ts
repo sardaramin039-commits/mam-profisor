@@ -78,7 +78,7 @@ function riskBias(p: Record<string, unknown>) {
     quadas2: ['patient selection', 'index test', 'reference standard', 'flow and timing'],
     casp: ['validity', 'results', 'local applicability']
   };
-  const domains = domainMap[tool] || domainMap.rob2;
+  const domains = domainMap[tool] || domainMap['rob2'];
   const assessments = p['assessments'] && typeof p['assessments'] === 'object'
     ? p['assessments'] as Record<string, unknown>
     : {};
