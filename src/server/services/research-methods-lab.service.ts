@@ -1,4 +1,4 @@
-export type MethodsLabMode = 'prisma' | 'power' | 'claim_map' | 'provenance';
+export type MethodsLabMode = 'prisma' | 'power' | 'claim_map' | 'provenance' | 'framework' | 'risk_bias' | 'evidence_grade';
 
 const num = (v: unknown, fallback = 0): number => { const n = Number(v); return Number.isFinite(n) ? n : fallback; };
 const clamp = (n: number, min = 0, max = 1): number => Math.min(max, Math.max(min, n));
@@ -49,6 +49,63 @@ function prisma(p: Record<string, unknown>) {
   return {framework:'PRISMA 2020',totalItems:checklist.length,complete,missing:checklist.length-complete,checklist,flow:{identified:num(p['identified']),screened:num(p['screened']),retrieved:num(p['retrieved']),excluded:num(p['excluded']),included:num(p['included'])}};
 }
 
+type FrameworkKind = 'PICO' | 'PICOS' | 'PECO' | 'SPIDER';
+
+const frameworkDefinitions: Record<FrameworkKind, {labels: string[]; purpose: string}> = {
+  PICO: { labels: ['Population', 'Intervention', 'Comparison', 'Outcome'], purpose: 'پرسیاری توێژینەوەی clinical/intervention' },
+  PICOS: { labels: ['Population', 'Intervention', 'Comparison', 'Outcome', 'Study design'], purpose: 'PICO لەگەڵ جۆری design' },
+  PECO: { labels: ['Population', 'Exposure', 'Comparator', 'Outcome'], purpose: 'توێژینەوەی exposure/association' },
+  SPIDER: { labels: ['Sample', 'Phenomenon of Interest', 'Design', 'Evaluation', 'Research type'], purpose: 'توێژینەوەی qualitative و mixed-methods' }
+};
+
+function framework(p: Record<string, unknown>) {
+  const requested = String(p['framework'] || 'PICO').toUpperCase() as FrameworkKind;
+  const selected = frameworkDefinitions[requested] ? requested : 'PICO';
+  const values = p['values'] && typeof p['values'] === 'object' ? p['values'] as Record<string, unknown> : p;
+  const items = frameworkDefinitions[selected].labels.map(label => {
+    const key = label.toLowerCase().replaceAll(' ', '_');
+    const value = String(values[key] ?? values[label] ?? '').trim();
+    return { label, key, value, status: value ? 'complete' : 'missing' };
+  });
+  return { framework: selected, purpose: frameworkDefinitions[selected].purpose, items, complete: items.filter(x => x.status === 'complete').length, total: items.length };
+}
+
+function riskBias(p: Record<string, unknown>) {
+  const tool = String(p['tool'] || 'rob2').toLowerCase();
+  const domainMap: Record<string, string[]> = {
+    rob2: ['randomization process', 'deviations from intended intervention', 'missing outcome data', 'measurement of outcome', 'selection of reported result'],
+    robins_i: ['confounding', 'selection of participants', 'classification of interventions', 'deviations from interventions', 'missing data', 'measurement of outcomes', 'selection of reported result'],
+    quadas2: ['patient selection', 'index test', 'reference standard', 'flow and timing'],
+    casp: ['validity', 'results', 'local applicability']
+  };
+  const domains = domainMap[tool] || domainMap.rob2;
+  const assessments = p['assessments'] && typeof p['assessments'] === 'object'
+    ? p['assessments'] as Record<string, unknown>
+    : {};
+  const rows = domains.map(domain => {
+    const value = String(assessments[domain] ?? '').trim();
+    return { domain, judgement: value || 'not_assessed', evidence: String((p['evidence'] && typeof p['evidence'] === 'object' ? p['evidence'] as Record<string, unknown> : {})[domain] ?? '') };
+  });
+  return { tool, rows, assessed: rows.filter(x => x.judgement !== 'not_assessed').length, total: rows.length, note: 'ئەمە checklist ـی ڕێکخستنی risk-of-bias ـە؛ حوکمی کۆتایی پێویستی بە خوێندنەوەی study ـەکان و دوو داوەر هەیە.' };
+}
+
+function evidenceGrade(p: Record<string, unknown>) {
+  const initial = String(p['initialCertainty'] || 'high') as 'high' | 'moderate' | 'low' | 'very_low';
+  const order = ['high', 'moderate', 'low', 'very_low'] as const;
+  let level = order.includes(initial) ? initial : 'high';
+  const dimensions = ['riskOfBias', 'inconsistency', 'indirectness', 'imprecision', 'publicationBias'];
+  const downgrades: string[] = [];
+  for (const key of dimensions) {
+    const value = String(p[key] || '').toLowerCase();
+    if (value === 'serious' || value === 'high') {
+      const index = order.indexOf(level);
+      level = order[Math.min(order.length - 1, index + 1)];
+      downgrades.push(key);
+    }
+  }
+  return { initialCertainty: initial, finalCertainty: level, downgradedFor: downgrades, note: 'هەڵسەنگاندنەکە structured heuristic ـە و نابێت وەک GRADE adjudication ـی کۆتایی بەکاربهێنرێت.' };
+}
+
 function claimMap(p: Record<string, unknown>) {
   const claims=Array.isArray(p['claims'])?p['claims'] as Record<string,unknown>[]:[];
   return {claims:claims.map((claim,index)=>{ const sources=Array.isArray(claim['sources'])?claim['sources']:[]; const verified=sources.filter((s:any)=>s?.verified===true).length; return {claimId:String(claim['id']||('CLM-'+(index+1))),text:String(claim['text']||''),sourceCount:sources.length,verifiedSourceCount:verified,evidenceStatus:sources.length===0?'missing':verified>0?'supported':'unverified',pageOrLocationRequired:Boolean(claim['requiresLocation'])}; }),unmappedClaims:claims.filter(c=>!Array.isArray(c['sources'])||(c['sources'] as unknown[]).length===0).length};
@@ -59,5 +116,5 @@ function provenance(p: Record<string, unknown>) {
   return {records:records.map((r,i)=>({evidenceId:String(r['evidenceId']||('EVD-'+(i+1))),sourceId:String(r['sourceId']||''),documentFingerprint:String(r['documentFingerprint']||''),page:String(r['page']||''),locator:String(r['locator']||''),excerptHash:String(r['excerptHash']||''),retrievedAt:String(r['retrievedAt']||''),verified:r['verified']===true,complete:Boolean(r['sourceId']&&r['documentFingerprint']&&r['locator']&&r['retrievedAt'])})),incompleteCount:records.filter(r=>!(r['sourceId']&&r['documentFingerprint']&&r['locator']&&r['retrievedAt'])).length};
 }
 
-export class ResearchMethodsLabService { run(mode: MethodsLabMode,payload:Record<string,unknown>) { if(mode==='prisma') return prisma(payload); if(mode==='power') return {...power(payload),effectSize:effectSize(payload)}; if(mode==='claim_map') return claimMap(payload); return provenance(payload); } }
+export class ResearchMethodsLabService { run(mode: MethodsLabMode,payload:Record<string,unknown>) { if(mode==='prisma') return prisma(payload); if(mode==='power') return {...power(payload),effectSize:effectSize(payload)}; if(mode==='claim_map') return claimMap(payload); if(mode==='provenance') return provenance(payload); if(mode==='framework') return framework(payload); if(mode==='risk_bias') return riskBias(payload); return evidenceGrade(payload); } }
 export const researchMethodsLabService=new ResearchMethodsLabService();
