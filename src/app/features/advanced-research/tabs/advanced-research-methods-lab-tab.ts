@@ -29,6 +29,7 @@ export class AdvancedResearchMethodsLabTabComponent {
   riskOfBiasInput=''; inconsistency=''; indirectness=''; imprecision=''; publicationBias='';
   decisionKind='other'; decisionText=''; decisionRationale=''; decisionImpact=''; actor:'user'|'ai_assistant'|'reviewer'='user';
   decisionEvidenceJson='[]'; decisionConflictJson='[]'; decisions=signal<Array<Record<string,unknown>>>([]); decisionRunning=signal(false);
+  controlPlane=signal<Record<string,unknown>|null>(null); controlRunning=signal(false);
 
 
   run(): void {
@@ -53,6 +54,14 @@ export class AdvancedResearchMethodsLabTabComponent {
       error:e=>{this.error.set(e?.error?.error||'هەڵەیەک ڕوویدا.');this.running.set(false);}
     });
   }
+  loadControlPlane(): void {
+    this.controlRunning.set(true);
+    this.api.getResearchControlPlane(this.projectId()).subscribe({
+      next:r=>{this.controlPlane.set(r);this.controlRunning.set(false);},
+      error:()=>this.controlRunning.set(false)
+    });
+  }
+
   loadDecisions(): void {
     this.decisionRunning.set(true);
     this.api.listResearchDecisions(this.projectId()).subscribe({
