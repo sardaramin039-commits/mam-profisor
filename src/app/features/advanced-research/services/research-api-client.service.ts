@@ -224,6 +224,10 @@ export class ResearchApiClientService {
     return this.http.post<{ mode: string; result: any; generatedAt: string }>('/api/research_methods_lab', { mode, payload });
   }
 
+  getResearchControlPlane(projectId: string): Observable<Record<string, unknown>> {
+    return this.http.get<Record<string, unknown>>(`/api/research-control/${encodeURIComponent(projectId)}`);
+  }
+
   listResearchDecisions(projectId: string): Observable<{ decisions: Array<Record<string, unknown>> }> {
     return this.http.get<{ decisions: Array<Record<string, unknown>> }>(`/api/research-decisions/${encodeURIComponent(projectId)}`);
   }
