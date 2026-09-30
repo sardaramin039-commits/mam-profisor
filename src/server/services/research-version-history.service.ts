@@ -32,11 +32,11 @@ class ResearchVersionHistoryService {
   ): Promise<ResearchVersion | null> {
     const content = input.content.slice(0, 500_000);
     const contentHash = createHash('sha256').update(content, 'utf8').digest('hex');
-    const recent = await this.ref(userId)
-      .where('contentHash', '==', contentHash)
-      .limit(1)
-      .get();
-    if (!recent.empty) return recent.docs[0].data() as ResearchVersion;
+    const recent = await this.ref(userId).orderBy('createdAt', 'desc').limit(20).get();
+    const duplicate = recent.docs
+      .map(doc => doc.data() as ResearchVersion)
+      .find(item => item.projectId === input.projectId && item.workspaceId === input.workspaceId && item.contentHash === contentHash);
+    if (duplicate) return duplicate;
 
     const version: ResearchVersion = {
       ...input,
