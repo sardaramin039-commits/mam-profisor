@@ -82,7 +82,10 @@
         </div>
       </details>
 
-      <app-workspace-analytics [host]="this"></app-workspace-analytics>
+      <details class="mam-secondary-tools">
+        <summary><mat-icon>analytics</mat-icon><span>ئاماری پڕۆژە و پێشکەوتن</span><small>پێوانەکان و دۆخی گشتی</small></summary>
+        <div class="mam-secondary-grid"><app-workspace-analytics [host]="this"></app-workspace-analytics></div>
+      </details>
     }
 
     @case ('advanced_research') {
@@ -157,6 +160,17 @@
           <app-split-view-editor [chapterContent]="activeChapter()?.content || ''" (applyCorrections)="updateActiveChapterContent($event)"></app-split-view-editor>
         </div>
       </details>
+    }
+  }
+
+    @default {
+      <section class="mam-page-head">
+        <div>
+          <span class="mam-eyebrow">WORKSPACE</span>
+          <h1>ناوەندی کار</h1>
+          <p>بەشێکی دیاریکراو نییە. لە سایدبارەکەوە یەکێک لە بوارەکانی کار هەڵبژێرە.</p>
+        </div>
+      </section>
     }
   }
 </main>
