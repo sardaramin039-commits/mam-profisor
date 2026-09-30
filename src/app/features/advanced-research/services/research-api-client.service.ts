@@ -220,8 +220,18 @@ export class ResearchApiClientService {
     return this.http.get('/api/scholarship_55/catalog');
   }
 
-  runResearchMethodsLab(mode: 'prisma' | 'power' | 'claim_map' | 'provenance', payload: Record<string, unknown>): Observable<{ mode: string; result: any; generatedAt: string }> {
+  runResearchMethodsLab(mode: 'prisma' | 'power' | 'claim_map' | 'provenance' | 'framework' | 'risk_bias' | 'evidence_grade', payload: Record<string, unknown>): Observable<{ mode: string; result: any; generatedAt: string }> {
     return this.http.post<{ mode: string; result: any; generatedAt: string }>('/api/research_methods_lab', { mode, payload });
+  }
+
+  listResearchDecisions(projectId: string): Observable<{ decisions: Array<Record<string, unknown>> }> {
+    return this.http.get<{ decisions: Array<Record<string, unknown>> }>(`/api/research-decisions/${encodeURIComponent(projectId)}`);
+  }
+
+  addResearchDecision(projectId: string, payload: {
+    kind: string; decision: string; rationale?: string; evidenceIds?: string[]; conflictingEvidence?: string[]; impact?: string; actor?: 'user' | 'ai_assistant' | 'reviewer';
+  }): Observable<Record<string, unknown>> {
+    return this.http.post<Record<string, unknown>>(`/api/research-decisions/${encodeURIComponent(projectId)}`, payload);
   }
 
   findAcademicReferences(topic: string): Observable<{ references: AcademicReferenceItem[] }> {
