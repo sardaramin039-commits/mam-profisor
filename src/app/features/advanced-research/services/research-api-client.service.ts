@@ -26,6 +26,13 @@ import {
   AuthorHIndexResult,
   WritingTemplateItem
 } from '../../../../helpers/extended-academic-tools';
+export interface ResearchControlPlaneState {
+  projectId: string;
+  stage: string;
+  metrics: { sources: number; claims: number; evidence: number; decisions: number; evidenceCoverage: number };
+  gates: { methodologyReady: boolean; evidenceReady: boolean; decisionTraceable: boolean; reviewRequired: boolean; exportBlocked: boolean };
+}
+
 import {
   AiDebateResult,
   FactVsOpinionResult,
@@ -224,8 +231,8 @@ export class ResearchApiClientService {
     return this.http.post<{ mode: string; result: any; generatedAt: string }>('/api/research_methods_lab', { mode, payload });
   }
 
-  getResearchControlPlane(projectId: string): Observable<Record<string, unknown>> {
-    return this.http.get<Record<string, unknown>>(`/api/research-control/${encodeURIComponent(projectId)}`);
+  getResearchControlPlane(projectId: string): Observable<ResearchControlPlaneState> {
+    return this.http.get<ResearchControlPlaneState>(`/api/research-control/${encodeURIComponent(projectId)}`);
   }
 
   listResearchDecisions(projectId: string): Observable<{ decisions: Array<Record<string, unknown>> }> {
