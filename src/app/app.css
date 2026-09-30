@@ -389,3 +389,9 @@
 .mam-dock-save{background:#16333c;border-color:#16333c;color:white}
 @media(max-width:900px){.mam-action-dock{right:0;padding:7px 10px}.mam-action-dock-inner{justify-content:center}.mam-dock-status{display:none}}
 @media(max-width:520px){.mam-dock-actions{width:100%;display:grid;grid-template-columns:repeat(4,1fr)}.mam-dock-btn{padding:0 5px}.mam-dock-btn span{display:none}.mam-dock-btn mat-icon{margin:0}}
+
+.research-subtab,.research-subtab-active{display:inline-flex;align-items:center;gap:.4rem;border:1px solid;padding:.5rem .75rem;border-radius:.65rem;font-size:.72rem;font-weight:700;transition:all .18s ease}
+.research-subtab{border-color:#1e293b;background:#020617;color:#94a3b8}
+.research-subtab:hover{border-color:#475569;color:#e2e8f0}
+.research-subtab-active{border-color:#0e7490;background:#083344;color:#a5f3fc;box-shadow:0 0 0 1px rgba(8,145,178,.18)}
+.research-subtab mat-icon,.research-subtab-active mat-icon{font-size:1rem;width:1rem;height:1rem}
