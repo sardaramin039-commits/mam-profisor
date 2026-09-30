@@ -1,9 +1,6 @@
-<div class="min-h-screen bg-[#FDFCFB] text-[#1A1A1A] flex flex-col font-sans transition-colors duration-300" [class.academic-dark]="academicDarkMode()" dir="rtl" id="scholarly-workspace">
-
-  <!-- Global Toast Notification Overlay -->
+<div class="mam-app-root" [class.academic-dark]="academicDarkMode()" dir="rtl" id="scholarly-workspace">
   <app-global-toast-container></app-global-toast-container>
 
-  <!-- 1. SPLASH SCREEN (Welcome Screen) -->
   @if (viewMode() === 'splash') {
     <app-splash-screen
       [refineForm]="refineForm"
@@ -12,18 +9,24 @@
       (openSettings)="isSettingsOpen.set(true)"
       (closeSettings)="isSettingsOpen.set(false)">
     </app-splash-screen>
-  } @else if (viewMode() === 'workspace') {
-    <!-- 2. WORKSPACE / MAIN TOOL SCREEN -->
-    <app-workspace-header [host]="this"></app-workspace-header>
-    <app-workspace-main [host]="this"></app-workspace-main>
-    <app-workspace-bottom-bar [host]="this"></app-workspace-bottom-bar>
-    <!-- Academic footer -->
-    <footer class="bg-neutral-900 border-t border-slate-800 text-slate-400 py-6 mt-16 text-center text-xs pb-28">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
-        <p class="font-serif font-bold text-[#D4AF37] select-none">کتێبخانەی مام - مامۆستای جێگر بۆ توێژینەوەی باڵا</p>
-        <p class="text-[11px] text-slate-500 max-w-sm mx-auto">سەرجەم مافە ئەکادیمی و زمانەوانییەکان بە فەرمی پارێزراون ٢٠٢٦ ©</p>
+  } @else {
+    <div class="mam-workspace-shell">
+      <app-workspace-header
+        [host]="this">
+      </app-workspace-header>
+
+      <div class="mam-workspace-content">
+        <app-workspace-main [host]="this"></app-workspace-main>
+        <app-workspace-bottom-bar [host]="this"></app-workspace-bottom-bar>
+
+        <footer class="mam-footer">
+          <strong>مام پڕۆفیسۆر</strong>
+          <span>ناوەندی نووسین و توێژینەوەی ئەکادیمی، بە زمانی کوردی.</span>
+          <span>© ٢٠٢٦</span>
+        </footer>
       </div>
-    </footer>
+    </div>
   }
 
   <app-viewed-chapter-modal [host]="this"></app-viewed-chapter-modal>
+</div>
