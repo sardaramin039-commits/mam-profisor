@@ -5,13 +5,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MultiAgentService } from '../services/multi-agent.service';
 import { ResearchApiClientService } from '../services/research-api-client.service';
 
-@Component({
-  selector: 'app-advanced-research-memory-tab',
-  standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './advanced-research-memory-tab.html'
-})
 interface ResearchVersionView {
   id: string;
   projectId: string;
@@ -22,6 +15,13 @@ interface ResearchVersionView {
   contentHash: string;
 }
 
+@Component({
+  selector: 'app-advanced-research-memory-tab',
+  standalone: true,
+  imports: [CommonModule, FormsModule, MatIconModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './advanced-research-memory-tab.html'
+})
 export class AdvancedResearchMemoryTabComponent {
   readonly multiAgent = inject(MultiAgentService);
   private readonly api = inject(ResearchApiClientService);
@@ -37,7 +37,7 @@ export class AdvancedResearchMemoryTabComponent {
     this.versionsLoading.set(true);
     this.api.listResearchVersions(20).subscribe({
       next: result => {
-        this.versions.set(result.versions as ResearchVersionView[]);
+        this.versions.set(result.versions as unknown as ResearchVersionView[]);
         this.versionsLoading.set(false);
       },
       error: () => this.versionsLoading.set(false)
