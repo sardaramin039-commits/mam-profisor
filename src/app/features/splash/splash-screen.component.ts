@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
   standalone: true,
   imports: [ReactiveFormsModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: \`
+  template: `
     <main class="mam-splash" dir="rtl">
       <div class="mam-splash-grid">
         <section class="mam-splash-copy">
@@ -99,7 +99,7 @@ import { MatIconModule } from '@angular/material/icon';
         </div>
       }
     </main>
-  \`
+  `
 })
 export class SplashScreenComponent {
   refineForm = input<FormGroup | null>(null);
