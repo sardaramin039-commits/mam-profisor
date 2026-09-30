@@ -38,9 +38,6 @@ type AdvancedResearchTab = 'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' |
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './advanced-research.component.html'
 })
-type NavigationGroupId = 'workspace' | 'evidence' | 'review' | 'output' | 'memory';
-type AdvancedResearchTab = 'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' | 'peer_review' | 'citation_export' | 'extended_tools' | 'journal_metrics' | 'ultimate_ai' | 'knowledgegraph' | 'memory' | 'integrity_audit' | 'methods_lab' | 'scholarship_55';
-
 export class AdvancedResearchHubComponent {
   multiAgent = inject(MultiAgentService);
   navigationGroup = signal<NavigationGroupId>('workspace');
