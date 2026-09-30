@@ -1,61 +1,12 @@
-    <!-- Extracted Modular Header -->
-    <app-dashboard-header
-      [mainTab]="mainTab()"
-      [currentUser]="currentUser()"
-      [academicDarkMode]="academicDarkMode()"
-      (goSplash)="viewMode.set('splash')"
-      (selectTab)="mainTab.set($event)"
-      (loginWithGoogle)="loginWithGoogle()"
-      (logout)="logout()"
-      (openReadingMode)="isReadingModeOpen.set(true)"
-      (toggleDarkMode)="toggleAcademicDarkMode()"
-      (clearEditor)="clearEditor()">
-    </app-dashboard-header>
-
-    <!-- Mobile Sub-Header Navigation Strip (Visible on Mobile/Tablet < md) -->
-    <div class="md:hidden bg-[#F8F6F2] border-b border-[#E5E1DA] px-3 py-2.5 overflow-x-auto scrollbar-thin flex items-center gap-2">
-      <button
-        (click)="mainTab.set('editor')"
-        [class]="mainTab() === 'editor' ? 'bg-harvard-crimson text-white font-extrabold shadow-xs' : 'bg-white text-stone-700 font-medium border border-stone-200'"
-        class="px-3.5 py-2 rounded-lg text-xs font-serif shrink-0 flex items-center gap-1.5 cursor-pointer transition-all min-h-[40px]"
-      >
-        <mat-icon class="!w-4 !h-4 !text-sm">history_edu</mat-icon>
-        <span>سەرنووسەری مام</span>
-      </button>
-
-      <button
-        (click)="mainTab.set('suite')"
-        [class]="mainTab() === 'suite' ? 'bg-emerald-700 text-white font-extrabold shadow-xs' : 'bg-white text-stone-700 font-medium border border-stone-200'"
-        class="px-3.5 py-2 rounded-lg text-xs font-serif shrink-0 flex items-center gap-1.5 cursor-pointer transition-all min-h-[40px]"
-      >
-        <mat-icon class="!w-4 !h-4 !text-sm">auto_awesome</mat-icon>
-        <span>ئامرازە ئەکادیمییەکان</span>
-      </button>
-
-      <button
-        (click)="mainTab.set('advanced_research')"
-        [class]="mainTab() === 'advanced_research' ? 'bg-cyan-700 text-white font-extrabold shadow-xs' : 'bg-white text-stone-700 font-medium border border-stone-200'"
-        class="px-3.5 py-2 rounded-lg text-xs font-serif shrink-0 flex items-center gap-1.5 cursor-pointer transition-all min-h-[40px]"
-      >
-        <mat-icon class="!w-4 !h-4 !text-sm">hub</mat-icon>
-        <span>Multi-Agent Research</span>
-      </button>
-
-      <button
-        (click)="mainTab.set('google_drive')"
-        [class]="mainTab() === 'google_drive' ? 'bg-blue-600 text-white font-extrabold shadow-xs' : 'bg-white text-stone-700 font-medium border border-stone-200'"
-        class="px-3.5 py-2 rounded-lg text-xs font-serif shrink-0 flex items-center gap-1.5 cursor-pointer transition-all min-h-[40px]"
-      >
-        <mat-icon class="!w-4 !h-4 !text-sm">add_to_drive</mat-icon>
-        <span>گووگڵ درایڤ</span>
-      </button>
-
-      <button
-        (click)="mainTab.set('platform')"
-        [class]="mainTab() === 'platform' ? 'bg-purple-800 text-white font-extrabold shadow-xs' : 'bg-white text-stone-700 font-medium border border-stone-200'"
-        class="px-3.5 py-2 rounded-lg text-xs font-serif shrink-0 flex items-center gap-1.5 cursor-pointer transition-all min-h-[40px]"
-      >
-        <mat-icon class="!w-4 !h-4 !text-sm">account_tree</mat-icon>
-        <span>پلاتفۆرم</span>
-      </button>
-    </div>
+<app-dashboard-header
+  [mainTab]="mainTab()"
+  [currentUser]="currentUser()"
+  [academicDarkMode]="academicDarkMode()"
+  (goSplash)="viewMode.set('splash')"
+  (selectTab)="mainTab.set($event)"
+  (loginWithGoogle)="loginWithGoogle()"
+  (logout)="logout()"
+  (openReadingMode)="isReadingModeOpen.set(true)"
+  (toggleDarkMode)="toggleAcademicDarkMode()"
+  (clearEditor)="clearEditor()">
+</app-dashboard-header>
