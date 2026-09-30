@@ -84,7 +84,7 @@ export const harvardReviewSchema = z.object({
 
 export const researchMethodsLabSchema = z.object({
   body: z.object({
-    mode: z.enum(['prisma', 'power', 'claim_map', 'provenance']),
+    mode: z.enum(['prisma', 'power', 'claim_map', 'provenance', 'framework', 'risk_bias', 'evidence_grade']),
     payload: z.record(z.string(), z.unknown()).default({})
   })
 });
