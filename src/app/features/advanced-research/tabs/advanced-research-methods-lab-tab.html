@@ -3,7 +3,10 @@
     <h3 class="text-sm font-bold text-cyan-300 flex items-center gap-2"><mat-icon>science</mat-icon> Research Methods Lab</h3>
     <p class="text-[11px] text-slate-400 mt-1">ئامرازێکی قووڵ بۆ systematic review، sample-size، evidence mapping و provenance.</p>
     <div class="flex flex-wrap gap-2 mt-4">
-      @for (item of [{k:'prisma',l:'PRISMA 2020'},{k:'power',l:'Power & Effect Size'},{k:'claim_map',l:'Claim → Citation'},{k:'provenance',l:'Full-text Provenance'}]; track item.k) {
+      @for (item of [
+        {k:'prisma',l:'PRISMA 2020'},{k:'power',l:'Power & Effect Size'},{k:'framework',l:'PICO/PICOS/PECO/SPIDER'},
+        {k:'risk_bias',l:'Risk of Bias'},{k:'evidence_grade',l:'Evidence Certainty'},{k:'claim_map',l:'Claim → Citation'},{k:'provenance',l:'Full-text Provenance'}
+      ]; track item.k) {
         <button (click)="mode.set($any(item.k))" class="px-3 py-2 rounded-xl text-xs border" [class.border-cyan-500]="mode()===item.k" [class.text-cyan-300]="mode()===item.k">{{item.l}}</button>
       }
     </div>
@@ -34,6 +37,26 @@
       <input [(ngModel)]="sd1" type="number" class="input" placeholder="SD 1"><input [(ngModel)]="sd2" type="number" class="input" placeholder="SD 2">
       <input [(ngModel)]="n1" type="number" class="input" placeholder="N1"><input [(ngModel)]="n2" type="number" class="input" placeholder="N2">
     </div>
+  } @else if (mode()==='framework') {
+    <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+      <select [(ngModel)]="frameworkKind" class="input"><option>PICO</option><option>PICOS</option><option>PECO</option><option>SPIDER</option></select>
+      <textarea [(ngModel)]="frameworkJson" rows="9" class="area" placeholder='{"population":"...","intervention":"...","comparison":"...","outcome":"...","study_design":"..."}'></textarea>
+    </div>
+  } @else if (mode()==='risk_bias') {
+    <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+      <select [(ngModel)]="riskTool" class="input"><option value="rob2">RoB 2</option><option value="robins_i">ROBINS-I</option><option value="quadas2">QUADAS-2</option><option value="casp">CASP</option></select>
+      <textarea [(ngModel)]="assessmentsJson" rows="7" class="area" placeholder='{"randomization process":"low","missing outcome data":"some concerns"}'></textarea>
+      <textarea [(ngModel)]="evidenceJson" rows="5" class="area" placeholder='{"randomization process":"ڕوونکردنەوەی study..."}'></textarea>
+    </div>
+  } @else if (mode()==='evidence_grade') {
+    <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl grid md:grid-cols-3 gap-3">
+      <select [(ngModel)]="initialCertainty" class="input"><option>high</option><option>moderate</option><option>low</option><option>very_low</option></select>
+      <select [(ngModel)]="riskOfBiasInput" class="input"><option value="">Risk of bias</option><option>serious</option><option>high</option></select>
+      <select [(ngModel)]="inconsistency" class="input"><option value="">Inconsistency</option><option>serious</option></select>
+      <select [(ngModel)]="indirectness" class="input"><option value="">Indirectness</option><option>serious</option></select>
+      <select [(ngModel)]="imprecision" class="input"><option value="">Imprecision</option><option>serious</option></select>
+      <select [(ngModel)]="publicationBias" class="input"><option value="">Publication bias</option><option>serious</option></select>
+    </div>
   } @else if (mode()==='claim_map') {
     <textarea [(ngModel)]="claimsJson" rows="12" class="area" placeholder='[{"id":"CLM-1","text":"...","requiresLocation":true,"sources":[{"id":"S1","verified":true}]}]'></textarea>
   } @else {
@@ -45,5 +68,39 @@
   @if (result(); as r) {
     <pre class="p-4 bg-slate-950 border border-slate-800 rounded-2xl text-[11px] text-slate-300 overflow-auto max-h-[500px]">{{r | json}}</pre>
   }
+
+  <section class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+    <div class="flex items-center justify-between gap-2">
+      <div><h4 class="text-sm font-bold text-emerald-300">Academic Decision Ledger</h4><p class="text-[11px] text-slate-400">بڕیار، هۆکار، evidence و ناکۆکی تۆمار بکە.</p></div>
+      <button (click)="loadDecisions()" [disabled]="decisionRunning()" class="px-3 py-2 rounded-lg border border-slate-700 text-xs">مێژوو</button>
+    </div>
+    <div class="grid md:grid-cols-3 gap-2">
+      <select [(ngModel)]="decisionKind" class="input">
+        <option value="research_question">Research question</option><option value="methodology">Methodology</option>
+        <option value="source_selection">Source selection</option><option value="evidence_interpretation">Evidence interpretation</option>
+        <option value="analysis">Analysis</option><option value="writing">Writing</option><option value="citation">Citation</option><option value="revision">Revision</option>
+      </select>
+      <select [(ngModel)]="actor" class="input"><option value="user">User</option><option value="ai_assistant">AI assistant</option><option value="reviewer">Reviewer</option></select>
+      <input [(ngModel)]="decisionImpact" class="input" placeholder="کاریگەری بڕیار">
+    </div>
+    <textarea [(ngModel)]="decisionText" rows="2" class="area" placeholder="بڕیارەکە چی بوو؟"></textarea>
+    <textarea [(ngModel)]="decisionRationale" rows="2" class="area" placeholder="هۆکار و evidence ـی پشتگیری"></textarea>
+    <div class="grid md:grid-cols-2 gap-2">
+      <textarea [(ngModel)]="decisionEvidenceJson" rows="2" class="area" placeholder='["EVD-1","EVD-2"]'></textarea>
+      <textarea [(ngModel)]="decisionConflictJson" rows="2" class="area" placeholder='["Source B دژە"]'></textarea>
+    </div>
+    <button (click)="addDecision()" [disabled]="decisionRunning() || decisionText.trim().length<3" class="px-4 py-2 rounded-xl bg-emerald-600 text-slate-950 font-bold text-xs">تۆمارکردنی بڕیار</button>
+    @if (decisions().length) {
+      <div class="space-y-2 max-h-72 overflow-auto">
+        @for (d of decisions(); track d['id']) {
+          <article class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="text-xs font-bold text-slate-200">{{d['decision']}}</div>
+            <div class="text-[11px] text-slate-400 mt-1">{{d['rationale']}}</div>
+            <div class="text-[10px] text-slate-500 mt-1">{{d['kind']}} · {{d['actor']}} · {{d['createdAt']}}</div>
+          </article>
+        }
+      </div>
+    }
+  </section>
 </div>
 <style>.input,.area{width:100%;background:#020617;border:1px solid #334155;color:#e2e8f0;border-radius:.75rem;padding:.65rem;font-size:.75rem}.input:focus,.area:focus{outline:none;border-color:#06b6d4}</style>
