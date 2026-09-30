@@ -118,7 +118,7 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
       <div class="mam-topbar-right">
         <div class="mam-trust-badge">
           <mat-icon>verified_user</mat-icon>
-          <span>سەرچاوە و بەڵگە بە شێوەی ڕوون</span>
+          <span>جریانەی بەڵگە و پشکنین</span>
         </div>
 
         <button type="button" class="mam-top-action" (click)="openReadingMode.emit()" title="دۆخی خوێندنەوە">
