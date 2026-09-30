@@ -35,11 +35,14 @@ import { Scholarship55TabComponent } from './tabs/scholarship-55-tab';
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './advanced-research.component.html'
 })
+type NavigationGroupId = 'workspace' | 'evidence' | 'review' | 'output' | 'memory';
+type AdvancedResearchTab = 'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' | 'peer_review' | 'citation_export' | 'extended_tools' | 'journal_metrics' | 'ultimate_ai' | 'knowledgegraph' | 'memory' | 'integrity_audit' | 'methods_lab' | 'scholarship_55';
+
 export class AdvancedResearchHubComponent {
   multiAgent = inject(MultiAgentService);
-  navigationGroup = signal<'workspace' | 'evidence' | 'review' | 'output' | 'memory'>('workspace');
+  navigationGroup = signal<NavigationGroupId>('workspace');
 
-  private readonly groupTabs: Record<'workspace' | 'evidence' | 'review' | 'output' | 'memory', string[]> = {
+  private readonly groupTabs: Record<NavigationGroupId, AdvancedResearchTab[]> = {
     workspace: ['orchestrator'],
     evidence: ['factchecker', 'multiapi', 'ocr', 'knowledgegraph'],
     review: ['peer_review', 'integrity_audit', 'methods_lab'],
@@ -55,15 +58,13 @@ export class AdvancedResearchHubComponent {
     { id: 'memory', label: 'بیرگە و مێژوو', icon: 'history', note: 'memory و versions' }
   ] as const;
 
-  setNavigationGroup(group: typeof this.navigationGroups[number]['id']): void {
+  setNavigationGroup(group: NavigationGroupId): void {
     this.navigationGroup.set(group);
     const allowedTabs = this.groupTabs[group];
-    if (!allowedTabs.includes(this.activeTab())) {
-      this.activeTab.set(allowedTabs[0] as typeof this.activeTab extends signal<infer T> ? T : never);
-    }
+    if (!allowedTabs.includes(this.activeTab())) this.activeTab.set(allowedTabs[0]);
   }
 
-  activeTab = signal<'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' | 'peer_review' | 'citation_export' | 'extended_tools' | 'journal_metrics' | 'ultimate_ai' | 'knowledgegraph' | 'memory' | 'integrity_audit' | 'methods_lab' | 'scholarship_55'>('orchestrator');
+  activeTab = signal<AdvancedResearchTab>('orchestrator');
 
   // Signals for Historical & Mythological Synthesis Technology
   selectedEpicScene = signal<string>('dimdim');
