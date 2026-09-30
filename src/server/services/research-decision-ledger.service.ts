@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { adminDb } from '../../lib/firebase-admin';
 
 export type DecisionKind =
@@ -43,7 +44,7 @@ class ResearchDecisionLedgerService {
     const now = new Date().toISOString();
     const decision: ResearchDecision = {
       ...input,
-      id: `DEC-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `DEC-${randomUUID()}`,
       projectId,
       userId,
       createdAt: now,
