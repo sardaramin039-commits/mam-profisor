@@ -33,148 +33,53 @@
     </div>
   </div>
 
-  <!-- Navigation Tabs -->
-  <div class="flex items-center border-b border-slate-800 bg-slate-900/50 px-4 gap-2 overflow-x-auto">
-    <button
-      (click)="activeTab.set('orchestrator')"
-      [class.border-cyan-500]="activeTab() === 'orchestrator'"
-      [class.text-cyan-400]="activeTab() === 'orchestrator'"
-      [class.border-transparent]="activeTab() !== 'orchestrator'"
-      [class.text-slate-400]="activeTab() !== 'orchestrator'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">hub</mat-icon>
-      سەرپەرشتیاری فرە-ئەجێنت (Multi-Agent)
-    </button>
+  <!-- Workflow Navigation -->
+  <div class="border-b border-slate-800 bg-slate-900/50 p-3 space-y-3">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+      @for (group of navigationGroups; track group.id) {
+        <button
+          type="button"
+          (click)="setNavigationGroup(group.id)"
+          [class]="navigationGroup() === group.id
+            ? 'bg-cyan-950/80 border-cyan-700 text-cyan-200'
+            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'"
+          class="min-h-16 rounded-xl border px-3 py-2 text-right transition-all"
+        >
+          <span class="flex items-center gap-2">
+            <mat-icon class="text-base">{{group.icon}}</mat-icon>
+            <span class="text-xs font-bold">{{group.label}}</span>
+          </span>
+          <span class="block text-[10px] mt-1 opacity-70">{{group.note}}</span>
+        </button>
+      }
+    </div>
 
-    <button
-      (click)="activeTab.set('factchecker')"
-      [class.border-cyan-500]="activeTab() === 'factchecker'"
-      [class.text-cyan-400]="activeTab() === 'factchecker'"
-      [class.border-transparent]="activeTab() !== 'factchecker'"
-      [class.text-slate-400]="activeTab() !== 'factchecker'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">verified_user</mat-icon>
-      پشکنەری ڕاستییەکان (Fact Checker)
-    </button>
-
-    <button
-      (click)="activeTab.set('multiapi')"
-      [class.border-cyan-500]="activeTab() === 'multiapi'"
-      [class.text-cyan-400]="activeTab() === 'multiapi'"
-      [class.border-transparent]="activeTab() !== 'multiapi'"
-      [class.text-slate-400]="activeTab() !== 'multiapi'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">dataset</mat-icon>
-      9 Global APIs (Semantic, PubMed, DOAJ, WorldCat...)
-    </button>
-
-    <button
-      (click)="activeTab.set('ocr')"
-      [class.border-cyan-500]="activeTab() === 'ocr'"
-      [class.text-cyan-400]="activeTab() === 'ocr'"
-      [class.border-transparent]="activeTab() !== 'ocr'"
-      [class.text-slate-400]="activeTab() !== 'ocr'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">document_scanner</mat-icon>
-      OCR خوێندنەوەی PDF و وێنە
-    </button>
-
-    <button
-      (click)="activeTab.set('peer_review')"
-      [class.border-cyan-500]="activeTab() === 'peer_review'"
-      [class.text-cyan-400]="activeTab() === 'peer_review'"
-      [class.border-transparent]="activeTab() !== 'peer_review'"
-      [class.text-slate-400]="activeTab() !== 'peer_review'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">rate_review</mat-icon>
-      AI Peer Review & Plagiarism
-    </button>
-
-    <button
-      (click)="activeTab.set('citation_export')"
-      [class.border-cyan-500]="activeTab() === 'citation_export'"
-      [class.text-cyan-400]="activeTab() === 'citation_export'"
-      [class.border-transparent]="activeTab() !== 'citation_export'"
-      [class.text-slate-400]="activeTab() !== 'citation_export'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">file_download</mat-icon>
-      Citation & Export
-    </button>
-
-    <button
-      (click)="activeTab.set('extended_tools')"
-      [class.border-cyan-500]="activeTab() === 'extended_tools'"
-      [class.text-cyan-400]="activeTab() === 'extended_tools'"
-      [class.border-transparent]="activeTab() !== 'extended_tools'"
-      [class.text-slate-400]="activeTab() !== 'extended_tools'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">auto_awesome</mat-icon>
-      Zotero/Mendeley/ORCID/DOI/Outline/MindMap
-    </button>
-
-    <button
-      (click)="activeTab.set('knowledgegraph')"
-      [class.border-cyan-500]="activeTab() === 'knowledgegraph'"
-      [class.text-cyan-400]="activeTab() === 'knowledgegraph'"
-      [class.border-transparent]="activeTab() !== 'knowledgegraph'"
-      [class.text-slate-400]="activeTab() !== 'knowledgegraph'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">account_tree</mat-icon>
-      نەخشەی زانیاری (Knowledge Graph)
-    </button>
-
-    <button
-      (click)="activeTab.set('integrity_audit')"
-      [class.border-emerald-500]="activeTab() === 'integrity_audit'"
-      [class.text-emerald-400]="activeTab() === 'integrity_audit'"
-      [class.border-transparent]="activeTab() !== 'integrity_audit'"
-      [class.text-slate-400]="activeTab() !== 'integrity_audit'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">fact_check</mat-icon>
-      پشکنینی ژێربەمای توێژینەوە
-    </button>
-    <button
-      (click)="activeTab.set('methods_lab')"
-      [class.border-emerald-500]="activeTab() === 'methods_lab'"
-      [class.text-emerald-400]="activeTab() === 'methods_lab'"
-      [class.border-transparent]="activeTab() !== 'methods_lab'"
-      [class.text-slate-400]="activeTab() !== 'methods_lab'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">science</mat-icon>
-      Research Methods Lab
-    </button>
-    <button
-      (click)="activeTab.set('scholarship_55')"
-      [class.border-amber-500]="activeTab() === 'scholarship_55'"
-      [class.text-amber-400]="activeTab() === 'scholarship_55'"
-      [class.border-transparent]="activeTab() !== 'scholarship_55'"
-      [class.text-slate-400]="activeTab() !== 'scholarship_55'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <span>👑</span>
-      Scholarship 55
-    </button>
-    <button
-      (click)="activeTab.set('memory')"
-      [class.border-cyan-500]="activeTab() === 'memory'"
-      [class.text-cyan-400]="activeTab() === 'memory'"
-      [class.border-transparent]="activeTab() !== 'memory'"
-      [class.text-slate-400]="activeTab() !== 'memory'"
-      class="px-4 py-3 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap"
-    >
-      <mat-icon class="text-base">psychology</mat-icon>
-      بیرگەی پرۆژە (Research Memory)
-    </button>
+    <div class="flex flex-wrap items-center gap-2">
+      @if (navigationGroup() === 'workspace') {
+        <button type="button" (click)="activeTab.set('orchestrator')" [class]="activeTab()==='orchestrator' ? 'research-subtab-active' : 'research-subtab'">
+          <mat-icon>hub</mat-icon> سەرپەرشتیاری AI
+        </button>
+      }
+      @if (navigationGroup() === 'evidence') {
+        <button type="button" (click)="activeTab.set('factchecker')" [class]="activeTab()==='factchecker' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>verified_user</mat-icon> پشکنەری ڕاستی</button>
+        <button type="button" (click)="activeTab.set('multiapi')" [class]="activeTab()==='multiapi' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>dataset</mat-icon> Global APIs</button>
+        <button type="button" (click)="activeTab.set('ocr')" [class]="activeTab()==='ocr' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>document_scanner</mat-icon> OCR</button>
+        <button type="button" (click)="activeTab.set('knowledgegraph')" [class]="activeTab()==='knowledgegraph' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>account_tree</mat-icon> Knowledge Graph</button>
+      }
+      @if (navigationGroup() === 'review') {
+        <button type="button" (click)="activeTab.set('peer_review')" [class]="activeTab()==='peer_review' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>rate_review</mat-icon> Peer Review</button>
+        <button type="button" (click)="activeTab.set('integrity_audit')" [class]="activeTab()==='integrity_audit' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>fact_check</mat-icon> Integrity Audit</button>
+        <button type="button" (click)="activeTab.set('methods_lab')" [class]="activeTab()==='methods_lab' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>science</mat-icon> Methods Lab</button>
+      }
+      @if (navigationGroup() === 'output') {
+        <button type="button" (click)="activeTab.set('citation_export')" [class]="activeTab()==='citation_export' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>file_download</mat-icon> Citation و هەناردە</button>
+        <button type="button" (click)="activeTab.set('extended_tools')" [class]="activeTab()==='extended_tools' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>build_circle</mat-icon> Academic Tools</button>
+      }
+      @if (navigationGroup() === 'memory') {
+        <button type="button" (click)="activeTab.set('memory')" [class]="activeTab()==='memory' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>history</mat-icon> بیرگە و مێژوو</button>
+        <button type="button" (click)="activeTab.set('scholarship_55')" [class]="activeTab()==='scholarship_55' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>school</mat-icon> Scholarship 55</button>
+      }
+    </div>
   </div>
   <!-- Modular Tab Content -->
   <div class="flex-1 overflow-y-auto p-5">
