@@ -15,6 +15,9 @@ import { AdvancedResearchIntegrityAuditTabComponent } from './tabs/advanced-rese
 import { AdvancedResearchMethodsLabTabComponent } from './tabs/advanced-research-methods-lab-tab';
 import { Scholarship55TabComponent } from './tabs/scholarship-55-tab';
 
+type NavigationGroupId = 'workspace' | 'evidence' | 'review' | 'output' | 'memory';
+type AdvancedResearchTab = 'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' | 'peer_review' | 'citation_export' | 'extended_tools' | 'journal_metrics' | 'ultimate_ai' | 'knowledgegraph' | 'memory' | 'integrity_audit' | 'methods_lab' | 'scholarship_55';
+
 @Component({
   selector: 'app-advanced-research-hub',
   standalone: true,
