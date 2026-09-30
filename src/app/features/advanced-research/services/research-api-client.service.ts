@@ -231,6 +231,14 @@ export class ResearchApiClientService {
     return this.http.post<{ mode: string; result: any; generatedAt: string }>('/api/research_methods_lab', { mode, payload });
   }
 
+  listResearchVersions(limit = 30): Observable<{ versions: Array<Record<string, unknown>> }> {
+    return this.http.get<{ versions: Array<Record<string, unknown>> }>(`/api/research-versions?limit=${Math.min(Math.max(limit, 1), 100)}`);
+  }
+
+  saveResearchVersion(payload: { projectId: string; workspaceId: string; chapter?: string; content: string; summary?: string; source?: 'manual' | 'autosave' | 'orchestration' }): Observable<Record<string, unknown>> {
+    return this.http.post<Record<string, unknown>>('/api/research-versions', payload);
+  }
+
   getResearchControlPlane(projectId: string): Observable<ResearchControlPlaneState> {
     return this.http.get<ResearchControlPlaneState>(`/api/research-control/${encodeURIComponent(projectId)}`);
   }
