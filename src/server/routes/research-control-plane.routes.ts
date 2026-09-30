@@ -7,7 +7,7 @@ export function createResearchControlPlaneRouter(): Router {
 
   router.get('/:projectId', async (req: AuthRequest, res) => {
     const userId = req.user?.uid;
-    const projectId = req.params.projectId;
+    const projectId = req.params['projectId'];
     if (!userId) {
       res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
       return;
