@@ -77,5 +77,9 @@
     "npm": ">=10.9.0"
   },
   "packageManager": "npm@10.9.8",
-  "description": "Kurdish-first academic research and thesis workspace."
+  "description": "Kurdish-first academic research and thesis workspace.",
+  "overrides": {
+    "@grpc/grpc-js": "1.14.5",
+    "uuid": "11.1.1"
+  }
 }
