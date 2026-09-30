@@ -1,186 +1,162 @@
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-24 md:pb-8">
-
-      <!-- ⚠️ Real-Time Academic Rigor Score Notification Banner -->
-      <app-academic-rigor-banner
-        [chapterContent]="activeChapter()?.content || ''"
-        [chapterTitle]="activeChapter()?.title || ''">
-      </app-academic-rigor-banner>
-
-      <!-- Configuration Alerts / Error display -->
-      @if (errorStr()) {
-        <div class="p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-2">
-          <mat-icon class="text-red-600 !text-sm !w-4 !h-4 flex-none mt-0.5">error_outline</mat-icon>
-          <span>{{ errorStr() }}</span>
-        </div>
-      }
-
-      <!-- ADVANCED RESEARCH HUB VIEW -->
-      @if (mainTab() === 'advanced_research') {
-        <app-advanced-research-hub></app-advanced-research-hub>
-      }
-
-      <!-- GOOGLE DRIVE INTEGRATION VIEW -->
-      @if (mainTab() === 'google_drive') {
-        <app-google-drive-integration
-          [thesisContent]="getActiveThesisText()"
-          (fileImported)="onDriveFileImported($event)"
-        ></app-google-drive-integration>
-      }
-
-      <!-- ACADEMIC RESEARCH PLATFORM VIEW -->
-      @if (mainTab() === 'platform') {
-        <app-academic-platform></app-academic-platform>
-      }
-
-      <!-- System Maintenance Panel (Stability, Cache, Offline & Backup) -->
-      <div class="my-3">
-        <app-system-maintenance-panel></app-system-maintenance-panel>
+<main class="mam-main">
+  @if (errorStr()) {
+    <div class="mam-alert">
+      <mat-icon>error_outline</mat-icon>
+      <div>
+        <strong>کێشەیەک ڕوویدا</strong>
+        <span>{{ errorStr() }}</span>
       </div>
+    </div>
+  }
 
-      <!-- Local Draft Backup Restoration Banner -->
+  @switch (mainTab()) {
+    @case ('editor') {
+      <section class="mam-page-head">
+        <div>
+          <span class="mam-eyebrow">WORKSPACE</span>
+          <h1>ناوەندی نووسینی زانستی</h1>
+          <p>لە ڕێکخستنی بیرۆکەوە بۆ دەقی ڕێکخراو، بەڵگەدار و ئامادەی پێداچوونەوە.</p>
+        </div>
+        <div class="mam-page-meta">
+          <span><mat-icon>description</mat-icon>{{ chapters().length }} بەش</span>
+          <span><mat-icon>translate</mat-icon>سۆرانی</span>
+        </div>
+      </section>
+
+      <section class="mam-workflow">
+        <div class="mam-step">
+          <span>١</span>
+          <div><strong>ڕێکخستن</strong><small>ناونیشان، ئاست و پێکهاتە</small></div>
+        </div>
+        <div class="mam-step-line"></div>
+        <div class="mam-step">
+          <span>٢</span>
+          <div><strong>نووسین</strong><small>بەشەکان و دەق</small></div>
+        </div>
+        <div class="mam-step-line"></div>
+        <div class="mam-step">
+          <span>٣</span>
+          <div><strong>پشکنین</strong><small>سەرچاوە، ڕێزمان و تەواوی</small></div>
+        </div>
+      </section>
+
       @if (hasLocalDraft()) {
-        <div class="p-4 bg-amber-50/90 border-2 border-amber-500 rounded-xl flex items-center justify-between gap-4 flex-wrap text-right font-serif shadow-xs my-2 animate-pulse">
-          <div class="flex items-start gap-2.5">
-            <mat-icon class="text-amber-700 flex-none mt-0.5 animate-bounce">drafts</mat-icon>
-            <div class="space-y-1">
-              <strong class="text-xs text-amber-950 block">💾 ڕەشنووسێکی کاتیی پاشەکەوتکراو دۆزرایەوە!</strong>
-              <p class="text-[11px] text-amber-900">ڕەشنووسێکی ئۆتۆماتیکی لە کاتژمێر <strong>{{ lastAutoSaveTime() }}</strong> پاشەکەوتکراوە. دەتوانیت بیگەڕێنیتەوە تاوەکو کارەکەت لەدەست نەچێت.</p>
-            </div>
+        <section class="mam-draft">
+          <mat-icon>save</mat-icon>
+          <div>
+            <strong>ڕەشنووسی خۆکار دۆزرایەوە</strong>
+            <span>لە {{ lastAutoSaveTime() }} پاشەکەوتکراوە.</span>
           </div>
-          <div class="flex items-center gap-2">
-            <button (click)="restoreLocalDraft()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer">
-              گەڕاندنەوەی ڕەشنووس
-            </button>
-            <button (click)="discardLocalDraft()" class="px-2.5 py-1.5 border border-stone-300 hover:bg-white text-stone-600 rounded-lg text-[10px] font-semibold transition-all cursor-pointer">
-              سڕینەوە
-            </button>
+          <div class="mam-draft-actions">
+            <button type="button" (click)="restoreLocalDraft()">گەڕاندنەوە</button>
+            <button type="button" (click)="discardLocalDraft()">سڕینەوە</button>
           </div>
-        </div>
-      } @else if (mainTab() === 'google_drive') {
-        <div class="space-y-6">
-          <app-google-drive-integration [thesisTitle]="manuscriptTitle()" [thesisContent]="activeChapter()?.content || ''"></app-google-drive-integration>
-          <app-gmail-integration [thesisContent]="activeChapter()?.content || ''"></app-gmail-integration>
-          <app-google-sheets-integration [thesisTitle]="manuscriptTitle()"></app-google-sheets-integration>
-          <app-google-keep-integration></app-google-keep-integration>
-          <app-google-tasks-integration></app-google-tasks-integration>
-        </div>
-      } @else if (mainTab() === 'suite') {
-        <!-- 🚀 ELITE ACADEMIC TOOLS SUITE VIEW (کۆمەڵە ئامرازە ئەکادیمییە باڵاکان) -->
-        <div class="space-y-6">
-          <div class="bg-gradient-to-r from-stone-900 via-stone-850 to-stone-900 border border-stone-800 rounded-2xl p-6 text-white shadow-xl space-y-3">
-            <div class="flex items-center justify-between flex-wrap gap-4">
-              <div class="flex items-center gap-3.5">
-                <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-inner">
-                  <mat-icon class="!w-6 !h-6">auto_awesome</mat-icon>
-                </div>
-                <div>
-                  <h2 class="text-xl font-bold text-amber-400 font-serif">کۆمەڵە ئامرازە ئەکادیمییە باڵاکان (Elite Academic Tools Suite)</h2>
-                  <p class="text-xs text-stone-300">سەرجەم ئامرازە زانستی، ئاماری، هەڵسەنگاندن، داڕشتن و ١٦٠ ئامرازی ژیریی دەستکرد بە تەواوی کاران.</p>
-                </div>
-              </div>
-              <span class="text-xs font-mono bg-amber-500/10 text-amber-300 border border-amber-500/30 px-3.5 py-1.5 rounded-full font-bold">
-                160+ AI Tools Active
-              </span>
-            </div>
-          </div>
-
-          <!-- 🤖 160+ AI Enterprise Academic Tools Component -->
-          <div class="my-4">
-            <app-ai-tools-suite></app-ai-tools-suite>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-export-word></app-export-word>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-harvard-review></app-harvard-review>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-literature-gap></app-literature-gap>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-plagiarism></app-plagiarism>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-python-sandbox></app-python-sandbox>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-latex></app-latex>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-glossary></app-glossary>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-viva-simulation></app-viva-simulation>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-citation-feature></app-citation-feature>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-search-engine></app-search-engine>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-research-feature></app-research-feature>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-              <app-elite-review></app-elite-review>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-speech-dictation (dictatedTextAppended)="appendDictatedSpeechText($event)"></app-speech-dictation>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-formality-tone-control (configChanged)="onFormalityConfigChanged($event)"></app-formality-tone-control>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-text-lineage-connector (parentSelected)="onLineageParentChanged($event)"></app-text-lineage-connector>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-d3-chord-diagram [data]="chapterCrossData()"></app-d3-chord-diagram>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-kurdish-academic-evaluator [textToEvaluate]="activeChapter()?.content || ''"></app-kurdish-academic-evaluator>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-academic-glossary-table></app-academic-glossary-table>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-logical-consistency-checker [initialText]="activeChapter()?.content || ''"></app-logical-consistency-checker>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-editor-pomodoro-timer [activeText]="activeChapter()?.content || ''"></app-editor-pomodoro-timer>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-academic-additions-sidebar (insertRequested)="onInsertAcademicAddition($event)"></app-academic-additions-sidebar>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-concept-graph></app-concept-graph>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-thesis-health-report [thesisText]="activeChapter()?.content || ''"></app-thesis-health-report>
-            </div>
-
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-daily-research-pulse [totalWordsInput]="activeChapter()?.wordCount || 0" [citationsCountInput]="sources().length" [glossaryCountInput]="12"></app-daily-research-pulse>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-citation-health-check [chapterText]="activeChapter()?.content || ''"></app-citation-health-check>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-chapter-timeline-view [chapterId]="activeChapter()?.id || 1" [chapterContent]="activeChapter()?.content || ''" (restoreRequested)="updateActiveChapterContent($event)"></app-chapter-timeline-view>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-grammar-syntax-floating-panel [chapterContent]="activeChapter()?.content || ''" (textUpdated)="updateActiveChapterContent($event)"></app-grammar-syntax-floating-panel>
-            </div>
-            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
-              <app-split-view-editor [chapterContent]="activeChapter()?.content || ''" (applyCorrections)="updateActiveChapterContent($event)"></app-split-view-editor>
-            </div>
-          </div>
-        </div>
+        </section>
       }
 
-<app-workspace-analytics [host]="host"></app-workspace-analytics>
-<app-window-one [host]="host"></app-window-one>
-<app-window-two [host]="host"></app-window-two>
-<app-global-search [host]="host"></app-global-search>
-<app-academic-tools [host]="host"></app-academic-tools>
+      <section class="mam-editor-section">
+        <div class="mam-section-heading">
+          <div>
+            <span class="mam-number">٠١</span>
+            <div><h2>ڕێکخستنی پڕۆژە</h2><p>پێش ئەوەی نووسین دەستپێبکات، بنەمای کار دیاری بکە.</p></div>
+          </div>
+        </div>
+        <app-window-one [host]="this"></app-window-one>
+      </section>
+
+      <section class="mam-editor-section">
+        <div class="mam-section-heading">
+          <div>
+            <span class="mam-number">٠٢</span>
+            <div><h2>نووسین و پشکنینی بەشەکان</h2><p>دەقی بەشەکان، سەرچاوەکان و پێداچوونەوە لێرە کۆکراونەتەوە.</p></div>
+          </div>
+        </div>
+        <app-window-two [host]="this"></app-window-two>
+      </section>
+
+      <details class="mam-secondary-tools">
+        <summary><mat-icon>tune</mat-icon><span>ئامرازە یارمەتیدەرەکان</span><small>گەڕان، وشەنامە و هاوکاری ئەکادیمی</small></summary>
+        <div class="mam-secondary-grid">
+          <app-global-search [host]="this"></app-global-search>
+          <app-academic-tools [host]="this"></app-academic-tools>
+        </div>
+      </details>
+
+      <app-workspace-analytics [host]="this"></app-workspace-analytics>
+    }
+
+    @case ('advanced_research') {
+      <section class="mam-page-head">
+        <div><span class="mam-eyebrow">RESEARCH</span><h1>ناوەندی توێژینەوەی پێشکەوتوو</h1><p>گەڕان، هەڵسەنگاندنی بەڵگە و مێتۆدەکانی توێژینەوە لە یەک شوێن.</p></div>
+      </section>
+      <app-advanced-research-hub></app-advanced-research-hub>
+    }
+
+    @case ('platform') {
+      <section class="mam-page-head">
+        <div><span class="mam-eyebrow">PLATFORM</span><h1>پلاتفۆرمی زانستی</h1><p>ئامراز و جریانەکانی کار بۆ توێژینەوەی ئەکادیمی.</p></div>
+      </section>
+      <app-academic-platform></app-academic-platform>
+    }
+
+    @case ('google_drive') {
+      <section class="mam-page-head">
+        <div><span class="mam-eyebrow">INTEGRATIONS</span><h1>هاوبەشی و فایل</h1><p>هێنان و بەڕێوەبردنی ناوەڕۆک لە خزمەتگوزارییە بەستراوەکان.</p></div>
+      </section>
+      <div class="mam-integration-stack">
+        <app-google-drive-integration [thesisTitle]="manuscriptTitle()" [thesisContent]="activeChapter()?.content || ''"></app-google-drive-integration>
+        <app-gmail-integration [thesisContent]="activeChapter()?.content || ''"></app-gmail-integration>
+        <app-google-sheets-integration [thesisTitle]="manuscriptTitle()"></app-google-sheets-integration>
+        <app-google-keep-integration></app-google-keep-integration>
+        <app-google-tasks-integration></app-google-tasks-integration>
+      </div>
+    }
+
+    @case ('suite') {
+      <section class="mam-page-head">
+        <div><span class="mam-eyebrow">TOOLS</span><h1>ناوەندی ئامرازەکان</h1><p>تەنها ئامرازەکان لێرە پیشان دەدرێن؛ navigation ـەکان لە سایدبارەکەیە.</p></div>
+      </section>
+
+      <section class="mam-tool-hero">
+        <div class="mam-tool-icon"><mat-icon>build</mat-icon></div>
+        <div><h2>کۆمەڵە ئامرازە ئەکادیمییەکان</h2><p>گەڕان و بەکارهێنانی ئامرازەکان بە شێوەیەکی ڕێکخراوتر لە پێشوو.</p></div>
+      </section>
+
+      <app-ai-tools-suite></app-ai-tools-suite>
+
+      <details class="mam-secondary-tools">
+        <summary><mat-icon>apps</mat-icon><span>ئامرازە پێشووەکان</span><small>بە شێوەی کۆکراوە، نەک هەمووی لە یەک پەڕە</small></summary>
+        <div class="mam-legacy-grid">
+          <app-export-word></app-export-word>
+          <app-harvard-review></app-harvard-review>
+          <app-literature-gap></app-literature-gap>
+          <app-plagiarism></app-plagiarism>
+          <app-python-sandbox></app-python-sandbox>
+          <app-latex></app-latex>
+          <app-glossary></app-glossary>
+          <app-viva-simulation></app-viva-simulation>
+          <app-citation-feature></app-citation-feature>
+          <app-search-engine></app-search-engine>
+          <app-research-feature></app-research-feature>
+          <app-elite-review></app-elite-review>
+          <app-speech-dictation (dictatedTextAppended)="appendDictatedSpeechText($event)"></app-speech-dictation>
+          <app-formality-tone-control (configChanged)="onFormalityConfigChanged($event)"></app-formality-tone-control>
+          <app-text-lineage-connector (parentSelected)="onLineageParentChanged($event)"></app-text-lineage-connector>
+          <app-d3-chord-diagram [data]="chapterCrossData()"></app-d3-chord-diagram>
+          <app-kurdish-academic-evaluator [textToEvaluate]="activeChapter()?.content || ''"></app-kurdish-academic-evaluator>
+          <app-academic-glossary-table></app-academic-glossary-table>
+          <app-logical-consistency-checker [initialText]="activeChapter()?.content || ''"></app-logical-consistency-checker>
+          <app-editor-pomodoro-timer [activeText]="activeChapter()?.content || ''"></app-editor-pomodoro-timer>
+          <app-academic-additions-sidebar (insertRequested)="onInsertAcademicAddition($event)"></app-academic-additions-sidebar>
+          <app-concept-graph></app-concept-graph>
+          <app-thesis-health-report [thesisText]="activeChapter()?.content || ''"></app-thesis-health-report>
+          <app-daily-research-pulse [totalWordsInput]="activeChapter()?.wordCount || 0" [citationsCountInput]="sources().length" [glossaryCountInput]="12"></app-daily-research-pulse>
+          <app-citation-health-check [chapterText]="activeChapter()?.content || ''"></app-citation-health-check>
+          <app-chapter-timeline-view [chapterId]="activeChapter()?.id || 1" [chapterContent]="activeChapter()?.content || ''" (restoreRequested)="updateActiveChapterContent($event)"></app-chapter-timeline-view>
+          <app-grammar-syntax-floating-panel [chapterContent]="activeChapter()?.content || ''" (textUpdated)="updateActiveChapterContent($event)"></app-grammar-syntax-floating-panel>
+          <app-split-view-editor [chapterContent]="activeChapter()?.content || ''" (applyCorrections)="updateActiveChapterContent($event)"></app-split-view-editor>
+        </div>
+      </details>
+    }
+  }
+</main>
