@@ -17,11 +17,11 @@
       </div>
       @if (controlPlane(); as cp) {
         <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mt-3">
-          <span class="stat">Source: {{cp['metrics']?.['sources']}}</span>
-          <span class="stat">Claim: {{cp['metrics']?.['claims']}}</span>
-          <span class="stat">Evidence: {{cp['metrics']?.['evidence']}}</span>
-          <span class="stat">Decision: {{cp['metrics']?.['decisions']}}</span>
-          <span class="stat" [class.text-rose-300]="cp['gates']?.['exportBlocked']">Export: {{cp['gates']?.['exportBlocked'] ? 'Blocked' : 'Reviewable'}}</span>
+          <span class="stat">Source: {{cp.metrics.sources}}</span>
+          <span class="stat">Claim: {{cp.metrics.claims}}</span>
+          <span class="stat">Evidence: {{cp.metrics.evidence}}</span>
+          <span class="stat">Decision: {{cp.metrics.decisions}}</span>
+          <span class="stat" [class.text-rose-300]="cp.gates.exportBlocked">Export: {{cp.gates.exportBlocked ? 'Blocked' : 'Reviewable'}}</span>
         </div>
       }
     </div>
