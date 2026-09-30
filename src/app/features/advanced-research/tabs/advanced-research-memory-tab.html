@@ -48,4 +48,30 @@
             </ul>
           </div>
         </div>
+      <details class="p-3 mt-3 rounded-xl bg-slate-950 border border-slate-800" open>
+        <summary class="cursor-pointer list-none text-xs font-bold text-emerald-300 flex items-center justify-between">
+          <span class="flex items-center gap-1.5"><mat-icon class="text-sm">history</mat-icon> مێژووی وەشانەکان</span>
+          <button type="button" (click)="loadVersions(); $event.preventDefault()" class="text-[10px] text-slate-400 hover:text-slate-200">نوێکردنەوە</button>
+        </summary>
+        @if (versionsLoading()) {
+          <p class="text-[10px] text-slate-500 mt-3">پشکنینی وەشانەکان...</p>
+        } @else if (versions().length) {
+          <div class="space-y-1.5 mt-3 max-h-64 overflow-auto">
+            @for (version of versions(); track version.id) {
+              <button type="button" (click)="previewVersion(version)" class="w-full text-right p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-700">
+                <span class="block text-[11px] text-slate-200">{{version.chapter || 'بێ بابەت'}}</span>
+                <span class="block text-[9px] text-slate-500 mt-1">{{version.source}} · {{version.createdAt}}</span>
+              </button>
+            }
+          </div>
+        } @else {
+          <p class="text-[10px] text-slate-500 mt-3">هێشتا وەشانێکی پاشەکەوتکراو نییە.</p>
+        }
+        @if (selectedVersion(); as version) {
+          <div class="mt-3 p-3 rounded-lg border border-emerald-900/60 bg-slate-900">
+            <div class="text-[10px] text-emerald-300 mb-2">وەشان: {{version.id}} · {{version.source}}</div>
+            <pre class="whitespace-pre-wrap text-[10px] text-slate-300 max-h-72 overflow-auto">{{version.content}}</pre>
+          </div>
+        }
+      </details>
       </div>
