@@ -37,6 +37,31 @@ import { Scholarship55TabComponent } from './tabs/scholarship-55-tab';
 })
 export class AdvancedResearchHubComponent {
   multiAgent = inject(MultiAgentService);
+  navigationGroup = signal<'workspace' | 'evidence' | 'review' | 'output' | 'memory'>('workspace');
+
+  private readonly groupTabs: Record<'workspace' | 'evidence' | 'review' | 'output' | 'memory', string[]> = {
+    workspace: ['orchestrator'],
+    evidence: ['factchecker', 'multiapi', 'ocr', 'knowledgegraph'],
+    review: ['peer_review', 'integrity_audit', 'methods_lab'],
+    output: ['citation_export', 'extended_tools'],
+    memory: ['memory', 'scholarship_55']
+  };
+
+  readonly navigationGroups = [
+    { id: 'workspace', label: 'سەرەکی', icon: 'hub', note: 'AI و سەرپەرشتیاری' },
+    { id: 'evidence', label: 'سەرچاوە و بەڵگە', icon: 'verified_user', note: 'گەڕان و پشتڕاستکردنەوە' },
+    { id: 'review', label: 'مێتۆد و پشکنین', icon: 'science', note: 'methodology و review' },
+    { id: 'output', label: 'Citation و هەناردە', icon: 'file_download', note: 'citation و tools' },
+    { id: 'memory', label: 'بیرگە و مێژوو', icon: 'history', note: 'memory و versions' }
+  ] as const;
+
+  setNavigationGroup(group: typeof this.navigationGroups[number]['id']): void {
+    this.navigationGroup.set(group);
+    const allowedTabs = this.groupTabs[group];
+    if (!allowedTabs.includes(this.activeTab())) {
+      this.activeTab.set(allowedTabs[0] as typeof this.activeTab extends signal<infer T> ? T : never);
+    }
+  }
 
   activeTab = signal<'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' | 'peer_review' | 'citation_export' | 'extended_tools' | 'journal_metrics' | 'ultimate_ai' | 'knowledgegraph' | 'memory' | 'integrity_audit' | 'methods_lab' | 'scholarship_55'>('orchestrator');
 
