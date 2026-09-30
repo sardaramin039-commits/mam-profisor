@@ -2,13 +2,8 @@ import { Component, ChangeDetectionStrategy, inject, input, signal } from '@angu
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { ResearchApiClientService } from '../services/research-api-client.service';
+import { ResearchApiClientService, ResearchControlPlaneState } from '../services/research-api-client.service';
 
-interface ControlPlaneState {
-  metrics: { sources: number; claims: number; evidence: number; decisions: number; evidenceCoverage: number };
-  gates: { methodologyReady: boolean; evidenceReady: boolean; decisionTraceable: boolean; reviewRequired: boolean; exportBlocked: boolean };
-  stage: string;
-}
 
 @Component({
   selector: 'app-advanced-research-methods-lab-tab',
@@ -35,7 +30,7 @@ export class AdvancedResearchMethodsLabTabComponent {
   riskOfBiasInput=''; inconsistency=''; indirectness=''; imprecision=''; publicationBias='';
   decisionKind='other'; decisionText=''; decisionRationale=''; decisionImpact=''; actor:'user'|'ai_assistant'|'reviewer'='user';
   decisionEvidenceJson='[]'; decisionConflictJson='[]'; decisions=signal<Array<Record<string,unknown>>>([]); decisionRunning=signal(false);
-  controlPlane=signal<ControlPlaneState|null>(null); controlRunning=signal(false);
+  controlPlane=signal<ResearchControlPlaneState|null>(null); controlRunning=signal(false);
 
 
   run(): void {
