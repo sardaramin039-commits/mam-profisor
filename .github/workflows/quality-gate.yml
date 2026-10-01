@@ -55,6 +55,9 @@ jobs:
       - name: Academic integrity audit
         run: npm run integrity:audit
 
+      - name: Digital library factuality audit
+        run: node scripts/library-integrity-audit.mjs
+
       - name: Secret audit
         run: node scripts/security-secret-audit.mjs
 
