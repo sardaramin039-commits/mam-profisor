@@ -70,6 +70,12 @@ export interface HarvardRigorCriterion {
         </div>
       </div>
 
+      @if (reviewError(); as error) {
+        <div class="p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl text-rose-200 text-xs font-serif">
+          نمرەی ساختە پیشان نادرێت؛ هەڵەی پەیوەندی/هەڵسەنگاندن: {{ error }}
+        </div>
+      }
+
       <!-- Scorecard Viewport -->
       @if (res(); as r) {
         <div class="space-y-4 pt-2 animate-fade-in">
@@ -84,9 +90,9 @@ export interface HarvardRigorCriterion {
                 <span class="text-[10px] text-slate-400 block font-serif">کۆی نمرە</span>
                 <span class="text-2xl font-black text-amber-400 font-mono">{{ r.score }}/100</span>
               </div>
-              <div class="text-center px-4 py-2 bg-emerald-950/50 border border-emerald-500/40 rounded-xl">
-                <span class="text-[10px] text-emerald-400 block font-serif">پۆلێن</span>
-                <span class="text-xs font-bold text-emerald-300 font-serif">نایاب (Distinction)</span>
+              <div class="text-center px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl">
+                <span class="text-[10px] text-slate-400 block font-serif">سەرچاوەی نمرە</span>
+                <span class="text-xs font-bold text-slate-200 font-serif">هەڵسەنگاندنی سێرڤەر</span>
               </div>
             </div>
           </div>
