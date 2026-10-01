@@ -13,6 +13,7 @@ import { AdvancedResearchExtendedToolsTabComponent } from './tabs/advanced-resea
 import { AdvancedResearchMemoryTabComponent } from './tabs/advanced-research-memory-tab';
 import { AdvancedResearchIntegrityAuditTabComponent } from './tabs/advanced-research-integrity-audit-tab';
 import { AdvancedResearchMethodsLabTabComponent } from './tabs/advanced-research-methods-lab-tab';
+import { SystematicReviewTabComponent } from './tabs/systematic-review-tab.component';
 import { Scholarship55TabComponent } from './tabs/scholarship-55-tab';
 
 type NavigationGroupId = 'workspace' | 'evidence' | 'review' | 'output' | 'memory';
@@ -33,6 +34,7 @@ type AdvancedResearchTab = 'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' |
     AdvancedResearchMemoryTabComponent,
     AdvancedResearchIntegrityAuditTabComponent,
     AdvancedResearchMethodsLabTabComponent,
+    SystematicReviewTabComponent,
     Scholarship55TabComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,7 +47,7 @@ export class AdvancedResearchHubComponent {
   private readonly groupTabs: Record<NavigationGroupId, AdvancedResearchTab[]> = {
     workspace: ['orchestrator'],
     evidence: ['factchecker', 'multiapi', 'ocr', 'knowledgegraph'],
-    review: ['peer_review', 'integrity_audit', 'methods_lab'],
+    review: ['peer_review', 'integrity_audit', 'methods_lab', 'systematic_review'],
     output: ['citation_export', 'extended_tools'],
     memory: ['memory', 'scholarship_55']
   };
