@@ -90,7 +90,7 @@ export class AcademicQAGateService {
       const safeSources = Array.isArray(sources) ? sources : [];
       const unverifiedCount = safeSources.filter(source => !hasVerifiedSource(source)).length;
       const wordCount = documentText.trim().split(/\s+/).filter(Boolean).length;
-      const citationMarkerCount = (documentText.match(/\([^()]{2,100},\s*[12][0-9٠-٩]{3}[a-z]?\)|\[[0-9٠-٩,;\s-]+\]/g) || []).length;
+      const citationMarkerCount = (documentText.match(/\([^()]{2,100},\s*[12١٢][0-9٠-٩]{3}[a-z]?\)|\[[0-9٠-٩,;\s-]+\]/g) || []).length;
 
       if (wordCount > 250 && citationMarkerCount === 0) {
         checks.push({
