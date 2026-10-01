@@ -46,7 +46,7 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
               class="w-full pr-11 pl-10 py-2.5 bg-stone-800/90 text-stone-100 text-sm rounded-xl border border-stone-700/80 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all outline-none placeholder:text-stone-500 font-sans shadow-inner"
             />
             @if (lib.filters().query) {
-              <button type="button" (click)="lib.updateSearchQuery('') class="absolute left-3 text-stone-400 hover:text-stone-200 transition-colors cursor-pointer">
+              <button type="button" (click)="lib.updateSearchQuery('')" class="absolute left-3 text-stone-400 hover:text-stone-200 transition-colors cursor-pointer">
                 <mat-icon class="!w-4 !h-4">close</mat-icon>
               </button>
             }
