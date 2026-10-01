@@ -38,6 +38,7 @@
             class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[10px] text-slate-100">
             <option value="missing">کەمە</option>
             <option value="partial">بەشێکی هەیە</option>
+            <option value="not_applicable">نەگونجاوە</option>
             <option value="complete">تەواوە</option>
           </select>
         </div>
@@ -66,6 +67,7 @@
         <div class="p-3 rounded-xl bg-slate-950 border border-slate-800"><span class="block text-[10px] text-slate-500">تەواو</span><strong class="text-xl text-emerald-300">{{ r.completedItems }}</strong></div>
         <div class="p-3 rounded-xl bg-slate-950 border border-slate-800"><span class="block text-[10px] text-slate-500">بەشێکی</span><strong class="text-xl text-amber-300">{{ r.partialItems }}</strong></div>
         <div class="p-3 rounded-xl bg-slate-950 border border-slate-800"><span class="block text-[10px] text-slate-500">کەمە</span><strong class="text-xl text-rose-300">{{ r.missingItems }}</strong></div>
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800"><span class="block text-[10px] text-slate-500">نەگونجاو</span><strong class="text-xl text-slate-300">{{ r.notApplicableItems }}</strong></div>
       </div>
 
       <div class="p-3 rounded-xl border" [class]="r.readyForReporting ? 'border-emerald-700 bg-emerald-950/30' : 'border-amber-700 bg-amber-950/20'">
