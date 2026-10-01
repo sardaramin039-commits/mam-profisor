@@ -55,7 +55,7 @@ export class HybridRagClientService {
   readonly lastRerankedResults = signal<RerankedEvidenceChunk[]>([]);
 
   /**
-   * Performs Cross-Encoder Reranking on retrieved candidates against a specific academic claim.
+   * Ranks retrieved evidence using a deterministic lexical/metadata heuristic. This is not a trained Cross-Encoder model.
    */
   rerankEvidenceForClaim(
     claimText: string,
@@ -86,7 +86,7 @@ export class HybridRagClientService {
       });
       const lexicalMatchRatio = claimWords.length > 0 ? matchedWordCount / claimWords.length : 0;
 
-      // 2. Pseudo-semantic relevance calculation (token co-occurrence & substring similarity)
+      // 2. Heuristic relevance approximation (base retrieval score + lexical overlap)
       const baseOriginal = Math.max(0, Math.min(1, candidate.score ?? 0));
       const semanticRelevance = Math.min(1.0, baseOriginal * 0.5 + lexicalMatchRatio * 0.5);
 
@@ -97,7 +97,7 @@ export class HybridRagClientService {
       else if (vStatus === 'partially_verified') statusWeight = 0.75;
       else statusWeight = 0.3;
 
-      // 4. Combined Cross-Encoder Score
+      // 4. Combined heuristic evidence-relevance score
       const crossEncoderScore = Math.round(
         (semanticRelevance * 0.45 + lexicalMatchRatio * 0.35 + statusWeight * 0.20) * 100
       ) / 100;
@@ -123,7 +123,7 @@ export class HybridRagClientService {
       };
     });
 
-    // Sort descending by Cross-Encoder score
+    // Sort descending by heuristic evidence-relevance score
     scored.sort((a, b) => b.crossEncoderScore - a.crossEncoderScore);
 
     // Assign rank positions
@@ -139,7 +139,7 @@ export class HybridRagClientService {
   }
 
   /**
-   * Fetches hybrid retrieval from backend API and applies cross-encoder reranking.
+   * Fetches hybrid retrieval from backend API and applies the local evidence-relevance heuristic.
    */
   hybridRetrieveAndRerank(
     claimText: string,
