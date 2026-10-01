@@ -336,6 +336,23 @@ export class VipWritingQualityService {
     };
   }
 
+  getGenerationDirectives(level: VipAcademicLevel, discipline: VipDiscipline): string[] {
+    const policy = this.getPolicy(level);
+    const boost = DISCIPLINE_BOOST[discipline];
+    return [
+      `ئاست: ${policy.label}; کەمترین بڕی دەق بۆ پشکنینی قورس: ${policy.minWords} وشە.`,
+      `ڕێژەی citation ـی ئامانج: نزیکەی ${policy.citationTargetPer1000} سەرچاوە بۆ هەر ١٠٠٠ وشە، تەنها کاتێک سەرچاوە بەڕاستی پشتگیریی داواکارییەکە بکات.`,
+      `میانەی درێژی ڕستە: نزیکەی ${policy.sentenceIdeal} وشە؛ ڕستە کورت و درێژ بە شێوەی سروشتی تێکەڵ بکە.`,
+      `توندوتۆڵی زانستی: ${Math.round(policy.rigorWeight * 100)}%؛ هەموو داواکارییە قطعییەکان بەپێی بەڵگە و سنوورداربوونەوەی داتا دابەزێنە.`,
+      `بوار: ${discipline}; پێویستی بەڵگە و ڕێکخستنی بوار بە فاکتەری ${boost.evidence.toFixed(2)} و ${boost.structure.toFixed(2)} زیاد دەکرێت.`,
+      'هیچ سەرچاوە، DOI، ژمارە، ئامار، ناوی توێژەر یان دەرئەنجامی ساختە دروست مەکە؛ ئەگەر پشتگیری نییە، بە ڕوونی بڵێ.',
+      'هەر پەرەگرافێک دەبێت ئامانجێکی دیاریکراو هەبێت و پەیوەندی نێوان داواکاری، بەڵگە، شیکردنەوە و کۆتایی ڕوون بێت.',
+      'دووبارەکردنەوەی وشە و ڕستە کەم بکە و لە شێوازی مرۆیی و سروشتیی سۆرانی بنووسە؛ تۆنی گفتوگۆیی بە بێ پێویستی مەهێڵە.',
+      `ئاستی قووڵایی: ${policy.expectedVerbosity}; بەشی نووسین بە پێی ئەم ئاستە وردتر یان کورتتر بکە، نەک بە درێژکردنی بێ مەبەست.`,
+      'پێش کۆتایی، ناسازگاری ناوخۆیی، هەڵەی لۆژیکی، داواکاریی بێ بەڵگە و ناڕوونیی چەمکی بەدواداچوونەوە بکە.'
+    ];
+  }
+
   getLevelLabels(): Array<{ value: VipAcademicLevel; label: string }> {
     return Object.entries(LEVELS).map(([value, policy]) => ({ value: value as VipAcademicLevel, label: policy.label }));
   }
