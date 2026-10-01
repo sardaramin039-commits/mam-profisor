@@ -70,6 +70,7 @@
         <button type="button" (click)="activeTab.set('peer_review')" [class]="activeTab()==='peer_review' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>rate_review</mat-icon> Peer Review</button>
         <button type="button" (click)="activeTab.set('integrity_audit')" [class]="activeTab()==='integrity_audit' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>fact_check</mat-icon> Integrity Audit</button>
         <button type="button" (click)="activeTab.set('methods_lab')" [class]="activeTab()==='methods_lab' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>science</mat-icon> Methods Lab</button>
+        <button type="button" (click)="activeTab.set('systematic_review')" [class]="activeTab()==='systematic_review' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>checklist</mat-icon> PRISMA Review</button>
       }
       @if (navigationGroup() === 'output') {
         <button type="button" (click)="activeTab.set('citation_export')" [class]="activeTab()==='citation_export' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>file_download</mat-icon> Citation و هەناردە</button>
@@ -112,6 +113,9 @@
     }
     @if (activeTab() === 'methods_lab') {
       <app-advanced-research-methods-lab-tab></app-advanced-research-methods-lab-tab>
+    }
+    @if (activeTab() === 'systematic_review') {
+      <app-systematic-review-tab></app-systematic-review-tab>
     }
     @if (activeTab() === 'memory') {
       <app-advanced-research-memory-tab></app-advanced-research-memory-tab>
