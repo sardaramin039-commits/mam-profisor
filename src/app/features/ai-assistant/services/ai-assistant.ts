@@ -1,17 +1,23 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { VipAcademicLevel, VipDiscipline, VipWritingQualityService } from '../../editor/components/vip-writing-quality.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AiAssistantService {
+  private vipQuality = inject(VipWritingQualityService);
   buildMasterAcademicPrompt(
     userQuery: string,
     contextData: string,
     discipline: string,
     academicLevel: string
   ): string {
+    const level = (academicLevel || 'bachelor') as VipAcademicLevel;
+    const domain = (discipline || 'humanities') as VipDiscipline;
+    const directives = this.vipQuality.getGenerationDirectives(level, domain);
+
     return `
-تۆ پڕۆفیسۆر، بیرمەندێکی ڕەخنەگر و توێژەرێکی خاوەن شێوازی تایبەت و ئۆرگانیکیت لە کایەی ئەدەب، مێژوو، زانستە مرۆڤایەتییەکان و ڕوانگەی ئەکادیمیدا. 
+تۆ پڕۆفیسۆر، توێژەر و نووسەرێکی ئەکادیمیت. دەبێت ناوەڕۆکی خوارەوە بە شێوەی ورد، بەڵگەدار و سروشتی بنووسیت، بەبێ دروستکردنی سەرچاوە یان داتای ساختە.
 
 ڕشتەی زانستی: ${discipline}
 ئاستی ئەکادیمی: ${academicLevel}
@@ -20,12 +26,12 @@ export class AiAssistantService {
 سەرچاوە خاوەکان لە داتابەیسەوە:
 ${context_data_sanitized(contextData)}
 
-⚠️ یاسا ڕەهاکان بۆ ڕێگری لە نیشانەکانی AI و مسۆگەرکردنی نووسینی مرۆیی:
-١. نەهێشتنی نیشانە میکانیکییەکان: ڕاستەوخۆ بچۆ ناو قووڵایی بابەتەکە و خۆت بەدوور بگرە لە کڵێشەی دووبارە.
-٢. ڕیتمی ئۆرگانیکی زمانی سۆرانی پێوەر: ڕستەی کورت و درێژ تێکەڵ بکە و دەقێکی ڕەوان بئافرێنە.
-٣. بەکارھێنانی سەرچاوەکان بە شێوازی سروشتی و بەڵگەدار.
+یاساکانی VIP Pro بۆ ئەم ئاست و بوارە:
+${directives.map((item, index) => `${index + 1}. ${item}`).join('\\n')}
 
-وەڵامی ئەکادیمی، قووڵ و بێ دووبارەبوونەوە:
+یاسای کۆتایی: ئەگەر بەڵگەی پێویست نییە، مەکۆڵە؛ بڵێ زانیاریی پشتڕاستنەکراوە و پێویستی بە سەرچاوەی دڵنیابەخش هەیە. دووبارەبوونەوە، کڵێشە، درێژکردنی بێ مەبەست و تۆنی گفتوگۆیی کەم بکە.
+
+وەڵامی ئەکادیمی و بۆ ئەم ئاستە گونجاو بنووسە:
 `.trim();
   }
 
