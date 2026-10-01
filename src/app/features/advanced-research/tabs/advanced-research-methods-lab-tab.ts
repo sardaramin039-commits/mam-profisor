@@ -28,7 +28,7 @@ export class AdvancedResearchMethodsLabTabComponent {
   claimsJson='[]'; provenanceJson='[]'; frameworkJson='{}'; assessmentsJson='{}'; evidenceJson='{}';
   frameworkKind='PICO'; riskTool='rob2'; initialCertainty='high';
   riskOfBiasInput=''; inconsistency=''; indirectness=''; imprecision=''; publicationBias='';
-  studyDesign='quantitative'; researchQuestion=''; objectives=''; variables=''; populationSample=''; sampling=''; recruitment=''; dataCollection=''; analysisPlan=''; ethics=''; methodology=''; sampleSizeJustification=''; measurement=''; missingData=''; confounders=''; inclusionExclusion=''; integrationPlan=''; quantitativeComponent=''; qualitativeComponent=''; allocation=''; intervention=''; comparator=''; outcomes=''; reflexivity=''; eligibility=''; informationSources=''; searchStrategy=''; selectionProcess=''; riskOfBias=''; synthesis=''; protocol='';
+  studyDesign='quantitative'; researchQuestion=''; objectives=''; variables=''; populationSample=''; sampling=''; recruitment=''; analysisPlan=''; ethics=''; methodology=''; sampleSizeJustification=''; measurement=''; missingData=''; confounders=''; inclusionExclusion=''; integrationPlan=''; quantitativeComponent=''; qualitativeComponent=''; allocation=''; intervention=''; comparator=''; outcomes=''; reflexivity='';
   decisionKind='other'; decisionText=''; decisionRationale=''; decisionImpact=''; actor:'user'|'ai_assistant'|'reviewer'='user';
   decisionEvidenceJson='[]'; decisionConflictJson='[]'; decisions=signal<Array<Record<string,unknown>>>([]); decisionRunning=signal(false);
   controlPlane=signal<ResearchControlPlaneState|null>(null); controlRunning=signal(false);
