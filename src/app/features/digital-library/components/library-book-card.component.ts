@@ -27,7 +27,7 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
 
         <!-- Top Right Source Library Badge -->
         <div class="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-stone-900/90 backdrop-blur-md border border-stone-700/80 text-[11px] font-medium text-amber-300 flex items-center gap-1 shadow-md max-w-[80%] truncate">
-          <mat-icon class="!w-3.5 !h-3.5 text-amber-400">verified</mat-icon>
+          <mat-icon class="!w-3.5 !h-3.5 text-amber-400">{{ book().verified ? "verified" : "hourglass_empty" }}</mat-icon>
           <span class="truncate">{{ book().sourceName }}</span>
         </div>
 
@@ -100,16 +100,18 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
             <span>{{ lib.t().readOnline }}</span>
           </button>
 
-          <!-- Download PDF Link -->
-          <a
-            [href]="book().downloadUrl"
-            target="_blank"
-            download
-            class="p-2 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-amber-300 rounded-xl border border-stone-700 transition-colors flex items-center justify-center"
-            [title]="lib.t().downloadPdf"
-          >
-            <mat-icon class="!w-4 !h-4">download</mat-icon>
-          </a>
+          <!-- Download is only offered after authoritative verification. -->
+          @if (book().verified && book().downloadUrl) {
+            <a
+              [href]="book().downloadUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="p-2 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-amber-300 rounded-xl border border-stone-700 transition-colors flex items-center justify-center"
+              title="دابەزاندنی PDF ـی پشکنراو"
+            >
+              <mat-icon class="!w-4 !h-4">download</mat-icon>
+            </a>
+          }
 
           <!-- External Source Link -->
           <a
@@ -117,7 +119,7 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
             target="_blank"
             rel="noopener noreferrer"
             class="p-2 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-amber-300 rounded-xl border border-stone-700 transition-colors flex items-center justify-center"
-            title="سەردانی ماڵپەڕی سەرچاوە"
+            title="سەردانی سەرچاوەی پێشنیارکراو"
           >
             <mat-icon class="!w-4 !h-4">open_in_new</mat-icon>
           </a>
