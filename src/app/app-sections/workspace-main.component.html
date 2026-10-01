@@ -10,6 +10,17 @@
   }
 
   @switch (mainTab()) {
+    @case ('library') {
+      <section class="mam-page-head">
+        <div>
+          <span class="mam-eyebrow">LIBRARY</span>
+          <h1>کتێبخانەی دیجیتاڵی توێژینەوە</h1>
+          <p>گەڕان، خوێندنەوە و بەڕێوەبردنی سەرچاوەکانی کتێبخانە لە یەک شوێن.</p>
+        </div>
+      </section>
+      <app-library-workspace></app-library-workspace>
+    }
+
     @case ('editor') {
       <section class="mam-page-head">
         <div>
