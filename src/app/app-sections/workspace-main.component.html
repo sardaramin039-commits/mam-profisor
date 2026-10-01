@@ -178,7 +178,7 @@
           <app-academic-additions-sidebar (insertRequested)="onInsertAcademicAddition($event)"></app-academic-additions-sidebar>
           <app-concept-graph></app-concept-graph>
           <app-thesis-health-report [thesisText]="activeChapter()?.content || ''"></app-thesis-health-report>
-          <app-daily-research-pulse [totalWordsInput]="activeChapter()?.wordCount || 0" [citationsCountInput]="sources().length" [glossaryCountInput]="12"></app-daily-research-pulse>
+          <app-daily-research-pulse [totalWordsInput]="activeChapter()?.wordCount || 0" [citationsCountInput]="sources().length" [glossaryCountInput]="filteredGlossary().length"></app-daily-research-pulse>
           <app-citation-health-check [chapterText]="activeChapter()?.content || ''"></app-citation-health-check>
           <app-chapter-timeline-view [chapterId]="activeChapter()?.id || 1" [chapterContent]="activeChapter()?.content || ''" (restoreRequested)="updateActiveChapterContent($event)"></app-chapter-timeline-view>
           <app-grammar-syntax-floating-panel [chapterContent]="activeChapter()?.content || ''" (textUpdated)="updateActiveChapterContent($event)"></app-grammar-syntax-floating-panel>
