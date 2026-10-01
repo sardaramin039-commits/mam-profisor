@@ -27,7 +27,7 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
           <div>
             <h1 class="font-serif font-extrabold text-lg sm:text-xl text-amber-200 tracking-wide flex items-center gap-2">
               <span>{{ lib.t().appName }}</span>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">40 Sources</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">{{ lib.sources().length }} Sources</span>
             </h1>
             <p class="text-xs text-stone-400 hidden sm:block font-sans">
               کۆکراوەی سەرچاوە و کتێبخانە دیجیتاڵییەکانی کوردستان و جیهان
@@ -99,15 +99,7 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
           </button>
 
           <!-- Dark/Light Theme Toggle -->
-          <button
-            (click)="lib.isDarkMode.set(!lib.isDarkMode())"
-            class="p-2 bg-stone-800/80 hover:bg-stone-700 text-stone-300 hover:text-amber-300 rounded-lg border border-stone-700 transition-colors cursor-pointer flex items-center justify-center"
-            [title]="lib.t().darkLightMode"
-          >
-            <mat-icon class="!w-4 !h-4">
-              {{ lib.isDarkMode() ? 'light_mode' : 'dark_mode' }}
-            </mat-icon>
-          </button>
+          
         </div>
       </div>
 
