@@ -4,16 +4,16 @@ import { PERSIAN_LIBRARY_SOURCES } from './library-sources-persian';
 import { TURKISH_LIBRARY_SOURCES } from './library-sources-turkish';
 import { GLOBAL_LIBRARY_SOURCES } from './library-sources-global';
 
-const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
+// Static registry only: counts, sync times, and active status are not live evidence until a source adapter verifies them.\nconst BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
   {
     id: 'kurdipedia',
     name: 'Kurdipedia Digital Archive',
     nameKurdish: 'دیجیتاڵ ئەرشیڤی کوردیپێدیا',
     url: 'https://www.kurdipedia.org',
     category: 'kurdish',
-    totalItems: 42500,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'کۆکراوەی سەرچاوە، بەڵگەنامە و کتێبخانەی جەماوەریی کوردیپێدیا'
   },
   {
@@ -22,9 +22,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی دیجیتاڵیی کوردی - ئەنستیتۆی پاریس',
     url: 'https://bnk.institutkurde.org',
     category: 'kurdish',
-    totalItems: 18400,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'دەستنووس، مۆنۆگراف، ڕوژنامەگەری و سەرچاوە مێژووییەکانی ئەنستیتۆی کوردیی پاریس'
   },
   {
@@ -33,9 +33,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانە و ئەرشیڤی کوردلیب',
     url: 'https://kurdlib.org',
     category: 'kurdish',
-    totalItems: 12100,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'ئەرشیڤی گشتیی کتێبە دەگمەن و زانستییەکانی کوردستان'
   },
   {
@@ -44,9 +44,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'ڕیپۆزیتۆری ئەکادیمیی زانکۆی جیهان - هەولێر',
     url: 'https://kar.cihanuniversity.edu.iq',
     category: 'academic',
-    totalItems: 8500,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'توێژینەوە زانستییەکان و گوڤارە ئەکادیمییەکانی زانکۆی جیهان'
   },
   {
@@ -55,9 +55,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'ئەرشیڤی دیجیتاڵیی ئێکستەر بۆ ڕۆژهەڵاتی ناوەڕاست و کوردناسی',
     url: 'https://dame.exeter.ac.uk',
     category: 'academic',
-    totalItems: 6200,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'توێژینەوە کۆن و هاوچەرخەکانی ناوەندی کوردناسی لە زانکۆی ئێکستەری بەریتانی'
   },
   {
@@ -66,9 +66,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'ئەنستیتۆی فەرەنسی بۆ ڕۆژهەڵاتی نزیک',
     url: 'https://www.ifporient.org',
     category: 'academic',
-    totalItems: 4300,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'بڵاوکراوە شوێنەواری و مێژووییەکان سەبارەت بە کوردستان و ناوچەکە'
   },
   {
@@ -77,9 +77,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'پۆڕتاڵی سەرەکیی ئەنستیتۆی کوردیی پاریس',
     url: 'https://www.institutkurde.org',
     category: 'kurdish',
-    totalItems: 9800,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'گۆڤاری Études Kurdes و بڵاوکراوە ئەکادیمییە فەرەنسی-کوردییەکان'
   },
   {
@@ -88,9 +88,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'گۆڤار و ناوەندی توێژینەوەی کوردناسی',
     url: 'https://kurdishstudies.org',
     category: 'academic',
-    totalItems: 3100,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'توێژینەوە بەداوچووە نێودەوڵەتییەکان بۆ زمان، مێژوو و کۆمەڵگەی کوردی'
   },
   {
@@ -99,9 +99,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی دیجیتاڵیی زانکۆی ئەمریکی لە سلێمانی',
     url: 'https://auis.edu.krd/library',
     category: 'academic',
-    totalItems: 11500,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'ئەرشیڤی بڵاوکراوە و تێزە ئەکادیمییەکانی زانکۆی ئەمریکی سلێمانی'
   },
   {
@@ -110,9 +110,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی ئەکادیمیی زانکۆی کوردستان - هەولێر',
     url: 'https://www.ukh.edu.krd/library',
     category: 'academic',
-    totalItems: 9200,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'تێزەکانی ماستەر و دکتۆرا و گۆڤاری توێژینەوەی UKH'
   },
   {
@@ -121,9 +121,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانە و ڕیپۆزیتۆری زانکۆی سلێمانی',
     url: 'https://univsul.edu.iq',
     category: 'academic',
-    totalItems: 15400,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'کۆکراوەی سەرجەم تێزەکان و گوڤارە ڕێپێدراوەکانی زانکۆی سلێمانی'
   },
   {
@@ -132,9 +132,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی دیجیتاڵیی زانکۆی سەلاحەدین - هەولێر',
     url: 'https://su.edu.krd',
     category: 'academic',
-    totalItems: 16800,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'سەرچاوە زانستی، مێژوویی و ئەدەبییەکانی زانکۆی سەلاحەدین'
   },
   {
@@ -143,9 +143,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی ئەکادیمیی زانکۆی دهۆک',
     url: 'https://uod.ac',
     category: 'academic',
-    totalItems: 12900,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'توێژینەوەکانی زانکۆی دهۆک بە زمانەکانی کوردی (کورمانجی و سۆرانی)، عەرەبی و ئینگلیزی'
   },
   {
@@ -154,9 +154,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'ڕیپۆزیتۆری ئەکادیمیی زانکۆی سۆران',
     url: 'https://soran.edu.iq',
     category: 'academic',
-    totalItems: 7800,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'گۆڤاری زانکۆی سۆران و توێژینەوەی زمانەوانی و بەشە زانستییەکان'
   },
   {
@@ -165,9 +165,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی ناوەندیی زانکۆی هەڵەبجە',
     url: 'https://uoh.edu.iq',
     category: 'academic',
-    totalItems: 5400,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'بڵاوکراوە و توێژینەوە مێژوویی، ئەدەبی و زانستییەکانی زانکۆی هەڵەبجە'
   },
   {
@@ -176,9 +176,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی دیجیتاڵیی زانکۆی ڕاپەڕین',
     url: 'https://uor.edu.krd',
     category: 'academic',
-    totalItems: 6100,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'تێزی توێژەران و گۆڤاری زانستیی زانکۆی ڕاپەڕین - ڕانیە'
   },
   {
@@ -187,9 +187,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'ئەرشیڤی دیجیتاڵیی زانکۆی گەرمیان',
     url: 'https://garmian.edu.krd',
     category: 'academic',
-    totalItems: 5900,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'تێزە زانستییەکان و بڵاوکراوەکانی ناوچەی گەرمیان'
   },
   {
@@ -198,9 +198,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانە و سیستمەی AROی زانکۆی کۆیە',
     url: 'https://koyauniversity.org',
     category: 'academic',
-    totalItems: 8100,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'گۆڤاری زانکۆی کۆیە بۆ زانستە مرۆڤایەتی و پەیڕەوییەکان'
   },
   {
@@ -209,9 +209,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی ناوەندیی زانکۆکانی جیهان',
     url: 'https://cihanuniversity.edu.iq',
     category: 'academic',
-    totalItems: 9400,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'گۆڤاری توێژینەوەی ئەندازیاری، یاسایی و پزیشکیی جیهان'
   },
   {
@@ -220,9 +220,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'ئەرشیڤی ئەکادیمیی زانکۆی چەرموو - چەمچەماڵ',
     url: 'https://charmo.edu.krd',
     category: 'academic',
-    totalItems: 4200,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'توێژینەوە و بڵاوکراوەکان لە چەمچەماڵ و زانکۆی چەرموو'
   },
   {
@@ -231,9 +231,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی زانکۆی کۆمار بۆ زانست و تەکنەلۆجیا',
     url: 'https://komar.edu.iq',
     category: 'academic',
-    totalItems: 6700,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'سەرچاوە پزیشکی، تەکنەلۆجی و بازرگانییەکانی زانکۆی کۆمار'
   },
   {
@@ -242,9 +242,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی زانکۆی نێودەوڵەتیی لۆبنانی فەرەنسی',
     url: 'https://lfu.edu.krd',
     category: 'academic',
-    totalItems: 5100,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'توێژینەوە یاسایی و ئیدارییەکانی زانکۆی LFU'
   },
   {
@@ -253,9 +253,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی زانکۆی ئەمریکیی کوردستان - دهۆک',
     url: 'https://auk.edu.krd/library',
     category: 'academic',
-    totalItems: 7300,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'کۆکراوەی سەرچاوە مۆدێرنەکان و لێکۆڵینەوە نێودەوڵەتییەکانی AUK'
   },
   {
@@ -264,9 +264,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانە و ئەرشیڤی زانکۆی کاتۆلیکی لە هەولێر',
     url: 'https://cue.edu.krd',
     category: 'academic',
-    totalItems: 3800,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'دەستنووس، مێژوو و توێژینەوەی ئایینی و کلتوورییەکان'
   },
   {
@@ -275,9 +275,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی زانکۆی نەورۆز - دهۆک',
     url: 'https://www.nawroz.edu.krd',
     category: 'academic',
-    totalItems: 6400,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'توێژینەوە یاسایی، ئابووری و کۆمپیوتەرییەکانی زانکۆی نەورۆز'
   },
   {
@@ -286,9 +286,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'ئەرشیڤی ناوەندیی زانکۆی پۆلیتەکنیکی هەولێر',
     url: 'https://epu.edu.iq',
     category: 'academic',
-    totalItems: 7100,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'توێژینەوە تەکنیکی، ئەندازیاری و بڵاوکراوە ڕاهێنانییەکان'
   },
   {
@@ -297,9 +297,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'ڕیپۆزیتۆری زانکۆی پۆلیتەکنیکی دهۆک',
     url: 'https://dpu.edu.krd',
     category: 'academic',
-    totalItems: 5800,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'توێژینەوە تەکنەلۆجی و پراکتیکییەکان لە دهۆک'
   },
   {
@@ -308,9 +308,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی زانکۆی پۆلیتەکنیکی سلێمانی',
     url: 'https://spu.edu.iq',
     category: 'academic',
-    totalItems: 8200,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'توێژینەوە و داهێنانە تەکنیکی و ئەندازیارییەکان'
   },
   {
@@ -319,9 +319,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانە و ئەرشیڤی یاسایی پەرلەمانی کوردستان',
     url: 'https://www.parliament.krd',
     category: 'kurdish',
-    totalItems: 14200,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'یاسا پەسەندکراوەکان، ڕۆژنامەی وەقایعی کوردستان و بەڵگەنامە فەرمییەکان'
   },
   {
@@ -330,9 +330,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'ئەرشیڤی ئینتەرنێت - کۆکراوە دەگمەنەکانی کوردستان',
     url: 'https://archive.org',
     category: 'global',
-    totalItems: 85000,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'سەدان هەزار کتێب، دەستنووس و نەخشەی سکانکراوی مێژوویی کوردستان'
   },
   {
@@ -341,9 +341,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'گووگڵ بووکس - سەرچاوەکانی کوردناسی و مێژوو',
     url: 'https://books.google.com',
     category: 'global',
-    totalItems: 120000,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'فەرسەتی گەڕان و خوێندنەوە لە سەدان هەزار کتێبی بڵاوکراوەی جیهانی'
   },
   {
@@ -352,9 +352,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی دیجیتاڵیی هاتی تراست',
     url: 'https://www.hathitrust.org',
     category: 'global',
-    totalItems: 65000,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'کتێب و بەڵگەنامەی سکانکراوی زانکۆ پێشەنگەکانی جیهان'
   },
   {
@@ -363,9 +363,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'سیستمی کۆی فێرسەکانی جیهانی ورڵدکات',
     url: 'https://www.worldcat.org',
     category: 'global',
-    totalItems: 140000,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'فێرس و نیشانەی کتێبخانە جیهانییەکان بۆ سەرچاوە کوردییەکان'
   },
   {
@@ -374,9 +374,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی کراوەی جیهانی - ئۆپن لایبرێری',
     url: 'https://openlibrary.org',
     category: 'global',
-    totalItems: 48000,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'کۆڵێک کتێبی گشتی بە فۆرماتی کراوە بۆ دابەزاندن و خوێندنەوە'
   },
   {
@@ -385,9 +385,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'ئەرشیڤی زانستیی جەی ستۆر',
     url: 'https://www.jstor.org',
     category: 'global',
-    totalItems: 32000,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'توێژینەوەی ئەکادیمیی دادوەرییکراوی گۆڤارە جیهانییەکان'
   },
   {
@@ -396,9 +396,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'پڕۆژەی گووچنبێرگ بۆ کتێبە بەناوبانگەکانی جیهان',
     url: 'https://www.gutenberg.org',
     category: 'global',
-    totalItems: 19000,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'کتێبە کلاسیکەکانی جیهان بە فۆرماتی دیجیتاڵی و کراوە'
   },
   {
@@ -407,9 +407,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'دایرێکتۆری کتێبە زانستییە کراوەکان (DOAB)',
     url: 'https://www.doabooks.org',
     category: 'global',
-    totalItems: 22000,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'کتێبی ئەکادیمی بێبەرامبەر بە هەموو زمانەکانی جیهان'
   },
   {
@@ -418,9 +418,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کۆکراوەکانی کتێبخانەی یەکێتیی ئەوروپا (یۆرۆپیانا)',
     url: 'https://www.europeana.eu',
     category: 'global',
-    totalItems: 17500,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'دەستنووس، وێنە و نەخشە مێژووییەکانی موزەخانەکانی ئەوروپا'
   },
   {
@@ -429,9 +429,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'کتێبخانەی دیجیتاڵیی گشتیی ئەمریکا',
     url: 'https://dp.la',
     category: 'global',
-    totalItems: 28000,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'ئەرشیڤ و سەرچاوە مێژووییەکانی زانکۆ و ئەرشیڤگەڕییەکانی ئەمریکا'
   },
   {
@@ -440,9 +440,9 @@ const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
     nameKurdish: 'ناوەندی کلتوور و ئەرشیڤی کوردی',
     url: 'https://kcac.org',
     category: 'kurdish',
-    totalItems: 11200,
-    lastSync: new Date().toISOString(),
-    status: 'active',
+    totalItems: 0,
+    lastSync: '',
+    status: 'idle',
     description: 'ئەرشیڤی دەنگ، ڕوژنامەگەری و کتێبە ڕەسەنەکانی ناوەندە کوردییەکان'
   }
 ];
