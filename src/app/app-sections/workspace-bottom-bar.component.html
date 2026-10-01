@@ -14,38 +14,38 @@
 
           <!-- Bottom bar operations row -->
           <div class="mam-dock-actions">
-            <!-- 1. پێداچوونەوەی پێکهاتە -->
+            <!-- 1. پشکنینی وردی بەش -->
             <button (click)="reviewStructure()" class="mam-dock-btn">
               <mat-icon class="!text-sm !w-4 !h-4">insights</mat-icon>
-              <span>پێداچوونەوەی پێکهاتە</span>
+              <span>پشکنینی بەش</span>
             </button>
 
-            <!-- 2. ئۆتۆڕایت -->
+            <!-- 2. نووسینی یارمەتیدەری AI -->
             <button (click)="autoWrite()" [disabled]="isWritingProgress() || isHumanizingProgress()" class="mam-dock-btn mam-dock-primary">
               @if (isWritingProgress()) {
                 <span class="w-4 h-0.5 bg-white border border-white-300 rounded-full animate-spin"></span>
-                <span>خەریکی زانستە...</span>
+                <span>AI خەریکی نووسینە...</span>
               } @else {
                 <mat-icon class="!text-sm !w-4 !h-4 ">flash_on</mat-icon>
-                <span>ئۆتۆڕایت</span>
+                <span>نووسینی AI</span>
               }
             </button>
 
-            <!-- 3. ئۆتۆهیومانیز -->
+            <!-- 3. پەرەپێدانی دەق -->
             <button (click)="autoHumanize()" [disabled]="isWritingProgress() || isHumanizingProgress() || !chapters().length || !chapters()[0].content" class="mam-dock-btn mam-dock-review">
               @if (isHumanizingProgress()) {
                 <span class="w-4 h-0.5 bg-white border border-white-300 rounded-full animate-spin"></span>
-                <span>مرۆڤ دەکات...</span>
+                <span>خەریکی پەرەپێدانە...</span>
               } @else {
                 <mat-icon class="!text-sm !w-4 !h-4 ">psychology</mat-icon>
-                <span>ئۆتۆهیومانیز</span>
+                <span>پەرەپێدانی دەق</span>
               }
             </button>
 
-            <!-- 4. سەیڤ ئۆڵ (سەیڤ ئۆڵ بە شێوەی وۆرد) -->
+            <!-- 4. هەناردەی Word -->
             <button (click)="saveAll()" [disabled]="!chapters().length || !chapters()[0].content" class="mam-dock-btn mam-dock-save">
               <mat-icon class="!text-sm !w-4 !h-4">cloud_download</mat-icon>
-              <span>سەیڤ ئۆڵ (Word DOCX)</span>
+              <span>هەناردەی Word</span>
             </button>
           </div>
 
