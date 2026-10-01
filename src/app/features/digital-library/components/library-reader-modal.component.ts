@@ -1,174 +1,112 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { DigitalLibraryService } from '../../../services/digital-library.service';
 
 @Component({
   selector: 'app-library-reader-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (lib.isReaderOpen() && lib.activeBook()) {
       <div class="fixed inset-0 z-50 bg-stone-950/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
-        
-        <!-- Reader Dialog Container -->
-        <div class="bg-stone-900 border border-stone-800 rounded-2xl w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden shadow-2xl">
-          
-          <!-- Reader Top Navbar -->
-          <div class="px-4 py-3 bg-stone-950 border-b border-stone-800 flex items-center justify-between gap-3 text-stone-200">
-            
-            <!-- Book Info & Title -->
-            <div class="flex items-center gap-3 truncate">
-              <button (click)="lib.closeReader()" class="p-2 text-stone-400 hover:text-red-400 transition-colors cursor-pointer rounded-lg hover:bg-stone-800">
-                <mat-icon class="!w-5 !h-5">arrow_back</mat-icon>
-              </button>
-              <div class="truncate">
-                <h2 class="font-serif font-bold text-sm sm:text-base text-amber-300 truncate">
-                  {{ lib.activeBook()?.title }}
-                </h2>
-                <p class="text-xs text-stone-400 truncate">
-                  نووسەر: {{ lib.activeBook()?.author }} | {{ lib.activeBook()?.sourceName }}
-                </p>
-              </div>
-            </div>
+        <div class="bg-stone-900 border border-stone-800 rounded-2xl w-full max-w-6xl h-[92vh] flex flex-col overflow-hidden shadow-2xl" role="dialog" aria-modal="true" aria-label="خوێندنەوەی سەرچاوە">
 
-            <!-- Top Actions -->
-            <div class="flex items-center gap-2">
-              
-              <!-- Font Size Controls -->
-              <div class="hidden md:flex items-center bg-stone-800 rounded-lg border border-stone-700 p-1 gap-1">
-                <button (click)="fontSize.set(Math.max(12, fontSize() - 2))" class="px-2 text-xs font-bold hover:text-amber-400">A-</button>
-                <span class="text-[10px] font-mono px-1">{{ fontSize() }}px</span>
-                <button (click)="fontSize.set(Math.min(28, fontSize() + 2))" class="px-2 text-xs font-bold hover:text-amber-400">A+</button>
-              </div>
-
-              <!-- Close Modal -->
-              <button (click)="lib.closeReader()" class="p-2 text-stone-400 hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-stone-800">
+          <header class="px-4 py-3 bg-stone-950 border-b border-stone-800 flex items-center justify-between gap-3 text-stone-200">
+            <div class="flex items-center gap-3 min-w-0">
+              <button type="button" (click)="lib.closeReader()" class="p-2 text-stone-400 hover:text-red-400 transition-colors rounded-lg hover:bg-stone-800" aria-label="داخستن">
                 <mat-icon class="!w-5 !h-5">close</mat-icon>
               </button>
+              <div class="min-w-0">
+                <h2 class="font-serif font-bold text-sm sm:text-base text-amber-300 truncate">{{ lib.activeBook()?.title }}</h2>
+                <p class="text-xs text-stone-400 truncate">نووسەر: {{ lib.activeBook()?.author }}</p>
+              </div>
             </div>
-          </div>
+            @if (lib.activeBook()?.sourceUrl) {
+              <a [href]="lib.activeBook()?.sourceUrl" target="_blank" rel="noopener noreferrer"
+                 class="px-3 py-1.5 rounded-lg bg-stone-800 text-stone-300 text-[10px] hover:text-amber-300 border border-stone-700">
+                سەرچاوەی ڕەسەن
+              </a>
+            }
+          </header>
 
-          <!-- Main Reader Body -->
-          <div class="flex-1 grid grid-cols-1 md:grid-cols-3 overflow-hidden bg-stone-950">
-            
-            <!-- Left 2 Cols: PDF / Book Viewer Canvas -->
-            <div class="md:col-span-2 flex flex-col justify-between p-4 sm:p-6 overflow-y-auto bg-stone-900/50 border-r border-stone-800">
-              
-              <!-- Content Display -->
-              <div class="space-y-4 max-w-2xl mx-auto w-full">
-                <div class="flex items-center justify-between text-xs text-stone-400 border-b border-stone-800 pb-2">
-                  <span>لاپەڕە {{ currentPage() }} لە {{ lib.activeBook()?.pageCount || 100 }}</span>
-                  <span class="font-mono text-amber-400">{{ Math.round((currentPage() / (lib.activeBook()?.pageCount || 100)) * 100) }}% پرۆگرێس</span>
+          <div class="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_300px] overflow-hidden bg-stone-950">
+            <section class="min-h-0 overflow-hidden p-3 sm:p-5">
+              @if (safePdfUrl()) {
+                <div class="h-full rounded-2xl border border-stone-800 bg-stone-900 overflow-hidden shadow-xl">
+                  <div class="px-4 py-3 border-b border-stone-800">
+                    <p class="text-xs font-bold text-stone-200">بەڵگەی سەرچاوە</p>
+                    <p class="text-[10px] text-stone-500 mt-1">
+                      ناوەڕۆکی PDF ـەکە بە ڕاستەوخۆ پیشان دەدرێت؛ هیچ دەقی ساختە لەم reader ـەدا زیاد ناکرێت.
+                    </p>
+                  </div>
+                  <iframe
+                    [src]="safePdfUrl()"
+                    class="w-full h-[calc(100%-56px)] bg-white"
+                    title="PDF ـی سەرچاوە"
+                  ></iframe>
                 </div>
+              } @else {
+                <div class="h-full rounded-2xl border border-amber-500/30 bg-amber-500/10 p-8 flex flex-col items-center justify-center text-center">
+                  <mat-icon class="text-amber-300 !w-10 !h-10">description</mat-icon>
+                  <p class="mt-3 text-sm font-bold text-amber-200">PDF ـی ڕاستەوخۆ بەردەست نییە.</p>
+                  <p class="mt-2 text-xs leading-6 text-stone-400 max-w-lg">
+                    ئەم تۆمارە کاندیدی کەتەلۆگە؛ بۆ خوێندنەوەی ناوەڕۆکی ڕاستەقینە سەردانی سەرچاوەی ڕەسەن بکە.
+                  </p>
+                </div>
+              }
+            </section>
 
-                <!-- Source document surface -->
-                <div class="space-y-4">
-                  @if (lib.activeBook()?.downloadUrl) {
-                    <div class="rounded-2xl border border-stone-800 bg-stone-950 overflow-hidden shadow-xl">
-                      <div class="px-4 py-3 border-b border-stone-800 flex items-center justify-between gap-3">
-                        <div>
-                          <p class="text-xs font-bold text-stone-200">بەڵگەی سەرچاوە</p>
-                          <p class="text-[10px] text-stone-500">پەڕەکانی سەرچاوەکە لە PDF ـی پەیوەست پیشان دەدرێن؛ هیچ دەقی خەیاڵی لەم reader ـەدا زیاد ناکرێت.</p>
-                        </div>
-                        <a [href]="lib.activeBook()?.sourceUrl" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-stone-800 text-stone-300 text-[10px] hover:text-amber-300 border border-stone-700">
-                          سەرچاوەی ڕەسەن
-                        </a>
-                      </div>
-                      <iframe
-                        [src]="lib.activeBook()?.downloadUrl"
-                        class="w-full h-[58vh] bg-white"
-                        title="بەڵگەی سەرچاوەی کتێب"
-                      ></iframe>
-                    </div>
-                  } @else {
-                    <div class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-8 text-center">
-                      <mat-icon class="text-amber-300 !w-10 !h-10">description</mat-icon>
-                      <p class="mt-3 text-sm font-bold text-amber-200">پەڕگەی ڕاستەوخۆی سەرچاوە بەردەست نییە.</p>
-                      <p class="mt-2 text-xs leading-6 text-stone-400">تکایە سەردانی لینکەکەی سەرچاوە بکە بۆ خوێندنەوەی ناوەڕۆکی ڕاستەقینە.</p>
-                    </div>
+            <aside class="border-t lg:border-t-0 lg:border-r border-stone-800 bg-stone-950 p-4 sm:p-5 overflow-y-auto space-y-5">
+              <section>
+                <p class="text-[10px] font-mono text-amber-400 uppercase tracking-wider">Catalog metadata</p>
+                <dl class="mt-3 space-y-2 text-xs">
+                  <div class="flex justify-between gap-3"><dt class="text-stone-500">نووسەر</dt><dd class="text-stone-200 text-right">{{ lib.activeBook()?.author }}</dd></div>
+                  <div class="flex justify-between gap-3"><dt class="text-stone-500">ساڵ</dt><dd class="text-stone-200">{{ lib.activeBook()?.year }}</dd></div>
+                  @if (lib.activeBook()?.pageCount) {
+                    <div class="flex justify-between gap-3"><dt class="text-stone-500">لاپەڕە</dt><dd class="text-stone-200">{{ lib.activeBook()?.pageCount }}</dd></div>
                   }
+                  <div class="flex justify-between gap-3"><dt class="text-stone-500">دۆخی پشتڕاستکردنەوە</dt><dd class="text-amber-300">{{ lib.activeBook()?.verified ? 'پشکنراو' : 'پشکنین پێویستە' }}</dd></div>
+                </dl>
+              </section>
 
-                  <div class="rounded-xl border border-stone-800 bg-stone-950/70 p-4">
-                    <div class="flex items-center justify-between gap-3">
-                      <div>
-                        <p class="text-xs font-bold text-stone-200">OCR ـی وێنەی لاپەڕە</p>
-                        <p class="text-[10px] text-stone-500">تەنها وێنەی لاپەڕە بنێرە؛ پڕۆسەی OCR دەقی وێنەکە دەخوێنێتەوە.</p>
-                      </div>
-                      <button type="button" (click)="ocrFile.click()" [disabled]="lib.isOcrProcessing()" class="px-3 py-2 rounded-lg bg-amber-500 text-stone-950 text-xs font-bold disabled:opacity-50">
-                        <mat-icon class="!w-4 !h-4 align-middle">document_scanner</mat-icon>
-                        هەڵبژاردنی وێنە
-                      </button>
-                      <input #ocrFile type="file" accept="image/png,image/jpeg,image/webp" class="hidden" (change)="onOcrFileSelected($event)" />
-                    </div>
+              <section class="rounded-xl border border-stone-800 bg-stone-900/70 p-4">
+                <div class="flex items-center gap-2">
+                  <mat-icon class="text-amber-300 !w-5 !h-5">document_scanner</mat-icon>
+                  <div>
+                    <p class="text-xs font-bold text-stone-200">OCR ـی لاپەڕە</p>
+                    <p class="text-[10px] text-stone-500 mt-1">وێنەی لاپەڕە هەڵبژێرە بۆ دەرھێنانی دەقی ڕاستەقینە.</p>
                   </div>
                 </div>
+                <input #ocrFile type="file" accept="image/png,image/jpeg,image/webp" class="hidden" (change)="onOcrFileSelected($event)">
+                <button type="button" (click)="ocrFile.click()" [disabled]="lib.isOcrProcessing()"
+                        class="w-full mt-3 px-3 py-2 rounded-lg bg-amber-500 text-stone-950 text-xs font-bold disabled:opacity-50">
+                  {{ lib.isOcrProcessing() ? 'خەریکی OCR ـە...' : 'هەڵبژاردنی وێنەی لاپەڕە' }}
+                </button>
+              </section>
 
-                <!-- OCR Results Section if triggered -->
-                @if (lib.isOcrProcessing()) {
-                  <div class="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs flex items-center gap-2">
-                    <mat-icon class="animate-spin !w-4 !h-4">sync</mat-icon>
-                    <span>{{ lib.t().ocrProcessing }}</span>
+              @if (lib.isOcrProcessing()) {
+                <div class="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs flex items-center gap-2">
+                  <mat-icon class="animate-spin !w-4 !h-4">sync</mat-icon>
+                  <span>OCR لە پڕۆسەدایە...</span>
+                </div>
+              }
+
+              @if (lib.ocrTextResult()) {
+                <section class="rounded-xl border border-amber-500/40 bg-stone-900 p-4 space-y-2">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs text-amber-400 font-bold">ئەنجامی OCR</span>
+                    <button type="button" (click)="lib.ocrTextResult.set(null)" class="p-1 text-stone-400 hover:text-white" aria-label="سڕینەوەی ئەنجامی OCR">
+                      <mat-icon class="!w-4 !h-4">close</mat-icon>
+                    </button>
                   </div>
-                }
-
-                @if (lib.ocrTextResult()) {
-                  <div class="p-4 bg-stone-900 border border-amber-500/40 rounded-xl space-y-2">
-                    <div class="flex items-center justify-between text-xs text-amber-400 font-bold border-b border-stone-800 pb-1">
-                      <span>دەقی دەرھێنراوی AI OCR:</span>
-                      <button (click)="lib.ocrTextResult.set(null)" class="text-stone-400 hover:text-white">
-                        <mat-icon class="!w-4 !h-4">close</mat-icon>
-                      </button>
-                    </div>
-                    <pre class="text-xs text-stone-200 font-sans whitespace-pre-wrap leading-relaxed">{{ lib.ocrTextResult() }}</pre>
-                  </div>
-                }
-              </div>
-
-            </div>
-
-            <!-- Right 1 Col: Metadata & Download Panel -->
-            <div class="hidden md:flex flex-col justify-between p-5 bg-stone-950 overflow-y-auto space-y-4">
-              <div class="space-y-4">
-                <div class="w-full h-48 rounded-xl overflow-hidden bg-stone-900 border border-stone-800">
-                  <img [src]="lib.activeBook()?.coverImage" [alt]="lib.activeBook()?.title" class="w-full h-full object-cover" />
-                </div>
-
-                <div>
-                  <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[10px]">
-                    {{ lib.activeBook()?.sourceName }}
-                  </span>
-                  <h3 class="font-serif font-bold text-sm text-stone-100 mt-2">
-                    {{ lib.activeBook()?.title }}
-                  </h3>
-                  <p class="text-xs text-stone-400 mt-1">ساڵی بڵاوکردنەوە: {{ lib.activeBook()?.year }}</p>
-                </div>
-
-                <div class="text-xs text-stone-300 space-y-1">
-                  <p><strong class="text-stone-400">ژمارەی لاپەڕە:</strong> {{ lib.activeBook()?.pageCount || 'نادیار' }}</p>
-                  <p><strong class="text-stone-400">فۆرمات:</strong> PDF / ePub Digital</p>
-                  <p><strong class="text-stone-400">کۆدی ISBN:</strong> {{ lib.activeBook()?.isbn || 'ئەرشیڤی ناوخۆیی' }}</p>
-                </div>
-              </div>
-
-              <!-- Direct Download Action -->
-              <div class="space-y-2 pt-4 border-t border-stone-800">
-                <a
-                  [href]="lib.activeBook()?.downloadUrl"
-                  target="_blank"
-                  download
-                  class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-serif font-extrabold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <mat-icon class="!w-4 !h-4">download</mat-icon>
-                  <span>دابەزاندنی پەڕگەی PDF</span>
-                </a>
-              </div>
-            </div>
-
+                  <pre class="text-xs text-stone-200 whitespace-pre-wrap leading-relaxed">{{ lib.ocrTextResult() }}</pre>
+                </section>
+              }
+            </aside>
           </div>
-
         </div>
       </div>
     }
@@ -176,6 +114,13 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
 })
 export class LibraryReaderModalComponent {
   public lib = inject(DigitalLibraryService);
+  private sanitizer = inject(DomSanitizer);
+
+  public safePdfUrl = computed<SafeResourceUrl | null>(() => {
+    const url = this.lib.activeBook()?.downloadUrl || this.lib.activeBook()?.pdfUrl || '';
+    return url.startsWith('https://') ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
+  });
+
   public onOcrFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
