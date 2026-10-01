@@ -16,7 +16,7 @@ export interface SourceIdentifiers {
 
 export interface VerifiedCitationRecord {
   id: string;
-  claimText: string;
+  claimText?: string;
   title: string;
   author: string;
   publicationYear: number | null;
