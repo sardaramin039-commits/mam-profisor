@@ -37,17 +37,6 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
             <!-- Top Actions -->
             <div class="flex items-center gap-2">
               
-              <!-- OCR AI Extraction Trigger -->
-              <button
-                (click)="lib.performOcr(lib.activeBook()?.title || '')"
-                [disabled]="lib.isOcrProcessing()"
-                class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg border border-amber-500/40 text-xs font-medium transition-all cursor-pointer flex items-center gap-1"
-                title="پڕۆسەکردنی دەق بە AI OCR"
-              >
-                <mat-icon class="!w-4 !h-4 text-amber-400">document_scanner</mat-icon>
-                <span class="hidden sm:inline">دەرھێنانی دەق (OCR)</span>
-              </button>
-
               <!-- Font Size Controls -->
               <div class="hidden md:flex items-center bg-stone-800 rounded-lg border border-stone-700 p-1 gap-1">
                 <button (click)="fontSize.set(Math.max(12, fontSize() - 2))" class="px-2 text-xs font-bold hover:text-amber-400">A-</button>
@@ -75,17 +64,46 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
                   <span class="font-mono text-amber-400">{{ Math.round((currentPage() / (lib.activeBook()?.pageCount || 100)) * 100) }}% پرۆگرێس</span>
                 </div>
 
-                <!-- Page Reading Surface -->
-                <div [style.fontSize.px]="fontSize()" class="bg-stone-900 text-stone-100 p-6 sm:p-8 rounded-2xl border border-stone-800 shadow-xl font-serif leading-relaxed space-y-4 text-justify min-h-[350px]">
-                  <p class="font-bold text-amber-300 text-lg border-b border-stone-800 pb-2">
-                    بەشی {{ currentPage() }}: تێڕوانینی گشتی و بەدواداچوونی مێژوویی
-                  </p>
-                  <p>
-                    {{ lib.activeBook()?.description }}
-                  </p>
-                  <p class="text-stone-300">
-                    لە کۆتایی سەدەی بیستەم و سەرەتای سەدەی بیست و یەکەمدا، پرۆسەی دیجیتاڵکردنی دەستنووس و کتێبە دەگمەنەکانی کوردستان لە ئەنستیتۆکان و کتێبخانە ئەکادیمییەکاندا دەستی پێکرد. ئەم کتێبە هەڵگری زانیاری ناوازەیە کە لەم ئەرشیڤە جیهانییەدا پارێزراوە.
-                  </p>
+                <!-- Source document surface -->
+                <div class="space-y-4">
+                  @if (lib.activeBook()?.downloadUrl) {
+                    <div class="rounded-2xl border border-stone-800 bg-stone-950 overflow-hidden shadow-xl">
+                      <div class="px-4 py-3 border-b border-stone-800 flex items-center justify-between gap-3">
+                        <div>
+                          <p class="text-xs font-bold text-stone-200">بەڵگەی سەرچاوە</p>
+                          <p class="text-[10px] text-stone-500">پەڕەکانی سەرچاوەکە لە PDF ـی پەیوەست پیشان دەدرێن؛ هیچ دەقی خەیاڵی لەم reader ـەدا زیاد ناکرێت.</p>
+                        </div>
+                        <a [href]="lib.activeBook()?.sourceUrl" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-stone-800 text-stone-300 text-[10px] hover:text-amber-300 border border-stone-700">
+                          سەرچاوەی ڕەسەن
+                        </a>
+                      </div>
+                      <iframe
+                        [src]="lib.activeBook()?.downloadUrl"
+                        class="w-full h-[58vh] bg-white"
+                        title="بەڵگەی سەرچاوەی کتێب"
+                      ></iframe>
+                    </div>
+                  } @else {
+                    <div class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-8 text-center">
+                      <mat-icon class="text-amber-300 !w-10 !h-10">description</mat-icon>
+                      <p class="mt-3 text-sm font-bold text-amber-200">پەڕگەی ڕاستەوخۆی سەرچاوە بەردەست نییە.</p>
+                      <p class="mt-2 text-xs leading-6 text-stone-400">تکایە سەردانی لینکەکەی سەرچاوە بکە بۆ خوێندنەوەی ناوەڕۆکی ڕاستەقینە.</p>
+                    </div>
+                  }
+
+                  <div class="rounded-xl border border-stone-800 bg-stone-950/70 p-4">
+                    <div class="flex items-center justify-between gap-3">
+                      <div>
+                        <p class="text-xs font-bold text-stone-200">OCR ـی وێنەی لاپەڕە</p>
+                        <p class="text-[10px] text-stone-500">تەنها وێنەی لاپەڕە بنێرە؛ پڕۆسەی OCR دەقی وێنەکە دەخوێنێتەوە.</p>
+                      </div>
+                      <button type="button" (click)="ocrFile.click()" [disabled]="lib.isOcrProcessing()" class="px-3 py-2 rounded-lg bg-amber-500 text-stone-950 text-xs font-bold disabled:opacity-50">
+                        <mat-icon class="!w-4 !h-4 align-middle">document_scanner</mat-icon>
+                        هەڵبژاردنی وێنە
+                      </button>
+                      <input #ocrFile type="file" accept="image/png,image/jpeg,image/webp" class="hidden" (change)="onOcrFileSelected($event)" />
+                    </div>
+                  </div>
                 </div>
 
                 <!-- OCR Results Section if triggered -->
@@ -107,40 +125,6 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
                     <pre class="text-xs text-stone-200 font-sans whitespace-pre-wrap leading-relaxed">{{ lib.ocrTextResult() }}</pre>
                   </div>
                 }
-              </div>
-
-              <!-- Page Navigation Controls Footer -->
-              <div class="pt-4 border-t border-stone-800 flex items-center justify-between gap-2 max-w-2xl mx-auto w-full">
-                <button
-                  (click)="prevPage()"
-                  [disabled]="currentPage() <= 1"
-                  class="px-4 py-2 bg-stone-800 hover:bg-stone-700 disabled:opacity-40 text-stone-200 text-xs rounded-xl border border-stone-700 flex items-center gap-1 cursor-pointer"
-                >
-                  <mat-icon class="!w-4 !h-4">chevron_right</mat-icon>
-                  <span>لاپەڕەی پێشوو</span>
-                </button>
-
-                <div class="flex items-center gap-2 text-xs font-mono">
-                  <span>لاپەڕە</span>
-                  <input
-                    type="number"
-                    [ngModel]="currentPage()"
-                    (ngModelChange)="goToPage($event)"
-                    min="1"
-                    [max]="lib.activeBook()?.pageCount || 100"
-                    class="w-14 text-center py-1 bg-stone-800 border border-stone-700 rounded-lg text-amber-300 font-bold outline-none"
-                  />
-                  <span>لە {{ lib.activeBook()?.pageCount || 100 }}</span>
-                </div>
-
-                <button
-                  (click)="nextPage()"
-                  [disabled]="currentPage() >= (lib.activeBook()?.pageCount || 100)"
-                  class="px-4 py-2 bg-stone-800 hover:bg-stone-700 disabled:opacity-40 text-stone-200 text-xs rounded-xl border border-stone-700 flex items-center gap-1 cursor-pointer"
-                >
-                  <span>لاپەڕەی دواتر</span>
-                  <mat-icon class="!w-4 !h-4">chevron_left</mat-icon>
-                </button>
               </div>
 
             </div>
@@ -192,36 +176,25 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
 })
 export class LibraryReaderModalComponent {
   public lib = inject(DigitalLibraryService);
-  public Math = Math;
-  public currentPage = signal<number>(1);
-  public fontSize = signal<number>(16);
+  public onOcrFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
 
-  public nextPage(): void {
-    const max = this.lib.activeBook()?.pageCount || 100;
-    if (this.currentPage() < max) {
-      const next = this.currentPage() + 1;
-      this.currentPage.set(next);
-      if (this.lib.activeBook()) {
-        this.lib.updateReadingProgress(this.lib.activeBook()!, next, max);
-      }
+    const allowed = new Set(['image/png', 'image/jpeg', 'image/webp']);
+    if (!allowed.has(file.type) || file.size > 8 * 1024 * 1024) {
+      this.lib.ocrTextResult.set('تەنها PNG/JPEG/WebP تا ٨ MB ڕێگەپێدراوە.');
+      input.value = '';
+      return;
     }
-  }
 
-  public prevPage(): void {
-    if (this.currentPage() > 1) {
-      const prev = this.currentPage() - 1;
-      this.currentPage.set(prev);
-      if (this.lib.activeBook()) {
-        this.lib.updateReadingProgress(this.lib.activeBook()!, prev, this.lib.activeBook()?.pageCount || 100);
-      }
-    }
-  }
-
-  public goToPage(p: number): void {
-    const page = Math.max(1, Math.min(p || 1, this.lib.activeBook()?.pageCount || 100));
-    this.currentPage.set(page);
-    if (this.lib.activeBook()) {
-      this.lib.updateReadingProgress(this.lib.activeBook()!, page, this.lib.activeBook()?.pageCount || 100);
-    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+      if (dataUrl.startsWith('data:image/')) this.lib.performOcr(dataUrl);
+    };
+    reader.onerror = () => this.lib.ocrTextResult.set('خوێندنەوەی وێنە سەرکەوتوو نەبوو.');
+    reader.readAsDataURL(file);
+    input.value = '';
   }
 }
