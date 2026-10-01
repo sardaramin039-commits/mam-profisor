@@ -3,7 +3,7 @@ import { DIGITAL_LIBRARY_SOURCES } from '../services/digital-library-sources';
 
 export const libraryRouter = Router();
 
-// پێڕستی سەرجەم سەرچاوە و ٤٠ ئەرشیڤە دیجیتاڵییە کوردی و جیهانییەکان
+// تۆماری ٤٠ سەرچاوەی دیجیتاڵی؛ ژمارەی بەڵگەنامەکان تەنها دوای crawl ـی ڕاستەقینە دیاری دەکرێن.
 libraryRouter.get('/sources', (_req: Request, res: Response) => {
   res.json({
     success: true,
