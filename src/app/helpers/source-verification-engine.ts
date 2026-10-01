@@ -16,6 +16,7 @@ export interface SourceIdentifiers {
 
 export interface VerifiedCitationRecord {
   id: string;
+  claimText: string;
   title: string;
   author: string;
   publicationYear: number | null;
@@ -235,6 +236,7 @@ export class SourceVerificationEngine {
 
     return {
       id,
+      claimText: rawClaim.trim(),
       title: title || 'سەرچاوەی دیارینەکراو',
       author: author || 'نووسەر دیارینەکراو نییە',
       publicationYear: candidateSource.publicationYear ?? null,
