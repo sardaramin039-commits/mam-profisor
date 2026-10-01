@@ -14,12 +14,11 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
         
         <!-- App Logo & Title -->
-        <div
-          role="button"
-          tabindex="0"
-          class="flex items-center gap-3 cursor-pointer select-none"
+        <button
+          type="button"
+          class="flex items-center gap-3 cursor-pointer select-none border-0 bg-transparent p-0 text-right"
           (click)="logoClick.emit()"
-          (keydown.enter)="logoClick.emit()"
+          aria-label="گەڕانەوە بۆ سەرەکیی کتێبخانە"
         >
           <div class="w-10 h-10 rounded-xl bg-amber-600/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-inner group hover:scale-105 transition-transform">
             <mat-icon class="!w-6 !h-6">auto_stories</mat-icon>
@@ -33,7 +32,7 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
               کۆکراوەی سەرچاوە و کتێبخانە دیجیتاڵییەکانی کوردستان و جیهان
             </p>
           </div>
-        </div>
+        </button>
 
         <!-- Quick AI Search Bar (Centered on desktop) -->
         <div class="flex-1 max-w-xl mx-2 hidden md:block relative">
@@ -47,7 +46,7 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
               class="w-full pr-11 pl-10 py-2.5 bg-stone-800/90 text-stone-100 text-sm rounded-xl border border-stone-700/80 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all outline-none placeholder:text-stone-500 font-sans shadow-inner"
             />
             @if (lib.filters().query) {
-              <button (click)="lib.updateSearchQuery('')" class="absolute left-3 text-stone-400 hover:text-stone-200 transition-colors cursor-pointer">
+              <button type="button" (click)="lib.updateSearchQuery('') class="absolute left-3 text-stone-400 hover:text-stone-200 transition-colors cursor-pointer">
                 <mat-icon class="!w-4 !h-4">close</mat-icon>
               </button>
             }
