@@ -81,7 +81,7 @@ export class ExportWordComponent {
 
       if (qa?.qa?.exportBlocked === true) {
         this.exportError.set(
-          qa.qaResult.kurdishSummaryStatus ||
+          qa.qa?.kurdishSummaryStatus ||
           'Export بەهۆی پشکنینی سەلامەتی و بەڵگەی ئەکادیمی بلۆک کرا.'
         );
         return;
