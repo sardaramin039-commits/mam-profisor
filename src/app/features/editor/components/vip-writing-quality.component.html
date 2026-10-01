@@ -25,7 +25,7 @@
         <span class="block text-[10px] text-stone-400">{{ item[1] }}</span>
         <span class="text-lg font-black text-amber-300">
           @if (result(); as r) {
-            {{ r.dimensions.find(d => d.key === item[0])?.score ?? '—' }}
+            {{ dimensionScore(item[0]) ?? '—' }}
           } @else { — }
         </span>
       </div>
