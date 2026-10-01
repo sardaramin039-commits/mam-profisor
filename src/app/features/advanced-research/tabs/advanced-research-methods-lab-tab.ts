@@ -14,7 +14,7 @@ import { ResearchApiClientService, ResearchControlPlaneState } from '../services
 })
 export class AdvancedResearchMethodsLabTabComponent {
   private readonly api = inject(ResearchApiClientService);
-  mode = signal<'prisma'|'power'|'claim_map'|'provenance'|'framework'|'risk_bias'|'evidence_grade'>('prisma');
+  mode = signal<'prisma'|'power'|'claim_map'|'provenance'|'framework'|'risk_bias'|'evidence_grade'|'methodology_gate'|'reporting_guideline'>('prisma');
   projectId = input<string>('current');
   result = signal<any>(null);
   error = signal<string | null>(null);
@@ -28,6 +28,7 @@ export class AdvancedResearchMethodsLabTabComponent {
   claimsJson='[]'; provenanceJson='[]'; frameworkJson='{}'; assessmentsJson='{}'; evidenceJson='{}';
   frameworkKind='PICO'; riskTool='rob2'; initialCertainty='high';
   riskOfBiasInput=''; inconsistency=''; indirectness=''; imprecision=''; publicationBias='';
+  studyDesign='quantitative'; researchQuestion=''; objectives=''; variables=''; populationSample=''; sampling=''; recruitment=''; dataCollection=''; analysisPlan=''; ethics=''; methodology=''; sampleSizeJustification=''; measurement=''; missingData=''; confounders=''; inclusionExclusion=''; integrationPlan=''; quantitativeComponent=''; qualitativeComponent=''; allocation=''; intervention=''; comparator=''; outcomes=''; reflexivity=''; eligibility=''; informationSources=''; searchStrategy=''; selectionProcess=''; riskOfBias=''; synthesis=''; protocol='';
   decisionKind='other'; decisionText=''; decisionRationale=''; decisionImpact=''; actor:'user'|'ai_assistant'|'reviewer'='user';
   decisionEvidenceJson='[]'; decisionConflictJson='[]'; decisions=signal<Array<Record<string,unknown>>>([]); decisionRunning=signal(false);
   controlPlane=signal<ResearchControlPlaneState|null>(null); controlRunning=signal(false);
@@ -48,7 +49,9 @@ export class AdvancedResearchMethodsLabTabComponent {
       : this.mode()==='provenance' ? { records:this.parseJson(this.provenanceJson) }
       : this.mode()==='framework' ? { framework:this.frameworkKind, values:this.parseRecord(this.frameworkJson) }
       : this.mode()==='risk_bias' ? { tool:this.riskTool, assessments:this.parseRecord(this.assessmentsJson), evidence:this.parseRecord(this.evidenceJson) }
-      : { initialCertainty:this.initialCertainty,riskOfBias:this.riskOfBiasInput,inconsistency:this.inconsistency,indirectness:this.indirectness,imprecision:this.imprecision,publicationBias:this.publicationBias };
+      : this.mode()==='methodology_gate' ? {
+          design:this.studyDesign,researchQuestion:this.researchQuestion,objectives:this.objectives,variables:this.variables,populationSample:this.populationSample,sampling:this.sampling,recruitment:this.recruitment,dataCollection:this.dataCollection,analysisPlan:this.analysisPlan,ethics:this.ethics,methodology:this.methodology,sampleSizeJustification:this.sampleSizeJustification,measurement:this.measurement,missingData:this.missingData,confounders:this.confounders,inclusionExclusion:this.inclusionExclusion,integrationPlan:this.integrationPlan,quantitativeComponent:this.quantitativeComponent,qualitativeComponent:this.qualitativeComponent,allocation:this.allocation,intervention:this.intervention,comparator:this.comparator,outcomes:this.outcomes,reflexivity:this.reflexivity,eligibility:this.eligibility,informationSources:this.informationSources,searchStrategy:this.searchStrategy,selectionProcess:this.selectionProcess,riskOfBias:this.riskOfBias,synthesis:this.synthesis,protocol:this.protocol
+        } : this.mode()==='reporting_guideline' ? { design:this.studyDesign } : { initialCertainty:this.initialCertainty,riskOfBias:this.riskOfBiasInput,inconsistency:this.inconsistency,indirectness:this.indirectness,imprecision:this.imprecision,publicationBias:this.publicationBias };
 
     this.api.runResearchMethodsLab(this.mode(),p).subscribe({
       next:r=>{this.result.set(r.result);this.running.set(false);},
