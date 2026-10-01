@@ -118,7 +118,7 @@ export class SystematicReviewService {
       flowConsistent: flowErrors.length === 0,
       flowErrors,
       missingRequiredIds,
-      readyForReporting: missingItems === 0 && partialItems === 0 && completedItems > 0 && completedItems >= this.items.length * 0.2 && flowErrors.length === 0
+      readyForReporting: missingItems === 0 && partialItems === 0 && completedItems > 0 && notApplicableItems < this.items.length && flowErrors.length === 0
     };
   }
 }
