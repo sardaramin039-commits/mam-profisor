@@ -227,7 +227,7 @@ export class ResearchApiClientService {
     return this.http.get('/api/scholarship_55/catalog');
   }
 
-  runResearchMethodsLab(mode: 'prisma' | 'power' | 'claim_map' | 'provenance' | 'framework' | 'risk_bias' | 'evidence_grade', payload: Record<string, unknown>): Observable<{ mode: string; result: any; generatedAt: string }> {
+  runResearchMethodsLab(mode: 'prisma' | 'power' | 'claim_map' | 'provenance' | 'framework' | 'risk_bias' | 'evidence_grade' | 'methodology_gate' | 'reporting_guideline', payload: Record<string, unknown>): Observable<{ mode: string; result: any; generatedAt: string }> {
     return this.http.post<{ mode: string; result: any; generatedAt: string }>('/api/research_methods_lab', { mode, payload });
   }
 
