@@ -23,7 +23,14 @@ export class AiAssistantService {
 ئاستی ئەکادیمی: ${academicLevel}
 پرسیاری توێژینەوە / تێمای نووسین: ${userQuery}
 
-سەرچاوە خاوەکان لە داتابەیسەوە:
+سەرچاوەکانی هاتوو لە retrieval ـەوە:
+${context_data_sanitized(contextData)}
+
+یاسای پشتڕاستیی سەرچاوە:
+تۆمارێک کە تەنها لە index ـێک هاتووە، بە خۆی بەڵگەی citation ـی پشتڕاستکراو نییە.
+تەنها تۆمارێک کە بە ڕوونی VERIFIED دیاریکراوە و evidence ـی پەیوەندیداری هەیە، وەک سەرچاوەی پشتڕاستکراو بەکاربهێنە.
+retrieved، partially_verified، unverified یان metadata-only تەنها وەک leads بن، نەک وەک citationی کۆتایی.
+هیچ DOI، نووسەر، ساڵ، لاپەڕە، ئامار یان دەرئەنجامێک لە خۆتەوە پڕ مەکە.
 ${context_data_sanitized(contextData)}
 
 یاساکانی VIP Pro بۆ ئەم ئاست و بوارە:
