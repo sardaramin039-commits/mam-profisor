@@ -75,7 +75,14 @@ export class ExportWordComponent {
       const qa = await firstValueFrom(
         this.http.post<any>('/api/platform/qa-gate', {
           documentText,
-          sources: this.data.sourcesList()
+          sources: this.data.sourcesList().map(source => ({
+            title: source.title,
+            author: source.author,
+            year: source.year,
+            doi: source.doi,
+            isbn: source.isbn,
+            publisher: source.publisher
+          }))
         })
       );
 
