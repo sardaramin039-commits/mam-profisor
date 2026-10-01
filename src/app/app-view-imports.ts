@@ -45,6 +45,7 @@ import { ConceptGraphComponent } from './features/d3-charts/concept-graph.compon
 import { GlobalToastContainerComponent } from './components/global-toast-container';
 import { AcademicPlatformComponent } from './features/academic-platform/academic-platform.component';
 import { LibraryWorkspaceComponent } from './features/digital-library/library-workspace.component';
+import { VipWritingQualityComponent } from './features/editor/components/vip-writing-quality.component';
 
 export const BASIC_VIEW_IMPORTS = [
   CommonModule,
@@ -95,6 +96,7 @@ export const WORKSPACE_FEATURE_IMPORTS = [
   GrammarSyntaxFloatingPanelComponent,
   AcademicAdditionsSidebarComponent,
   ConceptGraphComponent,
+  VipWritingQualityComponent,
 ] as const;
 
 /** Legacy aggregate kept for compatibility with feature code outside template sections. */
