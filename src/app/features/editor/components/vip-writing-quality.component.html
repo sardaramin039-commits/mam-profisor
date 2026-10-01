@@ -1,0 +1,99 @@
+<section class="rounded-2xl border-2 border-stone-800 bg-stone-950 text-stone-100 p-5 space-y-5 font-serif" dir="rtl">
+  <header class="flex items-center justify-between gap-3 flex-wrap border-b border-stone-800 pb-4">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-xl bg-amber-500 text-stone-950 flex items-center justify-center">
+        <mat-icon>workspace_premium</mat-icon>
+      </div>
+      <div>
+        <h2 class="text-base font-bold text-amber-400">VIP Pro ـی کواڵیتی نووسین</h2>
+        <p class="text-[11px] text-stone-400">١١١١ یاسای هەڵسەنگاندن لەسەر بنەمای ١١ پێوەر و ئاستی ئەکادیمی</p>
+      </div>
+    </div>
+    <span class="px-3 py-1 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[10px] font-mono font-bold">
+      {{ levelLabel() }}
+    </span>
+  </header>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+    @for (item of [
+      ['language','زمان'],
+      ['structure','پێکهاتە'],
+      ['evidence','بەڵگە'],
+      ['rigor','توندوتۆڵی']
+    ]; track item[0]) {
+      <div class="rounded-xl border border-stone-800 bg-stone-900/80 p-3">
+        <span class="block text-[10px] text-stone-400">{{ item[1] }}</span>
+        <span class="text-lg font-black text-amber-300">
+          @if (result(); as r) {
+            {{ r.dimensions.find(d => d.key === item[0])?.score ?? '—' }}
+          } @else { — }
+        </span>
+      </div>
+    }
+  </div>
+
+  <button type="button" (click)="analyze()" [disabled]="analyzing()"
+    class="w-full rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold py-3 text-xs cursor-pointer disabled:opacity-50">
+    @if (analyzing()) { خەریکی هەڵسەنگاندنە... } @else { هەڵسەنگاندنی VIP Pro ـی بەشەکە }
+  </button>
+
+  @if (result(); as r) {
+    @if (r.status === 'insufficient_text') {
+      <div class="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 space-y-2">
+        <strong class="text-amber-300 text-xs">دەق بۆ نمرەدانی دروست کەمە</strong>
+        <p class="text-[11px] text-stone-300">{{ r.gaps[0] }}</p>
+        <p class="text-[10px] text-stone-500">کۆدی یاساکان: {{ r.rulesEvaluated }} | دڵنیایی داتا: {{ r.confidence }}%</p>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="rounded-xl border border-stone-800 bg-stone-900 p-4">
+          <span class="text-[10px] text-stone-400">نمرەی گشتی</span>
+          <div class="text-3xl font-black text-amber-300">{{ r.score }}/100</div>
+          <span class="text-[10px] text-stone-500">دڵنیایی پێوانە: {{ r.confidence }}%</span>
+        </div>
+        <div class="rounded-xl border border-stone-800 bg-stone-900 p-4">
+          <span class="text-[10px] text-stone-400">یاساکان</span>
+          <div class="text-2xl font-black text-stone-100">{{ r.rulesEvaluated }}</div>
+          <span class="text-[10px] text-stone-500">هۆشدارییە دۆزراوەکان: {{ r.rulesTriggered }}</span>
+        </div>
+        <div class="rounded-xl border border-stone-800 bg-stone-900 p-4">
+          <span class="text-[10px] text-stone-400">ئاست / بوار</span>
+          <div class="text-sm font-bold text-amber-200">{{ r.policy.label }}</div>
+          <span class="text-[10px] text-stone-500">{{ r.discipline }}</span>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <h3 class="text-xs font-bold text-stone-200">١١ پێوەری سەرەکی</h3>
+        @for (d of r.dimensions; track d.key) {
+          <div class="grid grid-cols-[120px_1fr_42px] items-center gap-2">
+            <span class="text-[10px] text-stone-300">{{ d.label }}</span>
+            <div class="h-2 rounded-full bg-stone-800 overflow-hidden">
+              <div class="h-full bg-amber-500" [style.width.%]="d.score"></div>
+            </div>
+            <span class="text-[10px] font-mono text-amber-300">{{ d.score }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="rounded-xl border border-emerald-900/60 bg-emerald-950/20 p-4">
+          <h3 class="text-xs font-bold text-emerald-300">خاڵە بەهێزەکان</h3>
+          @for (item of r.strengths; track item) { <p class="text-[10px] text-stone-300 mt-2">{{ item }}</p> }
+          @empty { <p class="text-[10px] text-stone-500 mt-2">هیچ خاڵێکی زۆر بەهێز دیاری نەکرا.</p> }
+        </div>
+        <div class="rounded-xl border border-rose-900/60 bg-rose-950/20 p-4">
+          <h3 class="text-xs font-bold text-rose-300">کەم و کوڕییەکان</h3>
+          @for (item of r.gaps; track item) { <p class="text-[10px] text-stone-300 mt-2">{{ item }}</p> }
+          @empty { <p class="text-[10px] text-stone-500 mt-2">لە پێوانە سەرەکییەکاندا کەموکوڕیی گەورە نەدۆزرایەوە.</p> }
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-indigo-900/60 bg-indigo-950/20 p-4 space-y-2">
+        <h3 class="text-xs font-bold text-indigo-300">پلانی چاکسازی</h3>
+        @for (item of r.recommendations; track item) { <p class="text-[10.5px] text-stone-300">{{ item }}</p> }
+        @empty { <p class="text-[10px] text-stone-500">چاکسازیی دیاریکراو نییە.</p> }
+      </div>
+    }
+  }
+</section>
