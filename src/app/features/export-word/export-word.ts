@@ -87,10 +87,20 @@ export class ExportWordComponent {
         return;
       }
 
+      const matchedManuscript = this.data.historyList().find(saved =>
+        saved.chapters.length === chapters.length &&
+        saved.chapters.every((savedChapter, index) =>
+          savedChapter.title === chapters[index].title &&
+          savedChapter.content === chapters[index].content
+        )
+      );
+      const discipline = matchedManuscript?.discipline || 'دیارینەکراو';
+      const academicLevel = matchedManuscript?.academicLevel || 'دیارینەکراو';
+
       const blob = await this.wordExportService.generateDocxBlob(
         this.title().trim() || 'توێژینەوەی_زانستی',
-        'زانستە گشتییەکان',
-        'ماستەر',
+        discipline,
+        academicLevel,
         chapters
       );
 
