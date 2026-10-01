@@ -4,7 +4,8 @@ import { PERSIAN_LIBRARY_SOURCES } from './library-sources-persian';
 import { TURKISH_LIBRARY_SOURCES } from './library-sources-turkish';
 import { GLOBAL_LIBRARY_SOURCES } from './library-sources-global';
 
-// Static registry only: counts, sync times, and active status are not live evidence until a source adapter verifies them.\nconst BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
+// Static registry metadata only; live totals/status/sync require authoritative adapters.
+const BASE_DIGITAL_LIBRARY_SOURCES: LibrarySource[] = [
   {
     id: 'kurdipedia',
     name: 'Kurdipedia Digital Archive',
