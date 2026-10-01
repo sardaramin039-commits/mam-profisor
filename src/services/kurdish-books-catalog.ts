@@ -1,6 +1,7 @@
 import { LibraryBook } from '../app/models/digital-library.model';
 
-// Seed retrieval candidates only. Metadata is not treated as verified until an authoritative source is checked.\nexport const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
+// Seed retrieval candidates only; authoritative verification is required before citation or download.
+export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
   {
     id: 'kb-001',
     title: 'مێژووی ئەدەبی کوردی',
