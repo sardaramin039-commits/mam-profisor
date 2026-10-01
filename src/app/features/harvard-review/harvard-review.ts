@@ -32,8 +32,13 @@ import { ReviewsService } from '../../services/reviews';
 
       @if (review(); as r) {
         <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 space-y-2 text-sm">
-          <div class="text-rose-400 font-bold">نمرەی کوالێتی هارفەرد: {{ r.score }}/100</div>
+          <div class="text-rose-400 font-bold">نمرەی هەڵسەنگاندن: {{ r.score }}/100</div>
           <p class="text-slate-300 text-xs">{{ r.critique }}</p>
+        </div>
+      }
+      @if (reviewError(); as error) {
+        <div class="p-3 bg-rose-950/30 rounded-lg border border-rose-800 text-rose-200 text-xs font-serif">
+          نمرەی ساختە پیشان نادرێت؛ {{ error }}
         </div>
       }
     </div>
@@ -44,18 +49,19 @@ export class HarvardReviewComponent {
   title = signal<string>('');
   isLoading = signal<boolean>(false);
   review = signal<{ score: number; critique: string } | null>(null);
+  reviewError = signal<string | null>(null);
 
   async startReview(): Promise<void> {
     if (!this.title().trim()) return;
     this.isLoading.set(true);
+    this.reviewError.set(null);
+    this.review.set(null);
     try {
       const res = await this.reviews.runHarvardReview(this.title(), 'ناوەڕۆکی توێژینەوە', 'زانستە گشتییەکان');
       this.review.set(res);
-    } catch {
-      this.review.set({
-        score: 88,
-        critique: 'توێژینەوەکە لەڕووی مێسۆدۆلۆژییەوە توندوتۆڵە و خاوەن ئارگیومێنتی بەهێزە.'
-      });
+    } catch (error) {
+      this.review.set(null);
+      this.reviewError.set(error instanceof Error ? error.message : 'نەتوانرا هەڵسەنگاندن لە سێرڤەر وەربگیرێت.');
     } finally {
       this.isLoading.set(false);
     }
