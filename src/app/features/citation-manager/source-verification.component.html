@@ -45,7 +45,7 @@
       [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
         (activeTab() === 'RERANKING' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
       <mat-icon class="!text-sm text-indigo-300">swap_vert</mat-icon>
-      <span>🎯 Cross-Encoder Reranking</span>
+      <span>🎯 Evidence Relevance Reranking</span>
     </button>
 
     <button
@@ -99,13 +99,13 @@
     <app-integrity-dashboard></app-integrity-dashboard>
   }
 
-  <!-- TAB: CROSS-ENCODER RERANKING -->
+  <!-- TAB: EVIDENCE RELEVANCE RERANKING -->
   @if (activeTab() === 'RERANKING') {
     <div class="space-y-4 font-serif text-xs">
       <div class="p-4 bg-indigo-950/30 border border-indigo-800/60 rounded-xl space-y-2">
         <h4 class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
           <mat-icon class="!text-sm text-indigo-400">psychology</mat-icon>
-          Cross-Encoder Reranking Engine (HybridRagClientService):
+          Evidence Relevance Engine (HybridRagClientService):
         </h4>
         <p class="text-[11px] text-slate-300 leading-relaxed">
           ئەم ئامرازە بە شێوازی Cross-Encoder هەڵسەنگاندنی ڕاستەوخۆ بۆ پەیوەندی بەڵگە ڕاکێشراوەکان بەرامبەر بانگەشە ئەکادیمییە دیاریکراوەکە (Claim) دەکات تاوەکو وردیی ڕیزبەندی سەرچاوەکان بەرز بکاتەوە.
@@ -135,7 +135,7 @@
         <div class="space-y-3 pt-2">
           <h4 class="font-bold text-slate-200 flex items-center gap-1.5">
             <mat-icon class="!text-sm text-emerald-400">task_alt</mat-icon>
-            ئەنجامی ڕیزبەندی بەپێی Cross-Encoder Score:
+            ئەنجامی ڕیزبەندی بەپێی پێوانەی heuristic ـی relevance:
           </h4>
 
           @for (item of rerankedResults(); track item.chunkId) {
@@ -152,7 +152,7 @@
                 </div>
                 <div class="flex items-center gap-2 font-mono text-[10.5px]">
                   <span class="text-indigo-400 font-bold bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">
-                    Cross-Encoder Score: {{ item.crossEncoderScore }}
+                    Relevance Score: {{ item.crossEncoderScore }}
                   </span>
                   <span class="text-slate-400">Lexical: {{ item.lexicalMatchRatio }}</span>
                 </div>
