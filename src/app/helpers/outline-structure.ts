@@ -17,7 +17,7 @@ export interface ThesisOutlineOptions {
 export function buildAcademicThesisOutline(options: ThesisOutlineOptions): ChapterItem[] {
   const title = (options.title || '').trim() || 'تێزی زانستی';
   const targetPages = Math.max(1, options.targetPages || 10);
-  const totalTargetWords = targetPages * 300;
+  const totalTargetWords = targetPages * 350;
 
   const chapters: ChapterItem[] = [];
   let currentId = 1;
