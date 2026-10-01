@@ -72,6 +72,25 @@ export class SystematicReviewService {
 
     const flowErrors: string[] = [];
     const n = flow;
+    const flowCounts: Array<[string, number | null]> = [
+      ['identified', n.identified], ['duplicatesRemoved', n.duplicatesRemoved], ['screened', n.screened],
+      ['excludedAfterScreening', n.excludedAfterScreening], ['fullTextAssessed', n.fullTextAssessed],
+      ['excludedAfterFullText', n.excludedAfterFullText], ['included', n.included]
+    ];
+    for (const [label, value] of flowCounts) {
+      if (value !== null && (!Number.isInteger(value) || value < 0)) {
+        flowErrors.push(`ژمارەی ${label} دەبێت integer ـی سفر یان گەورەتر بێت.`);
+      }
+    }
+    if (n.identified !== null && n.duplicatesRemoved !== null && n.duplicatesRemoved > n.identified) {
+      flowErrors.push('Duplicates removed نابێت لە Identified زیاتر بێت.');
+    }
+    if (n.screened !== null && n.excludedAfterScreening !== null && n.excludedAfterScreening > n.screened) {
+      flowErrors.push('Excluded after screening نابێت لە Screened زیاتر بێت.');
+    }
+    if (n.fullTextAssessed !== null && n.excludedAfterFullText !== null && n.excludedAfterFullText > n.fullTextAssessed) {
+      flowErrors.push('Excluded after full text نابێت لە Full-text assessed زیاتر بێت.');
+    }
     if (n.identified !== null && n.duplicatesRemoved !== null && n.screened !== null &&
         n.identified - n.duplicatesRemoved !== n.screened) {
       flowErrors.push('ژمارەی screened لەگەڵ identified و duplicatesRemoved یەکسان نییە.');
