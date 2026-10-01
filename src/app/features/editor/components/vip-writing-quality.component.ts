@@ -26,6 +26,10 @@ export class VipWritingQualityComponent {
 
   levelLabel = computed(() => this.service.getPolicy(this.academicLevel()).label);
 
+  dimensionScore(key: string): number | null {
+    return this.result()?.dimensions.find(d => d.key === key)?.score ?? null;
+  }
+
   analyze(): void {
     this.analyzing.set(true);
     try {
