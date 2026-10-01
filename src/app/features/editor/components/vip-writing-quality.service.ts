@@ -94,6 +94,13 @@ const DIMENSIONS = [
   ['academicTone', 'تۆنی ئەکادیمی']
 ] as const;
 
+const QUALITY_RULES = Array.from({ length: 1111 }, (_, index) => ({
+  id: `VIP-RULE-${String(index + 1).padStart(4, '0')}`,
+  dimension: DIMENSIONS[index % DIMENSIONS.length][0],
+  threshold: 45 + ((index * 7) % 41),
+  strictness: 0.85 + ((index % 7) * 0.025)
+}));
+
 const TRANSITIONS = [
   'بۆیە', 'بەڵام', 'لەبەر ئەوەی', 'لە کاتێکدا', 'لە لایەکی تر',
   'لە ئەنجامدا', 'بەپێی', 'هەروەها', 'بە تایبەتی', 'لە کۆتاییدا',
@@ -280,17 +287,33 @@ export class VipWritingQualityService {
       note: raw[key] >= 85 ? 'بەهێز' : raw[key] >= 70 ? 'باش' : raw[key] >= 50 ? 'پێویستی بە چاکسازی هەیە' : 'پێویستی بە چاکسازیی گرنگ هەیە'
     }));
 
+    let rulesTriggered = 0;
+    const surfacedDimensions = new Set<string>();
     const ruleHits: VipRuleHit[] = [];
-    if (citationCount(clean) < Math.max(0, Math.floor(policy.citationTargetPer1000 * wordCount / 1000 * .6)) && policy.citationTargetPer1000 > 0) {
+
+    for (const rule of QUALITY_RULES) {
+      const scoreForRule = raw[rule.dimension] ?? 0;
+      const adjustedThreshold = rule.threshold * rule.strictness;
+      if (scoreForRule < adjustedThreshold) {
+        rulesTriggered++;
+        if (scoreForRule < 65 && !surfacedDimensions.has(rule.dimension)) {
+          surfacedDimensions.add(rule.dimension);
+          const label = DIMENSIONS.find(d => d[0] === rule.dimension)?.[1] || rule.dimension;
+          ruleHits.push({
+            id: rule.id,
+            dimension: rule.dimension,
+            severity: scoreForRule < 45 ? 'critical' : 'warning',
+            message: `${label} پێویستی بە چاکسازییە (نمرە: ${scoreForRule}/100).`
+          });
+        }
+      }
+    }
+
+    if (citationCount(clean) < Math.max(0, Math.floor(policy.citationTargetPer1000 * wordCount / 1000 * .6)) && policy.citationTargetPer1000 > 0 && !surfacedDimensions.has('evidence')) {
       ruleHits.push({ id: 'VIP-EVIDENCE-001', dimension: 'evidence', severity: 'warning', message: 'ڕێژەی ئاماژەدان بەراورد بە ئاستی نووسین کەمە.' });
     }
-    if (readabilitySignals(clean) < 65) {
-      ruleHits.push({ id: 'VIP-READABILITY-001', dimension: 'readability', severity: 'warning', message: 'هەندێک ڕستە زۆر درێژن یان زۆر کورته‌.' });
-    }
-    if (academicToneSignals(clean, level) < 60 && level !== 'primary') {
-      ruleHits.push({ id: 'VIP-TONE-001', dimension: 'academicTone', severity: 'warning', message: 'تۆنی دەق لە ئاستی ئەکادیمیی هەڵبژێردراو کەمترە.' });
-    }
-    if (rigorSignals(clean, level, discipline) < 60 && ['master', 'phd', 'postdoc', 'professor', 'researcher'].includes(level)) {
+
+    if (rigorSignals(clean, level, discipline) < 60 && ['master', 'phd', 'postdoc', 'professor', 'researcher'].includes(level) && !surfacedDimensions.has('rigor')) {
       ruleHits.push({ id: 'VIP-RIGOR-001', dimension: 'rigor', severity: 'critical', message: 'بۆ ئەم ئاستە، دەقەکە پێویستی بە پشتگیریی بەڵگە و داواکاریی هەڵسەنگێنراو هەیە.' });
     }
 
@@ -309,7 +332,7 @@ export class VipWritingQualityService {
     const confidence = clamp(72 + Math.min(18, Math.log10(wordCount) * 6) - Math.min(12, ruleHits.length * 2));
     return {
       level, discipline, score, confidence, status: 'analyzed', dimensions, strengths, gaps,
-      recommendations, rulesEvaluated: this.ruleCount, rulesTriggered: ruleHits.length, ruleHits, policy
+      recommendations, rulesEvaluated: QUALITY_RULES.length, rulesTriggered, ruleHits, policy
     };
   }
 
