@@ -27,7 +27,7 @@ export class AiAssistantService {
 ${context_data_sanitized(contextData)}
 
 یاساکانی VIP Pro بۆ ئەم ئاست و بوارە:
-${directives.map((item, index) => `${index + 1}. ${item}`).join('\\n')}
+${directives.map((item, index) => `${index + 1}. ${item}`).join('\n')}
 
 یاسای کۆتایی: ئەگەر بەڵگەی پێویست نییە، مەکۆڵە؛ بڵێ زانیاریی پشتڕاستنەکراوە و پێویستی بە سەرچاوەی دڵنیابەخش هەیە. دووبارەبوونەوە، کڵێشە، درێژکردنی بێ مەبەست و تۆنی گفتوگۆیی کەم بکە.
 
