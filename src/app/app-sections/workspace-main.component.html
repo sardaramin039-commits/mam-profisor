@@ -85,6 +85,20 @@
         <app-window-two [host]="this"></app-window-two>
       </section>
 
+      <section class="mam-editor-section">
+        <div class="mam-section-heading">
+          <div>
+            <span class="mam-number">٠٣</span>
+            <div><h2>VIP Pro؛ هەڵسەنگاندنی کواڵیتی نووسین</h2><p>ئاست و بوار دەخوێنێتەوە و ١١ پێوەری کواڵیتی و ماتریسی ١١١١ یاسایی بەکاردەهێنێت.</p></div>
+          </div>
+        </div>
+        <app-vip-writing-quality
+          [chapterText]="activeChapter()?.content || ''"
+          [academicLevel]="refineForm.get('academicLevel')?.value"
+          [discipline]="refineForm.get('discipline')?.value">
+        </app-vip-writing-quality>
+      </section>
+
       <details class="mam-secondary-tools">
         <summary><mat-icon>tune</mat-icon><span>ئامرازە یارمەتیدەرەکان</span><small>گەڕان، وشەنامە و هاوکاری ئەکادیمی</small></summary>
         <div class="mam-secondary-grid">
