@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { DigitalLibraryService } from '../../services/digital-library.service';
@@ -46,12 +46,12 @@ import { LibraryReaderModalComponent } from './components/library-reader-modal.c
 
             <div class="grid grid-cols-3 gap-2 mt-6">
               <div class="rounded-xl border border-stone-800 bg-stone-950/70 p-3">
-                <span class="block text-[10px] text-stone-500">کتێب</span>
+                <span class="block text-[10px] text-stone-500">کۆی تۆمارەکان</span>
                 <strong class="block mt-1 text-lg text-amber-300 font-mono">{{ lib.books().length }}</strong>
               </div>
               <div class="rounded-xl border border-stone-800 bg-stone-950/70 p-3">
-                <span class="block text-[10px] text-stone-500">سەرچاوە</span>
-                <strong class="block mt-1 text-lg text-emerald-300 font-mono">{{ lib.sources().length }}</strong>
+                <span class="block text-[10px] text-stone-500">سەرچاوەی پشکنراو</span>
+                <strong class="block mt-1 text-lg text-emerald-300 font-mono">{{ verifiedBooks().length }}</strong>
               </div>
               <div class="rounded-xl border border-stone-800 bg-stone-950/70 p-3">
                 <span class="block text-[10px] text-stone-500">دۆزراوە</span>
@@ -137,6 +137,7 @@ export class LibraryWorkspaceComponent {
   public lib = inject(DigitalLibraryService);
   public bookmarksOpen = signal(false);
   public adminOpen = signal(false);
+  public verifiedBooks = computed(() => this.lib.books().filter(book => book.verified));
 
   public scrollToTop(): void {
     if (typeof window !== 'undefined') {
