@@ -5,7 +5,7 @@
     <div class="flex flex-wrap gap-2 mt-4">
       @for (item of [
         {k:'prisma',l:'PRISMA 2020'},{k:'power',l:'Power & Effect Size'},{k:'framework',l:'PICO/PICOS/PECO/SPIDER'},
-        {k:'risk_bias',l:'Risk of Bias'},{k:'evidence_grade',l:'Evidence Certainty'},{k:'claim_map',l:'Claim → Citation'},{k:'provenance',l:'Full-text Provenance'}
+        {k:'risk_bias',l:'Risk of Bias'},{k:'evidence_grade',l:'Evidence Certainty'},{k:'claim_map',l:'Claim و Citation'},{k:'provenance',l:'Full-text Provenance'}
       ]; track item.k) {
         <button (click)="mode.set($any(item.k))" class="px-3 py-2 rounded-xl text-xs border" [class.border-cyan-500]="mode()===item.k" [class.text-cyan-300]="mode()===item.k">{{item.l}}</button>
       }
