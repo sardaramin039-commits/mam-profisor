@@ -11,7 +11,7 @@ export class ApplicationStartupService {
 
   init(): void {
     try {
-      console.log('🏛️ Initializing Harvard Academic Digital Library & Core Store Engine...');
+      console.log('Initializing the academic digital library and core store...');
       // Engine services are initialized with default reactive state signals
       if (this.academicStore) {
         console.log('Academic Store initialized.');
