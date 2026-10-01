@@ -34,9 +34,9 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
       <!-- Grid Filter Controls -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
 
-        <!-- 1. Source Library Dropdown (All 40 sources) -->
+        <!-- 1. Source Library Dropdown -->
         <div>
-          <label for="filter-source-select" class="block text-[11px] font-semibold text-stone-400 mb-1">سەرچاوەی دیجیتاڵی (٤٠ کتێبخانە)</label>
+          <label for="filter-source-select" class="block text-[11px] font-semibold text-stone-400 mb-1">سەرچاوەی دیجیتاڵی ({{ lib.sources().length }} سەرچاوە)</label>
           <select
             id="filter-source-select"
             [ngModel]="lib.filters().sourceId"
