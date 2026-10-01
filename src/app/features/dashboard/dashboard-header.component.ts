@@ -30,6 +30,12 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
       <nav class="mam-nav" aria-label="بەشە سەرەکییەکان">
         <p class="mam-nav-label">کار</p>
 
+        <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'library'"
+                (click)="selectTab.emit('library'); closeMobileNav()">
+          <mat-icon>auto_stories</mat-icon>
+          <span><b>کتێبخانە</b><small>کتێب و سەرچاوە دیجیتاڵییەکان</small></span>
+        </button>
+
         <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'editor'"
                 (click)="selectTab.emit('editor'); closeMobileNav()">
           <mat-icon>history_edu</mat-icon>
