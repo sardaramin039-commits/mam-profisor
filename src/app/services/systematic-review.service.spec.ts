@@ -12,6 +12,7 @@ describe('SystematicReviewService', () => {
     });
     expect(result.totalItems).toBe(27);
     expect(result.missingItems).toBe(27);
+    expect(result.notApplicableItems).toBe(0);
     expect(result.readyForReporting).toBe(false);
   });
 
@@ -34,7 +35,19 @@ describe('SystematicReviewService', () => {
     expect(result.flowConsistent).toBe(true);
   });
 
-  it('reaches 100% only when all checklist items are complete', () => {
+  it('treats explicitly not-applicable items as covered, not missing', () => {
+    const statuses = Object.fromEntries(Array.from({ length: 27 }, (_, i) => [i + 1, 'not_applicable'])) as Record<number, 'not_applicable'>;
+    const result = service.assess(statuses, {
+      identified: null, duplicatesRemoved: null, screened: null,
+      excludedAfterScreening: null, fullTextAssessed: null,
+      excludedAfterFullText: null, included: null
+    });
+    expect(result.notApplicableItems).toBe(27);
+    expect(result.missingItems).toBe(0);
+    expect(result.readyForReporting).toBe(true);
+  });
+
+  it('reaches 100% only when all applicable checklist items are complete', () => {
     const statuses = Object.fromEntries(Array.from({ length: 27 }, (_, i) => [i + 1, 'complete'])) as Record<number, 'complete'>;
     const result = service.assess(statuses, {
       identified: null, duplicatesRemoved: null, screened: null,
