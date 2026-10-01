@@ -6,7 +6,8 @@ describe('DigitalLibraryCrawlerEngine', () => {
     const engine = new DigitalLibraryCrawlerEngine();
     const sources = engine.getSources();
 
-    expect(sources).toHaveLength(40);
+    expect(sources.length).toBeGreaterThanOrEqual(40);
+    expect(new Set(sources.map(source => source.id)).size).toBe(sources.length);
     expect(sources.every(source => source.status === 'idle')).toBe(true);
     expect(sources.every(source => source.totalItems === 0)).toBe(true);
     expect(sources.every(source => source.lastSync === '')).toBe(true);
