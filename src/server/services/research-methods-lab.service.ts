@@ -1,7 +1,80 @@
-export type MethodsLabMode = 'prisma' | 'power' | 'claim_map' | 'provenance' | 'framework' | 'risk_bias' | 'evidence_grade';
+export type MethodsLabMode = 'prisma' | 'power' | 'claim_map' | 'provenance' | 'framework' | 'risk_bias' | 'evidence_grade' | 'methodology_gate' | 'reporting_guideline';
 
 const num = (v: unknown, fallback = 0): number => { const n = Number(v); return Number.isFinite(n) ? n : fallback; };
 const clamp = (n: number, min = 0, max = 1): number => Math.min(max, Math.max(min, n));
+
+export type StudyDesign =
+  | 'qualitative' | 'quantitative' | 'mixed_methods' | 'experimental'
+  | 'observational_cohort' | 'observational_case_control' | 'observational_cross_sectional'
+  | 'systematic_review' | 'case_report' | 'diagnostic' | 'prediction_model'
+  | 'historical' | 'theoretical' | 'protocol' | 'quality_improvement'
+  | 'economic_evaluation' | 'animal_preclinical';
+
+const reportingGuidelines = [
+  { id:'CONSORT 2010', design:'experimental', scope:'Randomized trials', source:'EQUATOR Network', url:'https://www.equator-network.org/reporting-guidelines/consort/' },
+  { id:'STROBE', design:'observational', scope:'Cohort, case-control and cross-sectional studies', source:'EQUATOR Network', url:'https://www.equator-network.org/reporting-guidelines/strobe/' },
+  { id:'PRISMA 2020', design:'systematic_review', scope:'Systematic reviews', source:'PRISMA Statement', url:'https://www.prisma-statement.org/prisma-2020-checklist' },
+  { id:'COREQ', design:'qualitative', scope:'Interviews and focus groups', source:'EQUATOR Network', url:'https://www.equator-network.org/reporting-guidelines/coreq/' },
+  { id:'SRQR', design:'qualitative', scope:'Qualitative research reports', source:'EQUATOR Network', url:'https://www.equator-network.org/reporting-guidelines/srqr/' },
+  { id:'CARE', design:'case_report', scope:'Case reports', source:'EQUATOR Network', url:'https://www.equator-network.org/reporting-guidelines/care/' },
+  { id:'STARD', design:'diagnostic', scope:'Diagnostic accuracy studies', source:'EQUATOR Network', url:'https://www.equator-network.org/reporting-guidelines/stard/' },
+  { id:'TRIPOD', design:'prediction_model', scope:'Prediction model studies', source:'EQUATOR Network', url:'https://www.equator-network.org/reporting-guidelines/tripod-statement/' },
+  { id:'SPIRIT', design:'protocol', scope:'Study protocols', source:'EQUATOR Network', url:'https://www.equator-network.org/reporting-guidelines/spirit-statement/' },
+  { id:'SQUIRE', design:'quality_improvement', scope:'Quality improvement studies', source:'EQUATOR Network', url:'https://www.equator-network.org/reporting-guidelines/squire/' },
+  { id:'CHEERS', design:'economic_evaluation', scope:'Economic evaluations', source:'EQUATOR Network', url:'https://www.equator-network.org/reporting-guidelines/cheers/' },
+  { id:'ARRIVE', design:'animal_preclinical', scope:'Animal pre-clinical studies', source:'EQUATOR Network', url:'https://www.equator-network.org/reporting-guidelines/arrive/' }
+] as const;
+
+function reportingGuideline(p: Record<string, unknown>) {
+  const design = String(p['design'] || 'quantitative') as StudyDesign;
+  const normalized = design.startsWith('observational_') ? 'observational' : design;
+  const matches = reportingGuidelines.filter(item => item.design === normalized);
+  return {
+    studyDesign: design,
+    matches,
+    note: matches.length > 0
+      ? 'ئەمە هەڵبژاردنی guideline ـی گونجاوە بەپێی جۆری study ـە؛ پێش submit پێویستە journal و extension ـە تایبەتییەکانیش بپشکنرێن.'
+      : 'بۆ ئەم جۆری study ـە guideline ـێکی سەرەکی لەم catalog ـەدا دیاری نەکراوە؛ EQUATOR بۆ guideline ـی تایبەت بگەڕێ.',
+    source: 'EQUATOR Network reporting-guideline library'
+  };
+}
+
+const methodologyFields: Record<string, string[]> = {
+  qualitative: ['design','researchQuestion','sampling','recruitment','dataCollection','analysisPlan','reflexivity','ethics'],
+  quantitative: ['design','researchQuestion','variables','populationSample','sampleSizeJustification','measurement','analysisPlan','missingData','ethics'],
+  mixed_methods: ['design','researchQuestion','quantitativeComponent','qualitativeComponent','sampling','dataCollection','analysisPlan','integrationPlan','ethics'],
+  experimental: ['design','researchQuestion','populationSample','allocation','intervention','comparator','outcomes','sampleSizeJustification','analysisPlan','ethics'],
+  observational: ['design','researchQuestion','populationSample','inclusionExclusion','variables','confounders','measurement','analysisPlan','missingData','ethics'],
+  systematic_review: ['design','researchQuestion','eligibility','informationSources','searchStrategy','selectionProcess','dataCollection','riskOfBias','synthesis','protocol'],
+  case_report: ['design','caseDescription','timeline','diagnosticAssessment','intervention','outcome','consent'],
+  diagnostic: ['design','researchQuestion','participantSelection','indexTest','referenceStandard','flowTiming','analysisPlan'],
+  prediction_model: ['design','researchQuestion','participants','predictors','outcome','missingData','modelSpecification','validation'],
+  historical: ['design','researchQuestion','sourceCorpus','sourceSelection','sourceCriticism','periodization','analyticalFramework','citationMethod'],
+  theoretical: ['design','researchQuestion','conceptDefinitions','theoreticalFramework','literatureBasis','argumentStructure','counterarguments','scopeLimits'],
+  protocol: ['design','researchQuestion','objectives','methodology','populationSample','analysisPlan','ethics','registration'],
+  quality_improvement: ['design','problemDefinition','intervention','context','measures','analysisPlan','implementationFidelity','ethics'],
+  economic_evaluation: ['design','perspective','alternatives','outcomes','costs','timeHorizon','analysisPlan','uncertainty'],
+  animal_preclinical: ['design','researchQuestion','animals','housing','allocation','outcomes','sampleSizeJustification','analysisPlan','ethics']
+};
+
+function methodologyGate(p: Record<string, unknown>) {
+  const raw = String(p['design'] || 'quantitative');
+  const design = raw.startsWith('observational_') ? 'observational' : raw;
+  const fields = methodologyFields[design] || methodologyFields.quantitative;
+  const rows = fields.map(key => ({ key, status: String(p[key] ?? '').trim() ? 'complete' : 'missing' }));
+  const complete = rows.filter(row => row.status === 'complete').length;
+  const missing = rows.filter(row => row.status === 'missing').length;
+  return {
+    studyDesign: raw,
+    completed: complete,
+    missing,
+    total: rows.length,
+    completionPercent: Math.round((complete / Math.max(1, rows.length)) * 100),
+    readyForMethodReview: missing === 0,
+    missingFields: rows.filter(row => row.status === 'missing').map(row => row.key),
+    disclaimer: 'ئەمە preflight ـی methodology ـە، نە دڵنیابوونەوەی scientific validity. sample/data/result لە خۆیەوە دروست ناکات.'
+  };
+}
 
 function normalCdf(x: number): number {
   const sign = x < 0 ? -1 : 1;
@@ -116,5 +189,5 @@ function provenance(p: Record<string, unknown>) {
   return {records:records.map((r,i)=>({evidenceId:String(r['evidenceId']||('EVD-'+(i+1))),sourceId:String(r['sourceId']||''),documentFingerprint:String(r['documentFingerprint']||''),page:String(r['page']||''),locator:String(r['locator']||''),excerptHash:String(r['excerptHash']||''),retrievedAt:String(r['retrievedAt']||''),verified:r['verified']===true,complete:Boolean(r['sourceId']&&r['documentFingerprint']&&r['locator']&&r['retrievedAt'])})),incompleteCount:records.filter(r=>!(r['sourceId']&&r['documentFingerprint']&&r['locator']&&r['retrievedAt'])).length};
 }
 
-export class ResearchMethodsLabService { run(mode: MethodsLabMode,payload:Record<string,unknown>) { if(mode==='prisma') return prisma(payload); if(mode==='power') return {...power(payload),effectSize:effectSize(payload)}; if(mode==='claim_map') return claimMap(payload); if(mode==='provenance') return provenance(payload); if(mode==='framework') return framework(payload); if(mode==='risk_bias') return riskBias(payload); return evidenceGrade(payload); } }
+export class ResearchMethodsLabService { run(mode: MethodsLabMode,payload:Record<string,unknown>) { if(mode==='prisma') return prisma(payload); if(mode==='power') return {...power(payload),effectSize:effectSize(payload)}; if(mode==='claim_map') return claimMap(payload); if(mode==='provenance') return provenance(payload); if(mode==='framework') return framework(payload); if(mode==='risk_bias') return riskBias(payload); if(mode==='methodology_gate') return methodologyGate(payload); if(mode==='reporting_guideline') return reportingGuideline(payload); return evidenceGrade(payload); } }
 export const researchMethodsLabService=new ResearchMethodsLabService();
