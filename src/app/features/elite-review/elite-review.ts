@@ -123,76 +123,21 @@ export class EliteReviewComponent {
   isLoading = signal<boolean>(false);
   res = signal<{ score: number; critique: string } | null>(null);
 
-  readonly criteria = signal<HarvardRigorCriterion[]>([
-    {
-      id: 'crit-1',
-      name: '١. ڕەسەنایەتی و دەستپێشخەری (Originality & Novelty)',
-      nameEn: 'Originality & Novelty',
-      weight: 15,
-      score: 94,
-      feedback: 'بابەتەکە کەلێنێکی ڕاستەقینە لە لێکۆڵینەوە لە کولتوور و تەکنەلۆژیادا پڕ دەکاتەوە.'
-    },
-    {
-      id: 'crit-2',
-      name: '٢. تۆکمەییی میتۆدۆلۆجی (Methodological Rigor)',
-      nameEn: 'Methodological Rigor',
-      weight: 20,
-      score: 91,
-      feedback: 'ئاوێتەکردنی میتۆدی چەندایەتی و چۆنایەتی لە ئاستی ستانداردی دکتۆرایە.'
-    },
-    {
-      id: 'crit-3',
-      name: '٣. چوارچێوەی تیۆری و چەمکسازی (Theoretical Grounding)',
-      nameEn: 'Theoretical Grounding',
-      weight: 15,
-      score: 96,
-      feedback: 'بەستنەوەی چەمکەکانی مۆدێرنیتە بە فەلسەفە و کولتووری کوردی زۆر پتەوە.'
-    },
-    {
-      id: 'crit-4',
-      name: '٤. شیکاریی بەڵگەی مەیدانی (Empirical Evidence Analysis)',
-      nameEn: 'Empirical Evidence Analysis',
-      weight: 15,
-      score: 89,
-      feedback: 'خستنەڕووی داتای سەلمێنراو لە کەرتی پەروەردە و تەندروستیدا وردە.'
-    },
-    {
-      id: 'crit-5',
-      name: '٥. یەکپارچەیی لۆژیکی و گوتاری سۆرانی (Discourse Integrity)',
-      nameEn: 'Discourse Integrity',
-      weight: 15,
-      score: 95,
-      feedback: 'پارێزراوی تەواو لە هەڵە لۆژیکییە باوەکان (بەڵگەی بازنەیی و گشتاندن).'
-    },
-    {
-      id: 'crit-6',
-      name: '٦. دەوڵەمەندی سەرچاوەکان بە شێوازی هارڤارد (Citation Rigor)',
-      nameEn: 'Citation Rigor',
-      weight: 10,
-      score: 92,
-      feedback: 'پابەندبوون بە مۆدێلی وەرگێڕان و ئاماژەپێدانی ناوی کتێب و لاپەڕەکان.'
-    },
-    {
-      id: 'crit-7',
-      name: '٧. پاراوی و وشەسازیی پێوانەیی (Linguistic Purity)',
-      nameEn: 'Linguistic Purity',
-      weight: 10,
-      score: 98,
-      feedback: 'ڕەچاوکردنی تەواوی یاساکانی ڕێنووسی کوردیی سۆرانی و زاراوەسازی.'
-    }
-  ]);
+  readonly criteria = signal<HarvardRigorCriterion[]>([]);
+  reviewError = signal<string | null>(null);
 
   async evaluate(): Promise<void> {
     if (!this.title().trim()) return;
     this.isLoading.set(true);
+    this.reviewError.set(null);
+    this.criteria.set([]);
     try {
       const data = await this.reviews.runEliteAssessment(this.title(), 'ناوەڕۆکی بابەت', 'ڕشتەی زانستی', 'دکتۆرا');
       this.res.set(data);
-    } catch {
-      this.res.set({
-        score: 94,
-        critique: 'تێزەکە خاوەن تۆکمەیییەکی زانستیی باڵایە و بە پێوەرەکانی هارڤارد شایستەی پلەی نایاب (Distinction)ە بە ڕێژەی لە ٩٤٪ یەکگرتوویی.'
-      });
+      if (Array.isArray(data?.criteria)) this.criteria.set(data.criteria);
+    } catch (error) {
+      this.res.set(null);
+      this.reviewError.set(error instanceof Error ? error.message : 'نەتوانرا هەڵسەنگاندنی ئەکادیمی لە سێرڤەر وەربگیرێت.');
     } finally {
       this.isLoading.set(false);
     }
