@@ -1,3 +1,5 @@
+import { Injectable } from '@angular/core';
+
 export type VipAcademicLevel =
   | 'primary' | 'middle' | 'highschool' | 'institute' | 'bachelor'
   | 'master' | 'phd' | 'postdoc' | 'teacher' | 'professor' | 'researcher';
