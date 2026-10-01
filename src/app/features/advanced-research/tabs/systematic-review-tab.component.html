@@ -1,0 +1,87 @@
+<section class="space-y-5 font-serif" dir="rtl">
+  <header class="p-5 rounded-2xl border border-cyan-800/70 bg-cyan-950/20">
+    <div class="flex items-start justify-between gap-3 flex-wrap">
+      <div>
+        <h3 class="text-base font-bold text-cyan-200 flex items-center gap-2">
+          <mat-icon>checklist</mat-icon>
+          PRISMA 2020؛ Preflight ـی systematic review
+        </h3>
+        <p class="text-[11px] text-slate-400 mt-2 leading-relaxed">
+          ئەمە پشکنینی ڕاپۆرتکردنە؛ بە هیچ شێوەیەک بەڵگەی ئەوە نییە کە study ـەکە لە ڕووی زانستییەوە «باش» ـە. تەنها کەمبوونەوە و ناکۆکییە ڕاپۆرتکردنەکان دەخاتەڕوو.
+        </p>
+      </div>
+      <div class="text-[10px] text-slate-500 border border-slate-700 rounded-lg px-3 py-2">
+        ٢٧ پێوەر
+      </div>
+    </div>
+  </header>
+
+  <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 space-y-4">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <h4 class="text-sm font-bold text-slate-100">١. PRISMA 2020 checklist</h4>
+      <button type="button" (click)="audit()" class="px-4 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-bold">
+        پشکنینی پێوەرەکان
+      </button>
+    </div>
+
+    <div class="space-y-2">
+      @for (item of items; track item.id) {
+        <div class="grid grid-cols-[32px_1fr_auto] items-center gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950/70">
+          <span class="text-xs font-mono text-cyan-300">{{ item.id }}</span>
+          <div>
+            <span class="block text-[10px] text-slate-500">{{ item.section }}</span>
+            <span class="block text-[11px] text-slate-200 mt-1">{{ item.label }}</span>
+          </div>
+          <select
+            [ngModel]="status(item.id)"
+            (ngModelChange)="setStatus(item.id, $event)"
+            class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[10px] text-slate-100">
+            <option value="missing">کەمە</option>
+            <option value="partial">بەشێکی هەیە</option>
+            <option value="complete">تەواوە</option>
+          </select>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 space-y-4">
+    <h4 class="text-sm font-bold text-slate-100">٢. PRISMA flow؛ پشکنینی ژمارەکان</h4>
+    <p class="text-[10.5px] text-slate-400">ئەگەر هەموو ژمارەکان نەزانرێن، بە جۆری خۆیان بەتاڵ بهێڵە. ئەپ هیچ ژمارەیەک لە خۆیەوە پڕ ناکات.</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+      <label class="text-[10px] text-slate-300">Identified<input type="number" [(ngModel)]="identified" class="w-full mt-1 p-2 bg-slate-950 border border-slate-700 rounded-lg"></label>
+      <label class="text-[10px] text-slate-300">Duplicates removed<input type="number" [(ngModel)]="duplicatesRemoved" class="w-full mt-1 p-2 bg-slate-950 border border-slate-700 rounded-lg"></label>
+      <label class="text-[10px] text-slate-300">Screened<input type="number" [(ngModel)]="screened" class="w-full mt-1 p-2 bg-slate-950 border border-slate-700 rounded-lg"></label>
+      <label class="text-[10px] text-slate-300">Excluded after screening<input type="number" [(ngModel)]="excludedAfterScreening" class="w-full mt-1 p-2 bg-slate-950 border border-slate-700 rounded-lg"></label>
+      <label class="text-[10px] text-slate-300">Full-text assessed<input type="number" [(ngModel)]="fullTextAssessed" class="w-full mt-1 p-2 bg-slate-950 border border-slate-700 rounded-lg"></label>
+      <label class="text-[10px] text-slate-300">Excluded after full text<input type="number" [(ngModel)]="excludedAfterFullText" class="w-full mt-1 p-2 bg-slate-950 border border-slate-700 rounded-lg"></label>
+      <label class="text-[10px] text-slate-300">Included<input type="number" [(ngModel)]="included" class="w-full mt-1 p-2 bg-slate-950 border border-slate-700 rounded-lg"></label>
+    </div>
+  </section>
+
+  @if (result(); as r) {
+    <section class="rounded-2xl border border-slate-800 bg-slate-900 p-4 space-y-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800"><span class="block text-[10px] text-slate-500">تەواوبوون</span><strong class="text-xl text-cyan-300">{{ r.completionPercent }}%</strong></div>
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800"><span class="block text-[10px] text-slate-500">تەواو</span><strong class="text-xl text-emerald-300">{{ r.completedItems }}</strong></div>
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800"><span class="block text-[10px] text-slate-500">بەشێکی</span><strong class="text-xl text-amber-300">{{ r.partialItems }}</strong></div>
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800"><span class="block text-[10px] text-slate-500">کەمە</span><strong class="text-xl text-rose-300">{{ r.missingItems }}</strong></div>
+      </div>
+
+      <div class="p-3 rounded-xl border" [class]="r.readyForReporting ? 'border-emerald-700 bg-emerald-950/30' : 'border-amber-700 bg-amber-950/20'">
+        <strong class="text-xs">{{ r.readyForReporting ? 'PRISMA preflight تەواوە' : 'هێشتا کەموکوڕی یان ناکۆکی هەیە' }}</strong>
+        <p class="text-[10px] text-slate-400 mt-1">ئەم دەرئەنجامە تەنها بۆ completeness/reporting ـە؛ نمرەی کوالێتیی توێژینەوە نییە.</p>
+      </div>
+
+      @if (r.flowErrors.length) {
+        <div class="p-3 rounded-xl border border-rose-700 bg-rose-950/20 space-y-1">
+          <strong class="text-xs text-rose-300">کێشەی flow:</strong>
+          @for (error of r.flowErrors; track error) { <p class="text-[10px] text-slate-300">{{ error }}</p> }
+        </div>
+      }
+      <button type="button" (click)="reset()" class="px-3 py-2 border border-slate-700 rounded-lg text-[10px] text-slate-300 hover:bg-slate-800">
+        پاککردنەوەی پشکنین
+      </button>
+    </section>
+  }
+</section>
