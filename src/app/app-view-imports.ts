@@ -44,6 +44,7 @@ import { AcademicAdditionsSidebarComponent } from './features/editor/components/
 import { ConceptGraphComponent } from './features/d3-charts/concept-graph.component';
 import { GlobalToastContainerComponent } from './components/global-toast-container';
 import { AcademicPlatformComponent } from './features/academic-platform/academic-platform.component';
+import { LibraryWorkspaceComponent } from './features/digital-library/library-workspace.component';
 
 export const BASIC_VIEW_IMPORTS = [
   CommonModule,
@@ -56,6 +57,7 @@ export const FORM_VIEW_IMPORTS = [
 
 export const WORKSPACE_FEATURE_IMPORTS = [
   AcademicPlatformComponent,
+  LibraryWorkspaceComponent,
   SearchEngineComponent,
   PlagiarismComponent,
   PythonSandboxComponent,
