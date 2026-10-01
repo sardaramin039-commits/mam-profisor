@@ -5,18 +5,7 @@ import { INITIAL_LIBRARY_BOOKS } from './kurdish-books-catalog';
 export class DigitalLibraryCrawlerEngine {
   private sources: LibrarySource[] = [...DIGITAL_LIBRARY_SOURCES];
   private catalog: LibraryBook[] = [...INITIAL_LIBRARY_BOOKS];
-  private syncLogs: CrawlerSyncLog[] = [
-    {
-      id: 'log-001',
-      timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
-      status: 'success',
-      recordsCrawled: 420,
-      duplicatesRemoved: 14,
-      sourcesProcessed: 40,
-      durationMs: 4250,
-      message: 'خوولگەی هاودەمکردنی ٢٤ کاتژمێریی سەرچاوەکان بەسەرکەوتوویی جێبەجێکرا'
-    }
-  ];
+  private syncLogs: CrawlerSyncLog[] = [];
 
   constructor() {
     // The source catalog is configuration metadata only. Do not present
