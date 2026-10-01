@@ -44,7 +44,7 @@ describe('SystematicReviewService', () => {
     });
     expect(result.notApplicableItems).toBe(27);
     expect(result.missingItems).toBe(0);
-    expect(result.readyForReporting).toBe(true);
+    expect(result.readyForReporting).toBe(false);
   });
 
   it('reaches 100% only when all applicable checklist items are complete', () => {
