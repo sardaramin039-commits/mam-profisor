@@ -2,7 +2,6 @@ import { Component, ChangeDetectionStrategy, signal, inject, input, effect } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { GoogleGenAI } from '@google/genai';
 import { SoraniSpellingCorrector } from '../../../helpers/sorani-spelling';
 
 export interface ScientificAnalysisResult {
