@@ -243,15 +243,7 @@ export class CitationHealthCheckComponent {
       });
     }
 
-    // Default sample fallback if no citations found in current text yet
-    if (matches.length === 0) {
-      return [
-        { rawCitation: '(عەبدوڵڵا، ٢٠٢٣)', author: 'عەبدوڵڵا', year: '٢٠٢٣', matchedInBibliography: false, suggestedType: 'journal' },
-        { rawCitation: '(Smith et al., 2021)', author: 'Smith et al.', year: '2021', matchedInBibliography: true, suggestedType: 'journal' },
-        { rawCitation: '(لەیلانی، ٢٠٢٤)', author: 'لەیلانی', year: '٢٠٢٤', matchedInBibliography: false, suggestedType: 'book' }
-      ];
-    }
-
+    // Never invent citations or bibliography entries when the current text has none.
     return matches;
   });
 
@@ -281,15 +273,15 @@ export class CitationHealthCheckComponent {
       id: `src-${Date.now()}`,
       userId: 'user-default',
       sourceType: (item.suggestedType as any) || 'journal',
-      isVerified: true,
+      isVerified: false,
       title: this.quickAddTitle || `توێژینەوەی ${this.quickAddAuthor}`,
       author: this.quickAddAuthor,
       authors: [this.quickAddAuthor],
       year: parseInt(this.quickAddYear) || 2024,
       type: item.suggestedType || 'journal',
-      journal: 'گۆڤاری زانستیی ئەکادیمی',
-      publisher: 'دەزگای زانستی',
-      formattedCitation: `${this.quickAddAuthor} (${this.quickAddYear}). ${this.quickAddTitle || 'توێژینەوەی ئەکادیمی'}. گۆڤاری زانستی.`
+      journal: '',
+      publisher: '',
+      formattedCitation: `${this.quickAddAuthor} (${this.quickAddYear}). ${this.quickAddTitle || 'توێژینەوەی ئەکادیمی'}.`
     };
 
     const currentSources = this.store.sources();
