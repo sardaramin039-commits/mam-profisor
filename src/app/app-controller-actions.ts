@@ -1,3 +1,5 @@
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { FormalityToneConfig } from './features/editor/components/formality-tone-control.component';
 import { TextLineageNode } from './features/editor/components/text-lineage-connector.component';
 import { AppAcademicActions } from './helpers/app-academic-actions';
@@ -8,6 +10,7 @@ import { ChapterItemModel as ChapterItem } from './domain/models';
 import { AppControllerBase } from './app-controller-base';
 
 export abstract class AppControllerActions extends AppControllerBase {
+  private http = inject(HttpClient);
 
   updateActiveChapterContent(newContent: string) {
     const activeId = this.editorService.activeChapterId();
@@ -296,10 +299,67 @@ export abstract class AppControllerActions extends AppControllerBase {
   onFilterCategory(cat: string) { this.bridge.onFilterCategory(cat); }
   useGlossaryTerm(entry: any) { this.bridge.useGlossaryTerm(entry); }
   toggleFaq(idx: number) { this.bridge.toggleFaq(idx); }
-  reviewStructure() { this.dashboardState.calibrateAuthorVoice(); }
-  autoWrite() { this.bridge.runCognitiveCopilot(); }
-  autoHumanize() { this.bridge.runCognitiveCopilot(); }
-  saveAll() { this.saveStateLocally(); }
+  reviewStructure(): void {
+    const chapter = this.activeChapter();
+    if (!chapter) {
+      this.toastService.showWarning('پێداچوونەوە', 'تکایە سەرەتا بەشێک هەڵبژێرە.');
+      return;
+    }
+    this.bridge.analyzeChapterRigor(chapter);
+  }
+
+  autoWrite(): void {
+    this.bridge.runCognitiveCopilot();
+  }
+
+  autoHumanize(): void {
+    this.bridge.runAcademicParaphrase();
+  }
+
+  async saveAll(): Promise<void> {
+    const chapters = this.editorService.chapters()
+      .filter(ch => typeof ch.content === 'string' && ch.content.trim().length > 0)
+      .map(ch => ({ title: ch.title, content: ch.content }));
+
+    if (chapters.length === 0) {
+      this.toastService.showWarning('هەناردەکردن', 'هیچ ناوەڕۆکێکی ئامادە بۆ هەناردەکردن نییە.');
+      return;
+    }
+
+    try {
+      const title = (this.manuscriptTitle() || 'توێژینەوەی_زانستی').trim();
+      const qaText = chapters.map(ch => `### ${ch.title}\\n${ch.content}`).join('\\n\\n');
+      const qa = await firstValueFrom(this.http.post<any>('/api/platform/qa-gate', {
+        documentText: qaText,
+        sources: this.data.sourcesList()
+      }));
+
+      if (qa?.qa?.exportBlocked === true) {
+        this.toastService.showWarning(
+          'هەناردە بلۆک کرا',
+          qa?.qaResult?.kurdishSummaryStatus || 'پێویستە پشکنینی بەڵگە و هەڵسەنگاندنی ئەکادیمی تەواو بێت پێش هەناردەکردن.'
+        );
+        return;
+      }
+
+      const blob = await this.wordExportService.generateDocxBlob(
+        title,
+        this.refineForm.get('discipline')?.value || 'زانستە گشتییەکان',
+        this.refineForm.get('academicLevel')?.value || 'ماستەر',
+        chapters
+      );
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${title.replace(/\\s+/g, '_')}.docx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      this.toastService.showSuccess('هەناردە سەرکەوتوو بوو', 'فایلی Word بە سەرکەوتوویی ئامادە کرا.');
+    } catch (error) {
+      console.error('Bottom-bar Word export failed:', error);
+      this.toastService.showWarning('هەڵەی هەناردە', 'پشکنینی بەڵگە یان دروستکردنی فایل سەرکەوتوو نەبوو.');
+    }
+  }
   closeChapterPreview() { this.viewedChapter.set(null); }
   updateCompareLeftText(v: string) { this.bridge.updateCompareLeftText(v); }
   updateCompareRightText(v: string) { this.bridge.updateCompareRightText(v); }
