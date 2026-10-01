@@ -49,24 +49,28 @@
             class="w-full bg-slate-950 border border-slate-700 text-slate-100 text-xs rounded-xl p-2.5 focus:outline-none focus:border-cyan-500"
           ></textarea>
 
+          <div class="rounded-lg border border-slate-800 bg-slate-950 p-2 text-[10px] text-slate-400">{{exportGateMessage()}}</div>
           <div class="flex flex-wrap gap-2 pt-2">
             <button
+              [disabled]="exportBlocked()"
               (click)="multiAgent.exportAcademicDocument('latex', docTitleInput.value || 'Paper', docContentInput.value)"
-              class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1"
+              class="bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1"
             >
               <mat-icon class="text-sm">code</mat-icon>
               داگرتنی LaTeX (.tex)
             </button>
             <button
+              [disabled]="exportBlocked()"
               (click)="multiAgent.exportAcademicDocument('markdown', docTitleInput.value || 'Paper', docContentInput.value)"
-              class="bg-blue-700 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1"
+              class="bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1"
             >
               <mat-icon class="text-sm">description</mat-icon>
               داگرتنی Markdown (.md)
             </button>
             <button
+              [disabled]="exportBlocked()"
               (click)="multiAgent.exportAcademicDocument('epub', docTitleInput.value || 'Paper', docContentInput.value)"
-              class="bg-purple-700 hover:bg-purple-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1"
+              class="bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-purple-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1"
             >
               <mat-icon class="text-sm">auto_stories</mat-icon>
               داگرتنی EPUB Book
