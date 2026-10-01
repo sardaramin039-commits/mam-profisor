@@ -48,6 +48,7 @@ export interface VipWritingQualityResult {
   gaps: string[];
   recommendations: string[];
   rulesEvaluated: number;
+  rulesAvailable: number;
   rulesTriggered: number;
   ruleHits: VipRuleHit[];
   policy: VipLevelPolicy;
@@ -247,7 +248,7 @@ export class VipWritingQualityService {
         status: 'insufficient_text', dimensions: [], strengths: [],
         gaps: [`دەق کەمترە لە کەمترین ${policy.minWords} وشەی پێویست بۆ ئاستی ${policy.label}.`],
         recommendations: ['دەقەکە درێژتر بکە پاشان پشکنینی VIP دووبارە بکەوە.'],
-        rulesEvaluated: this.ruleCount, rulesTriggered: 0, ruleHits: [], policy
+        rulesEvaluated: 0, rulesAvailable: QUALITY_RULES.length, rulesTriggered: 0, ruleHits: [], policy
       };
     }
 
@@ -332,7 +333,7 @@ export class VipWritingQualityService {
     const confidence = clamp(72 + Math.min(18, Math.log10(wordCount) * 6) - Math.min(12, ruleHits.length * 2));
     return {
       level, discipline, score, confidence, status: 'analyzed', dimensions, strengths, gaps,
-      recommendations, rulesEvaluated: QUALITY_RULES.length, rulesTriggered, ruleHits, policy
+      recommendations, rulesEvaluated: QUALITY_RULES.length, rulesAvailable: QUALITY_RULES.length, rulesTriggered, ruleHits, policy
     };
   }
 
