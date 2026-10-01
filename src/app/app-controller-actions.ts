@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { inject } from '@angular/core';
 import { FormalityToneConfig } from './features/editor/components/formality-tone-control.component';
 import { TextLineageNode } from './features/editor/components/text-lineage-connector.component';
 import { AppAcademicActions } from './helpers/app-academic-actions';
@@ -328,7 +329,7 @@ export abstract class AppControllerActions extends AppControllerBase {
 
     try {
       const title = (this.manuscriptTitle() || 'توێژینەوەی_زانستی').trim();
-      const qaText = chapters.map(ch => `### ${ch.title}\\n${ch.content}`).join('\\n\\n');
+      const qaText = chapters.map(ch => `### ${ch.title}\n${ch.content}`).join('\n\n');
       const qa = await firstValueFrom(this.http.post<any>('/api/platform/qa-gate', {
         documentText: qaText,
         sources: this.data.sourcesList()
@@ -351,7 +352,7 @@ export abstract class AppControllerActions extends AppControllerBase {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `${title.replace(/\\s+/g, '_')}.docx`;
+      anchor.download = `${title.replace(/\s+/g, '_')}.docx`;
       anchor.click();
       URL.revokeObjectURL(url);
       this.toastService.showSuccess('هەناردە سەرکەوتوو بوو', 'فایلی Word بە سەرکەوتوویی ئامادە کرا.');
