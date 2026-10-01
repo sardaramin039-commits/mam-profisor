@@ -120,7 +120,7 @@ function sentencesOf(text: string): string[] {
 }
 
 function citationCount(text: string): number {
-  const parenthetical = text.match(/\([^()]{2,80},\s*[0-9٠-٩]{4}[a-z]?[a-z]?(?:\s*)\)/gi) || [];
+  const parenthetical = text.match(/\([^()]{2,80},\s*[0-9٠-٩]{4}[a-z]?(?:\s*)\)/gi) || [];
   const bracketed = text.match(/\[[^\[\]]{2,80},\s*[0-9٠-٩]{4}[a-z]?[a-z]?(?:\s*)\]/gi) || [];
   return new Set([...parenthetical, ...bracketed].map(x => x.toLowerCase())).size;
 }
