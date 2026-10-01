@@ -67,8 +67,8 @@ export class SourceVerificationComponent {
 
   linkedClaims = computed<EvidenceLinkedClaim[]>(() => {
     return this.deduplicatedSources()
-      .filter(source => source.claimText.trim().length > 0)
-      .map(source => SourceVerificationEngine.createLinkedClaim(source.claimText, source, 'SOURCE-BASED'));
+      .filter(source => (source.claimText || '').trim().length > 0)
+      .map(source => SourceVerificationEngine.createLinkedClaim(source.claimText || '', source, 'SOURCE-BASED'));
   });
 
   researchGateAudit = computed<ResearchGateAuditResult>(() => {
