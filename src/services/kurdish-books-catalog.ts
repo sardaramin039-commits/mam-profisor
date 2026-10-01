@@ -1,6 +1,6 @@
 import { LibraryBook } from '../app/models/digital-library.model';
 
-export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
+// Seed retrieval candidates only. Metadata is not treated as verified until an authoritative source is checked.\nexport const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
   {
     id: 'kb-001',
     title: 'مێژووی ئەدەبی کوردی',
@@ -18,9 +18,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-9953-0-1234-1',
     pageCount: 680,
     subjects: ['ئەدەبیات', 'مێژوو', 'شیعری کلاسیک', 'کوردناسی'],
-    rating: 4.9,
-    reviewCount: 128,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -40,9 +38,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-9953-0-5678-2',
     pageCount: 520,
     subjects: ['مێژوو', 'کۆمەڵناسی', 'جوگرافیا'],
-    rating: 4.8,
-    reviewCount: 95,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -62,9 +58,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-9953-0-9988-3',
     pageCount: 740,
     subjects: ['مێژووی میرنشینەکان', 'دەستنووس', 'سیاسەت'],
-    rating: 5.0,
-    reviewCount: 210,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -84,9 +78,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-964-6500-11-0',
     pageCount: 1040,
     subjects: ['زمانەوانی', 'فەرهەنگ', 'زاراوەسازی'],
-    rating: 4.9,
-    reviewCount: 180,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -106,9 +98,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-2-908416-02-1',
     pageCount: 380,
     subjects: ['Edebiyata Klasîk', 'Helbest', 'Kurmancî'],
-    rating: 4.9,
-    reviewCount: 142,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -128,9 +118,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-0844817279',
     pageCount: 288,
     subjects: ['History', 'Anthropology', 'Kurdish Studies'],
-    rating: 4.7,
-    reviewCount: 88,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -150,9 +138,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-9953-0-4411-5',
     pageCount: 410,
     subjects: ['زمانەوانی', 'مۆرفۆلۆژی', 'ڕێزمان'],
-    rating: 4.8,
-    reviewCount: 76,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -172,9 +158,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-977-11-2234-9',
     pageCount: 460,
     subjects: ['التاريخ الإسلامي', 'الدراسات الكردية', 'التراجم'],
-    rating: 4.6,
-    reviewCount: 52,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -194,9 +178,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-975-05-0123-8',
     pageCount: 490,
     subjects: ['Sosyoloji', 'Etnografya', 'Tarih'],
-    rating: 4.9,
-    reviewCount: 115,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -216,9 +198,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-964-321-456-7',
     pageCount: 360,
     subjects: ['جامعه‌شناسی سیاسی', 'تاریخ معاصر', 'جنبش‌های اجتماعی'],
-    rating: 4.8,
-    reviewCount: 64,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -238,9 +218,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-9953-0-8800-0',
     pageCount: 1450,
     subjects: ['یاسا', 'سیاسەت', 'بەڵگەنامەی فەرمی'],
-    rating: 4.9,
-    reviewCount: 45,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   },
   {
@@ -260,9 +238,7 @@ export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
     isbn: '978-3-11-042123-5',
     pageCount: 340,
     subjects: ['Linguistics', 'Syntax', 'Dialectology'],
-    rating: 4.9,
-    reviewCount: 38,
-    verified: true,
+    verified: false,
     indexedAt: new Date().toISOString()
   }
 ];
