@@ -36,6 +36,7 @@ import { SupportedLanguage, DocumentType } from '../../../models/digital-library
           <div class="flex items-center gap-2">
             <!-- Trigger Sync Button -->
             <button
+              type="button"
               (click)="runSync()"
               [disabled]="lib.isSyncing()"
               class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 font-serif font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
@@ -45,7 +46,7 @@ import { SupportedLanguage, DocumentType } from '../../../models/digital-library
             </button>
 
             <!-- Close Action -->
-            <button (click)="closeDialog.emit()" class="p-2 text-stone-400 hover:text-white rounded-lg hover:bg-stone-800 transition-colors">
+            <button type="button" (click)="closeDialog.emit()" class="p-2 text-stone-400 hover:text-white rounded-lg hover:bg-stone-800 transition-colors">
               <mat-icon class="!w-5 !h-5">close</mat-icon>
             </button>
           </div>
@@ -65,7 +66,7 @@ import { SupportedLanguage, DocumentType } from '../../../models/digital-library
             <div class="bg-stone-900 border border-stone-800 rounded-xl p-4 space-y-1">
               <span class="text-xs text-stone-400">کتێب و بەڵگەنامەی ئیندێکسکراو</span>
               <p class="font-mono text-2xl font-bold text-stone-100">{{ stats().totalBooks }}</p>
-              <span class="text-[10px] text-stone-400">لە بنکەدراوەی Firestore</span>
+              <span class="text-[10px] text-stone-400">لە کەتەلۆگی ناوخۆی ئەپ</span>
             </div>
 
             <div class="bg-stone-900 border border-stone-800 rounded-xl p-4 space-y-1">
