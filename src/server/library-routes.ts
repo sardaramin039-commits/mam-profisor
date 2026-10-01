@@ -103,13 +103,18 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
         return;
       }
 
-      const match = imageDataUrl.match(/^data:(image\\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/);
-      if (!match) {
+      const commaIndex = imageDataUrl.indexOf(',');
+      const header = commaIndex >= 0 ? imageDataUrl.slice(0, commaIndex) : '';
+      const data = commaIndex >= 0 ? imageDataUrl.slice(commaIndex + 1) : '';
+      const mimeMatch = header.startsWith('data:image/') ? header.slice('data:image/'.length).split(';')[0] : '';
+      const allowedMimeTypes = new Set(['png', 'jpeg', 'webp']);
+
+      if (commaIndex < 0 || !allowedMimeTypes.has(mimeMatch) || !data) {
         res.status(400).json({ error: 'Only PNG, JPEG, and WebP page images are supported.' });
         return;
       }
 
-      const [, mimeType, data] = match;
+      const mimeType = `image/${mimeMatch}`;
       const ai = getGeminiClient();
       const prompt = 'OCR ـی ئەم وێنەی لاپەڕەی بەڵگەنامە بکە. تەنها ئەو دەقەی بە ڕاستی لە وێنەکەدا دەبینرێت بنووسە. هیچ وشە، ڕستە، سەرچاوە یان زانیارییەکی خەیاڵی زیاد مەکە. هێڵبەندی و ژمارەکانی لاپەڕە تا ئەوەی دەتوانیت بپارێزە.';
 
