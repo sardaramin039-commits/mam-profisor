@@ -94,32 +94,44 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
     }
   });
 
-  // 5. POST /api/library/ocr - Perform OCR on document pages
+  // 5. POST /api/library/ocr - OCR from a real page image
   router.post('/ocr', async (req: Request, res: Response) => {
     try {
-      const { imageOrText } = req.body || {};
+      const { imageDataUrl } = req.body || {};
+      if (typeof imageDataUrl !== 'string' || imageDataUrl.length > 12_000_000) {
+        res.status(400).json({ error: 'Valid page image is required (maximum 8 MB decoded input).' });
+        return;
+      }
+
+      const match = imageDataUrl.match(/^data:(image\\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/);
+      if (!match) {
+        res.status(400).json({ error: 'Only PNG, JPEG, and WebP page images are supported.' });
+        return;
+      }
+
+      const [, mimeType, data] = match;
       const ai = getGeminiClient();
-
-      const prompt = `دەرھێنان، پشکنین و خاوێنکردنەوەی دەق (OCR) بکە بۆ ئەم بەڵگەنامە یان وێنەیەی خوارەوە لە کتێبخانەی دیجیتاڵیدا:
-"${imageOrText || ''}"
-
-تکایە دەقە ڕاستەقینەکە بە ڕوونی و بێ هەڵەی ڕێزمانی بە فۆرماتی ڕاستەوخۆ دەربێنە.`;
+      const prompt = 'OCR ـی ئەم وێنەی لاپەڕەی بەڵگەنامە بکە. تەنها ئەو دەقەی بە ڕاستی لە وێنەکەدا دەبینرێت بنووسە. هیچ وشە، ڕستە، سەرچاوە یان زانیارییەکی خەیاڵی زیاد مەکە. هێڵبەندی و ژمارەکانی لاپەڕە تا ئەوەی دەتوانیت بپارێزە.';
 
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: {
-          temperature: 0.1
-        }
+        contents: [
+          { inlineData: { mimeType, data } },
+          { text: prompt }
+        ],
+        config: { temperature: 0.1 }
       });
 
-      res.json({
-        text: response.text || 'دەقی دەرھێنراو لە بەڵگەنامەکە بە سەرکەوتوویی خاوێنکرایەوە.'
-      });
-    } catch {
-      res.json({
-        text: 'دەقی دەرھێنراو لە بەڵگەنامەکە لە ئەرشیڤی ناوەندی کتێبخانەی دیجیتاڵی بە سەرکەوتوویی لێکدرایەوە.'
-      });
+      const text = response.text?.trim();
+      if (!text) {
+        res.status(422).json({ error: 'OCR returned no text.' });
+        return;
+      }
+
+      res.json({ text });
+    } catch (err) {
+      console.warn('Library OCR failed:', err);
+      res.status(502).json({ error: 'OCR service failed. Please retry.' });
     }
   });
 
