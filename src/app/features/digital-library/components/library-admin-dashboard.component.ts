@@ -28,7 +28,7 @@ import { SupportedLanguage, DocumentType } from '../../../models/digital-library
                 {{ lib.t().adminDashboard }}
               </h2>
               <p class="text-xs text-stone-400">
-                سیستمی ڕەوتکردنەوە، پشکنین، هاودەمکردن و ئیندێکسکردنی ٤٠ کتێبخانەی دیجیتاڵی
+                سیستمی ڕەوتکردنەوە و پشکنینی سەرچاوە و ئیندێکسکردنی کتێبخانەی دیجیتاڵی
               </p>
             </div>
           </div>
@@ -59,8 +59,8 @@ import { SupportedLanguage, DocumentType } from '../../../models/digital-library
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="bg-stone-900 border border-stone-800 rounded-xl p-4 space-y-1">
               <span class="text-xs text-stone-400">کۆی گشتی کتێبخانەکان</span>
-              <p class="font-mono text-2xl font-bold text-amber-400">40</p>
-              <span class="text-[10px] text-emerald-400">سەرجەم سەرچاوەکان چالاکن</span>
+              <p class="font-mono text-2xl font-bold text-amber-400">{{ lib.sources().length }}</p>
+              <span class="text-[10px] text-stone-400">{{ stats().activeSources }} سەرچاوە چالاکە</span>
             </div>
 
             <div class="bg-stone-900 border border-stone-800 rounded-xl p-4 space-y-1">
@@ -89,7 +89,7 @@ import { SupportedLanguage, DocumentType } from '../../../models/digital-library
               [class]="activeTab() === 'sources' ? 'bg-amber-500 text-stone-950 font-bold' : 'bg-stone-900 text-stone-300 hover:bg-stone-800'"
               class="px-4 py-2 rounded-xl text-xs transition-colors cursor-pointer"
             >
-              کۆکراوەی ٤٠ سەرچاوە
+              کۆکراوەی سەرچاوەکان
             </button>
             <button
               (click)="activeTab.set('add_book')"
@@ -111,7 +111,7 @@ import { SupportedLanguage, DocumentType } from '../../../models/digital-library
           @if (activeTab() === 'sources') {
             <div class="space-y-3">
               <h3 class="font-serif font-bold text-sm text-stone-200">
-                لیستی سەرچاوەکان و بڵاوکراوەکانی ٤٠ کتێبخانە دیجیتاڵییەکە:
+                لیستی سەرچاوەکان و دۆخی پشکنینیان:
               </h3>
               
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
