@@ -41,11 +41,11 @@ export class DigitalLibraryService {
   }
 
   /**
-   * Initializes IndexedDB storage for the 40 Academic Books catalog & archive.
+   * Initializes IndexedDB storage for the local seed catalog & archive.
    */
   private async initIndexedDbArchive() {
     try {
-      // 1. Save 40 Academic Books archive to IndexedDB
+      // 1. Save the local seed catalog to IndexedDB
       await this.indexedDb.saveAcademicBooksArchive(INITIAL_LIBRARY_BOOKS);
 
       // 2. Load custom bookmarks & history from IndexedDB if available
