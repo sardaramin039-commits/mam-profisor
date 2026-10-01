@@ -17,7 +17,7 @@ export class ApplicationStartupService {
         console.log('Academic Store initialized.');
       }
       if (this.libraryService) {
-        console.log('Digital Library initialized with 40 archives.');
+        console.log('Digital Library service initialized.');
       }
     } catch (err) {
       console.warn('Startup initialization notice:', err);
