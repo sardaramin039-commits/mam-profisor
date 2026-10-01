@@ -1,4 +1,4 @@
-export type ChecklistStatus = 'complete' | 'partial' | 'missing';
+export type ChecklistStatus = 'complete' | 'partial' | 'missing' | 'not_applicable';
 
 export interface PrismaItem {
   id: number;
@@ -20,6 +20,7 @@ export interface PrismaPreflightResult {
   completedItems: number;
   partialItems: number;
   missingItems: number;
+  notApplicableItems: number;
   totalItems: number;
   completionPercent: number;
   flowConsistent: boolean;
@@ -63,9 +64,10 @@ export class SystematicReviewService {
 
   assess(statuses: Record<number, ChecklistStatus>, flow: PrismaFlowCounts): PrismaPreflightResult {
     const values = this.items.map(item => statuses[item.id] || 'missing');
-    const completedItems = values.filter(value => value === 'complete').length;
+    const completedItems = values.filter(value => value === 'complete' || value === 'not_applicable').length;
     const partialItems = values.filter(value => value === 'partial').length;
     const missingItems = values.filter(value => value === 'missing').length;
+    const notApplicableItems = values.filter(value => value === 'not_applicable').length;
     const completionPercent = Math.round(((completedItems + partialItems * 0.5) / this.items.length) * 100);
 
     const flowErrors: string[] = [];
@@ -84,19 +86,20 @@ export class SystematicReviewService {
     }
 
     const missingRequiredIds = this.items
-      .filter(item => (statuses[item.id] || 'missing') !== 'complete')
+      .filter(item => !['complete', 'not_applicable'].includes(statuses[item.id] || 'missing'))
       .map(item => item.id);
 
     return {
       completedItems,
       partialItems,
       missingItems,
+      notApplicableItems,
       totalItems: this.items.length,
       completionPercent,
       flowConsistent: flowErrors.length === 0,
       flowErrors,
       missingRequiredIds,
-      readyForReporting: completionPercent === 100 && flowErrors.length === 0
+      readyForReporting: missingItems === 0 && partialItems === 0 && flowErrors.length === 0
     };
   }
 }
