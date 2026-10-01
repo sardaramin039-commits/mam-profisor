@@ -5,7 +5,7 @@
     <div class="flex flex-wrap gap-2 mt-4">
       @for (item of [
         {k:'prisma',l:'PRISMA 2020'},{k:'power',l:'Power & Effect Size'},{k:'framework',l:'PICO/PICOS/PECO/SPIDER'},
-        {k:'risk_bias',l:'Risk of Bias'},{k:'evidence_grade',l:'Evidence Certainty'},{k:'claim_map',l:'Claim و Citation'},{k:'provenance',l:'Full-text Provenance'}
+        {k:'risk_bias',l:'Risk of Bias'},{k:'evidence_grade',l:'Evidence Certainty'},{k:'methodology_gate',l:'Methodology Gate'},{k:'reporting_guideline',l:'Reporting Guidelines'},{k:'claim_map',l:'Claim و Citation'},{k:'provenance',l:'Full-text Provenance'}
       ]; track item.k) {
         <button (click)="mode.set($any(item.k))" class="px-3 py-2 rounded-xl text-xs border" [class.border-cyan-500]="mode()===item.k" [class.text-cyan-300]="mode()===item.k">{{item.l}}</button>
       }
@@ -63,6 +63,30 @@
       <textarea [(ngModel)]="assessmentsJson" rows="7" class="area" placeholder='{"randomization process":"low","missing outcome data":"some concerns"}'></textarea>
       <textarea [(ngModel)]="evidenceJson" rows="5" class="area" placeholder='{"randomization process":"ڕوونکردنەوەی study..."}'></textarea>
     </div>
+  } @else if (mode()==='methodology_gate') {
+    <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+      <select [(ngModel)]="studyDesign" class="input">
+        <option value="qualitative">Qualitative</option><option value="quantitative">Quantitative</option><option value="mixed_methods">Mixed methods</option>
+        <option value="experimental">Experimental / randomized</option><option value="observational_cohort">Observational cohort</option><option value="observational_case_control">Observational case-control</option><option value="observational_cross_sectional">Observational cross-sectional</option>
+        <option value="systematic_review">Systematic review</option><option value="case_report">Case report</option><option value="diagnostic">Diagnostic accuracy</option><option value="prediction_model">Prediction model</option>
+        <option value="historical">Historical</option><option value="theoretical">Theoretical</option><option value="protocol">Protocol</option><option value="quality_improvement">Quality improvement</option><option value="economic_evaluation">Economic evaluation</option><option value="animal_preclinical">Animal pre-clinical</option>
+      </select>
+      <div class="grid md:grid-cols-2 gap-2">
+        <textarea [(ngModel)]="researchQuestion" rows="2" class="area" placeholder="Research question"></textarea>
+        <textarea [(ngModel)]="objectives" rows="2" class="area" placeholder="Objectives"></textarea>
+        <textarea [(ngModel)]="methodology" rows="2" class="area" placeholder="Design / methodology details"></textarea>
+        <textarea [(ngModel)]="populationSample" rows="2" class="area" placeholder="Population / sample"></textarea>
+        <textarea [(ngModel)]="sampling" rows="2" class="area" placeholder="Sampling / recruitment"></textarea>
+        <textarea [(ngModel)]="variables" rows="2" class="area" placeholder="Variables / constructs"></textarea>
+        <textarea [(ngModel)]="dataCollection" rows="2" class="area" placeholder="Data collection"></textarea>
+        <textarea [(ngModel)]="measurement" rows="2" class="area" placeholder="Measurement / instruments"></textarea>
+        <textarea [(ngModel)]="sampleSizeJustification" rows="2" class="area" placeholder="Sample-size justification"></textarea>
+        <textarea [(ngModel)]="analysisPlan" rows="2" class="area" placeholder="Analysis plan"></textarea>
+        <textarea [(ngModel)]="missingData" rows="2" class="area" placeholder="Missing-data plan"></textarea>
+        <textarea [(ngModel)]="ethics" rows="2" class="area" placeholder="Ethics / consent"></textarea>
+        <textarea [(ngModel)]="integrationPlan" rows="2" class="area" placeholder="Mixed-methods integration (if applicable)"></textarea>
+      </div>
+    </div>
   } @else if (mode()==='evidence_grade') {
     <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl grid md:grid-cols-3 gap-3">
       <select [(ngModel)]="initialCertainty" class="input"><option>high</option><option>moderate</option><option>low</option><option>very_low</option></select>
@@ -72,6 +96,8 @@
       <select [(ngModel)]="imprecision" class="input"><option value="">Imprecision</option><option>serious</option></select>
       <select [(ngModel)]="publicationBias" class="input"><option value="">Publication bias</option><option>serious</option></select>
     </div>
+  } @else if (mode()==='reporting_guideline') {
+    <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3"><select [(ngModel)]="studyDesign" class="input"><option value="qualitative">Qualitative</option><option value="quantitative">Quantitative</option><option value="mixed_methods">Mixed methods</option><option value="experimental">Experimental</option><option value="observational_cohort">Observational cohort</option><option value="observational_case_control">Observational case-control</option><option value="observational_cross_sectional">Observational cross-sectional</option><option value="systematic_review">Systematic review</option><option value="case_report">Case report</option><option value="diagnostic">Diagnostic</option><option value="prediction_model">Prediction model</option><option value="protocol">Protocol</option><option value="quality_improvement">Quality improvement</option><option value="economic_evaluation">Economic evaluation</option><option value="animal_preclinical">Animal pre-clinical</option></select><p class="text-[10px] text-slate-400">هەڵبژاردنی guideline تەنها بەپێی جۆری study ـە؛ پێش submission پێویستی بە پشکنینی journal و extension هەیە.</p></div>
   } @else if (mode()==='claim_map') {
     <textarea [(ngModel)]="claimsJson" rows="12" class="area" placeholder='[{"id":"CLM-1","text":"...","requiresLocation":true,"sources":[{"id":"S1","verified":true}]}]'></textarea>
   } @else {
