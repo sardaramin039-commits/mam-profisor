@@ -26,6 +26,20 @@ describe('ResearchMethodsLabService', () => {
     expect(result.downgradedFor).toEqual(['riskOfBias', 'inconsistency']);
   });
 
+  it('rejects impossible PRISMA flow counts', () => {
+    const result = researchMethodsLabService.run('prisma', {
+      identified: 10,
+      duplicatesRemoved: 11,
+      screened: -1,
+      excludedAfterScreening: 20,
+      fullTextAssessed: 1,
+      excludedAfterFullText: 2,
+      included: 0
+    }) as { flow: { flowErrors: string[] } };
+
+    expect(result.flow.flowErrors.length).toBeGreaterThan(0);
+  });
+
   it('blocks methodology review readiness when required fields are missing', () => {
     const result = researchMethodsLabService.run('methodology_gate', {
       design: 'quantitative',
