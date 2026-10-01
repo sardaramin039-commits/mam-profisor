@@ -70,16 +70,16 @@ export class SystematicReviewService {
 
     const flowErrors: string[] = [];
     const n = flow;
-    if (Number.isFinite(n.identified) && Number.isFinite(n.duplicatesRemoved) && Number.isFinite(n.screened) &&
-        (n.identified as number) - (n.duplicatesRemoved as number) !== n.screened) {
+    if (n.identified !== null && n.duplicatesRemoved !== null && n.screened !== null &&
+        n.identified - n.duplicatesRemoved !== n.screened) {
       flowErrors.push('ژمارەی screened لەگەڵ identified و duplicatesRemoved یەکسان نییە.');
     }
-    if (Number.isFinite(n.screened) && Number.isFinite(n.excludedAfterScreening) && Number.isFinite(n.fullTextAssessed) &&
-        (n.screened as number) - (n.excludedAfterScreening as number) !== n.fullTextAssessed) {
+    if (n.screened !== null && n.excludedAfterScreening !== null && n.fullTextAssessed !== null &&
+        n.screened - n.excludedAfterScreening !== n.fullTextAssessed) {
       flowErrors.push('ژمارەی full-text assessed لەگەڵ screened و exclusions یەکسان نییە.');
     }
-    if (Number.isFinite(n.fullTextAssessed) && Number.isFinite(n.excludedAfterFullText) && Number.isFinite(n.included) &&
-        (n.fullTextAssessed as number) - (n.excludedAfterFullText as number) !== n.included) {
+    if (n.fullTextAssessed !== null && n.excludedAfterFullText !== null && n.included !== null &&
+        n.fullTextAssessed - n.excludedAfterFullText !== n.included) {
       flowErrors.push('ژمارەی included لەگەڵ full-text assessed و full-text exclusions یەکسان نییە.');
     }
 
