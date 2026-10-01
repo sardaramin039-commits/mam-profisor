@@ -249,20 +249,25 @@ export class DigitalLibraryService {
     this.resetFilters();
   }
 
-  // OCR Processing using Gemini endpoint
-  public performOcr(textOrImageUrl: string): void {
+  // OCR Processing using a real uploaded page image.
+  public performOcr(imageDataUrl: string): void {
+    if (!imageDataUrl.startsWith('data:image/')) {
+      this.ocrTextResult.set('تەنها وێنەی لاپەڕە بۆ OCR ڕێگەپێدراوە.');
+      return;
+    }
+
     this.isOcrProcessing.set(true);
     this.ocrTextResult.set(null);
 
-    this.http.post<{ text: string }>('/api/library/ocr', { imageOrText: textOrImageUrl })
+    this.http.post<{ text: string }>('/api/library/ocr', { imageDataUrl })
       .subscribe({
         next: (res) => {
           this.ocrTextResult.set(res.text);
           this.isOcrProcessing.set(false);
         },
         error: (err) => {
-          console.warn('OCR Server call fallback locally:', err);
-          this.ocrTextResult.set('OCR بە شێوەی خۆکار سەرکەوتوو نەبوو. تکایە وێنەکە/بەڵگەنامەکە دووبارە بنێرە یان OCR لە سێرڤەر دووبارە هەوڵ بدەرەوە. هیچ دەقی ناو بەڵگەنامەکە بە fallback ـدا دانانرێت.');
+          console.warn('OCR server request failed:', err);
+          this.ocrTextResult.set('OCR سەرکەوتوو نەبوو. تکایە وێنەکە دووبارە هەڵبژێرە یان دواتر هەوڵ بدەرەوە.');
           this.isOcrProcessing.set(false);
         }
       });
