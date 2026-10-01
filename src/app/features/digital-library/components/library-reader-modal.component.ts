@@ -117,7 +117,8 @@ export class LibraryReaderModalComponent {
   private sanitizer = inject(DomSanitizer);
 
   public safePdfUrl = computed<SafeResourceUrl | null>(() => {
-    const url = this.lib.activeBook()?.downloadUrl || this.lib.activeBook()?.pdfUrl || '';
+    const book = this.lib.activeBook();
+    const url = book?.verified ? (book.downloadUrl || book.pdfUrl || '') : '';
     return url.startsWith('https://') ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : null;
   });
 
