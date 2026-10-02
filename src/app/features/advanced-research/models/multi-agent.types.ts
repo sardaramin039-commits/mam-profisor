@@ -86,30 +86,3 @@ export interface ResearchMemoryState {
   notes: string[];
   lastUpdated: string;
 }
-
-export interface ResearchIntegrityAuditResult {
-  status: 'sound' | 'needs_revision' | 'insufficient_information' | string;
-  executiveAssessment?: string;
-  alignment?: { area: string; status: 'aligned' | 'partial' | 'missing' | string; finding: string }[];
-  criticalGaps?: {
-    area: string;
-    severity: 'critical' | 'major' | 'minor' | string;
-    problem: string;
-    requiredAction: string;
-  }[];
-  claimsNeedingEvidence?: {
-    claim: string;
-    evidenceStatus: string;
-    note: string;
-  }[];
-  reproducibilityChecklist?: { item: string; status: 'complete' | 'partial' | 'missing' | string }[];
-  citationAudit?: { markerCount: number; bibliographyEntryCount: number; interpretation: string };
-  nextActions?: string[];
-  auditMeta?: {
-    model: string;
-    citationMarkerCount: number;
-    bibliographyEntryCount: number;
-    evidencePolicy: string;
-    generatedAt: string;
-  };
-}

@@ -10,4 +10,8 @@ import { APP_VIEW_IMPORTS } from '../app-view-imports';
 })
 export class AppCognitiveCopilotStressComponent {
   @Input({ required: true }) vm!: any;
+
+  get res(): any {
+    return this.vm?.copilotGapResult?.() || null;
+  }
 }

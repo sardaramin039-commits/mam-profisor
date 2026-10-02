@@ -12,4 +12,16 @@ import { APP_VIEW_IMPORTS } from '../app-view-imports';
 })
 export class AppWindow1FormPartAComponent {
   @Input({ required: true }) vm!: any;
+
+  get generatedTitleSummary() {
+    return this.vm?.generatedTitleSummary;
+  }
+
+  get isCopied() {
+    return this.vm?.isCopied;
+  }
+
+  get pageRangeWords() {
+    return this.vm?.pageRangeWords;
+  }
 }

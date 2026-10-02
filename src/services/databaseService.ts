@@ -6,11 +6,8 @@ import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
  * Includes local storage fallbacks for offline resilience.
  */
 export async function saveAcademicData(collectionPath: string, data: Record<string, unknown>): Promise<void> {
-  // The authenticated Firebase identity is authoritative. Never trust a client-supplied userId.
   const uid = auth.currentUser?.uid || undefined;
-
   try {
-
     const docRefId = doc(collection(db, collectionPath)).id;
     const docRef = doc(db, collectionPath, docRefId);
 
@@ -21,7 +18,7 @@ export async function saveAcademicData(collectionPath: string, data: Record<stri
     };
 
     await setDoc(docRef, payload);
-    console.log(`سەرکەوتوو: داتا پاشەکەوتکرا لە کۆکراوەی '${collectionPath}' بە ناسنامەی تۆماری ${docRefId}`);
+    console.log(`سەرکەوتوو: داتا پاشەکەوتکرا لە کۆکراوەی '${collectionPath}' بە ناسنامەی ${docRefId}`);
   } catch (error) {
     console.error('هەڵە لە پاشەکەوتکردنی داتا لە داتابەیس:', error);
     

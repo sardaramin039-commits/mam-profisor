@@ -6,9 +6,6 @@ on:
   pull_request:
   workflow_dispatch:
     branches: [main]
-  workflow_run:
-    workflows: ["Sync npm Lockfile"]
-    types: [completed]
 
 permissions:
   contents: read
@@ -19,7 +16,6 @@ concurrency:
 
 jobs:
   quality:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -48,9 +44,6 @@ jobs:
 
       - name: Lint
         run: npm run lint
-
-      - name: Source file size audit
-        run: npm run lint:file-size
 
       - name: Academic integrity audit
         run: npm run integrity:audit

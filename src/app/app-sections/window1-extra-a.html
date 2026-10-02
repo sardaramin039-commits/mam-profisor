@@ -1,5 +1,4 @@
-<div class="space-y-5">
-<!-- Custom TOC Textarea -->
+              <!-- Custom TOC Textarea -->
               @if (vm.refineForm.get('customTOCOn')?.value) {
                 <div class="space-y-1 bg-emerald-50/5 p-3 rounded-lg border-2 border-emerald-600/30 animate-expand-fade">
                   <div class="flex justify-between items-center text-[11px] font-bold text-emerald-900">
@@ -33,10 +32,9 @@
                             placeholder="داتا مەیدانییەکان لێرە بنووسە (بۆ نموونە: ڕێژەی بەشداربووان لە ڕاپرسییەکە، چاوپێکەوتنەکان، شیکارییە بینراوەکان یان دەستکەوتە سەرەتاییەکان...) تا لە نێو نوسینەکەدا شیبکرێنەوە."></textarea>
                   <div class="text-[10px] text-stone-600 font-serif leading-tight">
                     تێبینی: ئەم داتا یان ئامار و تێبینییە لێکۆڵینەوەییانەی لێرەدا دەینوسیت لەگەڵ بەشە لۆژیکی و زانستییە هاوتاکان شەن و کەو دەکرێن و بە شێوازێکی هاوسەنگ لە فاکتەری شیکاری دەرئەنجامدا جێگیر دەبن.
-                </div>
+                  </div>
                 </div>
               }
-            </div>
 
             <!-- ADVANCED ACADEMIC DOCUMENT STRUCTURE COMPONENTS -->
             <div class="space-y-2.5 pt-2 border-t border-gray-100">
@@ -235,7 +233,7 @@
                  (dragover)="vm.onDragOver($event, 'copyStyle')"
                  (dragleave)="vm.onDragLeave($event, 'copyStyle')"
                  (drop)="vm.onFileDrop($event, 'copyStyle')"
-                 [class.bg-emerald-100]="vm.isDraggingCopyStyle()">
+                 [class.bg-emerald-100]="isDraggingCopyStyle()">
               
               <div class="flex justify-between items-center">
                 <span class="block text-xs font-bold text-stone-900 flex items-center gap-1 bg-transparent">
@@ -244,9 +242,9 @@
                 </span>
                 
                 <div class="flex items-center gap-2">
-                  @if (vm.copyStyleFileName()) {
-                    <span class="text-[9px] text-emerald-950 bg-emerald-100 px-1.5 py-0.5 rounded border-2 border-emerald-800 font-mono font-bold truncate max-w-[120px]" [title]="vm.copyStyleFileName()">
-                      {{ vm.copyStyleFileName() }}
+                  @if (copyStyleFileName()) {
+                    <span class="text-[9px] text-emerald-950 bg-emerald-100 px-1.5 py-0.5 rounded border-2 border-emerald-800 font-mono font-bold truncate max-w-[120px]" [title]="copyStyleFileName()">
+                      {{ copyStyleFileName() }}
                     </span>
                   }
                   <button type="button" (click)="fileInputCopyStyle.click()" class="text-[10px] text-amber-900 hover:underline flex items-center gap-0.5 cursor-pointer bg-transparent font-bold">
@@ -299,8 +297,8 @@
                      (dragover)="vm.onDragOver($event, 'comp2')"
                      (dragleave)="vm.onDragLeave($event, 'comp2')"
                      (drop)="vm.onFileDrop($event, 'comp2')"
-                     [class.bg-emerald-100]="vm.isDraggingComp2()"
-                     [class.border-emerald-500]="vm.isDraggingComp2()"
+                     [class.bg-emerald-100]="isDraggingComp2()"
+                     [class.border-emerald-500]="isDraggingComp2()"
                      (click)="fileInputComp2.click()"
                      (keydown.enter)="fileInputComp2.click()"
                      tabindex="0"
@@ -309,8 +307,8 @@
                   <input type="file" #fileInputComp2 (change)="vm.onFileSelected($event, 'comp2')" class="hidden" accept=".docx,.doc,.pdf,.txt,.md,.json">
                   
                   <span class="text-xs font-bold text-stone-900 line-clamp-2 leading-tight">
-                    @if (vm.compareFile2Name()) {
-                      📂 {{ vm.compareFile2Name() }}
+                    @if (compareFile2Name()) {
+                      📂 {{ compareFile2Name() }}
                     } @else {
                       📂 فایلێک باربکە یان لێرە دایبنێ
                     }

@@ -1,4 +1,4 @@
-<div [hidden]="!viewedChapter()">
+  @if (viewedChapter()) {
     <div class="fixed inset-0 bg-black/85 backdrop-blur-md z-99 flex items-center justify-center p-4">
       <div class="bg-white text-black max-w-5xl w-full p-6 shadow-2xl relative rounded-xl border border-[#E5E1DA] flex flex-col justify-between max-h-[95vh] overflow-hidden">
         
@@ -74,4 +74,4 @@
           </div>
       </div>
     </div>
-</div>
+  }

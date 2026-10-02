@@ -274,4 +274,3 @@ export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingSe
     });
   }
 }
-

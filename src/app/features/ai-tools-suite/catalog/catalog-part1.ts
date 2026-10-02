@@ -1,4 +1,4 @@
-import type { AiToolItem } from '../ai-tools-catalog';
+import { AiToolItem } from '../ai-tools-catalog';
 import { CATALOG_PART1_A } from './catalog-part1-a';
 import { CATALOG_PART1_B } from './catalog-part1-b';
 

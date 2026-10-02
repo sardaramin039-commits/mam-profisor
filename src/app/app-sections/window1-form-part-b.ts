@@ -12,4 +12,16 @@ import { APP_VIEW_IMPORTS } from '../app-view-imports';
 })
 export class AppWindow1FormPartBComponent {
   @Input({ required: true }) vm!: any;
+
+  get isQuickPreviewVisible() {
+    return this.vm?.isQuickPreviewVisible;
+  }
+
+  get quickPreviewError() {
+    return this.vm?.quickPreviewError;
+  }
+
+  get quickPreviewSuggestions() {
+    return this.vm?.quickPreviewSuggestions;
+  }
 }

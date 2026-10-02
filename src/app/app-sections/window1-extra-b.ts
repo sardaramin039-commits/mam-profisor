@@ -10,4 +10,16 @@ import { APP_VIEW_IMPORTS } from '../app-view-imports';
 })
 export class AppWindow1ExtraBComponent {
   @Input({ required: true }) vm!: any;
+
+  get historyFilterLevel() {
+    return this.vm?.historyFilterLevel;
+  }
+
+  get historyFilterStatus() {
+    return this.vm?.historyFilterStatus;
+  }
+
+  get filteredHistoryList() {
+    return this.vm?.filteredHistoryList;
+  }
 }

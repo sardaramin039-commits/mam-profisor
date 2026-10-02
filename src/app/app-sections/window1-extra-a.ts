@@ -10,4 +10,20 @@ import { APP_VIEW_IMPORTS } from '../app-view-imports';
 })
 export class AppWindow1ExtraAComponent {
   @Input({ required: true }) vm!: any;
+
+  get isDraggingCopyStyle() {
+    return this.vm?.isDraggingCopyStyle;
+  }
+
+  get copyStyleFileName() {
+    return this.vm?.copyStyleFileName;
+  }
+
+  get isDraggingComp2() {
+    return this.vm?.isDraggingComp2;
+  }
+
+  get compareFile2Name() {
+    return this.vm?.compareFile2Name;
+  }
 }
