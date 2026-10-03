@@ -10,9 +10,19 @@ export interface WorkspaceSession {
   projectName: string;
   activeChapter: string;
   draftContent: string;
-  citationsList: any[];
+  citationsList: unknown[];
   integrityScore: number;
   lastSavedAt: string;
+  lastMemorySnapshotHash: string;
+}
+
+function contentHash(value: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16);
 }
 
 class ResearchProjectStateService {
@@ -40,6 +50,9 @@ class ResearchProjectStateService {
           ? Math.max(0, Math.min(100, Number(data['integrityScore'])))
           : workspace.integrityScore;
         workspace.lastSavedAt = typeof data['lastSavedAt'] === 'string' ? data['lastSavedAt'] : workspace.lastSavedAt;
+        workspace.lastMemorySnapshotHash = typeof data['lastMemorySnapshotHash'] === 'string'
+          ? data['lastMemorySnapshotHash']
+          : contentHash(workspace.draftContent.slice(0, 500));
       } else {
         await this.persistWorkspace(workspace);
       }
@@ -58,7 +71,8 @@ class ResearchProjectStateService {
       draftContent: workspace.draftContent.slice(0, 500_000),
       citationsList: workspace.citationsList.slice(0, 500),
       integrityScore: Math.max(0, Math.min(100, workspace.integrityScore)),
-      lastSavedAt: workspace.lastSavedAt
+      lastSavedAt: workspace.lastSavedAt,
+      lastMemorySnapshotHash: workspace.lastMemorySnapshotHash
     }, { merge: true });
   }
 
@@ -68,11 +82,12 @@ class ResearchProjectStateService {
       this.workspaces.set(key, {
         workspaceId,
         userId,
-        projectName: projectName || 'واڕکسپەی سی توێژینەوەی ئەکادیمی',
+        projectName: projectName || 'پڕۆژەی توێژینەوەی ئەکادیمی',
         activeChapter: 'دەروازە و پێشەکی',
         draftContent: '',
         citationsList: [],
         integrityScore: 0,
+        lastMemorySnapshotHash: '',
         lastSavedAt: new Date().toISOString()
       });
     }
@@ -85,14 +100,19 @@ class ResearchProjectStateService {
     if (chapter) ws.activeChapter = chapter;
     ws.lastSavedAt = new Date().toISOString();
 
-    // Also sync to Research Memory as draft_chapter
-    await researchMemoryService.addMemoryItem(userId, workspaceId, {
-      userId,
-      topic: ws.projectName,
-      type: 'draft_chapter',
-      content: content.slice(0, 500),
-      tags: [ws.activeChapter, 'workspace_auto_save']
-    });
+    const snapshot = content.slice(0, 500);
+    const snapshotHash = contentHash(snapshot);
+
+    if (snapshotHash !== ws.lastMemorySnapshotHash) {
+      await researchMemoryService.addMemoryItem(userId, workspaceId, {
+        userId,
+        topic: ws.projectName,
+        type: 'draft_chapter',
+        content: snapshot,
+        tags: [ws.activeChapter, 'workspace_auto_save']
+      });
+      ws.lastMemorySnapshotHash = snapshotHash;
+    }
 
     await this.persistWorkspace(ws);
     try {
@@ -124,7 +144,8 @@ class ResearchProjectStateService {
       {
         topic,
         discipline,
-        draftText: ws.draftContent || topic
+        draftText: ws.draftContent || topic,
+        rawSources: ws.citationsList as Array<Record<string, unknown>>
       },
       getGeminiClient
     );
