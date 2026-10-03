@@ -43,6 +43,10 @@ type InputSource = {
   doi?: string;
   isbn?: string;
   issn?: string;
+  pmid?: string;
+  openAlexId?: string;
+  crossrefId?: string;
+  semanticScholarId?: string;
   publisher?: string;
   claimText?: string;
   evidenceText?: string;
