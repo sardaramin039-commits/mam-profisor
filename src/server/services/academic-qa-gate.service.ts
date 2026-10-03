@@ -43,6 +43,52 @@ function hasCitationEligibleSource(source: unknown): boolean {
     && item['rejectedAsFabricated'] !== true;
 }
 
+function normalizeCitationValue(value: unknown): string {
+  return String(value ?? '')
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function citationAuthorMatches(citationAuthor: string, sourceAuthor: string): boolean {
+  const citation = normalizeCitationValue(citationAuthor);
+  const source = normalizeCitationValue(sourceAuthor);
+  if (!citation || !source) return false;
+  const citationTokens = citation.split(' ').filter(token => token.length > 2);
+  const sourceTokens = new Set(source.split(' '));
+  return citationTokens.some(token => sourceTokens.has(token));
+}
+
+function auditCitationProvenance(documentText: string, sources: unknown[]): {
+  total: number;
+  matched: number;
+  unmatched: number;
+} {
+  const eligible = sources
+    .filter(hasCitationEligibleSource)
+    .map(source => source as Record<string, unknown>);
+
+  const matches = Array.from(documentText.matchAll(
+    /\(([^()]{2,120})\s*[,،]\s*(19\d\d|20\d\d)[^()]*\)/g
+  ));
+  const noCommaMatches = Array.from(documentText.matchAll(
+    /\(([^()]{2,120})\s+(19\d\d|20\d\d)[^()]*\)/g
+  )).filter(match => !match[0].includes(',') && !match[0].includes('،'));
+
+  const citations = [...matches, ...noCommaMatches];
+  const matched = citations.filter(citation => {
+    const author = citation[1];
+    const year = citation[2];
+    return eligible.some(source =>
+      citationAuthorMatches(author, String(source['author'] ?? source['authors'] ?? '')) &&
+      String(source['year'] ?? source['publicationYear'] ?? '') === year
+    );
+  }).length;
+
+  return { total: citations.length, matched, unmatched: citations.length - matched };
+}
 function createExportFingerprint(
   documentText: string,
   sourceIds: string[],
@@ -124,6 +170,7 @@ export class AcademicQAGateService {
           /\([^()]{2,100},\s*[12١٢][0-9٠-٩]{3}[a-z]?\)|\[[0-9٠-٩,;\s-]+\]/g
         ) || []
       ).length;
+      const citationProvenance = auditCitationProvenance(documentText, safeSources);
 
       if (wordCount > 250 && citationMarkerCount === 0) {
         checks.push({
@@ -132,6 +179,16 @@ export class AcademicQAGateService {
           severity: 'critical',
           detailsKurdish: 'بەڵگەنامەکە درێژەی هەیە، بەڵام هیچ نیشانەیەکی ڕوونی citation تێدا نەدۆزرایەوە.',
           recommendedActionKurdish: 'Claim ـەکان بە citation ـی پەیوەندیدار ببەستە.'
+        });
+      }
+
+      if (citationProvenance.unmatched > 0) {
+        checks.push({
+          ruleName: 'Citation Provenance Coverage',
+          passed: false,
+          severity: 'critical',
+          detailsKurdish: String(citationProvenance.unmatched) + ' citation ـی ناگونجە لە دەقەکەدا بە source ـی citation-eligible نەبەستراوە.',
+          recommendedActionKurdish: 'هەر citation ـێک بە source ـی پشتڕاستکراو و metadata ـی هاوتا ببەستە.'
         });
       }
 
