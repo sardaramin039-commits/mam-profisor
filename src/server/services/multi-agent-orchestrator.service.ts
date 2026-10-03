@@ -62,6 +62,7 @@ export class MultiAgentOrchestratorService {
 
     log('01', 'Research Planner Agent', 'Creating discipline-specific research framework');
     const verification = await sourceVerificationService.verifySources(rawSources, getGeminiClient);
+    const citationEligibleSources = verification.citationEligibleSources;
     log(
       '02',
       'Source Verification Agent',
@@ -75,7 +76,6 @@ export class MultiAgentOrchestratorService {
     );
     log('03', 'Argument & Methodology Agent', 'Built discipline-specific argument architecture');
 
-    const citationEligibleSources = verification.citationEligibleSources;
     const verifiedByKey = new Map(
       citationEligibleSources.map(source => [source.sourceId, source])
     );
@@ -173,7 +173,7 @@ export class MultiAgentOrchestratorService {
       contradictionCount: contradictions.contradictionCount,
       similarityScore: similarity.overallSimilarityScore,
       sourceVerificationRate: rawSources.length
-        ? (verification.verifiedSources.length / rawSources.length) * 100
+        ? (citationEligibleSources.length / rawSources.length) * 100
         : 0
     });
     log('09', 'Academic Confidence Agent', confidence.labelKurdish);
@@ -184,7 +184,7 @@ export class MultiAgentOrchestratorService {
       getGeminiClient,
       {
         discipline: request.discipline,
-        verifiedSources: verification.verifiedSources.map(source => ({
+        verifiedSources: citationEligibleSources.map(source => ({
           sourceId: source.sourceId,
           sourceTitle: source.sourceTitle,
           author: source.author,
