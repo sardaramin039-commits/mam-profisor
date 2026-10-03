@@ -210,9 +210,9 @@ export class MultiAgentOrchestratorService {
       endpoint: '/api/platform/multi-agent-orchestrate',
       modelUsed: 'gemini-3.8-flash',
       latencyMs: Date.now() - startTime,
-      tokensPrompt: 0,
-      tokensCompletion: 0,
-      estimatedCostUsd: 0,
+      tokensPrompt: null,
+      tokensCompletion: null,
+      estimatedCostUsd: null,
       success: !qa.exportBlocked,
       citationFailuresCount:
         grounded.integrityMetrics.blockedSyntheticCitations +
