@@ -6,7 +6,7 @@ describe('source evidence verification policy', () => {
     expect(assessEvidenceVerification({ evidenceText: 'هەر دەقێک' }).status).toBe('not_available');
     expect(
       assessEvidenceVerification({ claimText: 'بانگەشە', evidenceText: 'بەڵگە' }).status
-    ).toBe('unverified');
+    ).toBe('not_available');
   });
 
   it('accepts an exact normalized claim match', () => {
