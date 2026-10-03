@@ -35,3 +35,10 @@ jobs:
           fi
           git commit -m "ci: generate npm lockfile for validation"
           git push origin HEAD
+
+      - name: Upload lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-lockfile
+          path: package-lock.json
+          if-no-files-found: error
