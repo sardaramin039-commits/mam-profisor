@@ -16,12 +16,12 @@ import { AcademicPlatformService } from '../../services/academic-platform.servic
       <div class="bg-gradient-to-r from-stone-900 via-harvard-crimson to-stone-950 text-white p-6 sm:p-8 rounded-2xl shadow-xl border-2 border-harvard-gold flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div class="flex items-center gap-2">
-            <span class="bg-harvard-gold text-black font-mono font-black text-[10px] px-2.5 py-0.5 rounded uppercase tracking-wider">Academic Operating System</span>
-            <span class="text-xs text-stone-300 font-mono">Veritas Engine 2.5</span>
+            <span class="bg-harvard-gold text-black font-mono font-black text-[10px] px-2.5 py-0.5 rounded uppercase tracking-wider">Evidence workflow</span>
+            <span class="text-xs text-stone-300 font-mono">Research workspace</span>
           </div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold mt-2">🏛️ پلاتفۆرمی باڵای توێژینەوەی ئەکادیمی (Production Platform)</h1>
+          <h1 class="text-2xl sm:text-3xl font-extrabold mt-2">پلاتفۆرمی توێژینەوە، بەڵگە و پشکنین</h1>
           <p class="text-xs sm:text-sm text-stone-200 mt-1 max-w-2xl">
-            زنجیرەی 10 بەشی ژیریی دەستکرد: لە دۆزینەوەی سەرچاوەوە تا گرافی بەڵگە، پشکنینی پڕۆفیسۆر، QA Gate و مۆری ڕەسانەییی زمانی کوردی.
+            جریانێکی توێژینەوە بۆ گەڕانی سەرچاوە، بەڵگەسازی، پشکنین و QA. ئەنجامی هەر بڕیارێک دەبێت لەگەڵ دۆخی verification ـەکە بخوێندرێتەوە.
           </p>
         </div>
         <button (click)="loadTelemetry()" class="bg-black/40 hover:bg-black/70 border border-white/20 text-white px-4 py-2 rounded-xl text-xs flex items-center gap-2 cursor-pointer transition-all">
@@ -34,7 +34,7 @@ import { AcademicPlatformService } from '../../services/academic-platform.servic
       <div class="bg-white border-2 border-harvard-crimson/20 rounded-2xl p-6 shadow-sm space-y-6">
         <h2 class="text-lg font-bold text-stone-900 flex items-center gap-2 border-b pb-3 border-stone-200">
           <mat-icon class="text-harvard-crimson">schema</mat-icon>
-          <span>داڕشتنی پڕۆژەی ئەکادیمی و بەگەڕخستنی 10-Agent Pipeline</span>
+          <span>داڕشتنی پڕۆژەی ئەکادیمی و بەگەڕخستنی جریانەکە</span>
         </h2>
 
         <form [formGroup]="researchForm" (ngSubmit)="onOrchestrate()" class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -70,7 +70,7 @@ import { AcademicPlatformService } from '../../services/academic-platform.servic
           <div class="bg-stone-900 text-stone-100 p-6 rounded-2xl border border-stone-800 shadow-md space-y-4">
             <h3 class="text-sm font-bold text-harvard-gold flex items-center gap-2">
               <mat-icon class="!w-4 !h-4">reorder</mat-icon>
-              <span>تۆماری ئاراستەی 10 Specialized AI Agents</span>
+              <span>تۆماری قۆناغەکانی جێبەجێکردن</span>
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-[11px]">
               @for (log of res.executionPipelineLog; track log.step) {
@@ -93,7 +93,7 @@ import { AcademicPlatformService } from '../../services/academic-platform.servic
               <div class="flex items-center justify-between border-b pb-3 border-stone-150">
                 <h3 class="text-sm font-bold text-stone-900 flex items-center gap-2">
                   <mat-icon class="text-indigo-600">hub</mat-icon>
-                  <span>Claim–Evidence Graph</span>
+                  <span>Claim، Evidence و Source</span>
                 </h3>
                 <span class="text-xs font-extrabold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md border border-indigo-200">
                   Integrity: {{ res.claimEvidenceGraphIntegrity }}/100
@@ -126,7 +126,7 @@ import { AcademicPlatformService } from '../../services/academic-platform.servic
                   <span>هەڵسەنگاندنی پڕۆفیسۆر & QA Gate</span>
                 </h3>
                 <span class="text-xs font-extrabold bg-harvard-crimson text-white px-2.5 py-1 rounded-md">
-                  Overall: {{ res.reviewerReport?.overallScore }}/10
+                  نمرەی هەڵسەنگاندن: {{ res.reviewerReport?.overallScore }}/10
                 </span>
               </div>
 
@@ -171,7 +171,7 @@ import { AcademicPlatformService } from '../../services/academic-platform.servic
               <span class="font-mono font-bold text-lg text-amber-400">{{ tel.totalTokensUsed }}</span>
             </div>
             <div class="bg-stone-800 p-3 rounded-xl">
-              <span class="block text-stone-400 text-[10px]">Est Cost USD</span>
+              <span class="block text-stone-400 text-[10px]">هەژماری تێچوون</span>
               <span class="font-mono font-bold text-lg text-pink-400"><span>$</span>{{ tel.estimatedTotalCostUsd }}</span>
             </div>
           </div>
