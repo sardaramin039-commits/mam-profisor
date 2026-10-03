@@ -19,6 +19,8 @@ export interface SourceVerificationReport {
   evidenceStatus: EvidenceVerificationStatus;
   citationEligible: boolean;
   evidenceVerificationMethod?: 'exact-normalized-claim-match';
+  evidenceText?: string;
+  pageNumber?: string | number | null;
   metadataAccuracy: number;
   peerReviewed: boolean;
   rejectedAsFabricated: boolean;
@@ -160,6 +162,8 @@ function buildBaseReport(
     evidenceStatus: evidence.status,
     citationEligible,
     evidenceVerificationMethod: evidence.method,
+    evidenceText: readEvidence(source) || undefined,
+    pageNumber: source.pageNumber ?? null,
     metadataAccuracy,
     peerReviewed: false,
     rejectedAsFabricated,
