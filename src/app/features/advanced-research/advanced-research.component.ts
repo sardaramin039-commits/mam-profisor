@@ -11,13 +11,11 @@ import { AdvancedResearchPeerReviewTabComponent } from './tabs/advanced-research
 import { AdvancedResearchCitationExportTabComponent } from './tabs/advanced-research-citation-export-tab';
 import { AdvancedResearchExtendedToolsTabComponent } from './tabs/advanced-research-extended-tools-tab';
 import { AdvancedResearchMemoryTabComponent } from './tabs/advanced-research-memory-tab';
-import { AdvancedResearchIntegrityAuditTabComponent } from './tabs/advanced-research-integrity-audit-tab';
 import { AdvancedResearchMethodsLabTabComponent } from './tabs/advanced-research-methods-lab-tab';
 import { SystematicReviewTabComponent } from './tabs/systematic-review-tab.component';
-import { Scholarship55TabComponent } from './tabs/scholarship-55-tab';
 
 type NavigationGroupId = 'workspace' | 'evidence' | 'review' | 'output' | 'memory';
-type AdvancedResearchTab = 'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' | 'peer_review' | 'citation_export' | 'extended_tools' | 'journal_metrics' | 'ultimate_ai' | 'knowledgegraph' | 'memory' | 'integrity_audit' | 'methods_lab' | 'scholarship_55';
+type AdvancedResearchTab = 'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' | 'peer_review' | 'citation_export' | 'extended_tools' | 'journal_metrics' | 'ultimate_ai' | 'knowledgegraph' | 'memory' | 'methods_lab' | 'systematic_review';
 
 @Component({
   selector: 'app-advanced-research-hub',
@@ -32,10 +30,8 @@ type AdvancedResearchTab = 'orchestrator' | 'factchecker' | 'multiapi' | 'ocr' |
     AdvancedResearchCitationExportTabComponent,
     AdvancedResearchExtendedToolsTabComponent,
     AdvancedResearchMemoryTabComponent,
-    AdvancedResearchIntegrityAuditTabComponent,
     AdvancedResearchMethodsLabTabComponent,
     SystematicReviewTabComponent,
-    Scholarship55TabComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './advanced-research.component.html'
@@ -47,9 +43,9 @@ export class AdvancedResearchHubComponent {
   private readonly groupTabs: Record<NavigationGroupId, AdvancedResearchTab[]> = {
     workspace: ['orchestrator'],
     evidence: ['factchecker', 'multiapi', 'ocr', 'knowledgegraph'],
-    review: ['peer_review', 'integrity_audit', 'methods_lab', 'systematic_review'],
+    review: ['peer_review', 'methods_lab', 'systematic_review'],
     output: ['citation_export', 'extended_tools'],
-    memory: ['memory', 'scholarship_55']
+    memory: ['memory']
   };
 
   readonly navigationGroups = [
