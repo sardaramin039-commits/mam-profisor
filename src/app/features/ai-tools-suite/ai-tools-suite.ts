@@ -20,13 +20,13 @@ import { AI_TOOLS_CATALOG, AiToolItem } from './ai-tools-catalog';
               <mat-icon class="!w-7 !h-7">auto_awesome</mat-icon>
             </div>
             <div>
-              <h2 class="text-xl font-bold text-amber-400 font-serif">کۆمەڵەی گشتگیری ئامرازە ژیرەکانی توێژینەوە و پلاتفۆرم (AI Suite 1–160 Enterprise Platform)</h2>
-              <p class="text-xs text-stone-300">١٦٠ ئامرازی سەرەکیکراوی ژیریی دەستکرد، پڵەگین، ئەی پی ئای، کۆدی گەشەپێدەران و بەرێوەبەری مۆدێلەکان بە پێوەری زانکۆی هارفه‌رد.</p>
+              <h2 class="text-xl font-bold text-amber-400 font-serif">کۆمەڵەی ئامرازە ئەکادیمییە هەڵبژێردراوەکان</h2>
+              <p class="text-xs text-stone-300">ئامرازەکان بەپێی کارەکە دەستنیشان کراون؛ لیستەکە هەموو کارەکان لە یەک شوێن پێشکەش دەکات و هیچ نمرەیەک جێگەی پشکنینی بەڵگە ناگرێت.</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-xs font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3.5 py-1.5 rounded-full font-bold shadow-sm">
-              ١٦٠ ئامرازی چالاک (160 Enterprise AI Tools)
+              ئامرازە بەردەستەکان
             </span>
           </div>
         </div>
@@ -39,7 +39,7 @@ import { AI_TOOLS_CATALOG, AiToolItem } from './ai-tools-catalog';
               type="text"
               [ngModel]="searchQuery()"
               (ngModelChange)="searchQuery.set($event)"
-              placeholder="گەڕان لە نێوان ١٦٠ ئامرازەکەدا..."
+              placeholder="گەڕان لە نێوان ئامرازە بەردەستەکاندا..."
               class="w-full bg-stone-950/80 border border-stone-700 text-stone-100 placeholder-stone-400 text-xs rounded-xl pr-10 pl-3 py-2.5 focus:outline-none focus:border-amber-400 transition-all font-sans"
             />
           </div>
@@ -51,7 +51,7 @@ import { AI_TOOLS_CATALOG, AiToolItem } from './ai-tools-catalog';
               [class]="selectedSection() === 'all'
                 ? 'px-3 py-2 bg-amber-500 text-stone-950 font-bold rounded-xl text-xs shadow-xs transition-all flex-none'
                 : 'px-3 py-2 bg-stone-800 text-stone-300 hover:bg-stone-700 rounded-xl text-xs font-medium border border-stone-700 transition-all cursor-pointer flex-none'">
-              هەموان (1-160)
+              هەموو ئامرازەکان
             </button>
             <button
               type="button"
@@ -255,7 +255,7 @@ import { AI_TOOLS_CATALOG, AiToolItem } from './ai-tools-catalog';
               <div class="flex items-center justify-between">
                 <h4 class="text-xs font-bold text-stone-900 flex items-center gap-2">
                   <mat-icon class="text-emerald-600 text-base">verified</mat-icon>
-                  <span>دەرئەنجامی ئامرازی #{{ activeTool().num }} (Harvard Standard Output)</span>
+                  <span>دەرئەنجامی ئامرازەکە</span>
                 </h4>
                 <button
                   type="button"
