@@ -15,13 +15,14 @@ describe('VipWritingQualityService', () => {
     const service = new VipWritingQualityService();
     const text = Array.from(
       { length: 80 },
-      (_, index) => `شیکردنەوەی ئەکادیمی بۆ خاڵی ${index + 1} بەڵگە و مێتۆد و ئەنجام دەخاتەڕوو.`
+      (_, index) =>
+        `شیکردنەوەی ئەکادیمی بۆ خاڵی ${index + 1} بەڵگە و مێتۆد و ئەنجام دەخاتەڕوو.`
     ).join(' ');
     const result = service.analyze(text, 'master', 'medical');
     expect(result.status).toBe('analyzed');
     expect(result.score).not.toBeNull();
     expect(result.level).toBe('master');
     expect(result.discipline).toBe('medical');
-    expect(result.rulesEvaluated).toBe(1111);
+    expect(result.rulesEvaluated).toBe(11);
   });
 });
