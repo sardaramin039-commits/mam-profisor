@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';\nimport { z } from 'zod';
 import { GoogleGenAI } from '@google/genai';
 import { 
   fetchSemanticScholar, 
@@ -232,7 +232,7 @@ ${JSON.stringify(s2Results)}
       const sources = await academicSearchService.searchAll(topic.trim(), 5);
       return res.json({
         success: true,
-        query: topic.trim(),
+        query: parsed.data.topic,
         sources,
         total: sources.length,
         sourcePolicy: 'real-index-records-only'
