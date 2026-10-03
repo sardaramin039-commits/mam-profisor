@@ -191,6 +191,8 @@ export class MultiAgentOrchestratorService {
           year: source.year,
           publisher: source.publisher,
           doiOrIsbn: source.doiOrIsbn,
+          evidenceText: source.evidenceText,
+          pageNumber: source.pageNumber,
           verificationStatus: 'verified' as const
         }))
       }
