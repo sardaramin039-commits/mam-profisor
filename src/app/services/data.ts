@@ -65,6 +65,12 @@ export interface AcademicSource {
   sourceType: 'book' | 'journal' | 'thesis' | 'manuscript';
   doi?: string;
   isbn?: string;
+  claimText?: string;
+  evidenceText?: string;
+  pageNumber?: string | number;
+  identityStatus?: 'verified' | 'unverified' | 'rejected';
+  evidenceStatus?: 'verified' | 'unverified' | 'not_available';
+  citationEligible?: boolean;
   isVerified: boolean;
   createdAt?: { seconds: number; nanoseconds?: number } | null;
 }
@@ -312,6 +318,18 @@ export class Data {
           sourceType: data['sourceType'] || 'book',
           doi: data['doi'] || '',
           isbn: data['isbn'] || '',
+          claimText: typeof data['claimText'] === 'string' ? data['claimText'] : undefined,
+          evidenceText: typeof data['evidenceText'] === 'string' ? data['evidenceText'] : undefined,
+          pageNumber: typeof data['pageNumber'] === 'number' || typeof data['pageNumber'] === 'string'
+            ? data['pageNumber']
+            : undefined,
+          identityStatus: ['verified', 'unverified', 'rejected'].includes(data['identityStatus'])
+            ? data['identityStatus']
+            : undefined,
+          evidenceStatus: ['verified', 'unverified', 'not_available'].includes(data['evidenceStatus'])
+            ? data['evidenceStatus']
+            : undefined,
+          citationEligible: data['citationEligible'] === true,
           isVerified: data['isVerified'] === true,
           createdAt: data['createdAt'] || null
         });
@@ -371,7 +389,13 @@ export class Data {
           sourceType: source.sourceType,
           doi: source.doi || '',
           isbn: source.isbn || '',
-          // Newly entered sources are unverified until an authoritative verification step succeeds.
+          claimText: source.claimText || '',
+          evidenceText: source.evidenceText || '',
+          pageNumber: source.pageNumber ?? null,
+          identityStatus: 'unverified',
+          evidenceStatus: 'not_available',
+          citationEligible: false,
+          // Newly entered sources are unverified until authoritative verification succeeds.
           isVerified: false,
           createdAt: serverTimestamp()
         };
