@@ -4,7 +4,6 @@ import { robustParseJson } from '../utils/json-repair';
 import { validateRequest } from '../../middleware/validate.middleware';
 import { peerReviewSchema, literatureGapSchema, harvardReviewSchema } from '../utils/academic-analysis.schemas';
 import { academicReviewerService } from '../services/academic-reviewer.service';
-import { sourceVerificationService } from '../services/source-verification.service';
 
 export function createEvaluationReviewRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
