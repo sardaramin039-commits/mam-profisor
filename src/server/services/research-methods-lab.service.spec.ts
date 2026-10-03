@@ -35,7 +35,7 @@ describe('ResearchMethodsLabService', () => {
       fullTextAssessed: 1,
       excludedAfterFullText: 2,
       included: 0
-    }) as { flow: { flowErrors: string[] } };
+    }) as unknown as { flow: { flowErrors: string[] } };
 
     expect(result.flow.flowErrors.length).toBeGreaterThan(0);
   });
