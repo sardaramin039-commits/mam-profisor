@@ -120,7 +120,7 @@ export class EliteReviewComponent {
   isLoading = signal<boolean>(false);
   res = signal<{ score: number; critique: string } | null>(null);
 
-  readonly criteria = signal<HarvardRigorCriterion[]>([]);
+  readonly criteria = signal<ReviewCriterion[]>([]);
   reviewError = signal<string | null>(null);
 
   async evaluate(): Promise<void> {
