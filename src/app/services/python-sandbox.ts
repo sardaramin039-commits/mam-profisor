@@ -1,4 +1,6 @@
-import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 
 export interface PythonSandboxResult {
   stdout: string;
@@ -11,17 +13,20 @@ export interface PythonSandboxResult {
   providedIn: 'root'
 })
 export class PythonSandboxService {
+  private readonly http = inject(HttpClient);
+
   async executeCode(code: string, datasetName?: string): Promise<PythonSandboxResult> {
-    const response = await fetch('/api/dataset_sandbox_run', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, datasetName })
-    });
+    const trimmed = code.trim();
+    if (!trimmed) throw new Error('کۆدی پایتۆن پێویستە.');
 
-    if (!response.ok) {
-      throw new Error('پێوەندی لەگەڵ ژینگەی پایتۆن نییە بۆ جێبەجێکردنی کۆدەکان.');
-    }
-
-    return response.json();
+    return firstValueFrom(
+      this.http.post<PythonSandboxResult>(
+        '/api/dataset_sandbox_run',
+        {
+          code: trimmed.slice(0, 100_000),
+          datasetName: datasetName?.trim().slice(0, 200)
+        }
+      )
+    );
   }
 }
