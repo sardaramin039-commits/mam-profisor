@@ -2,6 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import { lookupIsbn, lookupIssn, resolveDoi } from '../../helpers/extended-academic-tools';
 
 export type TrustLevel = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
+export type IdentityVerificationStatus = 'verified' | 'unverified' | 'rejected';
+export type EvidenceVerificationStatus = 'verified' | 'unverified' | 'not_available';
 
 export interface SourceVerificationReport {
   sourceId: string;
@@ -13,11 +15,21 @@ export interface SourceVerificationReport {
   integrityScore: number;
   trustLevel: TrustLevel;
   existenceVerified: boolean;
+  identityStatus: IdentityVerificationStatus;
+  evidenceStatus: EvidenceVerificationStatus;
+  citationEligible: boolean;
+  evidenceVerificationMethod?: 'exact-normalized-claim-match';
   metadataAccuracy: number;
   peerReviewed: boolean;
   rejectedAsFabricated: boolean;
   rejectionReasonKurdish?: string;
   kurdishVerificationDetails: string;
+}
+
+export interface CitationEligibleSource extends SourceVerificationReport {
+  citationEligible: true;
+  identityStatus: 'verified';
+  evidenceStatus: 'verified';
 }
 
 type InputSource = {
@@ -30,6 +42,13 @@ type InputSource = {
   isbn?: string;
   issn?: string;
   publisher?: string;
+  claimText?: string;
+  evidenceText?: string;
+  content?: string;
+  fullText?: string;
+  text?: string;
+  chunkText?: string;
+  pageNumber?: string | number | null;
 };
 
 function normalize(value: string): string {
@@ -41,31 +60,19 @@ function normalize(value: string): string {
     .trim();
 }
 
-function normalizeTitle(value: string): string {
-  return value
-    .toLocaleLowerCase()
-    .normalize('NFKC')
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 function titleTokens(value: string): Set<string> {
-  return new Set(normalizeTitle(value).split(' ').filter(token => token.length > 2));
+  return new Set(normalize(value).split(' ').filter(token => token.length > 2));
 }
 
 function authorOverlap(inputAuthor: string | undefined, externalAuthors: string[]): number {
   const inputTokens = new Set(
-    normalize(inputAuthor || '')
-      .split(' ')
-      .filter(token => token.length > 2)
+    normalize(inputAuthor || '').split(' ').filter(token => token.length > 2)
   );
   const externalTokens = new Set(
-    normalize(externalAuthors.join(' '))
-      .split(' ')
-      .filter(token => token.length > 2)
+    normalize(externalAuthors.join(' ')).split(' ').filter(token => token.length > 2)
   );
   if (inputTokens.size === 0 || externalTokens.size === 0) return 0;
+
   let overlap = 0;
   for (const token of inputTokens) {
     if (externalTokens.has(token)) overlap++;
@@ -82,7 +89,6 @@ function titleSimilarity(a: string, b: string): number {
   for (const token of left) {
     if (right.has(token)) overlap++;
   }
-
   return overlap / Math.max(left.size, right.size);
 }
 
@@ -93,6 +99,76 @@ function normalizeDoi(value?: string): string {
     .toLowerCase();
 }
 
+function readEvidence(source: InputSource): string {
+  return String(
+    source.evidenceText ??
+    source.content ??
+    source.fullText ??
+    source.text ??
+    source.chunkText ??
+    ''
+  ).trim();
+}
+
+function assessEvidence(source: InputSource): {
+  status: EvidenceVerificationStatus;
+  method?: 'exact-normalized-claim-match';
+} {
+  const claim = normalize(String(source.claimText || ''));
+  const evidence = normalize(readEvidence(source));
+
+  if (!claim || !evidence || evidence.length < 10) {
+    return { status: 'not_available' };
+  }
+
+  if (evidence.includes(claim) || claim.includes(evidence)) {
+    return {
+      status: 'verified',
+      method: 'exact-normalized-claim-match'
+    };
+  }
+
+  return { status: 'unverified' };
+}
+
+function buildBaseReport(
+  source: InputSource,
+  sourceId: string,
+  identityStatus: IdentityVerificationStatus,
+  integrityScore: number,
+  trustLevel: TrustLevel,
+  metadataAccuracy: number,
+  details: string,
+  rejectedAsFabricated = false,
+  rejectionReasonKurdish?: string,
+  overrides: Partial<SourceVerificationReport> = {}
+): SourceVerificationReport {
+  const evidence = assessEvidence(source);
+  const citationEligible = identityStatus === 'verified' && evidence.status === 'verified';
+
+  return {
+    sourceId,
+    sourceTitle: source.title,
+    author: source.author || 'نادیار',
+    year: source.year ? String(source.year) : undefined,
+    publisher: source.publisher || 'نادیار',
+    doiOrIsbn: source.doi || source.isbn || source.issn || undefined,
+    integrityScore,
+    trustLevel,
+    existenceVerified: identityStatus === 'verified',
+    identityStatus,
+    evidenceStatus: evidence.status,
+    citationEligible,
+    evidenceVerificationMethod: evidence.method,
+    metadataAccuracy,
+    peerReviewed: false,
+    rejectedAsFabricated,
+    rejectionReasonKurdish,
+    kurdishVerificationDetails: details,
+    ...overrides
+  };
+}
+
 type CrossrefCandidate = {
   title: string;
   authors: string[];
@@ -101,8 +177,13 @@ type CrossrefCandidate = {
   doi: string;
 };
 
-async function searchCrossrefByMetadata(source: InputSource): Promise<CrossrefCandidate | undefined> {
-  const query = [source.title, source.author, source.publisher].filter(Boolean).join(' ').trim();
+async function searchCrossrefByMetadata(
+  source: InputSource
+): Promise<CrossrefCandidate | undefined> {
+  const query = [source.title, source.author, source.publisher]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
   if (!query) return undefined;
 
   try {
@@ -132,7 +213,9 @@ async function searchCrossrefByMetadata(source: InputSource): Promise<CrossrefCa
     };
 
     const items = Array.isArray(data.message?.items) ? data.message.items : [];
-    let best: { candidate: CrossrefCandidate; score: number; authorScore: number; yearMatch: boolean } | undefined;
+    let best:
+      | { candidate: CrossrefCandidate; score: number; authorScore: number; yearMatch: boolean }
+      | undefined;
 
     for (const item of items) {
       const title = item.title?.[0]?.trim() || '';
@@ -143,18 +226,17 @@ async function searchCrossrefByMetadata(source: InputSource): Promise<CrossrefCa
         .filter(Boolean);
 
       const score = titleSimilarity(source.title, title);
-      const authorScore = source.author
-        ? authorOverlap(source.author, authors)
-        : 1;
+      const authorScore = source.author ? authorOverlap(source.author, authors) : 1;
       const sourceYear = Number(source.year);
       const itemYear = Number(
         item.published?.['date-parts']?.[0]?.[0] ??
         item.issued?.['date-parts']?.[0]?.[0] ??
         0
       );
-      const yearMatch = !Number.isFinite(sourceYear) || !sourceYear || !itemYear
-        ? true
-        : Math.abs(sourceYear - itemYear) <= 1;
+      const yearMatch =
+        !Number.isFinite(sourceYear) || !sourceYear || !itemYear
+          ? true
+          : Math.abs(sourceYear - itemYear) <= 1;
 
       if (!best || score + authorScore * 0.1 > best.score + best.authorScore * 0.1) {
         best = {
@@ -183,55 +265,47 @@ async function searchCrossrefByMetadata(source: InputSource): Promise<CrossrefCa
 }
 
 export class SourceVerificationService {
-  /**
-   * Citation eligibility is established from authoritative metadata, not from an LLM claim.
-   * DOI resolution through Crossref can establish existence and metadata consistency.
-   * Absence of an authoritative resolution leaves the source explicitly unverified.
-   */
   public async verifySources(
     sources: InputSource[],
     _getGeminiClient: () => GoogleGenAI
   ): Promise<{
     verifiedSources: SourceVerificationReport[];
+    citationEligibleSources: CitationEligibleSource[];
     rejectedSources: SourceVerificationReport[];
     unverifiedSources: SourceVerificationReport[];
     allReports: SourceVerificationReport[];
     rejectedSourcesCount: number;
   }> {
-    const uniqueSources = sources.filter(source => source && typeof source.title === 'string');
+    const uniqueSources = sources.filter(
+      source => source && typeof source.title === 'string'
+    );
 
     const externallyResolved = new Map<string, Awaited<ReturnType<typeof resolveDoi>>>();
     const isbnResolved = new Map<string, Awaited<ReturnType<typeof lookupIsbn>>>();
     const issnResolved = new Map<string, Awaited<ReturnType<typeof lookupIssn>>>();
-    await Promise.all([
-      ...uniqueSources
-        .filter(source => Boolean(source.doi?.trim()))
-        .slice(0, 20)
-        .map(async source => {
-          const doi = normalizeDoi(source.doi);
-          try { externallyResolved.set(doi, await resolveDoi(doi)); } catch {}
-        }),
-      ...uniqueSources
-        .filter(source => Boolean(source.isbn?.trim()))
-        .slice(0, 20)
-        .map(async source => {
-          const isbn = String(source.isbn).replace(/[^0-9X]/gi, '').toUpperCase();
-          try { isbnResolved.set(isbn, await lookupIsbn(isbn)); } catch {}
-        }),
-      ...uniqueSources
-        .filter(source => Boolean(source.issn?.trim()))
-        .slice(0, 20)
-        .map(async source => {
-          const issn = String(source.issn).trim();
-          try { issnResolved.set(issn.replace(/-/g, '').toUpperCase(), await lookupIssn(issn)); } catch {}
-        })
-    ]);
-    // DOI/ISBN/ISSN lookups are authoritative metadata checks. Provider
-    // absence leaves the source unverified rather than inventing metadata.
 
-    const metadataResolved: Array<CrossrefCandidate | undefined> = await Promise.all(uniqueSources.map(source =>
-      !source.doi && !source.isbn && !source.issn ? searchCrossrefByMetadata(source) : Promise.resolve(undefined)
-    ));
+    await Promise.all([
+      ...uniqueSources.filter(source => Boolean(source.doi?.trim())).slice(0, 20).map(async source => {
+        const doi = normalizeDoi(source.doi);
+        try { externallyResolved.set(doi, await resolveDoi(doi)); } catch {}
+      }),
+      ...uniqueSources.filter(source => Boolean(source.isbn?.trim())).slice(0, 20).map(async source => {
+        const isbn = String(source.isbn).replace(/[^0-9X]/gi, '').toUpperCase();
+        try { isbnResolved.set(isbn, await lookupIsbn(isbn)); } catch {}
+      }),
+      ...uniqueSources.filter(source => Boolean(source.issn?.trim())).slice(0, 20).map(async source => {
+        const issn = String(source.issn).replace(/-/g, '').toUpperCase();
+        try { issnResolved.set(issn, await lookupIssn(issn)); } catch {}
+      })
+    ]);
+
+    const metadataResolved = await Promise.all(
+      uniqueSources.map(source =>
+        !source.doi && !source.isbn && !source.issn
+          ? searchCrossrefByMetadata(source)
+          : Promise.resolve(undefined)
+      )
+    );
 
     const reports = uniqueSources.map((source, index): SourceVerificationReport => {
       const inputDoi = normalizeDoi(source.doi);
@@ -240,153 +314,134 @@ export class SourceVerificationService {
       const external = inputDoi ? externallyResolved.get(inputDoi) : undefined;
       const isbnExternal = inputIsbn ? isbnResolved.get(inputIsbn) : undefined;
       const issnExternal = inputIssn ? issnResolved.get(inputIssn) : undefined;
-
-      const sourceId = String(source.id || source.sourceId || source.doi || source.title).trim();
+      const sourceId = String(
+        source.id || source.sourceId || source.doi || source.isbn || source.issn || source.title
+      ).trim();
 
       if (external) {
         const titleMatch = titleSimilarity(source.title, external.title) >= 0.72;
-        const inputAuthor = (source.author || '').trim();
-        const authorMatch = !inputAuthor || external.authors.length === 0
-          ? true
-          : authorOverlap(inputAuthor, external.authors) >= 0.5;
+        const authorMatch =
+          !source.author || external.authors.length === 0
+            ? true
+            : authorOverlap(source.author, external.authors) >= 0.5;
         const inputYear = Number(source.year);
         const externalYear = Number(external.publishedYear);
-        const yearMatch = !Number.isFinite(inputYear) || !Number.isFinite(externalYear) || inputYear === 0
-          ? true
-          : Math.abs(inputYear - externalYear) <= 1;
+        const yearMatch =
+          !Number.isFinite(inputYear) || !Number.isFinite(externalYear) || inputYear === 0
+            ? true
+            : Math.abs(inputYear - externalYear) <= 1;
         const matches = titleMatch && authorMatch && yearMatch;
+
         if (!matches) {
-          return {
+          return buildBaseReport(
+            source,
             sourceId,
-            sourceTitle: source.title,
-            author: source.author || 'نادیار',
-            year: String(source.year || ''),
-            publisher: source.publisher || 'نادیار',
-            doiOrIsbn: source.doi || '',
-            integrityScore: 0,
-            trustLevel: 'F',
-            existenceVerified: true,
-            metadataAccuracy: Math.round((Number(titleMatch) + Number(authorMatch) + Number(yearMatch)) / 3 * 100),
-            peerReviewed: false,
-            rejectedAsFabricated: true,
-            rejectionReasonKurdish: 'metadata ـی سەرچاوە لەگەڵ تۆماری DOI لە Crossref بە تەواوی هاوتا نییە؛ تۆمارەکە بۆ Citation ڕەتکرایەوە.',
-            kurdishVerificationDetails: 'DOI بە شێوەی دەرەکی دۆزرایەوە، بەڵام ناسنامەی سەرچاوەکە لەگەڵ metadata ـی Crossref ناگونجێت.'
-          };
+            'rejected',
+            0,
+            'F',
+            Math.round((Number(titleMatch) + Number(authorMatch) + Number(yearMatch)) / 3 * 100),
+            'DOI دۆزرایەوە، بەڵام metadata ـی سەرچاوە لەگەڵ تۆماری Crossref ناگونجێت.',
+            true,
+            'metadata ـی سەرچاوە لەگەڵ تۆماری DOI/Crossref بە تەواوی هاوتا نییە.'
+          );
         }
 
-        return {
+        return buildBaseReport(
+          { ...source, title: external.title, author: external.authors.join(', ') || source.author, year: external.publishedYear, publisher: external.publisher || source.publisher, doi: external.doi },
           sourceId,
-          sourceTitle: external.title,
-          author: external.authors.join(', ') || source.author || 'نادیار',
-          year: external.publishedYear || String(source.year || ''),
-          publisher: external.publisher || source.publisher || 'نادیار',
-          doiOrIsbn: external.doi,
-          integrityScore: 80,
-          trustLevel: 'C',
-          existenceVerified: true,
-          metadataAccuracy: 100,
-          peerReviewed: false,
-          rejectedAsFabricated: false,
-          kurdishVerificationDetails: 'بونی سەرچاوە و metadata ـی سەرەکی بە DOI/Crossref پشتڕاستکرایەوە. ئەمە بە تەنها پشتڕاستکردنەوەی Peer Review نییە.'
-        };
+          'verified',
+          0,
+          'C',
+          100,
+          'ناسنامەی سەرچاوە بە DOI/Crossref پشتڕاستکراوەتەوە؛ ئەمە بە تەنها peer-review یان evidence verification نییە.',
+          false
+        );
       }
 
       if (isbnExternal) {
         const titleMatch = titleSimilarity(source.title, isbnExternal.title) >= 0.65;
-        const authorMatch = !source.author || isbnExternal.authors.length === 0
-          ? true
-          : authorOverlap(source.author, isbnExternal.authors) >= 0.5;
+        const authorMatch =
+          !source.author || isbnExternal.authors.length === 0
+            ? true
+            : authorOverlap(source.author, isbnExternal.authors) >= 0.5;
         const matched = titleMatch && authorMatch;
-        return {
+
+        return buildBaseReport(
+          { ...source, title: isbnExternal.title, author: isbnExternal.authors.join(', ') || source.author, year: isbnExternal.publishDate || source.year, publisher: isbnExternal.publisher || source.publisher, isbn: isbnExternal.isbn },
           sourceId,
-          sourceTitle: isbnExternal.title,
-          author: isbnExternal.authors.join(', ') || source.author || 'نادیار',
-          year: isbnExternal.publishDate || String(source.year || ''),
-          publisher: isbnExternal.publisher || source.publisher || 'نادیار',
-          doiOrIsbn: isbnExternal.isbn,
-          integrityScore: matched ? 82 : 0,
-          trustLevel: matched ? 'C' : 'F',
-          existenceVerified: true,
-          metadataAccuracy: Math.round((Number(titleMatch) + Number(authorMatch)) / 2 * 100),
-          peerReviewed: false,
-          rejectedAsFabricated: !matched,
-          rejectionReasonKurdish: matched ? undefined : 'ناونیشان یان نووسەر لەگەڵ تۆماری ISBN ناگونجێت.',
-          kurdishVerificationDetails: 'ISBN بە Open Library پشتڕاستکرایەوە؛ ئەمە بە تەنها Peer Review ـی سەرچاوەکە پشتڕاست ناکات.'
-        };
+          matched ? 'verified' : 'rejected',
+          matched ? 0 : 0,
+          matched ? 'C' : 'F',
+          Math.round((Number(titleMatch) + Number(authorMatch)) / 2 * 100),
+          matched
+            ? 'ناسنامەی کتێب بە ISBN/Open Library پشتڕاستکراوەتەوە؛ evidence verification جیاوازە.'
+            : 'ناونیشان یان نووسەر لەگەڵ تۆماری ISBN ناگونجێت.',
+          !matched,
+          matched ? undefined : 'metadata ـی سەرچاوە لەگەڵ تۆماری ISBN ناگونجێت.'
+        );
       }
 
       if (metadataResolved[index]) {
         const candidate = metadataResolved[index]!;
-        return {
+        return buildBaseReport(
+          { ...source, title: candidate.title, author: candidate.authors.join(', ') || source.author, year: candidate.year || source.year, publisher: candidate.publisher || source.publisher, doi: candidate.doi || source.doi },
           sourceId,
-          sourceTitle: candidate.title,
-          author: candidate.authors.join(', ') || source.author || 'نادیار',
-          year: candidate.year || String(source.year || ''),
-          publisher: candidate.publisher || source.publisher || 'نادیار',
-          doiOrIsbn: candidate.doi,
-          integrityScore: 78,
-          trustLevel: 'C',
-          existenceVerified: true,
-          metadataAccuracy: 100,
-          peerReviewed: false,
-          rejectedAsFabricated: false,
-          kurdishVerificationDetails: 'سەرچاوەکە بە گەڕانی metadata ـی Crossref (title/author/year) دۆزرایەوە و metadata ـەکان هاوتا بوون. ئەمە بە تەنها peer-review یان full-text verification نییە.'
-        };
+          'verified',
+          0,
+          'C',
+          100,
+          'ناسنامەی سەرچاوە بە metadata ـی Crossref پشتڕاستکراوەتەوە؛ evidence verification جیاوازە.'
+        );
       }
 
       if (issnExternal) {
-        const titleMatch = !issnExternal.journalTitle || titleSimilarity(source.title, issnExternal.journalTitle) >= 0.65;
-        const publisherMatch = !source.publisher || !issnExternal.publisher ||
+        const titleMatch =
+          !issnExternal.journalTitle ||
+          titleSimilarity(source.title, issnExternal.journalTitle) >= 0.65;
+        const publisherMatch =
+          !source.publisher ||
+          !issnExternal.publisher ||
           normalize(source.publisher) === normalize(issnExternal.publisher);
         const matched = titleMatch && publisherMatch;
-        return {
+
+        return buildBaseReport(
+          { ...source, title: issnExternal.journalTitle || source.title, publisher: issnExternal.publisher || source.publisher, issn: issnExternal.issn },
           sourceId,
-          sourceTitle: issnExternal.journalTitle || source.title,
-          author: source.author || 'نادیار',
-          year: String(source.year || ''),
-          publisher: issnExternal.publisher || source.publisher || 'نادیار',
-          doiOrIsbn: issnExternal.issn,
-          integrityScore: matched ? 75 : 0,
-          trustLevel: matched ? 'C' : 'F',
-          existenceVerified: true,
-          metadataAccuracy: Math.round((Number(titleMatch) + Number(publisherMatch)) / 2 * 100),
-          peerReviewed: false,
-          rejectedAsFabricated: !matched,
-          rejectionReasonKurdish: matched ? undefined : 'تۆماری ISSN لەگەڵ ناونیشان/دەرکەرەوەی پێدراو ناگونجێت.',
-          kurdishVerificationDetails: 'ISSN بە Crossref پشتڕاستکرایەوە؛ ئەمە بە تەنها peer-review بوونی وتارێک پشتڕاست ناکات.'
-        };
+          matched ? 'verified' : 'rejected',
+          matched ? 0 : 0,
+          matched ? 'C' : 'F',
+          Math.round((Number(titleMatch) + Number(publisherMatch)) / 2 * 100),
+          matched
+            ? 'ژمارەی ISSN و metadata ـی گۆڤار پشتڕاستکراوەتەوە؛ evidence verification جیاوازە.'
+            : 'تۆماری ISSN لەگەڵ metadata ـی پێدراو ناگونجێت.',
+          !matched,
+          matched ? undefined : 'metadata ـی سەرچاوە لەگەڵ تۆماری ISSN ناگونجێت.'
+        );
       }
 
-      return {
+      return buildBaseReport(
+        source,
         sourceId,
-        sourceTitle: source.title,
-        author: source.author || 'نادیار',
-        publisher: source.publisher || 'نادیار',
-        doiOrIsbn: source.doi || '',
-        integrityScore: 0,
-        trustLevel: 'D',
-        existenceVerified: false,
-        metadataAccuracy: 0,
-        peerReviewed: false,
-        rejectedAsFabricated: false,
-        rejectionReasonKurdish: 'هیچ سەرچاوەیەکی دەرەکیی پشتڕاستکەرەوە بۆ ئەم تۆمارە بەردەست نەبوو.',
-        kurdishVerificationDetails: 'سەرچاوەکە نە Verified ـە و نابێت وەک citation ـی پشتڕاستکراو بەکاربهێنرێت تا verification ـی دەرەکی تەواو بکرێت.'
-      };
+        'unverified',
+        0,
+        'D',
+        0,
+        'ناسنامەی سەرچاوە بە authority ـی دەرەکی پشتڕاست نەکراوەتەوە؛ citation ـی پشتڕاستکراو نابێت دروست بکرێت.'
+      );
     });
 
-    const verifiedSources = reports.filter(report =>
-      report.existenceVerified === true &&
-      report.rejectedAsFabricated !== true &&
-      report.trustLevel !== 'D' &&
-      report.trustLevel !== 'F'
+    const verifiedSources = reports.filter(
+      report => report.identityStatus === 'verified' && !report.rejectedAsFabricated
     );
-    const rejectedSources = reports.filter(report => report.rejectedAsFabricated);
-    const unverifiedSources = reports.filter(report =>
-      !report.existenceVerified && !report.rejectedAsFabricated
+    const citationEligibleSources = reports.filter(
+      (report): report is CitationEligibleSource => report.citationEligible
     );
+    const rejectedSources = reports.filter(report => report.identityStatus === 'rejected');
+    const unverifiedSources = reports.filter(report => report.identityStatus === 'unverified');
 
     return {
       verifiedSources,
+      citationEligibleSources,
       rejectedSources,
       unverifiedSources,
       allReports: reports,
