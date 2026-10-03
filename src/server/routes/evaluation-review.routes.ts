@@ -3,6 +3,8 @@ import { GoogleGenAI } from '@google/genai';
 import { robustParseJson } from '../utils/json-repair';
 import { validateRequest } from '../../middleware/validate.middleware';
 import { peerReviewSchema, literatureGapSchema, harvardReviewSchema } from '../utils/academic-analysis.schemas';
+import { academicReviewerService } from '../services/academic-reviewer.service';
+import { sourceVerificationService } from '../services/source-verification.service';
 
 export function createEvaluationReviewRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -89,38 +91,28 @@ export function createEvaluationReviewRouter(getGeminiClient: () => GoogleGenAI)
   });
 
   /**
-   * Harvard Academic Review Endpoint
+   * Legacy route kept for compatibility; it now uses the unified Academic Reviewer.
    */
   router.post('/harvard_academic_review', validateRequest(harvardReviewSchema), async (req, res) => {
     try {
       const { title, text, discipline } = req.body;
-      const ai = getGeminiClient();
-      const userPrompt = `پێداچوونەوەی ئەکادیمی بەپێی پێوەرە ناوخۆییەکانی ئەپ بۆ ئەم دەقە ئەنجام بدە:
-ناونیشان: "${title}"
-کایە: "${discipline}"
-دەق: "${(text || '').slice(0, 3000)}"
+      const report = await academicReviewerService.evaluateThesis(
+        text || '',
+        title || 'تێز',
+        getGeminiClient,
+        { discipline, verifiedSources: [] }
+      );
 
-تکایە بە JSON وەڵام بدەرەوە:
-{
-  "harvardRigorScore": null,
-  "scholarFeedback": "شیکاری قووڵ و ڕەخنەیی بێ لایەن بۆ گوتاری زانستی",
-  "methodologyPurity": "هەڵسەنگاندنی پاکیی مێتۆدۆلۆژی",
-  "keyRefinements": ["داواکاری چاکسازی ١", "داواکاری چاکسازی ٢"]
-}`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: userPrompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.3
-        }
+      return res.json({
+        success: true,
+        report,
+        compatibility: 'legacy-route-unified-academic-review'
       });
-
-      res.json(robustParseJson(response.text || ''));
-    } catch (err) {
-      console.error('Harvard academic review error:', err);
-      res.status(500).json({ error: 'کێشەیەک لە پێداچوونەوەی هارڤەرددا ڕوویدا' });
+    } catch (error: unknown) {
+      console.error('Unified academic review error:', error);
+      return res.status(500).json({
+        error: 'کێشەیەک لە پێداچوونەوەی ئەکادیمیدا ڕوویدا.'
+      });
     }
   });
 
