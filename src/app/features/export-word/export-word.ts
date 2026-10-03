@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { WordExportService } from '../../services/word-export';
 import { EditorService } from '../editor/services/editor';
 import { Data } from '../../services/data';
+import { ExportContractService, ExportGateResponse } from '../../services/export-contract.service';
 
 @Component({
   selector: 'app-export-word',
@@ -47,6 +48,7 @@ export class ExportWordComponent {
   private editorService = inject(EditorService);
   private data = inject(Data);
   private http = inject(HttpClient);
+  private exportContractService = inject(ExportContractService);
   title = signal<string>('توێژینەوەی_زانستی');
   isExporting = signal<boolean>(false);
   exportError = signal<string | null>(null);
@@ -73,26 +75,24 @@ export class ExportWordComponent {
         .join('\n\n');
 
       const qa = await firstValueFrom(
-        this.http.post<any>('/api/platform/qa-gate', {
+        this.http.post<ExportGateResponse>('/api/platform/qa-gate', {
           documentText,
           sources: this.data.sourcesList().map(source => ({
+            id: source.id,
             title: source.title,
             author: source.author,
             year: source.year,
             doi: source.doi,
             isbn: source.isbn,
-            publisher: source.publisher
+            publisher: source.publisher,
+            claimText: source.claimText,
+            evidenceText: source.evidenceText,
+            pageNumber: source.pageNumber
           }))
         })
       );
 
-      if (qa?.qa?.exportBlocked === true) {
-        this.exportError.set(
-          qa.qa?.kurdishSummaryStatus ||
-          'Export بەهۆی پشکنینی سەلامەتی و بەڵگەی ئەکادیمی بلۆک کرا.'
-        );
-        return;
-      }
+      this.exportContractService.assertApproved(qa);
 
       const matchedManuscript = this.data.historyList().find(saved =>
         saved.chapters.length === chapters.length &&
