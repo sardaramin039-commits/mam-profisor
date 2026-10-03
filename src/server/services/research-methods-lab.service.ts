@@ -60,7 +60,7 @@ const methodologyFields: Record<string, string[]> = {
 function methodologyGate(p: Record<string, unknown>) {
   const raw = String(p['design'] || 'quantitative');
   const design = raw.startsWith('observational_') ? 'observational' : raw;
-  const fields = methodologyFields[design] || methodologyFields.quantitative;
+  const fields = methodologyFields[design] || methodologyFields['quantitative'];
   const rows = fields.map(key => ({ key, status: String(p[key] ?? '').trim() ? 'complete' : 'missing' }));
   const complete = rows.filter(row => row.status === 'complete').length;
   const missing = rows.filter(row => row.status === 'missing').length;
