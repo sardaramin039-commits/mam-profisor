@@ -19,61 +19,75 @@ class ApiConfigService {
     return trimmed.slice(0, 4) + '...' + trimmed.slice(-4);
   }
 
+  private getConfiguredModels(provider: AiProvider): string[] {
+    const raw = process.env[`${provider.toUpperCase()}_MODELS`]?.trim();
+    if (!raw) return [];
+    return raw
+      .split(',')
+      .map(model => model.trim())
+      .filter(Boolean)
+      .slice(0, 50);
+  }
+
+  private getDefaultModel(provider: AiProvider): string {
+    return process.env[`${provider.toUpperCase()}_MODEL`]?.trim()
+      || 'لە ڕێکخستنی deployment ـەوە دیاری نەکراوە';
+  }
+
   public getProviderConfig(provider: AiProvider): ProviderConfig {
+    const models = this.getConfiguredModels(provider);
+
     switch (provider) {
       case 'gemini': {
         const key = process.env['GEMINI_API_KEY'];
         return {
-          provider: 'gemini',
+          provider,
           name: 'Google Gemini AI',
-          isConfigured: Boolean(key && key.trim() !== ''),
-          hasKey: Boolean(key && key.trim() !== ''),
+          isConfigured: Boolean(key?.trim()),
+          hasKey: Boolean(key?.trim()),
           maskedKey: this.maskKey(key),
-          baseUrl: 'https://generativelanguage.googleapis.com',
-          defaultModel: 'gemini-3.8-flash',
-          supportedModels: ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash']
+          baseUrl: process.env['GEMINI_BASE_URL'] || 'https://generativelanguage.googleapis.com',
+          defaultModel: this.getDefaultModel(provider),
+          supportedModels: models
         };
       }
       case 'openai': {
         const key = process.env['OPENAI_API_KEY'];
-        const baseUrl = process.env['OPENAI_BASE_URL'] || 'https://api.openai.com/v1';
         return {
-          provider: 'openai',
-          name: 'OpenAI GPT Architecture (ChatGPT)',
-          isConfigured: Boolean(key && key.trim() !== ''),
-          hasKey: Boolean(key && key.trim() !== ''),
+          provider,
+          name: 'OpenAI API',
+          isConfigured: Boolean(key?.trim()),
+          hasKey: Boolean(key?.trim()),
           maskedKey: this.maskKey(key),
-          baseUrl,
-          defaultModel: 'gpt-6-sol',
-          supportedModels: ['gpt-6-astra', 'gpt-6-sol', 'gpt-6-luna']
+          baseUrl: process.env['OPENAI_BASE_URL'] || 'https://api.openai.com/v1',
+          defaultModel: this.getDefaultModel(provider),
+          supportedModels: models
         };
       }
       case 'claude': {
         const key = process.env['ANTHROPIC_API_KEY'] || process.env['CLAUDE_API_KEY'];
-        const baseUrl = process.env['ANTHROPIC_BASE_URL'] || 'https://api.anthropic.com/v1';
         return {
-          provider: 'claude',
-          name: 'Anthropic Claude AI',
-          isConfigured: Boolean(key && key.trim() !== ''),
-          hasKey: Boolean(key && key.trim() !== ''),
+          provider,
+          name: 'Anthropic Claude API',
+          isConfigured: Boolean(key?.trim()),
+          hasKey: Boolean(key?.trim()),
           maskedKey: this.maskKey(key),
-          baseUrl,
-          defaultModel: 'claude-sonnet-5',
-          supportedModels: ['claude-fable-5', 'claude-mythos-5', 'claude-opus-5', 'claude-opus-4-8', 'claude-sonnet-5', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001']
+          baseUrl: process.env['ANTHROPIC_BASE_URL'] || 'https://api.anthropic.com/v1',
+          defaultModel: this.getDefaultModel(provider),
+          supportedModels: models
         };
       }
       case 'perplexity': {
         const key = process.env['PERPLEXITY_API_KEY'];
-        const baseUrl = process.env['PERPLEXITY_BASE_URL'] || 'https://api.perplexity.ai';
         return {
-          provider: 'perplexity',
-          name: 'Perplexity AI Deep Research',
-          isConfigured: Boolean(key && key.trim() !== ''),
-          hasKey: Boolean(key && key.trim() !== ''),
+          provider,
+          name: 'Perplexity API',
+          isConfigured: Boolean(key?.trim()),
+          hasKey: Boolean(key?.trim()),
           maskedKey: this.maskKey(key),
-          baseUrl,
-          defaultModel: 'sonar',
-          supportedModels: ['sonar', 'sonar-reasoning', 'sonar-pro']
+          baseUrl: process.env['PERPLEXITY_BASE_URL'] || 'https://api.perplexity.ai',
+          defaultModel: this.getDefaultModel(provider),
+          supportedModels: models
         };
       }
     }
@@ -103,8 +117,10 @@ class ApiConfigService {
 
   public validateProvider(provider: AiProvider): void {
     const key = this.getApiKey(provider);
-    if (!key || key.trim() === '') {
-      throw new Error(`کلیلـی ئەی پی ئایی ${provider.toUpperCase()} لە ژینگەی سێرڤەردا دابین نەکراوە (.env)`);
+    if (!key?.trim()) {
+      throw new Error(
+        `کلیلـی ئەی پی ئایی ${provider.toUpperCase()} لە ژینگەی سێرڤەردا دابین نەکراوە.`
+      );
     }
   }
 }
