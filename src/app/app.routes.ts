@@ -53,12 +53,6 @@ export const routes: Routes = [
     title: 'پشکنینی کۆپیکردن | مام',
   },
   {
-    path: 'python-sandbox',
-    loadComponent: () =>
-      import('./features/python-sandbox/python-sandbox').then(m => m.PythonSandboxComponent),
-    title: 'مەکۆی پایتۆن | مام',
-  },
-  {
     path: 'glossary',
     loadComponent: () =>
       import('./features/glossary/glossary').then(m => m.GlossaryComponent),
