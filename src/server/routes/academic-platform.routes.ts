@@ -28,7 +28,7 @@ const verificationSourceArray = z.array(verificationSourceSchema).max(100);
 
 const evidenceGraphSchema = z.object({ topic: textField(500), draftText: z.string().max(250_000).default(''), sources: rawSourceArray.default([]) }).strict();
 const sourceVerificationSchema = z.object({ sources: verificationSourceArray.default([]) }).strict();
-const academicReviewSchema = z.object({ draftText: textField(250_000), topic: textField(500) }).strict();
+const academicReviewSchema = z.object({\n  draftText: textField(250_000),\n  topic: textField(500),\n  discipline: textField(200).optional(),\n  verifiedSources: verificationSourceArray.default([])\n}).strict();
 const qaGateSchema = z.object({ documentText: textField(250_000), sources: verificationSourceArray.default([]) }).strict();
 const kurdishLanguageSchema = z.object({ text: textField(250_000) }).strict();
 const knowledgeGraphSchema = z.object({ query: textField(500) }).strict();
