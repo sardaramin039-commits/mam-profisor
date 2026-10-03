@@ -144,7 +144,7 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
           }))
         }
       );
-      return res.json({
+      res.json({
         success: true,
         report,
         sourceVerification: {
