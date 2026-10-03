@@ -249,7 +249,21 @@ export class ResearchApiClientService {
       };
     };
   }> {
-    return this.http.post('/api/platform/qa-gate', {
+    return this.http.post<{
+      success: boolean;
+      qa: {
+        exportBlocked: boolean;
+        kurdishSummaryStatus?: string;
+        exportContract: {
+          version: '1.0';
+          approved: boolean;
+          fingerprint: string;
+          identityVerifiedSourceCount: number;
+          citationEligibleSourceCount: number;
+          createdAt: string;
+        };
+      };
+    }>('/api/platform/qa-gate', {
       documentText: documentText.trim(),
       sources
     });
