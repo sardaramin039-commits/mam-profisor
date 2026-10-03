@@ -13,7 +13,7 @@ import { ReviewsService } from '../../services/reviews';
     <div class="p-4 bg-slate-900/60 rounded-xl border border-slate-800 space-y-3">
       <div class="flex items-center gap-2">
         <mat-icon class="text-rose-400">school</mat-icon>
-        <h3 class="text-lg font-bold text-slate-100">هەڵسەنگاندنی هارفەرد (Harvard Review)</h3>
+        <h3 class="text-lg font-bold text-slate-100">پشکنینی کوالیتیی ئەکادیمی</h3>
       </div>
       <input
         type="text"
@@ -32,7 +32,7 @@ import { ReviewsService } from '../../services/reviews';
 
       @if (review(); as r) {
         <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 space-y-2 text-sm">
-          <div class="text-rose-400 font-bold">نمرەی هەڵسەنگاندن: {{ r.score }}/100</div>
+          <div class="text-rose-400 font-bold">نمرەی پشکنین: {{ r.score }}/100</div>
           <p class="text-slate-300 text-xs">{{ r.critique }}</p>
         </div>
       }
