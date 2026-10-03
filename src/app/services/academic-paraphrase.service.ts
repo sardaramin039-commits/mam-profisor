@@ -1,4 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 
 export interface AcademicParaphraseResponse {
   paraphrasedText?: string;
@@ -13,11 +15,17 @@ export interface AcademicParaphraseResponse {
   providedIn: 'root'
 })
 export class AcademicParaphraseService {
+  private readonly http = inject(HttpClient);
+
   isParaphrasing = signal<boolean>(false);
   paraphraseResult = signal<AcademicParaphraseResponse | null>(null);
   paraphraseError = signal<string | null>(null);
 
-  async runParaphrase(text: string, discipline: string, toneLevel: string): Promise<AcademicParaphraseResponse | null> {
+  async runParaphrase(
+    text: string,
+    discipline: string,
+    toneLevel: string
+  ): Promise<AcademicParaphraseResponse | null> {
     const trimmed = text.trim();
     if (!trimmed) {
       this.paraphraseError.set('تکایە سەرەتا چەند خاڵێک یان پەرەگرافێکی دیاریکراو بنووسە بۆ داڕشتنەوە.');
@@ -30,27 +38,19 @@ export class AcademicParaphraseService {
     this.paraphraseError.set(null);
 
     try {
-      const response = await fetch('/api/academic_paraphrase', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: trimmed,
-          discipline,
-          toneLevel
-        })
-      });
+      const data = await firstValueFrom(
+        this.http.post<AcademicParaphraseResponse>(
+          '/api/academic_paraphrase',
+          { text: trimmed, discipline, toneLevel }
+        )
+      );
 
-      if (!response.ok) {
-        throw new Error('کێشەیەک لە پێوەندی کردن بە سێرڤەری پارافراز ڕوویدا.');
-      }
-
-      const data = await response.json();
       if (data && !data.error) {
         this.paraphraseResult.set(data);
         return data;
-      } else {
-        throw new Error(data.error || 'داتای نەخوازراو وەرگیرا.');
       }
+
+      throw new Error(data?.error || 'داتای نەخوازراو وەرگیرا.');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.paraphraseError.set(msg);
