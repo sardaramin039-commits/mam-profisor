@@ -26,7 +26,7 @@ export interface ExperimentRow {
           <h3 class="text-lg font-bold text-slate-100">ژینگەی پایتۆن و تاقیکردنەوەی گریمانەکان (Python Hypothesis Testing Lab)</h3>
         </div>
         <span class="text-xs bg-indigo-950 text-indigo-300 border border-indigo-800 px-2.5 py-1 rounded-full font-mono">
-          SciPy / NumPy / Pandas Lab Engine
+          Python execution sandbox پێویستی بە backend ـی پارێزراو هەیە
         </span>
       </div>
 
@@ -98,7 +98,7 @@ export interface ExperimentRow {
             <mat-icon class="text-sm">biotech</mat-icon>
             خشتەی ئاماری تاقیکردنەوەی گریمانەکانی پایتۆن (Lab Results Dataset):
           </span>
-          <span class="text-[10px] text-slate-400">ئامادەیە بۆ داگرتن لە تاقیگەکاندا</span>
+          <span class="text-[10px] text-slate-400">تا execution ـی ڕاستەقینە ئەنجام نەدراوە، هیچ داتای تاقیکراوە نییە.</span>
         </div>
 
         <div class="overflow-x-auto">
@@ -158,11 +158,7 @@ print("دەرئەنجام: گریمانەی پوچ (H0) ڕەتکرایەوە، �
   output = signal<string>('');
 
   experimentData = signal<ExperimentRow[]>([
-    { sampleName: 'Sample_001_Control', variableX: 24.5, variableY: 19.2, hypothesisStatus: 'H1 Accepted', pValue: 0.0021, significance: 'p < 0.01 (High)' },
-    { sampleName: 'Sample_002_Variable', variableX: 26.1, variableY: 21.0, hypothesisStatus: 'H1 Accepted', pValue: 0.0045, significance: 'p < 0.01 (High)' },
-    { sampleName: 'Sample_003_KurdishText', variableX: 28.3, variableY: 20.5, hypothesisStatus: 'H1 Accepted', pValue: 0.0012, significance: 'p < 0.001 (Very High)' },
-    { sampleName: 'Sample_004_LabTest', variableX: 22.9, variableY: 18.8, hypothesisStatus: 'H0 Retained', pValue: 0.0840, significance: 'p > 0.05 (Not Significant)' },
-    { sampleName: 'Sample_005_Synthesis', variableX: 27.4, variableY: 22.1, hypothesisStatus: 'H1 Accepted', pValue: 0.0031, significance: 'p < 0.01 (High)' }
+    // No synthetic results are shown. Rows appear only after a real sandbox execution.
   ]);
 
   loadPreset(preset: 'ttest' | 'anova' | 'regression' | 'chisquare'): void {
@@ -172,8 +168,8 @@ print("دەرئەنجام: گریمانەی پوچ (H0) ڕەتکرایەوە، �
 import numpy as np
 
 # t-test تاقیکردنەوەی لێکچوونی دوو گرووپ
-sample_1 = np.random.normal(location=50, scale=10, size=30)
-sample_2 = np.random.normal(location=58, scale=10, size=30)
+sample_1 = np.random.normal(loc=50, scale=10, size=30)
+sample_2 = np.random.normal(loc=58, scale=10, size=30)
 t_val, p_val = stats.ttest_ind(sample_1, sample_2)
 print(f"t-statistic: {t_val:.4f}, p-value: {p_val:.6f}")`
       );
@@ -210,9 +206,10 @@ print(f"Chi2 statistic: {chi2:.4f}, p-value: {p_val:.6f}")`
     try {
       const res = await this.sandbox.executeCode(this.code());
       this.output.set(res.stdout || 'کۆدەکە بە سەرکەوتوویی جێبەجێ ببوو.');
-    } catch {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'هەڵەیەکی نەناسراو ڕوویدا.';
       this.output.set(
-        'ئەنجامی پایتۆن تاقیگەیی:\ntێکراوی گرووپی A: 26.20\ntێکراوی گرووپی B: 20.32\nt-statistic: 5.8412\np-value: 0.000152\nدەرئەنجام: گریمانەی پوچ (H0) ڕەتکرایەوە، جیاوازییەکە واتاداری ئاماری هەیە (p < 0.05).'
+        `تاقیکردنەوە جێبەجێ نەکرا. هیچ ئەنجامی خەیاڵی نیشان نادرێت.\nهۆکار: ${message}`
       );
     } finally {
       this.isRunning.set(false);
