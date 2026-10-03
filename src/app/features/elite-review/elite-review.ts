@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { ReviewsService } from '../../services/reviews';
+import { ReviewCriterion, ReviewsService } from '../../services/reviews';
 
 export interface HarvardRigorCriterion {
   id: string;
