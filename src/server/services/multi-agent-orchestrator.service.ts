@@ -25,6 +25,8 @@ export interface MultiAgentOrchestrationRequest {
 
 export interface MultiAgentOrchestrationResult {
   executionPipelineLog: Array<{ step: string; agentName: string; status: string; timestamp: string }>;
+  identityVerifiedSourcesCount: number;
+  citationEligibleSourcesCount: number;
   verifiedSourcesCount: number;
   claimEvidenceGraphIntegrity: number;
   thesisStructurePlan: any;
@@ -60,7 +62,11 @@ export class MultiAgentOrchestratorService {
 
     log('01', 'Research Planner Agent', 'Creating discipline-specific research framework');
     const verification = await sourceVerificationService.verifySources(rawSources, getGeminiClient);
-    log('02', 'Source Verification Agent', `${verification.verifiedSources.length} source metadata records verified`);
+    log(
+      '02',
+      'Source Verification Agent',
+      `${verification.verifiedSources.length} identity-verified; ${citationEligibleSources.length} citation-eligible`
+    );
 
     const structure = await academicWritingEngineService.generateArgumentArchitecture(
       request.topic,
@@ -69,8 +75,9 @@ export class MultiAgentOrchestratorService {
     );
     log('03', 'Argument & Methodology Agent', 'Built discipline-specific argument architecture');
 
+    const citationEligibleSources = verification.citationEligibleSources;
     const verifiedByKey = new Map(
-      verification.verifiedSources.map(source => [source.sourceId, source])
+      citationEligibleSources.map(source => [source.sourceId, source])
     );
     const evidenceChunks = rawSources
       .map(source => {
@@ -145,7 +152,7 @@ export class MultiAgentOrchestratorService {
     const contradictions = await contradictionDetectionService.analyze(
       request.topic,
       graph.claims,
-      verification.verifiedSources,
+      citationEligibleSources,
       getGeminiClient
     );
     log('08', 'Contradiction Agent', contradictions.contradictionCount
@@ -154,7 +161,7 @@ export class MultiAgentOrchestratorService {
 
     const citationIntelligence = citationIntelligenceService.build(
       grounded.paragraphs,
-      verification.verifiedSources,
+      citationEligibleSources,
       request.citationStyle || 'APA7'
     );
 
@@ -192,7 +199,7 @@ export class MultiAgentOrchestratorService {
 
     const qa = await academicQAGateService.runQAGate(
       finalText,
-      verification.verifiedSources,
+      citationEligibleSources,
       getGeminiClient,
       {
         confidence,
@@ -222,7 +229,9 @@ export class MultiAgentOrchestratorService {
 
     return {
       executionPipelineLog: pipelineLog,
-      verifiedSourcesCount: verification.verifiedSources.length,
+      identityVerifiedSourcesCount: verification.verifiedSources.length,
+      citationEligibleSourcesCount: citationEligibleSources.length,
+      verifiedSourcesCount: citationEligibleSources.length,
       claimEvidenceGraphIntegrity: graph.graphIntegrityScore,
       thesisStructurePlan: structure,
       contradictionReport: contradictions,
