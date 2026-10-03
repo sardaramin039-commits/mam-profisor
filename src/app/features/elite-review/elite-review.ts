@@ -4,15 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { ReviewCriterion, ReviewsService } from '../../services/reviews';
 
-export interface HarvardRigorCriterion {
-  id: string;
-  name: string;
-  nameEn: string;
-  weight: number;
-  score: number;
-  feedback: string;
-}
-
 @Component({
   selector: 'app-elite-review',
   standalone: true,
