@@ -257,4 +257,4 @@
 .mam-splash-principles{grid-template-columns:1fr;}
 .mam-preview-body{grid-template-columns:78px minmax(0,1fr);min-height:250px;}
 .mam-preview-content{padding:18px 12px;}
-}
+}.mam-defer-placeholder{min-height:96px;display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--mam-border-strong);border-radius:13px;background:var(--mam-surface-2);color:var(--mam-muted);font-size:11px;padding:18px;text-align:center;}
