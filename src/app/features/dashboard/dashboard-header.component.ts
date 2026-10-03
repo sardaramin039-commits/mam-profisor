@@ -33,7 +33,7 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
         <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'library'"
                 (click)="selectTab.emit('library'); closeMobileNav()">
           <mat-icon>auto_stories</mat-icon>
-          <span><b>کتێبخانە</b><small>کتێب و سەرچاوە دیجیتاڵییەکان</small></span>
+          <span><b>بەڵگە و سەرچاوە</b><small>کتێبخانە، source و تۆمارەکان</small></span>
         </button>
 
         <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'editor'"
@@ -171,7 +171,7 @@ export class DashboardHeaderComponent {
 
   tabLabel(tab: MainTab): string {
     const labels: Record<MainTab, string> = {
-      library: 'کتێبخانە',
+      library: 'بەڵگە و سەرچاوە',
       editor: 'نووسین',
       suite: 'ئامراز و هەناردە',
       advanced_research: 'توێژینەوە',
