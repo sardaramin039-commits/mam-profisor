@@ -146,4 +146,7 @@ export const APP_VIEW_IMPORTS = [
   AcademicAdditionsSidebarComponent,
   ConceptGraphComponent,
   GlobalToastContainerComponent,
+  AcademicPlatformComponent,
+  LibraryWorkspaceComponent,
+  VipWritingQualityComponent,
 ];
