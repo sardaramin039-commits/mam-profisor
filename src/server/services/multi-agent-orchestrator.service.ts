@@ -104,49 +104,46 @@ export class MultiAgentOrchestratorService {
       .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
     const candidateDraft = request.draftText?.trim()
-      || `${structure.thesisStatement}\\n\\n${structure.overallConclusion}`;
+      || `${structure.thesisStatement}\n\n${structure.overallConclusion}`;
 
-    const humanProse = await humanScholarlyProseService.refine(
+    const grounded = await evidenceGroundingService.generateGroundedContent(
+      request.topic,
       candidateDraft,
-      profile,
+      evidenceChunks,
       getGeminiClient
     );
-    log('04', 'Human Scholarly Prose Agent', 'Applied natural scholarly prose without inventing sources');
+    log('04', 'Evidence-Grounded Writer Agent',
+      `${grounded.integrityMetrics.verifiedClaims}/${grounded.integrityMetrics.totalClaims} claims citation-grounded`);
+
+    const groundedText = grounded.paragraphs.length
+      ? grounded.paragraphs.map(paragraph => paragraph.text).join('\n\n').trim()
+      : candidateDraft;
 
     const languageAnalysis = await kurdishAcademicLanguageService.analyzeAndRefineLanguage(
-      humanProse.refinedText,
+      groundedText,
       getGeminiClient
     );
     log('05', 'Kurdish Academic Language Agent', 'Validated Sorani grammar and academic terminology');
 
-    const grounded = await evidenceGroundingService.generateGroundedContent(
-      request.topic,
+    const protectedFragments = Array.from(new Set([
+      ...grounded.verifiedCitations.map(citation => citation.inTextCitation),
+      ...grounded.paragraphs.flatMap(paragraph =>
+        (paragraph.claims || []).map(claim => claim.citationText || '')
+      )
+    ].filter(Boolean)));
+
+    const humanProse = await humanScholarlyProseService.refineGrounded(
       languageAnalysis.refinedTextKurdish,
-      evidenceChunks,
+      profile,
+      protectedFragments,
       getGeminiClient
     );
-    log('06', 'Evidence-Grounded Writer Agent',
-      `${grounded.integrityMetrics.verifiedClaims}/${grounded.integrityMetrics.totalClaims} claims citation-grounded`);
+    log('06', 'Natural Scholarly Prose Agent',
+      humanProse.preservationPassed === false
+        ? 'Preservation guard kept the previous text'
+        : 'Applied natural scholarly variation without adding facts');
 
-    const finalText = grounded.paragraphs.length
-      ? grounded.paragraphs.map(paragraph => paragraph.text).join('\\n\\n').trim()
-      : languageAnalysis.refinedTextKurdish;
-
-    const graphSources = rawSources.map(source => {
-      const verified = verifiedByKey.get(sourceKey(source));
-      return {
-        ...source,
-        ...(verified || {}),
-        evidenceProvenance: 'user-supplied-content'
-      };
-    });
-
-    const graph = await claimEvidenceGraphService.buildGraph(
-      request.topic,
-      finalText,
-      graphSources,
-      getGeminiClient
-    );
+    const finalText = humanProse.refinedText || languageAnalysis.refinedTextKurdish;
     log('07', 'Claim-Evidence Graph Agent', `${graph.claims.length} final claims analyzed`);
 
     const contradictions = await contradictionDetectionService.analyze(
