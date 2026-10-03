@@ -55,7 +55,7 @@ import { ReviewCriterion, ReviewsService } from '../../services/reviews';
               <span>خەریکی شیکاریی نوخبەیە...</span>
             } @else {
               <mat-icon class="!text-lg">fact_check</mat-icon>
-              <span>دەستپێکردنی هەڵسەنگاندنی هارڤارد</span>
+              <span>دەستپێکردنی هەڵسەنگاندنی ئەکادیمی</span>
             }
           </button>
         </div>
