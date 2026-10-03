@@ -8,7 +8,7 @@
       <div>
         <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
           تەکنەلۆژیای فرە-ئەجێنت و گەڕانی جیهانی
-          <span class="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800/80 px-2 py-0.5 rounded-full">Evidence-first</span>
+          <span class="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800/80 px-2 py-0.5 rounded-full">بەڵگە پێش AI</span>
         </h2>
         <p class="text-xs text-slate-400">گەڕان، پشکنینی claim، OCR، review و بەڵگەسازی لە یەک جریاندا</p>
       </div>
@@ -78,18 +78,18 @@
       }
       @if (navigationGroup() === 'evidence') {
         <button type="button" (click)="activeTab.set('factchecker')" [class]="activeTab()==='factchecker' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>verified_user</mat-icon> پشکنەری ڕاستی</button>
-        <button type="button" (click)="activeTab.set('multiapi')" [class]="activeTab()==='multiapi' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>dataset</mat-icon> Global APIs</button>
+        <button type="button" (click)="activeTab.set('multiapi')" [class]="activeTab()==='multiapi' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>dataset</mat-icon> ئاپییە ئەکادیمییەکان</button>
         <button type="button" (click)="activeTab.set('ocr')" [class]="activeTab()==='ocr' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>document_scanner</mat-icon> OCR</button>
-        <button type="button" (click)="activeTab.set('knowledgegraph')" [class]="activeTab()==='knowledgegraph' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>account_tree</mat-icon> Knowledge Graph</button>
+        <button type="button" (click)="activeTab.set('knowledgegraph')" [class]="activeTab()==='knowledgegraph' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>account_tree</mat-icon> گرافی بەڵگە</button>
       }
       @if (navigationGroup() === 'review') {
-        <button type="button" (click)="activeTab.set('peer_review')" [class]="activeTab()==='peer_review' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>rate_review</mat-icon> Peer Review</button>
-        <button type="button" (click)="activeTab.set('methods_lab')" [class]="activeTab()==='methods_lab' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>science</mat-icon> Methods Lab</button>
-        <button type="button" (click)="activeTab.set('systematic_review')" [class]="activeTab()==='systematic_review' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>checklist</mat-icon> PRISMA Review</button>
+        <button type="button" (click)="activeTab.set('peer_review')" [class]="activeTab()==='peer_review' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>rate_review</mat-icon> پێداچوونەوەی هاوتا</button>
+        <button type="button" (click)="activeTab.set('methods_lab')" [class]="activeTab()==='methods_lab' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>science</mat-icon> تاقیگەی مێتۆد</button>
+        <button type="button" (click)="activeTab.set('systematic_review')" [class]="activeTab()==='systematic_review' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>checklist</mat-icon> پێداچوونەوەی سیستەماتیک</button>
       }
       @if (navigationGroup() === 'output') {
         <button type="button" (click)="activeTab.set('citation_export')" [class]="activeTab()==='citation_export' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>file_download</mat-icon> Citation و هەناردە</button>
-        <button type="button" (click)="activeTab.set('extended_tools')" [class]="activeTab()==='extended_tools' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>build_circle</mat-icon> Academic Tools</button>
+        <button type="button" (click)="activeTab.set('extended_tools')" [class]="activeTab()==='extended_tools' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>build_circle</mat-icon> ئامرازە ئەکادیمییەکان</button>
       }
       @if (navigationGroup() === 'memory') {
         <button type="button" (click)="activeTab.set('memory')" [class]="activeTab()==='memory' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>history</mat-icon> بیرگە و مێژوو</button>
