@@ -1,4 +1,6 @@
-import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 
 export interface PlagiarismResult {
   originalityScore: number;
@@ -11,17 +13,22 @@ export interface PlagiarismResult {
   providedIn: 'root'
 })
 export class PlagiarismService {
-  async checkPlagiarism(content: string, title?: string): Promise<PlagiarismResult> {
-    const response = await fetch('/api/plagiarism_check', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, title })
-    });
+  private readonly http = inject(HttpClient);
 
-    if (!response.ok) {
-      throw new Error('پێوەندی لەگەڵ سێرڤەر نییە بۆ پشکنینی ڕەسەنایەتی.');
+  async checkPlagiarism(content: string, title?: string): Promise<PlagiarismResult> {
+    const trimmed = content.trim();
+    if (!trimmed) {
+      throw new Error('دەقی پشکنین پێویستە.');
     }
 
-    return response.json();
+    return firstValueFrom(
+      this.http.post<PlagiarismResult>(
+        '/api/plagiarism_check',
+        {
+          content: trimmed.slice(0, 250_000),
+          title: title?.trim().slice(0, 500)
+        }
+      )
+    );
   }
 }
