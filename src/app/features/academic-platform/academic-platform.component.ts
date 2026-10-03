@@ -99,14 +99,19 @@ import { AcademicPlatformService } from '../../services/academic-platform.servic
                   Integrity: {{ res.claimEvidenceGraphIntegrity }}/100
                 </span>
               </div>
-              <p class="text-xs text-stone-600">هەموو ئیدعایەک (Claim) دەبێت بە بەڵگەی ڕاستەقینەی (Verified Evidence) سەرچاوە زانستییەکانەوە ببەسترێتەوە:</p>
+              <p class="text-xs text-stone-600">
+                Claim ـەکان تەنها کاتێک Verified دەبن کە سەرچاوە و Evidence ـی پشتڕاستکراو بەردەست بێت.
+                ئێستا: {{ res.groundedGeneration?.integrityMetrics?.verifiedClaims || 0 }} لە {{ res.groundedGeneration?.integrityMetrics?.totalClaims || 0 }} Claim بە Evidence ـەوە گرێدراوە.
+              </p>
               
               <div class="space-y-3 max-h-80 overflow-y-auto pr-1">
                 @for (arg of res.thesisStructurePlan?.arguments; track arg.id) {
                   <div class="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-2 text-xs">
-                    <div class="flex justify-between items-start">
+                    <div class="flex justify-between items-start gap-2">
                       <span class="font-bold text-harvard-crimson">{{ arg.id }}: {{ arg.claim }}</span>
-                      <span class="text-[9px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">Verified</span>
+                      <span class="text-[9px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">
+                        پشکنین پێویستە
+                      </span>
                     </div>
                     <div class="text-stone-600 pl-2 border-r-2 border-harvard-crimson/30 space-y-1">
                       @for (quote of arg.evidenceQuotes; track quote) {
