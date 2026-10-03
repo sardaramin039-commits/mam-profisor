@@ -167,6 +167,8 @@ import { VerifiedCitationRecord, EvidenceLinkedClaim, ResearchGateAuditResult } 
         }
       </div>
     }
+  `
+})
 
 export class SourceEvidenceTabsComponent {
   activeTab = input.required<'VERIFICATION' | 'RANKING' | 'DEDUPLICATION' | 'EVIDENCE_LINK' | 'RESEARCH_GATE' | 'INTEGRITY_DASHBOARD' | 'RERANKING'>();
