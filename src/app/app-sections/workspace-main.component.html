@@ -87,19 +87,16 @@
         </section>
       </div>
 
-      <section class="mam-editor-section">
-        <div class="mam-section-heading">
-          <div>
-            <span class="mam-number">٠٣</span>
-            <div><h2>VIP Pro؛ هەڵسەنگاندنی کواڵیتی نووسین</h2><p>ئاست و بوار دەخوێنێتەوە و ١١ پێوەری کواڵیتی و ماتریسی ١١١١ یاسایی بەکاردەهێنێت.</p></div>
-          </div>
+      <details class="mam-secondary-tools">
+        <summary><mat-icon>fact_check</mat-icon><span>پشکنینی کوالیتیی نووسین</span><small>زمان، پێکهاتە، بەڵگە، توندوتۆڵی و پێشنیاری چاکسازی</small></summary>
+        <div class="mam-secondary-grid">
+          <app-vip-writing-quality
+            [chapterText]="activeChapter()?.content || ''"
+            [academicLevel]="refineForm.get('academicLevel')?.value"
+            [discipline]="refineForm.get('discipline')?.value">
+          </app-vip-writing-quality>
         </div>
-        <app-vip-writing-quality
-          [chapterText]="activeChapter()?.content || ''"
-          [academicLevel]="refineForm.get('academicLevel')?.value"
-          [discipline]="refineForm.get('discipline')?.value">
-        </app-vip-writing-quality>
-      </section>
+      </details>
 
       <details class="mam-secondary-tools">
         <summary><mat-icon>tune</mat-icon><span>ئامرازە یارمەتیدەرەکان</span><small>گەڕان، وشەنامە و هاوکاری ئەکادیمی</small></summary>
