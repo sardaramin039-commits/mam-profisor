@@ -1,37 +1,65 @@
 import { GoogleGenAI } from '@google/genai';
 
 export interface EvaluationCriterion {
-  category: string; // e.g. "Research Question", "Structure", "Argumentation", etc.
-  score: number; // 0 - 10
+  category: string;
+  score: number;
   severity: 'low' | 'medium' | 'high' | 'critical';
   findingKurdish: string;
   evidenceQuoteKurdish: string;
   recommendationKurdish: string;
 }
 
+export interface ReviewerSourceContext {
+  sourceId: string;
+  sourceTitle: string;
+  author?: string;
+  year?: string;
+  publisher?: string;
+  doiOrIsbn?: string;
+  verificationStatus: 'verified';
+}
+
 export interface ReviewerReport {
-  overallScore: number; // 0 - 10
+  overallScore: number;
   thesisDefenseSimulatedPassed: boolean;
   criteria: EvaluationCriterion[];
   summaryCritiqueKurdish: string;
 }
 
+export interface ReviewerContext {
+  discipline?: string;
+  verifiedSources?: ReviewerSourceContext[];
+}
+
 export class AcademicReviewerService {
-  /**
-   * Evaluates draft theses as an AI Professor without changing text, strictly reviewing and scoring.
-   */
   public async evaluateThesis(
     draftText: string,
     topic: string,
-    getGeminiClient: () => GoogleGenAI
+    getGeminiClient: () => GoogleGenAI,
+    context: ReviewerContext = {}
   ): Promise<ReviewerReport> {
     const ai = getGeminiClient();
+    const sourceContext = (context.verifiedSources || []).slice(0, 100);
 
-    const prompt = `تۆ وەک Reviewer ـێکی زانستی و بێلایەن کار دەکەیت. ئەرکت هەڵسەنگاندنی ئەکادیمییانەی ئەم دەقەی توێژینەوەیەیە:
+    const prompt = `تۆ وەک Reviewer ـێکی زانستی و بێلایەن کار دەکەیت. ئەرکت هەڵسەنگاندنی ئەکادیمییانەی ئەم دەقەی توێژینەوەیەیە.
+
 بابەت: ${topic}
-دەقی تێز: ${draftText}
+بوار: ${context.discipline || 'گشتی'}
+دەقی تێز:
+${draftText}
 
-تکایە بەپێی ئەم 9 پێوەرەی ناوخۆییی هەڵسەنگاندنی ئەپ نمرەی (0 بۆ 10) بدە و تەنها هەڵسەنگاندن و ڕەخنە بنووسە:
+سەرچاوەی VERIFIED ـی بەردەست بۆ ئەم پشکنینە:
+${JSON.stringify(sourceContext, null, 2)}
+
+یاساکانی هەڵسەنگاندن:
+١. تەنها لەسەر ئەو دەق و سەرچاوانەی لێرەدا دراون هەڵسەنگاندن بکە.
+٢. نابێت DOI، ناوی نووسەر، ساڵ، quote یان داتای نوێ دروست بکەیت.
+٣. Source Quality و Citation تەنها بە پشتبەستن بە لیستی VERIFIED ـی سەرەوە هەڵسەنگێنە. ئەگەر context ـی سەرچاوە بەس نییە، لە finding ـدا بە ڕوونی بڵێ «بەڵگەی بەس نییە».
+٤. evidenceQuoteKurdish تەنها کاتێک دابنێ کە دەتوانیت دەقێکی ڕاستەوخۆ لە دەقی تێزەکەوە بنووسیت؛ نابێت quote ـی خەیاڵی بێت.
+٥. نمرەکان پێوانەی ناوخۆی Review ـن، نە بڕوانامە یان accreditation ـی دەرەکی.
+٦. ئەگەر دڵنیایی بەس نییە، بڕیارەکەت سنووردار و ڕوون بکە.
+
+بەپێی ئەم 9 پێوەرە هەڵسەنگاندن بکە:
 1. Research Question
 2. Structure
 3. Argumentation
@@ -42,19 +70,19 @@ export class AcademicReviewerService {
 8. Academic Language
 9. Originality
 
-وەڵامەکەت تەنها بە JSON بێت بەم شێوازە:
+تەنها JSON و بەو شێوازە وەڵام بدەرەوە:
 {
   "overallScore": 8.8,
-  "thesisDefenseSimulatedPassed": true,
-  "summaryCritiqueKurdish": "شیکاری گشتی لیژنەی هەڵسەنگاندن بە کوردیی سۆرانی زانستی",
+  "thesisDefenseSimulatedPassed": false,
+  "summaryCritiqueKurdish": "شیکاریی گشتی بە کوردیی سۆرانی زانستی",
   "criteria": [
     {
       "category": "Research Question",
       "score": 9.0,
       "severity": "low",
-      "findingKurdish": "پرسیارەکە ڕوون و بەهێز دیاریکراوە.",
-      "evidenceQuoteKurdish": "تێکستی پشتڕاستکەرەوە لە تێزەکەدا",
-      "recommendationKurdish": "پێشنیار بۆ قووڵکردنەوەی زیاتری ناوەڕۆکەکە."
+      "findingKurdish": "دۆزینەوەی پشکنراو",
+      "evidenceQuoteKurdish": "quote ـی دەقاودەق لە دەقی تێز",
+      "recommendationKurdish": "پێشنیاری چاکسازی"
     }
   ]
 }`;
@@ -69,29 +97,47 @@ export class AcademicReviewerService {
         }
       });
 
-      const parsed = JSON.parse(response.text || '{}');
-      const rawCriteria = Array.isArray(parsed.criteria) ? parsed.criteria : [];
-      const criteria: EvaluationCriterion[] = rawCriteria.map((criterion: any) => ({
-        category: String(criterion?.category || 'Unclassified'),
-        score: Math.max(0, Math.min(10, Number(criterion?.score) || 0)),
-        severity: ['low', 'medium', 'high', 'critical'].includes(criterion?.severity)
-          ? criterion.severity
-          : 'medium',
-        findingKurdish: String(criterion?.findingKurdish || 'هیچ دۆزینەوەیەکی پشتڕاستکراو نییە.'),
-        evidenceQuoteKurdish: String(criterion?.evidenceQuoteKurdish || ''),
-        recommendationKurdish: String(criterion?.recommendationKurdish || 'پێویستی بە پشکنینی زیاتر هەیە.')
-      }));
+      const parsed = JSON.parse(response.text || '{}') as Record<string, unknown>;
+      const rawCriteria = Array.isArray(parsed['criteria']) ? parsed['criteria'] : [];
+      const draftNormalized = draftText.trim();
 
-      if (criteria.length === 0 && !parsed.summaryCritiqueKurdish) {
+      const criteria: EvaluationCriterion[] = rawCriteria.map((criterion: unknown) => {
+        const item = criterion && typeof criterion === 'object'
+          ? criterion as Record<string, unknown>
+          : {};
+        const rawQuote = String(item['evidenceQuoteKurdish'] || '').trim();
+        const evidenceQuoteKurdish =
+          rawQuote && draftNormalized.includes(rawQuote) ? rawQuote : '';
+        const finding = String(item['findingKurdish'] || '').trim();
+        const recommendation = String(item['recommendationKurdish'] || '').trim();
+
+        return {
+          category: String(item['category'] || 'Unclassified'),
+          score: Math.max(0, Math.min(10, Number(item['score']) || 0)),
+          severity: ['low', 'medium', 'high', 'critical'].includes(item['severity'])
+            ? item['severity'] as EvaluationCriterion['severity']
+            : 'medium',
+          findingKurdish: finding || 'هیچ دۆزینەوەیەکی پشتڕاستکراو نییە.',
+          evidenceQuoteKurdish,
+          recommendationKurdish: recommendation || 'پێویستی بە پشکنینی زیاتر هەیە.'
+        };
+      });
+
+      if (criteria.length === 0 && !parsed['summaryCritiqueKurdish']) {
         throw new Error('Reviewer returned no usable evaluation');
       }
 
-      const overallScore = Math.max(0, Math.min(10, Number(parsed.overallScore) || 0));
+      const overallScore = Math.max(
+        0,
+        Math.min(10, Number(parsed['overallScore']) || 0)
+      );
+
       return {
         overallScore,
-        thesisDefenseSimulatedPassed: parsed.thesisDefenseSimulatedPassed === true,
+        thesisDefenseSimulatedPassed: parsed['thesisDefenseSimulatedPassed'] === true,
         summaryCritiqueKurdish: String(
-          parsed.summaryCritiqueKurdish || 'هەڵسەنگاندنەکە بەردەستە، بەڵام پێویستی بە پشکنینی توێژەر هەیە.'
+          parsed['summaryCritiqueKurdish'] ||
+          'هەڵسەنگاندنەکە بەردەستە، بەڵام پێویستی بە پشکنینی توێژەر هەیە.'
         ),
         criteria
       };
@@ -100,7 +146,7 @@ export class AcademicReviewerService {
       return {
         overallScore: 0,
         thesisDefenseSimulatedPassed: false,
-        summaryCritiqueKurdish: 'هەڵسەنگاندنی ئەکادیمی بەهۆی نەبوونی موتورەکە بەردەست نەبوو؛ هیچ نمرەیەکی خەملێنراو پیشان نادرێت.',
+        summaryCritiqueKurdish: 'موتۆری هەڵسەنگاندن وەڵامی پشتڕاستکراوی نەدا؛ نمرەکە نابێت وەک هەڵسەنگاندنی دەرەکی لێک بدرێتەوە.',
         criteria: [
           {
             category: 'Reviewer Availability',
@@ -108,7 +154,7 @@ export class AcademicReviewerService {
             severity: 'critical',
             findingKurdish: 'موتۆری Reviewer وەڵامی پشتڕاستکراوی نەدا.',
             evidenceQuoteKurdish: '',
-            recommendationKurdish: 'پێداچوونەوەی Reviewer دووبارە بکەوە پێش بەکارهێنانی نمرەکە.'
+            recommendationKurdish: 'پێداچوونەوەی Reviewer دووبارە بکەوە پێش بەکارهێنانی ئەنجامەکە.'
           }
         ]
       };
