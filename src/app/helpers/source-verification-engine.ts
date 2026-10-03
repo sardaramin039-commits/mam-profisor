@@ -304,8 +304,11 @@ export class SourceVerificationEngine {
       const existing = canonicalMap.get(fingerprint);
       if (existing) {
         existing.mirrorsCount += 1;
-        if (source.verificationStatus === 'VERIFIED' && existing.verificationStatus !== 'VERIFIED') {
+        if (source.citationEligible && !existing.citationEligible) {
           existing.verificationStatus = 'VERIFIED';
+          existing.identityStatus = 'verified';
+          existing.evidenceStatus = 'verified';
+          existing.citationEligible = true;
           existing.verificationNotes = source.verificationNotes;
           existing.workflowStepsCompleted.verified = true;
           existing.workflowStepsCompleted.cited = true;
@@ -330,7 +333,7 @@ export class SourceVerificationEngine {
     kind: ContentKind
   ): EvidenceLinkedClaim {
     const claimId = deterministicId('CLAIM', `${source.id}::${claimText}::${kind}`);
-    const verified = source.verificationStatus === 'VERIFIED';
+    const verified = source.citationEligible === true;
 
     let primaryBadge = '[Source-Based]';
     let secondaryBadge = verified ? '[Evidence Verified]' : '[Evidence Not Verified]';
@@ -368,8 +371,8 @@ export class SourceVerificationEngine {
     claims: EvidenceLinkedClaim[]
   ): ResearchGateAuditResult {
     const deduplicated = this.deduplicateSources(sources);
-    const verifiedSources = deduplicated.filter(source => source.verificationStatus === 'VERIFIED');
-    const unverifiedSources = deduplicated.filter(source => source.verificationStatus !== 'VERIFIED');
+    const verifiedSources = deduplicated.filter(source => source.citationEligible === true);
+    const unverifiedSources = deduplicated.filter(source => source.citationEligible !== true);
 
     const missingClaims: string[] = [];
     const missingEvidence: string[] = [];
