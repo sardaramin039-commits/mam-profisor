@@ -16,6 +16,8 @@ export interface ReviewerSourceContext {
   year?: string;
   publisher?: string;
   doiOrIsbn?: string;
+  evidenceText?: string;
+  pageNumber?: string | number | null;
   verificationStatus: 'verified';
 }
 
