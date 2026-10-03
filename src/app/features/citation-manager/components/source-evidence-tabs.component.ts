@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { VerifiedCitationRecord, EvidenceLinkedClaim, ResearchGateAuditResult } from '../../../helpers/source-verification-engine';
@@ -122,39 +122,29 @@ import { VerifiedCitationRecord, EvidenceLinkedClaim, ResearchGateAuditResult } 
       <div class="space-y-4 font-serif">
         @let gate = researchGateAudit();
 
-        @if (gate.passed && !forceWriteAnyway()) {
+        @if (gate.passed) {
           <div class="p-4 bg-emerald-950/40 border border-emerald-800/80 rounded-xl space-y-2">
             <div class="flex items-center gap-2 text-emerald-300 font-bold text-sm">
               <mat-icon class="!text-lg">check_circle</mat-icon>
-              <span>Research Gate Status: PASSED (ئامادەیە بۆ نووسین)</span>
+              <span>Research Gate: PASSED، ئامادەیە بۆ نووسین</span>
             </div>
             <p class="text-xs text-slate-300">
-              تەواوی سەرچاوەکان VERIFIED کراون و بەڵگەی سەلمێنەر بۆ نووسینی ئەکادیمی بەردەستە. Writer Agent دەتوانێت دەست بە کار بێت.
-            </p>
-          </div>
-        } @else if (forceWriteAnyway()) {
-          <div class="p-4 bg-amber-950/40 border border-amber-800/80 rounded-xl space-y-2">
-            <div class="flex items-center gap-2 text-amber-300 font-bold text-sm">
-              <mat-icon class="!text-lg">warning</mat-icon>
-              <span>پەڕینەوە لە سەرچاوە (Write Anyway Activated)</span>
-            </div>
-            <p class="text-xs text-slate-300">
-              دەقی بەرھەمھێنراو هەموو پارچەکانی بە ڕوونی ئاماژەی <strong class="text-amber-400 font-mono">[UNVERIFIED]</strong>یان پێوە دەکرێت تا خوێنەر ئاگادار بێت.
+              سەرچاوەکان و بەڵگەی پەیوەستکراو پشکنراون. ئەمە هێشتا جێگەی پێداچوونەوەی مرۆیی و پشکنینی journal requirement ـەکان ناگرێتەوە.
             </p>
           </div>
         } @else {
           <div class="p-4 bg-rose-950/40 border border-rose-800/80 rounded-xl space-y-3">
             <div class="flex items-center gap-2 text-rose-300 font-bold text-sm">
               <mat-icon class="!text-lg">block</mat-icon>
-              <span>Research Gate Status: FAILED (Research evidence is insufficient)</span>
+              <span>Research Gate: FAILED، بەڵگە پێویستە</span>
             </div>
             <p class="text-xs text-slate-300">
-              Writer Agent ناتوانێت دەقی ئەکادیمی بنووسێت چونکە هەندێک لە بانگەشە سەرەکییەکان بە بێ بەڵگە ماونەتەوە.
+              نووسینی citation ـی Verified تا کاتی چارەسەرکردنی کەموکوڕییەکانی بەڵگە و سەرچاوە ڕێگەپێدراو نییە.
             </p>
 
             <div class="space-y-2 pt-2 border-t border-rose-900/60 text-xs text-slate-200">
               <div>
-                <strong class="text-rose-400 font-bold block mb-1">Missing Claims & Evidence:</strong>
+                <strong class="text-rose-400 font-bold block mb-1">Claim و Evidence ـی کەم:</strong>
                 <ul class="list-disc list-inside space-y-1 text-[11px] text-slate-300">
                   @for (m of gate.missingEvidence; track m) {
                     <li>{{ m }}</li>
@@ -163,7 +153,7 @@ import { VerifiedCitationRecord, EvidenceLinkedClaim, ResearchGateAuditResult } 
               </div>
 
               <div class="pt-2">
-                <strong class="text-amber-300 font-bold block mb-1">Recommended Academic Repositories:</strong>
+                <strong class="text-amber-300 font-bold block mb-1">شوێنەکانی گەڕان بۆ سەرچاوە:</strong>
                 <div class="flex items-center gap-2 flex-wrap text-[10.5px]">
                   @for (rec of gate.recommendedSources; track rec) {
                     <span class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">
@@ -173,29 +163,16 @@ import { VerifiedCitationRecord, EvidenceLinkedClaim, ResearchGateAuditResult } 
                 </div>
               </div>
             </div>
-
-            <div class="pt-3 flex justify-end">
-              <button
-                type="button"
-                (click)="forceWriteAnywayChange.emit(true)"
-                class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5">
-                <mat-icon class="!text-sm">edit_note</mat-icon>
-                <span>داوای نووسین بکە سەرەڕای کەموکوڕی (Write Anyway)</span>
-              </button>
-            </div>
           </div>
         }
       </div>
     }
-  `
-})
+
 export class SourceEvidenceTabsComponent {
   activeTab = input.required<'VERIFICATION' | 'RANKING' | 'DEDUPLICATION' | 'EVIDENCE_LINK' | 'RESEARCH_GATE' | 'INTEGRITY_DASHBOARD' | 'RERANKING'>();
   deduplicatedSources = input.required<VerifiedCitationRecord[]>();
   linkedClaims = input.required<EvidenceLinkedClaim[]>();
   researchGateAudit = input.required<ResearchGateAuditResult>();
-  forceWriteAnyway = input.required<boolean>();
-  forceWriteAnywayChange = output<boolean>();
 
   jsonStringify(val: any): string {
     try {
