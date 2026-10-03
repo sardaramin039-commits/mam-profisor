@@ -16,6 +16,8 @@ import { z } from 'zod';
 const textField = (max: number) => z.string().trim().min(1).max(max);
 const rawSourceArray = z.array(z.record(z.string(), z.unknown())).max(100);
 const verificationSourceSchema = z.object({
+  id: z.string().trim().max(200).optional(),
+  sourceId: z.string().trim().max(200).optional(),
   title: z.string().trim().min(1).max(1000),
   author: z.string().max(500).optional(),
   year: z.union([z.string(), z.number()]).optional(),
