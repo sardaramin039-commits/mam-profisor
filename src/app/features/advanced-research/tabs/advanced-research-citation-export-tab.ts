@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
 import { MultiAgentService } from '../services/multi-agent.service';
 import { ResearchApiClientService } from '../services/research-api-client.service';
-import { ExportContractService } from '../../../../services/export-contract.service';
+import { ExportContractService } from '../../../services/export-contract.service';
 
 @Component({
   selector: 'app-advanced-research-citation-export-tab',
