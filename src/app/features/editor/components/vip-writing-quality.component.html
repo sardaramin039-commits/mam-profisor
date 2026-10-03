@@ -5,8 +5,8 @@
         <mat-icon>workspace_premium</mat-icon>
       </div>
       <div>
-        <h2 class="text-base font-bold text-amber-400">VIP Pro ـی کواڵیتی نووسین</h2>
-        <p class="text-[11px] text-stone-400">١١١١ پشکنینی پارامەتریکی لەسەر بنەمای ١١ پێوەر و ئاستی ئەکادیمی؛ ئەمە بەڵگەی ١١١١ یاسای زانستیی جیاواز نییە</p>
+        <h2 class="text-base font-bold text-amber-400">پشکنینی کوالیتیی نووسین</h2>
+        <p class="text-[11px] text-stone-400">پشکنینێکی هەڵسەنگاندنی دەقە کە ١١ پێوەری نووسین، بەڵگە، پێکهاتە و ڕوونی دەخوێنێتەوە؛ ئەنجامەکان ڕێنماییی چاکسازییە و جێگەی هەڵسەنگاندنی مرۆیی ناگرێتەوە</p>
       </div>
     </div>
     <span class="px-3 py-1 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[10px] font-mono font-bold">
@@ -34,7 +34,7 @@
 
   <button type="button" (click)="analyze()" [disabled]="analyzing()"
     class="w-full rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold py-3 text-xs cursor-pointer disabled:opacity-50">
-    @if (analyzing()) { خەریکی هەڵسەنگاندنە... } @else { هەڵسەنگاندنی VIP Pro ـی بەشەکە }
+    @if (analyzing()) { خەریکی هەڵسەنگاندنە... } @else { دەستپێکردنی پشکنینی کوالیتیی بەشەکە }
   </button>
 
   @if (result(); as r) {
@@ -42,7 +42,7 @@
       <div class="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 space-y-2">
         <strong class="text-amber-300 text-xs">دەق بۆ نمرەدانی دروست کەمە</strong>
         <p class="text-[11px] text-stone-300">{{ r.gaps[0] }}</p>
-        <p class="text-[10px] text-stone-500">یاساکانی بەردەست: {{ r.rulesAvailable }} | پشکنراو: {{ r.rulesEvaluated }} | دڵنیایی داتا: {{ r.confidence }}%</p>
+        <p class="text-[10px] text-stone-500">پێوەرە پشکنراوەکان: {{ r.rulesEvaluated }} | دڵنیایی داتا: {{ r.confidence }}%</p>
       </div>
     } @else {
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -52,7 +52,7 @@
           <span class="text-[10px] text-stone-500">دڵنیایی پێوانە: {{ r.confidence }}%</span>
         </div>
         <div class="rounded-xl border border-stone-800 bg-stone-900 p-4">
-          <span class="text-[10px] text-stone-400">پشکنینە پارامەتریکییەکان</span>
+          <span class="text-[10px] text-stone-400">پێوەرە هەڵبژێردراوەکان</span>
           <div class="text-2xl font-black text-stone-100">{{ r.rulesEvaluated }}</div>
           <span class="text-[10px] text-stone-500">هۆشدارییە دۆزراوەکان: {{ r.rulesTriggered }}</span>
         </div>
@@ -64,7 +64,7 @@
       </div>
 
       <div class="space-y-2">
-        <h3 class="text-xs font-bold text-stone-200">١١ پێوەری سەرەکی</h3>
+        <h3 class="text-xs font-bold text-stone-200">١١ پێوەری کواڵیتیی نووسین</h3>
         @for (d of r.dimensions; track d.key) {
           <div class="grid grid-cols-[120px_1fr_42px] items-center gap-2">
             <span class="text-[10px] text-stone-300">{{ d.label }}</span>
