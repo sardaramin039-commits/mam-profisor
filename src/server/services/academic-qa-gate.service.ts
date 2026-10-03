@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { GoogleGenAI } from '@google/genai';
 
 export interface QACheckItem {
@@ -8,12 +9,22 @@ export interface QACheckItem {
   recommendedActionKurdish: string;
 }
 
+export interface ExportContract {
+  version: '1.0';
+  approved: boolean;
+  fingerprint: string;
+  identityVerifiedSourceCount: number;
+  citationEligibleSourceCount: number;
+  createdAt: string;
+}
+
 export interface QAGateResult {
   exportBlocked: boolean;
   overallQAScore: number;
   criticalViolationsCount: number;
   checks: QACheckItem[];
   kurdishSummaryStatus: string;
+  exportContract: ExportContract;
 }
 
 function clampScore(value: unknown): number {
@@ -22,21 +33,35 @@ function clampScore(value: unknown): number {
   return Math.max(0, Math.min(100, Math.round(numeric)));
 }
 
-function hasVerifiedSource(source: any): boolean {
-  return source?.existenceVerified === true
-    && source?.rejectedAsFabricated !== true
-    && source?.trustLevel !== 'D'
-    && source?.trustLevel !== 'F';
+function hasCitationEligibleSource(source: unknown): boolean {
+  if (!source || typeof source !== 'object') return false;
+  const item = source as Record<string, unknown>;
+  return item['citationEligible'] === true
+    && item['identityStatus'] === 'verified'
+    && item['evidenceStatus'] === 'verified'
+    && item['existenceVerified'] === true
+    && item['rejectedAsFabricated'] !== true;
+}
+
+function createExportFingerprint(
+  documentText: string,
+  sourceIds: string[],
+  approved: boolean
+): string {
+  const payload = JSON.stringify({
+    version: '1.0',
+    documentText: documentText.trim(),
+    sourceIds: [...sourceIds].sort(),
+    approved
+  });
+
+  return createHash('sha256').update(payload, 'utf8').digest('hex');
 }
 
 export class AcademicQAGateService {
-  /**
-   * Pre-export gate. AI can provide review suggestions, but deterministic safety rules
-   * always override a permissive AI result.
-   */
   public async runQAGate(
     documentText: string,
-    sources: any[],
+    sources: unknown[],
     getGeminiClient: () => GoogleGenAI,
     compliance?: {
       confidence?: { overallScore?: number };
@@ -44,19 +69,25 @@ export class AcademicQAGateService {
       contradictionCount?: number;
       citationIntegrity?: number;
       totalClaims?: number;
+      identityVerifiedSourceCount?: number;
+      citationEligibleSourceCount?: number;
     }
   ): Promise<QAGateResult> {
     const ai = getGeminiClient();
+    const safeSources = Array.isArray(sources) ? sources : [];
+    const identityVerifiedSourceCount = Number(compliance?.identityVerifiedSourceCount) || 0;
+    const citationEligibleSourceCount =
+      Number(compliance?.citationEligibleSourceCount) || safeSources.filter(hasCitationEligibleSource).length;
 
     const prompt = `پێداچوونەوەی QA بۆ بەڵگەنامەی ئەکادیمی بکە.
 تێکست: ${documentText.slice(0, 5000)}
-سەرچاوەکان: ${JSON.stringify((Array.isArray(sources) ? sources : []).slice(0, 10))}
+سەرچاوەی citation-eligible: ${JSON.stringify(safeSources.slice(0, 10))}
 
 یاسا:
-- هیچ citation یان source ـێک بە تەنها بەهۆی قسەی AI Verified مەکە.
-- دۆخی سەرچاوە لە metadata ـی دەرەکی و system verification ـەوە دێت.
-- ئەگەر بەڵگە کافی نییە، passed=false دابنێ.
-- نمرەکان خەملاندنن؛ هیچ نمرەیەک نابێت جێگەی verification بگرێتەوە.
+- AI ناتوانێت source یان citation بە تەنها Verified بکات.
+- Identity verification و evidence verification دوو دۆخی جیاوازن.
+- نمرەکان تەنها هەڵسەنگاندنی ناوخۆیین و جێگەی verification ناگرن.
+- ئەگەر citation-eligible source نییە یان sourceێک دۆخی هەردووکی identity/evidence ـی verified نییە، Export نابێت ڕێگەپێبدات.
 
 تەنها JSON:
 {
@@ -64,15 +95,7 @@ export class AcademicQAGateService {
   "overallQAScore": 0,
   "criticalViolationsCount": 1,
   "kurdishSummaryStatus": "بەڵگەنامەکە پێویستی بە پشکنینی زیاتر هەیە.",
-  "checks": [
-    {
-      "ruleName": "Citation Integrity",
-      "passed": false,
-      "severity": "critical",
-      "detailsKurdish": "پشتڕاستکردنەوەی citation تەواو نییە.",
-      "recommendedActionKurdish": "سەرچاوەکان بە شێوەی دەرەکی پشتڕاست بکە."
-    }
-  ]
+  "checks": []
 }`;
 
     try {
@@ -85,40 +108,63 @@ export class AcademicQAGateService {
         }
       });
 
-      const parsed = JSON.parse(response.text || '{}');
-      const checks: QACheckItem[] = Array.isArray(parsed.checks) ? parsed.checks : [];
-      const safeSources = Array.isArray(sources) ? sources : [];
-      const unverifiedCount = safeSources.filter(source => !hasVerifiedSource(source)).length;
-      const wordCount = documentText.trim().split(/\s+/).filter(Boolean).length;
-      const citationMarkerCount = (documentText.match(/\([^()]{2,100},\s*[12١٢][0-9٠-٩]{3}[a-z]?\)|\[[0-9٠-٩,;\s-]+\]/g) || []).length;
+      const parsed = JSON.parse(response.text || '{}') as Record<string, unknown>;
+      const checks: QACheckItem[] = Array.isArray(parsed['checks'])
+        ? parsed['checks'].filter((item): item is QACheckItem =>
+            Boolean(item && typeof item === 'object')
+          )
+        : [];
+
+      const invalidSourceCount = safeSources.filter(
+        source => !hasCitationEligibleSource(source)
+      ).length;
+      const wordCount = documentText.trim().split(/s+/).filter(Boolean).length;
+      const citationMarkerCount = (
+        documentText.match(
+          /\([^()]{2,100},\s*[12١٢][0-9٠-٩]{3}[a-z]?\)|\[[0-9٠-٩,;\s-]+\]/g
+        ) || []
+      ).length;
 
       if (wordCount > 250 && citationMarkerCount === 0) {
         checks.push({
           ruleName: 'Citation-to-Document Link',
           passed: false,
           severity: 'critical',
-          detailsKurdish: 'بەڵگەنامەکە درێژەی پێویست هەیە، بەڵام هیچ نیشانەیەکی ڕوونی citation لە دەقەکەدا نەدۆزرایەوە.',
-          recommendedActionKurdish: 'Claim ـە پەیوەندیدارەکان بە citation ـی ڕاستەقینە ببەستە و پاشان Export دووبارە بکەوە.'
-        });
-      }
-      if (safeSources.length === 0) {
-        checks.push({
-          ruleName: 'Source Availability',
-          passed: false,
-          severity: 'critical',
-          detailsKurdish: 'هیچ سەرچاوەیەکی دەرەکیی پشتڕاستکراو بۆ بەڵگەنامەکە نەدابین کراوە.',
-          recommendedActionKurdish: 'سەرچاوەی ڕاستەقینە بدۆزەوە و پێش Export پشتڕاستی بکەوە.'
+          detailsKurdish: 'بەڵگەنامەکە درێژەی هەیە، بەڵام هیچ نیشانەیەکی ڕوونی citation تێدا نەدۆزرایەوە.',
+          recommendedActionKurdish: 'Claim ـەکان بە citation ـی پەیوەندیدار ببەستە.'
         });
       }
 
-
-      if (unverifiedCount > 0) {
+      if (identityVerifiedSourceCount === 0) {
         checks.push({
-          ruleName: 'Deterministic Source Verification',
+          ruleName: 'Source Identity Verification',
           passed: false,
           severity: 'critical',
-          detailsKurdish: `${unverifiedCount} سەرچاوە بە verification ـی دەرەکی نەگەیشتوون یان نیشانەی ڕەتکراونەوەیان هەیە.`,
-          recommendedActionKurdish: 'پێش Export سەرچاوەکان بە DOI/ISBN/کاتەلۆگی ساغ پشتڕاست بکەوە.'
+          detailsKurdish: 'هیچ source ـێکی identity-verified بۆ Export نەدۆزرایەوە.',
+          recommendedActionKurdish: 'DOI، ISBN یان کاتەلۆگی دەرەکیی سەرچاوەکان پشتڕاست بکەوە.'
+        });
+      }
+
+      if (citationEligibleSourceCount === 0) {
+        checks.push({
+          ruleName: 'Evidence Verification',
+          passed: false,
+          severity: 'critical',
+          detailsKurdish: 'هیچ source ـێک هەردووکی identity و evidence ـی verified ـی نییە.',
+          recommendedActionKurdish: 'بەڵگەی ڕاستەقینە و claim-source link دابین بکە.'
+        });
+      }
+
+      if (
+        citationEligibleSourceCount < identityVerifiedSourceCount ||
+        invalidSourceCount > 0
+      ) {
+        checks.push({
+          ruleName: 'Citation Eligibility Contract',
+          passed: false,
+          severity: 'critical',
+          detailsKurdish: 'هەموو source ـە ناسنامە پشتڕاستکراوەکان بەڵگەی پێویستیان نییە؛ بۆیە مافی citation ـی کۆتایییان نییە.',
+          recommendedActionKurdish: 'پێش Export هەموو citation ـە گرنگەکان بە evidence ـی پشتڕاستکراو ببەستە.'
         });
       }
 
@@ -127,7 +173,7 @@ export class AcademicQAGateService {
           ruleName: 'QA Engine Availability',
           passed: false,
           severity: 'critical',
-          detailsKurdish: 'هیچ ئەنجامێکی پشتڕاستکراوی QA لە موتورەکەوە وەرنەگیرا.',
+          detailsKurdish: 'هیچ ئەنجامێکی QA ـی پشکنراو نەگەیشتووە.',
           recommendedActionKurdish: 'پشکنینی QA دووبارە بکەوە پێش Export.'
         });
       }
@@ -145,7 +191,7 @@ export class AcademicQAGateService {
           passed: false,
           severity: 'critical',
           detailsKurdish: `ئەستەمەنی ئەکادیمی تەنها ${Math.round(confidenceScore)}% ـە.`,
-          recommendedActionKurdish: 'Evidence و citation ـەکان زیاد بکە و پێش Export پشکنینی مرۆیی بکە.'
+          recommendedActionKurdish: 'Evidence و citation ـەکان زیاد بکە.'
         });
       }
 
@@ -154,8 +200,8 @@ export class AcademicQAGateService {
           ruleName: 'Similarity Screening',
           passed: false,
           severity: 'critical',
-          detailsKurdish: 'شێوەی هاوشێوەیی بەرز لەگەڵ corpus ـی بەردەست دۆزرایەوە.',
-          recommendedActionKurdish: 'سەرچاوەی ڕاستەقینە citation بکە، quote ـەکان دیاری بکە، و دەقی خۆت دووبارە پشکنەوە.'
+          detailsKurdish: 'هاوشێوەیی بەرز لەگەڵ corpus ـی بەردەست دۆزرایەوە.',
+          recommendedActionKurdish: 'دەقەکە و citation ـەکان دووبارە پشکنەوە.'
         });
       }
 
@@ -164,36 +210,57 @@ export class AcademicQAGateService {
           ruleName: 'Source Contradictions',
           passed: false,
           severity: 'critical',
-          detailsKurdish: `${contradictionCount} ناکۆکییە زانستییە پشتڕاستکراوەکان پێویستیان بە چارەسەرکردن هەیە.`,
-          recommendedActionKurdish: 'هەردوو دیدگا و بەڵگەکە هەڵسەنگێنە و پێش کۆتایی، جیاوازییەکە ڕوون بکە.'
+          detailsKurdish: `${contradictionCount} ناکۆکییە زانستییەکانی پێویستی بە چارەسەرکردن هەیە.`,
+          recommendedActionKurdish: 'جیاوازیی بەڵگەکان ڕوون بکەوە پێش کۆتایی.'
         });
       }
 
-      if (totalClaims > 0 && Number.isFinite(citationIntegrity) && citationIntegrity / totalClaims < 0.9) {
+      if (
+        totalClaims > 0 &&
+        Number.isFinite(citationIntegrity) &&
+        citationIntegrity / totalClaims < 0.9
+      ) {
         checks.push({
           ruleName: 'Citation Coverage',
           passed: false,
           severity: 'critical',
           detailsKurdish: 'پوششی citation بۆ Claim ـەکان کەمتر لە ئاستی پێویستە.',
-          recommendedActionKurdish: 'هەر Claim ـێک بە Evidence ـی سەرچاوەی پشتڕاستکراو ببەستە.'
+          recommendedActionKurdish: 'Claim ـەکان بە Evidence ـی پشتڕاستکراو ببەستە.'
         });
       }
 
-      const criticalCount = checks.filter(check => !check.passed && check.severity === 'critical').length;
-      const aiScore = clampScore(parsed.overallQAScore);
+      const criticalCount = checks.filter(
+        check => !check.passed && check.severity === 'critical'
+      ).length;
+      const aiScore = clampScore(parsed['overallQAScore']);
       const overallQAScore = criticalCount > 0 ? Math.min(aiScore, 49) : aiScore;
+      const approved = !Boolean(parsed['exportBlocked']) && criticalCount === 0;
+      const sourceIds = safeSources
+        .filter(hasCitationEligibleSource)
+        .map(source => String((source as Record<string, unknown>)['sourceId'] || ''))
+        .filter(Boolean);
+      const createdAt = new Date().toISOString();
 
       return {
-        exportBlocked: Boolean(parsed.exportBlocked) || criticalCount > 0,
+        exportBlocked: !approved,
         overallQAScore,
         criticalViolationsCount: criticalCount,
         checks,
-        kurdishSummaryStatus: typeof parsed.kurdishSummaryStatus === 'string'
-          ? parsed.kurdishSummaryStatus
-          : 'پشکنینی QA بە دڵنیاییی تەواو نەگەیشتووە.'
+        kurdishSummaryStatus: typeof parsed['kurdishSummaryStatus'] === 'string'
+          ? parsed['kurdishSummaryStatus']
+          : approved ? 'QA بە سەرکەوتوویی تێپەڕی.' : 'QA پەسەند نەکرا.',
+        exportContract: {
+          version: '1.0',
+          approved,
+          fingerprint: createExportFingerprint(documentText, sourceIds, approved),
+          identityVerifiedSourceCount,
+          citationEligibleSourceCount,
+          createdAt
+        }
       };
-    } catch (err: unknown) {
-      console.error('Error in AcademicQAGateService:', err);
+    } catch (error: unknown) {
+      console.error('Error in AcademicQAGateService:', error);
+      const createdAt = new Date().toISOString();
       return {
         exportBlocked: true,
         overallQAScore: 0,
@@ -202,10 +269,18 @@ export class AcademicQAGateService {
           ruleName: 'QA Engine Availability',
           passed: false,
           severity: 'critical',
-          detailsKurdish: 'موتۆری QA بەردەست نەبوو؛ سیستەم بەهۆی ئەمانەتی ئەکادیمی Export ـی بلۆک کرد.',
+          detailsKurdish: 'موتۆری QA بەردەست نەبوو؛ Export بە شێوەی fail-closed بلۆک کرا.',
           recommendedActionKurdish: 'دوای بەردەستبوونی QA، پشکنین دووبارە بکەوە.'
         }],
-        kurdishSummaryStatus: 'QA نەکرا؛ Export بە شێوەی fail-closed بلۆک کرا.'
+        kurdishSummaryStatus: 'QA نەکرا؛ Export بلۆک کرا.',
+        exportContract: {
+          version: '1.0',
+          approved: false,
+          fingerprint: createExportFingerprint(documentText, [], false),
+          identityVerifiedSourceCount,
+          citationEligibleSourceCount,
+          createdAt
+        }
       };
     }
   }
