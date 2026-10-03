@@ -199,33 +199,6 @@ export class ResearchApiClientService {
     return this.http.post<TableExtractorResult>('/api/ai_image_table_extractor', { textContent });
   }
 
-  auditResearchIntegrity(payload: {
-    title: string;
-    discipline?: string;
-    academicLevel?: string;
-    researchQuestion?: string;
-    objectives?: string;
-    hypotheses?: string;
-    methodology?: string;
-    populationSample?: string;
-    variables?: string;
-    dataCollection?: string;
-    analysisPlan?: string;
-    ethics?: string;
-    draftText?: string;
-    bibliography?: string;
-  }): Observable<ResearchIntegrityAuditResult> {
-    return this.http.post<ResearchIntegrityAuditResult>('/api/research_integrity_audit', payload);
-  }
-
-  assessScholarship55(payload: Record<string, unknown>): Observable<any> {
-    return this.http.post('/api/scholarship_55', { payload });
-  }
-
-  getScholarship55Catalog(): Observable<any> {
-    return this.http.get('/api/scholarship_55/catalog');
-  }
-
   runResearchMethodsLab(mode: 'prisma' | 'power' | 'claim_map' | 'provenance' | 'framework' | 'risk_bias' | 'evidence_grade' | 'methodology_gate' | 'reporting_guideline', payload: Record<string, unknown>): Observable<{ mode: string; result: any; generatedAt: string }> {
     return this.http.post<{ mode: string; result: any; generatedAt: string }>('/api/research_methods_lab', { mode, payload });
   }
