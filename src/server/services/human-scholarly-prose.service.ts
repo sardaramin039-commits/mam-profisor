@@ -33,8 +33,8 @@ function countOccurrences(text: string, fragment: string): number {
 
 function extractCitationFragments(text: string): string[] {
   const matches = [
-    ...(text.match(/\\[[0-9]+(?:\\s*[,;]\\s*[0-9]+)*\\]/g) || []),
-    ...(text.match(/\\([^()\\n]{1,120}\\b(?:19|20)\\d{2}[a-z]?\\)/g) || [])
+    ...(text.match(/\[[0-9]+(?:\s*[,;]\s*[0-9]+)*\]/g) || []),
+    ...(text.match(/\([^()\n]{1,120}\b(?:19|20)\d{2}[a-z]?\)/g) || [])
   ];
   return Array.from(new Set(matches.map(item => item.trim()).filter(Boolean)));
 }
