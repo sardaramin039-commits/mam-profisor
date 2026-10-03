@@ -46,6 +46,26 @@ class ResearchProjectStateService {
         workspace.activeChapter = typeof data['activeChapter'] === 'string' ? data['activeChapter'] : workspace.activeChapter;
         workspace.draftContent = typeof data['draftContent'] === 'string' ? data['draftContent'] : workspace.draftContent;
         workspace.citationsList = Array.isArray(data['citationsList']) ? data['citationsList'] : workspace.citationsList;
+
+        if (workspace.citationsList.length === 0) {
+          try {
+            const sourceSnapshot = await adminDb
+              .collection('sources')
+              .where('userId', '==', userId)
+              .limit(500)
+              .get();
+            workspace.citationsList = sourceSnapshot.docs.map(sourceDoc => ({
+              id: sourceDoc.id,
+              ...sourceDoc.data()
+            }));
+          } catch (sourceError) {
+            console.warn(
+              '[ResearchWorkspace source hydration unavailable]:',
+              (sourceError as Error)?.message || sourceError
+            );
+          }
+        }
+
         workspace.integrityScore = Number.isFinite(Number(data['integrityScore']))
           ? Math.max(0, Math.min(100, Number(data['integrityScore'])))
           : workspace.integrityScore;
