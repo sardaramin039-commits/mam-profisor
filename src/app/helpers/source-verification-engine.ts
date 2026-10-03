@@ -115,8 +115,7 @@ function hasAuthoritativeIdentifier(source: { identifiers?: SourceIdentifiers; d
     identifiers.pmid ||
     identifiers.openAlexId ||
     identifiers.crossrefId ||
-    identifiers.semanticScholarId ||
-    (source.doiOrUrl && /^https?:\/\//i.test(source.doiOrUrl))
+    identifiers.semanticScholarId
   );
 }
 
