@@ -10,6 +10,8 @@ import { PDF4KURD_BOOKS_ARCHIVE } from '../../prompts/pdf4kurd-books';
 import { robustParseJson } from '../utils/json-repair';
 import { getDigitalLibraryContextPrompt } from '../services/digital-library-context.service';
 import { generateDynamicAcademicFallback } from '../services/dynamic-academic-fallback.service';
+import { humanScholarlyProseService } from '../services/human-scholarly-prose.service';
+import { disciplineProfileService } from '../services/discipline-profile.service';
 import { evidenceGroundingService } from '../services/evidence-grounding.service';
 import { validateRequest } from '../../middleware/validate.middleware';
 import {
@@ -102,8 +104,22 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
 
       const responseText = response.text || '';
       try {
-        const parsed = robustParseJson(responseText);
-        res.json(parsed);
+        const parsed = robustParseJson(responseText) as Record<string, unknown>;
+        const rawRefinedText = typeof parsed['refinedText'] === 'string'
+          ? parsed['refinedText'].trim()
+          : text;
+        const profile = disciplineProfileService.getProfile(String(discipline || 'گشتی'));
+        const prose = await humanScholarlyProseService.refine(
+          rawRefinedText,
+          profile,
+          getGeminiClient
+        );
+        res.json({
+          ...parsed,
+          refinedText: prose.refinedText || rawRefinedText,
+          prosePolicy: prose.stylePolicy,
+          prosePreservationPassed: prose.preservationPassed !== false
+        });
       } catch (parseErr) {
         console.error('Failed to parse response as JSON. Raw text:', responseText, parseErr);
         res.status(500).json({
@@ -347,13 +363,25 @@ ${comparisonPrompt}
         throw new Error('Chapter generator returned no usable content.');
       }
 
+      const profile = disciplineProfileService.getProfile(String(discipline || 'گشتی'));
+      const prose = await humanScholarlyProseService.refine(
+        generatedContent,
+        profile,
+        getGeminiClient
+      );
+      const finalContent = prose.refinedText || generatedContent;
+
+      if (unverifiedCitationPattern.test(finalContent)) {
+        throw new Error('Natural prose pass produced citation-like references before verification.');
+      }
+
       const rawWordCount = Number(parsed['wordCount']);
       const wordCount = Number.isFinite(rawWordCount)
         ? Math.max(0, Math.round(rawWordCount))
-        : generatedContent.split(/\s+/).filter(Boolean).length;
+        : finalContent.split(/\s+/).filter(Boolean).length;
 
       res.json({
-        content: generatedContent,
+        content: finalContent,
         wordCount,
         academicNotes: typeof parsed['academicNotes'] === 'string'
           ? parsed['academicNotes']
