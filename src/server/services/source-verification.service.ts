@@ -112,7 +112,14 @@ function readEvidence(source: InputSource): string {
   ).trim();
 }
 
-function assessEvidence(source: InputSource): {
+export function assessEvidenceVerification(source: {
+  claimText?: string;
+  evidenceText?: string;
+  content?: string;
+  fullText?: string;
+  text?: string;
+  chunkText?: string;
+}): {
   status: EvidenceVerificationStatus;
   method?: 'exact-normalized-claim-match';
 } {
