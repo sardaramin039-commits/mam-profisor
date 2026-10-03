@@ -8,7 +8,7 @@ describe('VipWritingQualityService', () => {
     expect(result.status).toBe('insufficient_text');
     expect(result.score).toBeNull();
     expect(result.rulesEvaluated).toBe(0);
-    expect(result.rulesAvailable).toBe(1111);
+    expect(result.rulesAvailable).toBe(11);
   });
 
   it('applies the selected academic level and discipline', () => {
