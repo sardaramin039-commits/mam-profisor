@@ -38,7 +38,7 @@ export function createResearchProjectStateRouter(
         return;
       }
 
-      const workspaceId = parseWorkspaceId(req.params.workspaceId);
+      const workspaceId = parseWorkspaceId(req.params['workspaceId']);
       if (!workspaceId) {
         res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
         return;
@@ -60,7 +60,7 @@ export function createResearchProjectStateRouter(
         return;
       }
 
-      const workspaceId = parseWorkspaceId(req.params.workspaceId);
+      const workspaceId = parseWorkspaceId(req.params['workspaceId']);
       if (!workspaceId) {
         res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
         return;
@@ -97,7 +97,7 @@ export function createResearchProjectStateRouter(
         return;
       }
 
-      const workspaceId = parseWorkspaceId(req.params.workspaceId);
+      const workspaceId = parseWorkspaceId(req.params['workspaceId']);
       if (!workspaceId) {
         res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
         return;
