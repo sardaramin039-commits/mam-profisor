@@ -1,7 +1,10 @@
 /**
- * OpenAI ChatGPT Academic Service
- * پسپۆڕی ئەکادیمی بۆ دۆزینەوە، هەڵسەنگاندن و ڕێکخستنی سەرچاوە زانستییەکان
+ * OpenAI-assisted academic source tooling.
+ * Bibliographic records originate from real academic indexes; the LLM may only
+ * summarize or format records already supplied to it.
  */
+
+import { academicSearchService, AcademicPaper } from '../../services/academic-search.service';
 
 export interface AcademicSourceItem {
   id?: string;
@@ -16,7 +19,8 @@ export interface AcademicSourceItem {
   citationHarvard: string;
   citationMLA: string;
   relevanceExplanation: string;
-  credibilityScore: number;
+  credibilityScore?: number;
+  verificationStatus?: 'retrieved-not-verified' | 'verified';
 }
 
 export interface OrganizeReferencesRequest {
@@ -54,187 +58,268 @@ export interface DiscoverSourcesResponse {
   provider: string;
 }
 
-export class OpenAiChatGptService {
+function sourceTypeFor(record: AcademicPaper): AcademicSourceItem['sourceType'] {
+  return record.isbn ? 'book' : 'journal';
+}
 
+function yearFor(record: AcademicPaper): number | string {
+  return record.publicationYear > 0 ? record.publicationYear : 'n.d.';
+}
+
+function firstAuthor(record: AcademicPaper): string {
+  return record.authors[0] || 'Unknown author';
+}
+
+function citationApa(record: AcademicPaper): string {
+  const author = firstAuthor(record);
+  const year = yearFor(record);
+  const tail = record.doi
+    ? `https://doi.org/${record.doi.replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, '')}`
+    : record.url || '';
+  return `${author}. (${year}). ${record.title}.${tail ? ` ${tail}` : ''}`;
+}
+
+function citationHarvard(record: AcademicPaper): string {
+  return `${firstAuthor(record)} (${yearFor(record)}) ${record.title}.${record.doi ? ` DOI: ${record.doi}` : ''}`;
+}
+
+function citationMla(record: AcademicPaper): string {
+  return `${firstAuthor(record)}. "${record.title}." ${yearFor(record)}.${record.doi ? ` DOI: ${record.doi}.` : ''}`;
+}
+
+function mapRecord(record: AcademicPaper, query: string): AcademicSourceItem {
+  return {
+    id: record.id,
+    title: record.title,
+    authors: record.authors,
+    year: yearFor(record),
+    journalOrPublisher: record.source === 'googlebooks' ? 'Google Books' : record.source,
+    doi: record.doi,
+    url: record.url,
+    sourceType: sourceTypeFor(record),
+    citationAPA: citationApa(record),
+    citationHarvard: citationHarvard(record),
+    citationMLA: citationMla(record),
+    relevanceExplanation: `تۆمارەکە لە بنکەدراوەی ${record.source} بۆ گەڕانی «${query}» وەرگیراوە. ئەم دۆخە تەنها retrieval ـە و بە تەنها verification ـی سەرچاوەکە نیشان نادات.`,
+    verificationStatus: 'retrieved-not-verified'
+  };
+}
+
+export class OpenAiChatGptService {
   public getApiKey(): string {
-    const envKey = process.env['OPENAI_API_KEY'];
-    if (envKey && envKey.trim().length > 0) {
-      return envKey.trim();
+    const key = process.env['OPENAI_API_KEY']?.trim();
+    if (!key) {
+      throw new Error('OPENAI_API_KEY is not configured on the server.');
     }
-    throw new Error('OPENAI_API_KEY is not configured on the server. Configure it in the deployment secrets.');
+    return key;
+  }
+
+  private getOptionalApiKey(): string | undefined {
+    const key = process.env['OPENAI_API_KEY']?.trim();
+    return key || undefined;
   }
 
   public getBaseUrl(): string {
     return process.env['OPENAI_BASE_URL'] || 'https://api.openai.com/v1';
   }
 
-  /**
-   * دۆزینەوەی سەرچاوەی ئەکادیمی متمانەپێکراو لەڕێگەی ChatGPT
-   */
-  public async discoverAcademicSources(request: DiscoverSourcesRequest): Promise<DiscoverSourcesResponse> {
-    const apiKey = this.getApiKey();
-    const baseUrl = this.getBaseUrl();
-    const limit = Math.min(request.limit || 8, 15);
+  private getModel(): string {
+    return process.env['OPENAI_MODEL'] || 'gpt-4o-mini';
+  }
 
-    const systemPrompt = `تۆ سەرنوسەر و ڕاوێژکاری باڵای بەیبلۆگرافی و لێکۆڵینەوەی ئەکادیمیت.
-⚠️ **پڕۆتۆکۆلی توندی بەرپەرچدانەوەی سەرچاوەی هەڵبەستراو (Strict Zero-Hallucination Protocol)**:
-١. بە هیچ شێوەیەک بۆت نییە ناوی سەرچاوە، ناوی توێژەر، گۆڤار یان ساڵی هەڵبەستراو و خەیاڵی بنووسیت.
-٢. دەبێت تەواوی سەرچاوەکان تۆمارکراو و ڕاستەقینە بن لە بنکەدراوە متمانەپێکراوەکانی جیهان وەک: Scopus، Web of Science، PubMed، IEEE Xplore، SpringerLink، JSTOR، ScienceDirect، Wiley، لەگەڵ سەرچاوە مێژوویی و زمانییە ساغکراوەکانی کوردی.
-٣. هەر سەرچاوەیەک پێویستە کۆدی DOIی ڕاستەقینە یان بەستەری شایستە و ناوی بڵاوکەرەوەی فەرمی هەبێت. ئەگەر بەڵگەی سەلمێنراوی تەواو لەبەردەستتدا نییە لەسەر سەرچاوەیەک، هەرگیز لە خۆتەوە دروستی مەکە و دەری مەپەڕێنە.
-٤. ئەگەر سەرچاوەکە توێژینەوەی نێودەوڵەتییە، ناونیشان و ناوی نووسەران بە ڕەسەنی (ئینگلیزی یان زمانی سەرەکی) بهێڵەوە و لە بەشی "relevanceExplanation" بە زمانی کوردیی سۆرانیی ئەکادیمی و زانستی شرۆڤەی بکە.
+  public async discoverAcademicSources(
+    request: DiscoverSourcesRequest
+  ): Promise<DiscoverSourcesResponse> {
+    const limit = Math.min(Math.max(request.limit || 8, 1), 15);
+    const query = request.discipline
+      ? `${request.query} ${request.discipline}`.trim()
+      : request.query.trim();
 
-وەڵام تەنها لە فۆرماتی دروستی JSON بەم نەخشەیە بێت:
-{
-  "discoveredSources": [
-    {
-      "title": "ناونیشانی فەرمیی ڕاستەقینەی سەرچاوەکە",
-      "authors": ["ناوی تەواوی نووسەرانی ڕاستەقینە"],
-      "year": 2023,
-      "journalOrPublisher": "ناوی گۆڤار یان دەزگای چاپی فەرمی",
-      "doi": "10.xxxx/xxxxx",
-      "url": "بەستەری فەرمی",
-      "sourceType": "journal",
-      "citationAPA": "فۆرماتی دروستی APA 7th",
-      "citationHarvard": "فۆرماتی دروستی Harvard",
-      "citationMLA": "فۆرماتی دروستی MLA 9th",
-      "relevanceExplanation": "ڕوونکردنەوەی بەستنەوەی سەرچاوە بە توێژینەوە بە کوردیی سۆرانی",
-      "credibilityScore": 98
-    }
-  ],
-  "thematicSummary": "پوختەی زانستیی سەرچاوە ساغکراوەکان بە زمانی کوردی",
-  "suggestedKeywords": ["کلیلەوشەکان"]
-}`;
+    const records = await academicSearchService.searchAll(query, limit);
+    const discoveredSources = records.map(record => mapRecord(record, query));
 
-    const userPrompt = `بابەتی لێکۆڵینەوە: "${request.query}"
-دیۆسپلین و بوار: "${request.discipline || 'گشتی'}"
-سنووری کاتی: "${request.timeframe || 'نوێترین توێژینەوەکانی ٥ بۆ ١٠ ساڵی ڕابردوو'}"
-ژمارەی سەرچاوە پێویستەکان: ${limit} دانەی متمانەپێکراو لە بنکەدراوە پێشەنگەکانی وەک Scopus، Web of Science، PubMed، IEEE، و Springer.`;
-
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.2
-      })
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`OpenAI API error (${response.status}): ${errText}`);
+    if (discoveredSources.length === 0) {
+      return {
+        success: true,
+        query: request.query,
+        discoveredSources: [],
+        thematicSummary: 'هیچ تۆمارێکی ڕاستەقینە لە index ـە بەردەستەکاندا نەدۆزرایەوە؛ هیچ سەرچاوەیەکی خەیاڵی دروست نەکرا.',
+        suggestedKeywords: [],
+        provider: 'Academic indexes'
+      };
     }
 
-    const data = await response.json() as any;
-    const content = data.choices?.[0]?.message?.content || '{}';
-    let parsed: any;
-    try {
-      parsed = JSON.parse(content);
-    } catch {
-      parsed = { discoveredSources: [], thematicSummary: '', suggestedKeywords: [] };
+    let thematicSummary = 'تۆمارەکان لە index ـە ئەکادیمییە ڕاستەقینەکان وەرگیراون و پێویستیان بە verification یەک بە یەک هەیە.';
+    let suggestedKeywords: string[] = [];
+
+    const apiKey = this.getOptionalApiKey();
+    if (apiKey) {
+      try {
+        const response = await fetch(`${this.getBaseUrl()}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: this.getModel(),
+            messages: [
+              {
+                role: 'system',
+                content: 'تەنها ئەو record ـانە شیکاری بکە کە لە user content ـدا دراون. هیچ citation، DOI، ناوی نووسەر یان source record ـی نوێ دروست مەکە. وەڵام JSON بێت.'
+              },
+              {
+                role: 'user',
+                content: JSON.stringify({
+                  query: request.query,
+                  discipline: request.discipline || 'گشتی',
+                  records: discoveredSources.map(source => ({
+                    id: source.id,
+                    title: source.title,
+                    authors: source.authors,
+                    year: source.year,
+                    source: source.journalOrPublisher,
+                    doi: source.doi,
+                    url: source.url
+                  }))
+                })
+              }
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.1
+          }),
+          signal: AbortSignal.timeout(12_000)
+        });
+
+        if (response.ok) {
+          const data = await response.json() as {
+            choices?: Array<{ message?: { content?: string } }>
+          };
+          const raw = data.choices?.[0]?.message?.content || '{}';
+          const parsed = JSON.parse(raw) as {
+            thematicSummary?: unknown;
+            suggestedKeywords?: unknown;
+          };
+          if (typeof parsed.thematicSummary === 'string') {
+            thematicSummary = parsed.thematicSummary;
+          }
+          if (Array.isArray(parsed.suggestedKeywords)) {
+            suggestedKeywords = parsed.suggestedKeywords
+              .filter((item): item is string => typeof item === 'string')
+              .slice(0, 12);
+          }
+        }
+      } catch (error) {
+        console.warn('[OpenAI discovery summarization unavailable]:', error);
+      }
     }
 
     return {
       success: true,
       query: request.query,
-      discoveredSources: parsed.discoveredSources || [],
-      thematicSummary: parsed.thematicSummary || '',
-      suggestedKeywords: parsed.suggestedKeywords || [],
-      provider: 'ChatGPT (OpenAI)'
+      discoveredSources,
+      thematicSummary,
+      suggestedKeywords,
+      provider: apiKey ? 'Academic indexes + optional AI summary' : 'Academic indexes'
     };
   }
 
-  /**
-   * ڕێکخستن، ستانداردکردن و پۆلێنکردنی سەرچاوەکان بەپێی شێوازە ئەکادیمییەکان
-   */
-  public async organizeAndFormatReferences(request: OrganizeReferencesRequest): Promise<OrganizeReferencesResponse> {
-    const apiKey = this.getApiKey();
-    const baseUrl = this.getBaseUrl();
+  public async organizeAndFormatReferences(
+    request: OrganizeReferencesRequest
+  ): Promise<OrganizeReferencesResponse> {
+    const rawReferences = (request.rawReferences || '').trim();
     const style = request.citationStyle || 'harvard';
 
-    const systemPrompt = `تۆ پسپۆڕی بەڕێوەبردن و ڕێکخستنی بەیبلۆگرافی و ژێدەرە ئەکادیمییەکانیت بە ستانداردەکانی (APA 7th, Harvard, MLA 9th, Chicago).
-⚠️ **یاسای نەگۆڕی ئەکادیمی بۆ نەهێشتنی سەرچاوەی هەڵبەستراو (Zero-Hallucination & Provenance Audit)**:
-١. تەنها ئەو سەرچاوانە ڕێکبخە و پەسەند بکە کە ڕاستەقینەن یان بەکارهێنەر لە تێکستە خاوەکەدا دابینی کردوون.
-٢. ئەگەر بەکارهێنەر داوای هێنانی سەرچاوەی زیاتری کردبوو، تەنها و تەنها وتاری باوەڕپێکراوی گۆڤارە نێودەوڵەتییەکان، کتێبی چاپکراوی زانکۆکان و سەرچاوەی ساغکراوە دابنێ بە ناونیشانی دەقاودەق، ناوی نووسەران و ساڵی ڕاستەقینە.
-٣. هەر سەرچاوەیەک کە بوونی زانستی نەبێت یان گوماناوی بێت دەبێت لە بەشی 'methodologyNotes' هۆشداری دەربارەی بدرێت.
-٤. ڕێزبەندکردنی ئەلفوبێیی (Alphabetical Order) بەپێی پاشناوی نووسەران جێبەجێ بکە.
-٥. ئاماژەدانی ناو دەق (In-text citations) بە شێوازی یاسایی (وەک: (Smith, 2021) یان (حەمە، ٢٠٢٢)) دابنێ.
-
-وەڵام تەنها لە فۆرماتی دروستی JSON بەم نەخشەیە بێت:
-{
-  "sortedReferences": [
-    {
-      "title": "ناونیشانی تەواو و ساغکراوەی سەرچاوە",
-      "authors": ["نووسەران"],
-      "year": 2022,
-      "journalOrPublisher": "ناوی گۆڤار یان دەزگای چاپی فەرمی",
-      "doi": "",
-      "url": "",
-      "sourceType": "journal",
-      "citationAPA": "فۆرماتی تەواوی APA 7th",
-      "citationHarvard": "فۆرماتی تەواوی Harvard",
-      "citationMLA": "فۆرماتی تەواوی MLA 9th",
-      "relevanceExplanation": "ڕوونکردنەوەی بەستنەوەی سەرچاوە بە توێژینەوە بە کوردی",
-      "credibilityScore": 95
+    if (!rawReferences) {
+      return {
+        success: true,
+        topic: request.topic,
+        citationStyle: style,
+        sortedReferences: [],
+        curatedBibliography: '',
+        inTextCitationGuide: '',
+        methodologyNotes: 'هیچ سەرچاوەیەکی خام دابین نەکراوە؛ بۆ ڕێکخستن سەرچاوەی نوێ لە خۆتەوە دروست نەکرا.',
+        provider: 'No-Language-Model'
+      };
     }
-  ],
-  "curatedBibliography": "دەقی ئامادەکراوی تەواوی لیستی سەرچاوەکان بە ڕێزبەندی ئەلفوبێ بە فۆرماتی داواکراو",
-  "inTextCitationGuide": "ڕێنمایی کورت بۆ نووسەری توێژینەوەکە لەسەر چۆنیەتی هێنانی ناوی ئەم سەرچاوانە لە ناو دەقدا بە کوردی",
-  "methodologyNotes": "تێبینی زانستی و دڵنیایی لە ساغبوونەوە و نەبوونی سەرچاوەی هەڵبەستراو"
-}`;
 
-    const userPrompt = `بابەتی توێژینەوە: "${request.topic}"
-شێوازی داواکراو بۆ سەرچاوەکان: "${style.toUpperCase()}"
-سەرچاوە خاوەکان / تێکست بۆ ڕێکخستن:
-${request.rawReferences || 'تکایە بەپێی بابەتە سەرەکییەکە گشتگیرترین و کاریگەرترین سەرچاوە زانستییەکان ڕێکبخە و فۆرمات بکە.'}`;
+    const apiKey = this.getApiKey();
+    const systemPrompt = `تۆ تەنها ئامرازێکی ڕێکخستنی سەرچاوەیت.
+یاسا:
+١. تەنها ئەو سەرچاوانە ڕێکبخە کە لە rawReferences ـدا هەن.
+٢. هیچ سەرچاوە، نووسەر، ساڵ، DOI، URL یان metadata ـی نوێ دروست مەکە.
+٣. ئەگەر metadata ـی سەرچاوەیەک ناتەواوە، بە «ناتەواو» نیشانی بدە؛ پڕی مەکە.
+٤. ئەنجامەکان formatting ـن، نە verification.
+وەڵام تەنها JSON بێت.`;
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const userPrompt = JSON.stringify({
+      topic: request.topic,
+      discipline: request.discipline || 'گشتی',
+      citationStyle: style,
+      language: request.language || 'ckb',
+      rawReferences
+    });
+
+    const response = await fetch(`${this.getBaseUrl()}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: this.getModel(),
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.2
-      })
+        temperature: 0.1
+      }),
+      signal: AbortSignal.timeout(15_000)
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`OpenAI API error (${response.status}): ${errText}`);
+      throw new Error(`OpenAI API request failed with status ${response.status}.`);
     }
 
-    const data = await response.json() as any;
-    const content = data.choices?.[0]?.message?.content || '{}';
-    let parsed: any;
+    const data = await response.json() as {
+      choices?: Array<{ message?: { content?: string } }>
+    };
+    const raw = data.choices?.[0]?.message?.content || '{}';
+
+    let parsed: {
+      sortedReferences?: AcademicSourceItem[];
+      curatedBibliography?: string;
+      inTextCitationGuide?: string;
+      methodologyNotes?: string;
+    };
+
     try {
-      parsed = JSON.parse(content);
+      parsed = JSON.parse(raw);
     } catch {
-      parsed = { sortedReferences: [], curatedBibliography: '', inTextCitationGuide: '', methodologyNotes: '' };
+      parsed = {};
     }
+
+    const sortedReferences = Array.isArray(parsed.sortedReferences)
+      ? parsed.sortedReferences.slice(0, 100)
+      : [];
 
     return {
       success: true,
       topic: request.topic,
       citationStyle: style,
-      sortedReferences: parsed.sortedReferences || [],
-      curatedBibliography: parsed.curatedBibliography || '',
-      inTextCitationGuide: parsed.inTextCitationGuide || '',
-      methodologyNotes: parsed.methodologyNotes || '',
-      provider: 'ChatGPT (OpenAI)'
+      sortedReferences,
+      curatedBibliography: typeof parsed.curatedBibliography === 'string'
+        ? parsed.curatedBibliography
+        : '',
+      inTextCitationGuide: typeof parsed.inTextCitationGuide === 'string'
+        ? parsed.inTextCitationGuide
+        : '',
+      methodologyNotes: [
+        typeof parsed.methodologyNotes === 'string' ? parsed.methodologyNotes : '',
+        'ئەم ئەنجامە formatting ـە؛ پشکنینی بوونی سەرچاوە و metadata دەبێت لە Source Verification ـدا جێبەجێ بکرێت.'
+      ].filter(Boolean).join(' '),
+      provider: 'OpenAI formatting assistant'
     };
   }
 }
