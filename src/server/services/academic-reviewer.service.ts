@@ -111,12 +111,22 @@ ${JSON.stringify(sourceContext, null, 2)}
         const finding = String(item['findingKurdish'] || '').trim();
         const recommendation = String(item['recommendationKurdish'] || '').trim();
 
+        const severityValue = typeof item['severity'] === 'string'
+          ? item['severity']
+          : 'medium';
+        const severity: EvaluationCriterion['severity'] = [
+          'low',
+          'medium',
+          'high',
+          'critical'
+        ].includes(severityValue)
+          ? severityValue as EvaluationCriterion['severity']
+          : 'medium';
+
         return {
           category: String(item['category'] || 'Unclassified'),
           score: Math.max(0, Math.min(10, Number(item['score']) || 0)),
-          severity: ['low', 'medium', 'high', 'critical'].includes(item['severity'])
-            ? item['severity'] as EvaluationCriterion['severity']
-            : 'medium',
+          severity,
           findingKurdish: finding || 'هیچ دۆزینەوەیەکی پشتڕاستکراو نییە.',
           evidenceQuoteKurdish,
           recommendationKurdish: recommendation || 'پێویستی بە پشکنینی زیاتر هەیە.'
