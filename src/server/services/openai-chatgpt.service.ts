@@ -300,8 +300,20 @@ export class OpenAiChatGptService {
       parsed = {};
     }
 
+    const normalizedRaw = rawReferences.toLocaleLowerCase().normalize('NFKC');
     const sortedReferences = Array.isArray(parsed.sortedReferences)
-      ? parsed.sortedReferences.slice(0, 100)
+      ? parsed.sortedReferences
+          .filter((item): item is AcademicSourceItem =>
+            Boolean(
+              item &&
+              typeof item === 'object' &&
+              typeof item.title === 'string' &&
+              normalizedRaw.includes(
+                item.title.toLocaleLowerCase().normalize('NFKC').slice(0, 120)
+              )
+            )
+          )
+          .slice(0, 100)
       : [];
 
     return {
