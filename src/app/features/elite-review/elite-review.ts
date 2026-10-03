@@ -19,7 +19,7 @@ import { ReviewCriterion, ReviewsService } from '../../services/reviews';
           </div>
           <div>
             <h3 class="text-sm md:text-base font-bold text-slate-100 font-serif flex items-center gap-2">
-              داشبۆردی هەڵسەنگاندنی باڵا بە ستانداردی هارڤارد (Elite Harvard Scorecard)
+              داشبۆردی هەڵسەنگاندنی کوالیتیی ئەکادیمی
             </h3>
             <p class="text-xs text-slate-400 font-serif">
               هەڵسەنگاندنی تۆکمەییی زانستی، ڕەسەنایەتی، و گونجاویی میتۆدۆلۆجی بە ٧ پێوەری نێودەوڵەتی
