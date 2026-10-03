@@ -95,12 +95,19 @@ const DIMENSIONS = [
   ['academicTone', 'تۆنی ئەکادیمی']
 ] as const;
 
-const QUALITY_RULES = Array.from({ length: 1111 }, (_, index) => ({
-  id: `VIP-RULE-${String(index + 1).padStart(4, '0')}`,
-  dimension: DIMENSIONS[index % DIMENSIONS.length][0],
-  threshold: 45 + ((index * 7) % 41),
-  strictness: 0.85 + ((index % 7) * 0.025)
-}));
+const QUALITY_RULES = [
+  { id: 'QUALITY-LANGUAGE', dimension: 'language', threshold: 70, strictness: 1 },
+  { id: 'QUALITY-STRUCTURE', dimension: 'structure', threshold: 70, strictness: 1 },
+  { id: 'QUALITY-EVIDENCE', dimension: 'evidence', threshold: 70, strictness: 1 },
+  { id: 'QUALITY-RIGOR', dimension: 'rigor', threshold: 70, strictness: 1 },
+  { id: 'QUALITY-COHERENCE', dimension: 'coherence', threshold: 70, strictness: 1 },
+  { id: 'QUALITY-PRECISION', dimension: 'precision', threshold: 70, strictness: 1 },
+  { id: 'QUALITY-ARGUMENT', dimension: 'argument', threshold: 70, strictness: 1 },
+  { id: 'QUALITY-ORIGINALITY', dimension: 'originality', threshold: 70, strictness: 1 },
+  { id: 'QUALITY-DISCIPLINE', dimension: 'discipline', threshold: 70, strictness: 1 },
+  { id: 'QUALITY-READABILITY', dimension: 'readability', threshold: 70, strictness: 1 },
+  { id: 'QUALITY-ACADEMIC-TONE', dimension: 'academicTone', threshold: 70, strictness: 1 }
+] as const;
 
 const TRANSITIONS = [
   'بۆیە', 'بەڵام', 'لەبەر ئەوەی', 'لە کاتێکدا', 'لە لایەکی تر',
@@ -231,7 +238,7 @@ function academicToneSignals(text: string, level: VipAcademicLevel): number {
 
 @Injectable({ providedIn: 'root' })
 export class VipWritingQualityService {
-  readonly ruleCount = 1111;
+  readonly ruleCount = QUALITY_RULES.length;
 
   getPolicy(level: VipAcademicLevel): VipLevelPolicy {
     return LEVELS[level] || LEVELS.bachelor;
