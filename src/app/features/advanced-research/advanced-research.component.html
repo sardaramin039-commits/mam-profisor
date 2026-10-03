@@ -8,9 +8,9 @@
       <div>
         <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
           تەکنەلۆژیای فرە-ئەجێنت و گەڕانی جیهانی
-          <span class="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800/80 px-2 py-0.5 rounded-full">v3.0 Advanced</span>
+          <span class="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800/80 px-2 py-0.5 rounded-full">Evidence-first</span>
         </h2>
-        <p class="text-xs text-slate-400">Multi-Agent, Knowledge Graph, Fact Checker, PubMed & Semantic Scholar APIs</p>
+        <p class="text-xs text-slate-400">گەڕان، پشکنینی claim، OCR، review و بەڵگەسازی لە یەک جریاندا</p>
       </div>
     </div>
 
@@ -18,7 +18,7 @@
     <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
       <span class="text-xs font-semibold text-cyan-400 px-2 flex items-center gap-1">
         <mat-icon class="text-sm">school</mat-icon>
-        Professor Mode:
+        ئاستی نووسین:
       </span>
       @for (mode of professorModes; track mode.level) {
         <button
@@ -32,6 +32,22 @@
       }
     </div>
   </div>
+
+  <!-- Evidence state legend: the UI must not imply verification from an AI score alone. -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-2 p-3 border-b border-slate-800 bg-slate-950/70" aria-label="دۆخی بەڵگە">
+    <div class="rounded-xl border border-emerald-800/60 bg-emerald-950/20 px-3 py-2">
+      <strong class="block text-xs text-emerald-300">پشتڕاستکراو</strong>
+      <span class="text-[10px] text-slate-400">سەرچاوە و بەڵگەی source-bound بە شێوەی deterministic پشتڕاستکراوە.</span>
+    </div>
+    <div class="rounded-xl border border-amber-800/60 bg-amber-950/20 px-3 py-2">
+      <strong class="block text-xs text-amber-300">پشکنین پێویستە</strong>
+      <span class="text-[10px] text-slate-400">metadata هەیە، بەڵام بەڵگەی تەواو هێشتا پشتڕاست نەکراوە.</span>
+    </div>
+    <div class="rounded-xl border border-rose-800/60 bg-rose-950/20 px-3 py-2">
+      <strong class="block text-xs text-rose-300">بێ بەڵگە</strong>
+      <span class="text-[10px] text-slate-400">هیچ citation ـێک بەهۆی نمرەی AI ـەوە Verified ناکرێت.</span>
+    </div>
+  </section>
 
   <!-- Workflow Navigation -->
   <div class="border-b border-slate-800 bg-slate-900/50 p-3 space-y-3">
