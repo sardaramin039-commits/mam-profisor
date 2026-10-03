@@ -148,7 +148,7 @@ export class WordExportService {
 
     htmlContent += `
         <div style="margin-top: 50px; border-top: 2px solid #0284c7; padding-top: 15px; text-align: center; font-size: 10pt; color: #64748b;">
-          کتێبخانەی دیجیتاڵیی ئەکادیمیی مام (MAM Academic Digital Library) - پڕۆژەی هارڤارد
+          کتێبخانەی دیجیتاڵیی ئەکادیمیی مام پڕۆفیسۆر (MAM Professor Academic Digital Library)
         </div>
       </body>
       </html>
