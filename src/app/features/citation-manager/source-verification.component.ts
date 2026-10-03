@@ -44,7 +44,7 @@ export class SourceVerificationComponent {
   pageInput = '';
   snippetInput = '';
 
-  // Cross-Encoder Reranking Inputs & Results
+  // Evidence relevance heuristic inputs & results
   rerankQuery = signal<string>('پەرەسەندنی ڕێزمانی سۆرانی لە سەدەی بیستەمدا');
   rerankedResults = signal<RerankedEvidenceChunk[]>([]);
 
@@ -103,7 +103,7 @@ export class SourceVerificationComponent {
     this.snippetInput = '';
   }
 
-  executeCrossEncoderRerank(): void {
+  executeEvidenceRelevanceRerank(): void {
     const query = this.rerankQuery().trim();
     if (!query) return;
 
