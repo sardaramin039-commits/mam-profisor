@@ -119,7 +119,22 @@ function prisma(p: Record<string, unknown>) {
   const fields=[['title','ناونیشان و جۆری systematic review'],['rationale','هۆکار و gap'],['question','پرسیار/PICO یان framework'],['eligibility','inclusion/exclusion criteria'],['informationSources','database/register و بەرواری گەڕان'],['searchStrategy','search strings و limits'],['selectionProcess','screening و full-text process'],['dataCollection','data extraction process'],['riskOfBias','risk-of-bias method'],['synthesis','synthesis/meta-analysis plan'],['reportingBias','reporting-bias assessment'],['certainty','certainty of evidence'],['protocol','registration/protocol'],['funding','funding/support'],['conflicts','competing interests'],['dataCode','data/code/material availability']] as const;
   const checklist=fields.map(([key,label])=>({key,label,status:String(p[key]||'').trim()?'complete':'missing'}));
   const complete=checklist.filter(x=>x.status==='complete').length;
-  return {framework:'PRISMA 2020',totalItems:checklist.length,complete,missing:checklist.length-complete,checklist,flow:{identified:num(p['identified']),screened:num(p['screened']),retrieved:num(p['retrieved']),excluded:num(p['excluded']),included:num(p['included'])}};
+  const flow={
+    identified:num(p['identified'],0),screened:num(p['screened'],0),retrieved:num(p['retrieved'],0),
+    excluded:num(p['excluded'],0),included:num(p['included'],0),flowErrors:[] as string[]
+  };
+  const counts: Array<[string, number]> = [
+    ['identified',flow.identified],['screened',flow.screened],['retrieved',flow.retrieved],
+    ['excluded',flow.excluded],['included',flow.included]
+  ];
+  for (const [label,value] of counts) {
+    if (!Number.isInteger(value) || value < 0) flow.flowErrors.push(`ژمارەی ${label} دەبێت integer ـی سفر یان گەورەتر بێت.`);
+  }
+  if (flow.screened > flow.identified) flow.flowErrors.push('Screened نابێت لە Identified زیاتر بێت.');
+  if (flow.retrieved > flow.screened) flow.flowErrors.push('Retrieved نابێت لە Screened زیاتر بێت.');
+  if (flow.excluded > flow.retrieved) flow.flowErrors.push('Excluded نابێت لە Retrieved زیاتر بێت.');
+  if (flow.retrieved !== flow.excluded + flow.included) flow.flowErrors.push('Retrieved دەبێت یەکسان بێت بە Excluded + Included.');
+  return {framework:'PRISMA 2020',totalItems:checklist.length,complete,missing:checklist.length-complete,checklist,flow};
 }
 
 type FrameworkKind = 'PICO' | 'PICOS' | 'PECO' | 'SPIDER';
