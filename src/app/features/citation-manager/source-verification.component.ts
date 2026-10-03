@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, computed, input, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, input, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -51,6 +51,12 @@ export class SourceVerificationComponent {
   // Production starts with no fabricated scholarly records.
   // Real records enter through search/retrieval and are verified explicitly.
   records = signal<VerifiedCitationRecord[]>([]);
+
+  constructor() {
+    effect(() => {
+      this.records.set(this.initialRecords());
+    });
+  }
 
   auditReport = computed<VerificationAuditReport>(() => {
     return SourceVerificationEngine.generateAuditReport(this.records());
