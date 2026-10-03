@@ -32,10 +32,7 @@ export class ExportContractService {
       );
     }
 
-    if (
-      contract.identityVerifiedSourceCount < contract.citationEligibleSourceCount ||
-      contract.citationEligibleSourceCount === 0
-    ) {
+    if (contract.citationEligibleSourceCount === 0) {
       throw new Error(
         'هیچ citation ـێکی کۆتایی نابێت بێ identity verification و evidence verification هەردووکیان Export بکرێت.'
       );
