@@ -36,7 +36,7 @@ export function createResearchMemoryRouter(
         return;
       }
 
-      const projectId = parseProjectId(req.params.projectId);
+      const projectId = parseProjectId(req.params['projectId']);
       if (!projectId) {
         res.status(400).json({ error: 'ناسنامەی پڕۆژە نادروستە.' });
         return;
@@ -58,7 +58,7 @@ export function createResearchMemoryRouter(
         return;
       }
 
-      const projectId = parseProjectId(req.params.projectId);
+      const projectId = parseProjectId(req.params['projectId']);
       if (!projectId) {
         res.status(400).json({ error: 'ناسنامەی پڕۆژە نادروستە.' });
         return;
@@ -98,7 +98,7 @@ export function createResearchMemoryRouter(
         return;
       }
 
-      const projectId = parseProjectId(req.params.projectId);
+      const projectId = parseProjectId(req.params['projectId']);
       if (!projectId) {
         res.status(400).json({ error: 'ناسنامەی پڕۆژە نادروستە.' });
         return;
