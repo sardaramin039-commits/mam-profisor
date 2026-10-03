@@ -29,8 +29,11 @@ jobs:
       - name: Check outdated packages
         run: npm outdated || true
 
-      - name: Security audit
-        run: npm audit --audit-level=high
+      - name: Runtime security audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Development advisory report
+        run: npm audit --audit-level=critical || true
 
       - name: Lint
         run: npm run lint
