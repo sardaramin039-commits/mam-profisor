@@ -18,7 +18,11 @@
           <p>گەڕان، خوێندنەوە و بەڕێوەبردنی سەرچاوەکانی کتێبخانە لە یەک شوێن.</p>
         </div>
       </section>
-      <app-library-workspace></app-library-workspace>
+      @defer (on idle) {
+        <app-library-workspace></app-library-workspace>
+      } @placeholder {
+        <div class="mam-defer-placeholder"><mat-icon>auto_stories</mat-icon><span>کتێبخانە خەریکی ئامادەبوونە...</span></div>
+      }
     }
 
     @case ('editor') {
@@ -116,7 +120,11 @@
       <section class="mam-page-head">
         <div><span class="mam-eyebrow">RESEARCH</span><h1>ناوەندی توێژینەوەی پێشکەوتوو</h1><p>گەڕان، هەڵسەنگاندنی بەڵگە و مێتۆدەکانی توێژینەوە لە یەک شوێن.</p></div>
       </section>
-      <app-advanced-research-hub></app-advanced-research-hub>
+      @defer (on idle) {
+        <app-advanced-research-hub></app-advanced-research-hub>
+      } @placeholder {
+        <div class="mam-defer-placeholder"><mat-icon>science</mat-icon><span>ناوەندی توێژینەوە خەریکی ئامادەبوونە...</span></div>
+      }
     }
 
     @case ('platform') {
@@ -149,7 +157,11 @@
         <div><h2>کۆمەڵە ئامرازە ئەکادیمییەکان</h2><p>گەڕان و بەکارهێنانی ئامرازەکان بە شێوەیەکی ڕێکخراوتر لە پێشوو.</p></div>
       </section>
 
-      <app-ai-tools-suite></app-ai-tools-suite>
+      @defer (on idle) {
+        <app-ai-tools-suite></app-ai-tools-suite>
+      } @placeholder {
+        <div class="mam-defer-placeholder"><mat-icon>build</mat-icon><span>ئامرازەکان خەریکی ئامادەبوونن...</span></div>
+      }
 
       <details class="mam-secondary-tools">
         <summary><mat-icon>apps</mat-icon><span>ئامرازە پێشووەکان</span><small>بە شێوەی کۆکراوە، نەک هەمووی لە یەک پەڕە</small></summary>
