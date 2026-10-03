@@ -1,9 +1,19 @@
 import { Injectable } from '@angular/core';
 
+export interface ReviewCriterion {
+  id: string;
+  name: string;
+  nameEn?: string;
+  weight?: number;
+  score: number;
+  feedback: string;
+}
+
 export interface ReviewResponse {
   score: number;
   critique: string;
   recommendations: string[];
+  criteria?: ReviewCriterion[];
 }
 
 export interface LiteratureGapResult {
