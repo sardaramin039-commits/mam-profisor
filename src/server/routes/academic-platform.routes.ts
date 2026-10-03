@@ -22,7 +22,14 @@ const verificationSourceSchema = z.object({
   doi: z.string().max(500).optional(),
   isbn: z.string().max(32).optional(),
   issn: z.string().max(32).optional(),
-  publisher: z.string().max(500).optional()
+  publisher: z.string().max(500).optional(),
+  claimText: z.string().max(10_000).optional(),
+  evidenceText: z.string().max(100_000).optional(),
+  content: z.string().max(100_000).optional(),
+  fullText: z.string().max(100_000).optional(),
+  text: z.string().max(100_000).optional(),
+  chunkText: z.string().max(100_000).optional(),
+  pageNumber: z.union([z.string(), z.number()]).optional()
 }).strict();
 const verificationSourceArray = z.array(verificationSourceSchema).max(100);
 
@@ -115,11 +122,25 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         res.status(400).json({ error: 'داتای ناردراو بۆ ئەم کارە نادروستە.', details: academicReviewSchemaParsed.error.issues });
         return;
       }
-      const { draftText, topic } = academicReviewSchemaParsed.data;
+      const { draftText, topic, discipline, verifiedSources } = academicReviewSchemaParsed.data;
       const report = await academicReviewerService.evaluateThesis(
         draftText || '',
         topic || 'تێز',
-        getGeminiClient
+        getGeminiClient,
+        {
+          discipline,
+          verifiedSources: verifiedSources
+            .filter(source => source.citationEligible === true)
+            .map(source => ({
+              sourceId: source.doi || source.isbn || source.title,
+              sourceTitle: source.title,
+              author: source.author,
+              year: source.year ? String(source.year) : undefined,
+              publisher: source.publisher,
+              doiOrIsbn: source.doi || source.isbn,
+              verificationStatus: 'verified' as const
+            }))
+        }
       );
       res.json({ success: true, report });
     } catch (err: any) {
@@ -146,15 +167,20 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
 
       const qa = await academicQAGateService.runQAGate(
         documentText || '',
-        verification.verifiedSources,
-        getGeminiClient
+        verification.citationEligibleSources,
+        getGeminiClient,
+        {
+          identityVerifiedSourceCount: verification.verifiedSources.length,
+          citationEligibleSourceCount: verification.citationEligibleSources.length
+        }
       );
 
       res.json({
         success: true,
         qa,
         sourceVerification: {
-          verifiedSources: verification.verifiedSources,
+          identityVerifiedSources: verification.verifiedSources,
+          citationEligibleSources: verification.citationEligibleSources,
           unverifiedSources: verification.unverifiedSources,
           rejectedSources: verification.rejectedSources
         }
