@@ -48,24 +48,18 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
           <span><b>توێژینەوە</b><small>ڕەچاوکردن و بەڵگە</small></span>
         </button>
 
-        <p class="mam-nav-label">ئامراز</p>
+        <p class="mam-nav-label">پشکنین و هەناردە</p>
 
         <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'platform'"
                 (click)="selectTab.emit('platform'); closeMobileNav()">
-          <mat-icon>account_tree</mat-icon>
-          <span><b>پلاتفۆرمی زانستی</b><small>کارەکانی توێژینەوە</small></span>
+          <mat-icon>fact_check</mat-icon>
+          <span><b>پشکنین و بڕواپێکراوی</b><small>QA، integrity و دۆخی بەڵگە</small></span>
         </button>
 
         <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'suite'"
                 (click)="selectTab.emit('suite'); closeMobileNav()">
-          <mat-icon>build</mat-icon>
-          <span><b>ئامرازەکان</b><small>ئامرازە پێویستەکان</small></span>
-        </button>
-
-        <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'google_drive'"
-                (click)="selectTab.emit('google_drive'); closeMobileNav()">
-          <mat-icon>cloud</mat-icon>
-          <span><b>هاوبەشی و فایل</b><small>گووگڵ و کارەکان</small></span>
+          <mat-icon>file_present</mat-icon>
+          <span><b>ئامراز و هەناردە</b><small>ئامرازە هەڵبژێردراوەکان</small></span>
         </button>
       </nav>
 
@@ -76,6 +70,11 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
         </button>
 
         <button type="button" class="mam-sidebar-action" (click)="openReadingMode.emit(); closeMobileNav()">
+          <mat-icon>menu_book</mat-icon>
+          <span>دۆخی خوێندنەوە</span>
+        </button>
+
+        <button type="button" class="mam-sidebar-action" (click)="toggleDarkMode.emit()">
           <mat-icon>{{ academicDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
           <span>{{ academicDarkMode() ? 'ڕووناکی' : 'تاریکی' }}</span>
         </button>
