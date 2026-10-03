@@ -32,6 +32,27 @@ class ResearchProjectStateService {
     return adminDb.collection('research_workspaces').doc(userId).collection('items').doc(workspaceId);
   }
 
+  private async loadUserSources(userId: string): Promise<unknown[]> {
+    try {
+      const sourceSnapshot = await adminDb
+        .collection('sources')
+        .where('userId', '==', userId)
+        .limit(500)
+        .get();
+
+      return sourceSnapshot.docs.map(sourceDoc => ({
+        id: sourceDoc.id,
+        ...sourceDoc.data()
+      }));
+    } catch (error) {
+      console.warn(
+        '[ResearchWorkspace source hydration unavailable]:',
+        (error as Error)?.message || error
+      );
+      return [];
+    }
+  }
+
   public async hydrateWorkspace(
     userId: string,
     workspaceId: string,
@@ -48,22 +69,7 @@ class ResearchProjectStateService {
         workspace.citationsList = Array.isArray(data['citationsList']) ? data['citationsList'] : workspace.citationsList;
 
         if (workspace.citationsList.length === 0) {
-          try {
-            const sourceSnapshot = await adminDb
-              .collection('sources')
-              .where('userId', '==', userId)
-              .limit(500)
-              .get();
-            workspace.citationsList = sourceSnapshot.docs.map(sourceDoc => ({
-              id: sourceDoc.id,
-              ...sourceDoc.data()
-            }));
-          } catch (sourceError) {
-            console.warn(
-              '[ResearchWorkspace source hydration unavailable]:',
-              (sourceError as Error)?.message || sourceError
-            );
-          }
+          workspace.citationsList = await this.loadUserSources(userId);
         }
 
         workspace.integrityScore = Number.isFinite(Number(data['integrityScore']))
@@ -74,6 +80,7 @@ class ResearchProjectStateService {
           ? data['lastMemorySnapshotHash']
           : contentHash(workspace.draftContent.slice(0, 500));
       } else {
+        workspace.citationsList = await this.loadUserSources(userId);
         await this.persistWorkspace(workspace);
       }
     } catch (error) {
