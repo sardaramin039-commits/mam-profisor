@@ -105,7 +105,13 @@ function normalizeDoi(value?: string): string {
     .toLowerCase();
 }
 
-function readEvidence(source: InputSource): string {
+function readEvidence(source: {
+  evidenceText?: string;
+  content?: string;
+  fullText?: string;
+  text?: string;
+  chunkText?: string;
+}): string {
   return String(
     source.evidenceText ??
     source.content ??
