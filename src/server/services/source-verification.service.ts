@@ -156,7 +156,7 @@ function buildBaseReport(
   rejectionReasonKurdish?: string,
   overrides: Partial<SourceVerificationReport> = {}
 ): SourceVerificationReport {
-  const evidence = assessEvidence(source);
+  const evidence = assessEvidenceVerification(source);
   const citationEligible = identityStatus === 'verified' && evidence.status === 'verified';
 
   return {
