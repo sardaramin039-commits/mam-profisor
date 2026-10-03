@@ -123,25 +123,37 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         return;
       }
       const { draftText, topic, discipline, verifiedSources } = academicReviewSchemaParsed.data;
+      const verification = await sourceVerificationService.verifySources(
+        verifiedSources || [],
+        getGeminiClient
+      );
       const report = await academicReviewerService.evaluateThesis(
         draftText || '',
         topic || 'تێز',
         getGeminiClient,
         {
           discipline,
-          verifiedSources: verifiedSources
-            .filter(source => source.citationEligible === true)
-            .map(source => ({
-              sourceId: source.doi || source.isbn || source.title,
-              sourceTitle: source.title,
-              author: source.author,
-              year: source.year ? String(source.year) : undefined,
-              publisher: source.publisher,
-              doiOrIsbn: source.doi || source.isbn,
-              verificationStatus: 'verified' as const
-            }))
+          verifiedSources: verification.citationEligibleSources.map(source => ({
+            sourceId: source.sourceId,
+            sourceTitle: source.sourceTitle,
+            author: source.author,
+            year: source.year,
+            publisher: source.publisher,
+            doiOrIsbn: source.doiOrIsbn,
+            verificationStatus: 'verified' as const
+          }))
         }
       );
+      return res.json({
+        success: true,
+        report,
+        sourceVerification: {
+          identityVerifiedSources: verification.verifiedSources,
+          citationEligibleSources: verification.citationEligibleSources,
+          unverifiedSources: verification.unverifiedSources,
+          rejectedSources: verification.rejectedSources
+        }
+      });
       res.json({ success: true, report });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'خەتای هەڵسەنگاندنی ئەکادیمی' });
