@@ -1,82 +1,79 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { openAiChatGptService } from '../services/openai-chatgpt.service';
 
-/**
- * ڕێڕەوەکانی ChatGPT بۆ دۆزینەوە و ڕێکخستنی سەرچاوە ئەکادیمییەکان
- */
+const discoverSourcesSchema = z.object({
+  query: z.string().trim().min(1).max(2000),
+  discipline: z.string().trim().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(25).default(8),
+  timeframe: z.string().trim().max(100).optional()
+}).strict();
+
+const organizeReferencesSchema = z.object({
+  topic: z.string().trim().min(1).max(2000),
+  discipline: z.string().trim().max(200).optional(),
+  rawReferences: z.string().max(100_000).default(''),
+  citationStyle: z.string().trim().max(50).default('harvard'),
+  language: z.string().trim().max(20).default('ckb')
+}).strict();
+
 export function createChatGptAcademicSourcesRouter(): Router {
   const router = Router();
 
-  /**
-   * دۆزینەوەی سەرچاوە زانستییە نوێ و پێشەنگەکان لەڕێگەی ChatGPT
-   */
   router.post('/discover-sources', async (req: Request, res: Response) => {
-    try {
-      const { query, discipline, limit, timeframe } = req.body;
-      if (!query || typeof query !== 'string' || query.trim() === '') {
-        return res.status(400).json({ error: 'تکایە بابەتی گەڕان بە دروستی بنووسە.' });
-      }
-
-      const result = await openAiChatGptService.discoverAcademicSources({
-        query: query.trim(),
-        discipline,
-        limit: Number(limit) || 8,
-        timeframe
+    const parsed = discoverSourcesSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({
+        error: 'داتای گەڕانی سەرچاوەکان نادروستە.',
+        issues: parsed.error.issues
       });
+      return;
+    }
 
-      return res.json(result);
-    } catch (error: any) {
+    try {
+      const result = await openAiChatGptService.discoverAcademicSources(parsed.data);
+      res.json(result);
+    } catch (error: unknown) {
       console.error('[ChatGPT discover-sources error]:', error);
-      return res.status(500).json({
-        error: 'کێشەیەک لە پەیوەندی بە ChatGPT بۆ دۆزینەوەی سەرچاوەکان ڕوویدا.',
-        details: error?.message || String(error)
+      res.status(500).json({
+        error: 'کێشەیەک لە پەیوەندی بە خزمەتگوزاریی سەرچاوەکان ڕوویدا.'
       });
     }
   });
 
-  /**
-   * ڕێکخستن، پۆلێنکردن و فۆرماتکردنی سەرچاوەکان بە ستانداردەکانی APA, Harvard, MLA
-   */
   router.post('/organize-references', async (req: Request, res: Response) => {
-    try {
-      const { topic, discipline, rawReferences, citationStyle, language } = req.body;
-      if (!topic || typeof topic !== 'string' || topic.trim() === '') {
-        return res.status(400).json({ error: 'تکایە ناونیشان یان بابەتی سەرەکی بنووسە.' });
-      }
-
-      const result = await openAiChatGptService.organizeAndFormatReferences({
-        topic: topic.trim(),
-        discipline,
-        rawReferences,
-        citationStyle: citationStyle || 'harvard',
-        language: language || 'ckb'
+    const parsed = organizeReferencesSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({
+        error: 'داتای ڕێکخستنی سەرچاوەکان نادروستە.',
+        issues: parsed.error.issues
       });
+      return;
+    }
 
-      return res.json(result);
-    } catch (error: any) {
+    try {
+      const result = await openAiChatGptService.organizeAndFormatReferences(parsed.data);
+      res.json(result);
+    } catch (error: unknown) {
       console.error('[ChatGPT organize-references error]:', error);
-      return res.status(500).json({
-        error: 'کێشەیەک لە پەیوەندی بە ChatGPT بۆ ڕێکخستنی سەرچاوەکان ڕوویدا.',
-        details: error?.message || String(error)
+      res.status(500).json({
+        error: 'کێشەیەک لە پەیوەندی بۆ ڕێکخستنی سەرچاوەکان ڕوویدا.'
       });
     }
   });
 
-  /**
-   * پشکنینی دۆخی بەردەستبوونی کلیل و خزمەتگوزاریی ChatGPT
-   */
-  router.get('/status', (req: Request, res: Response) => {
+  router.get('/status', (_req: Request, res: Response) => {
     const key = openAiChatGptService.getApiKey();
     const isConfigured = Boolean(key && key.startsWith('sk-'));
-    return res.json({
+
+    res.json({
       service: 'ChatGPT Academic Source Assistant',
       isConfigured,
       hasKey: isConfigured,
-      model: 'gpt-4o-mini',
       capabilities: [
         'دۆزینەوەی سەرچاوەی ئەکادیمی',
-        'ڕێکخستنی بەیبلۆگرافی بە شێوازی Harvard, APA, MLA',
-        'ئامادەکردنی ئاماژەدانی ناو دەق (In-text citations)'
+        'ڕێکخستنی بەیبلۆگرافی',
+        'ئامادەکردنی ئاماژەدانی ناو دەق'
       ]
     });
   });
