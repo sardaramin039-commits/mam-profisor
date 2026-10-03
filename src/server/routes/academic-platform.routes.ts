@@ -154,7 +154,6 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
           rejectedSources: verification.rejectedSources
         }
       });
-      res.json({ success: true, report });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'خەتای هەڵسەنگاندنی ئەکادیمی' });
     }
