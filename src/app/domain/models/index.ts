@@ -106,6 +106,12 @@ export interface AcademicSourceModel {
   type?: string;
   doi?: string;
   isbn?: string;
+  claimText?: string;
+  evidenceText?: string;
+  pageNumber?: string | number;
+  identityStatus?: 'verified' | 'unverified' | 'rejected';
+  evidenceStatus?: 'verified' | 'unverified' | 'not_available';
+  citationEligible?: boolean;
   formattedCitation?: string;
   isVerified: boolean;
   createdAt?: { seconds: number; nanoseconds?: number } | null;
