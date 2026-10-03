@@ -117,6 +117,7 @@ export class AcademicQAGateService {
       totalClaims?: number;
       identityVerifiedSourceCount?: number;
       citationEligibleSourceCount?: number;
+      sourceCount?: number;
     }
   ): Promise<QAGateResult> {
     const ai = getGeminiClient();
@@ -171,6 +172,9 @@ export class AcademicQAGateService {
         ) || []
       ).length;
       const citationProvenance = auditCitationProvenance(documentText, safeSources);
+      const numericCitationMatches = Array.from(
+        documentText.matchAll(/\[\s*\d+(?:\s*[,;\-]\s*\d+)*\s*\]/g)
+      );
 
       if (wordCount > 250 && citationMarkerCount === 0) {
         checks.push({
@@ -180,6 +184,19 @@ export class AcademicQAGateService {
           detailsKurdish: 'بەڵگەنامەکە درێژەی هەیە، بەڵام هیچ نیشانەیەکی ڕوونی citation تێدا نەدۆزرایەوە.',
           recommendedActionKurdish: 'Claim ـەکان بە citation ـی پەیوەندیدار ببەستە.'
         });
+      }
+
+      if (numericCitationMatches.length > 0) {
+        const sourceCount = Number(compliance?.sourceCount) || safeSources.length;
+        if (sourceCount !== citationEligibleSourceCount) {
+          checks.push({
+            ruleName: 'Numeric Citation Safety',
+            passed: false,
+            severity: 'critical',
+            detailsKurdish: 'دەقەکە citation ـی ژمارەیی هەیە، بەڵام هەموو source ـەکانی payload بەڵگە و verification ـی پێویستیان نییە.',
+            recommendedActionKurdish: 'پێش Export هەموو source ـەکانی bibliography پشتڕاست بکەوە یان citation ـی ژمارەیی بە source ـی eligible بگونجێنە.'
+          });
+        }
       }
 
       if (citationProvenance.unmatched > 0) {
