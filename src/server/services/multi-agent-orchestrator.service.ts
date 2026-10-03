@@ -174,7 +174,19 @@ export class MultiAgentOrchestratorService {
     const review = await academicReviewerService.evaluateThesis(
       finalText,
       request.topic,
-      getGeminiClient
+      getGeminiClient,
+      {
+        discipline: request.discipline,
+        verifiedSources: verification.verifiedSources.map(source => ({
+          sourceId: source.sourceId,
+          sourceTitle: source.sourceTitle,
+          author: source.author,
+          year: source.year,
+          publisher: source.publisher,
+          doiOrIsbn: source.doiOrIsbn,
+          verificationStatus: 'verified' as const
+        }))
+      }
     );
     log('10', 'Professor Reviewer Agent', 'Completed independent academic review');
 
