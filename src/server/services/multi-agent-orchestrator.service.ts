@@ -98,7 +98,7 @@ export class MultiAgentOrchestratorService {
           pageNumber: String(source.pageNumber ?? source.page ?? '').trim() || undefined,
           author: verified.author,
           year: verified.year || String(source.year ?? '').trim() || undefined,
-          provenance: 'user-supplied-content' as const
+          provenance: 'server-verified-fulltext' as const
         };
       })
       .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -144,6 +144,22 @@ export class MultiAgentOrchestratorService {
         : 'Applied natural scholarly variation without adding facts');
 
     const finalText = humanProse.refinedText || languageAnalysis.refinedTextKurdish;
+
+    const graphSources = rawSources.map(source => {
+      const verified = verifiedByKey.get(sourceKey(source));
+      return {
+        ...source,
+        ...(verified || {}),
+        evidenceProvenance: 'server-verified-fulltext' as const
+      };
+    });
+
+    const graph = await claimEvidenceGraphService.buildGraph(
+      request.topic,
+      finalText,
+      graphSources,
+      getGeminiClient
+    );
     log('07', 'Claim-Evidence Graph Agent', `${graph.claims.length} final claims analyzed`);
 
     const contradictions = await contradictionDetectionService.analyze(
