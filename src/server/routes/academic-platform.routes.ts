@@ -184,7 +184,8 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         getGeminiClient,
         {
           identityVerifiedSourceCount: verification.verifiedSources.length,
-          citationEligibleSourceCount: verification.citationEligibleSources.length
+          citationEligibleSourceCount: verification.citationEligibleSources.length,
+          sourceCount: sources.length
         }
       );
 
