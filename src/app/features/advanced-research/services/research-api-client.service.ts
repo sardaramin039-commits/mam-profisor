@@ -215,6 +215,22 @@ export class ResearchApiClientService {
     return this.http.get<ResearchControlPlaneState>(`/api/research-control/${encodeURIComponent(projectId)}`);
   }
 
+  getWorkspace(workspaceId: string): Observable<{
+    workspaceId: string;
+    projectName: string;
+    activeChapter: string;
+    draftContent: string;
+    citationsList: Array<Record<string, unknown>>;
+  }> {
+    return this.http.get<{
+      workspaceId: string;
+      projectName: string;
+      activeChapter: string;
+      draftContent: string;
+      citationsList: Array<Record<string, unknown>>;
+    }>(`/api/workspace/${encodeURIComponent(workspaceId)}`);
+  }
+
   listResearchDecisions(projectId: string): Observable<{ decisions: Array<Record<string, unknown>> }> {
     return this.http.get<{ decisions: Array<Record<string, unknown>> }>(`/api/research-decisions/${encodeURIComponent(projectId)}`);
   }
