@@ -31,9 +31,20 @@ function countOccurrences(text: string, fragment: string): number {
   return count;
 }
 
+function extractCitationFragments(text: string): string[] {
+  const matches = [
+    ...(text.match(/\\[[0-9]+(?:\\s*[,;]\\s*[0-9]+)*\\]/g) || []),
+    ...(text.match(/\\([^()\\n]{1,120}\\b(?:19|20)\\d{2}[a-z]?\\)/g) || [])
+  ];
+  return Array.from(new Set(matches.map(item => item.trim()).filter(Boolean)));
+}
+
 function sameProtectedFragments(original: string, refined: string, fragments: string[]): boolean {
   const uniqueFragments = Array.from(
-    new Set(fragments.map(item => String(item || '').trim()).filter(Boolean))
+    new Set([
+      ...fragments.map(item => String(item || '').trim()).filter(Boolean),
+      ...extractCitationFragments(original)
+    ])
   );
   return uniqueFragments.every(fragment =>
     countOccurrences(refined, fragment) >= countOccurrences(original, fragment)
