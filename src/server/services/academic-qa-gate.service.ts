@@ -164,7 +164,7 @@ export class AcademicQAGateService {
       const invalidSourceCount = safeSources.filter(
         source => !hasCitationEligibleSource(source)
       ).length;
-      const wordCount = documentText.trim().split(/s+/).filter(Boolean).length;
+      const wordCount = documentText.trim().split(/\s+/).filter(Boolean).length;
       const citationMarkerCount = (
         documentText.match(
           /\([^()]{2,100},\s*[12١٢][0-9٠-٩]{3}[a-z]?\)|\[[0-9٠-٩,;\s-]+\]/g
