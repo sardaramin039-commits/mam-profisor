@@ -35,7 +35,6 @@ export class SourceVerificationComponent {
 
   activeTab = signal<'VERIFICATION' | 'RANKING' | 'DEDUPLICATION' | 'EVIDENCE_LINK' | 'RESEARCH_GATE' | 'INTEGRITY_DASHBOARD' | 'RERANKING'>('VERIFICATION');
   copiedReport = signal<boolean>(false);
-  forceWriteAnyway = signal<boolean>(false);
 
   // Form bindings
   claimInput = '';
