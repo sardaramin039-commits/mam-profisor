@@ -4,6 +4,11 @@ import { researchMemoryService } from '../services/research-memory.service';
 import { z } from 'zod';
 import type { AuthRequest } from '../../middleware/auth';
 
+const projectIdSchema = z.string().regex(
+  /^[A-Za-z0-9_-]{1,128}$/,
+  'ناسنامەی پڕۆژە تەنها دەتوانێت پیت، ژمارە، - و _ هەبێت.'
+);
+
 const memoryItemSchema = z.object({
   topic: z.string().trim().max(500).optional(),
   type: z.enum(['note', 'claim', 'evidence', 'source', 'summary', 'draft_chapter']),
@@ -12,12 +17,17 @@ const memoryItemSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional()
 });
 
-export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): Router {
+function parseProjectId(value: string | string[] | undefined): string | null {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  const parsed = projectIdSchema.safeParse(candidate);
+  return parsed.success ? parsed.data : null;
+}
+
+export function createResearchMemoryRouter(
+  getGeminiClient: () => GoogleGenAI
+): Router {
   const router = Router();
 
-  /**
-   * GET /api/research-memory/:projectId
-   */
   router.get('/:projectId', async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.uid;
@@ -25,11 +35,13 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
         res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
         return;
       }
-      const { projectId } = req.params;
-      if (!projectId || projectId.length > 128) {
+
+      const projectId = parseProjectId(req.params.projectId);
+      if (!projectId) {
         res.status(400).json({ error: 'ناسنامەی پڕۆژە نادروستە.' });
         return;
       }
+
       const projectState = await researchMemoryService.hydrateProjectState(userId, projectId);
       res.json(projectState);
     } catch (err: unknown) {
@@ -38,9 +50,6 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
     }
   });
 
-  /**
-   * POST /api/research-memory/:projectId/items
-   */
   router.post('/:projectId/items', async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.uid;
@@ -48,18 +57,23 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
         res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
         return;
       }
-      const { projectId } = req.params;
-      if (!projectId || projectId.length > 128) {
+
+      const projectId = parseProjectId(req.params.projectId);
+      if (!projectId) {
         res.status(400).json({ error: 'ناسنامەی پڕۆژە نادروستە.' });
         return;
       }
-      await researchMemoryService.hydrateProjectState(userId, projectId);
+
       const parsed = memoryItemSchema.safeParse(req.body ?? {});
       if (!parsed.success) {
-        res.status(400).json({ error: 'داتای بڕگەی یادگە نادروستە.', issues: parsed.error.issues });
+        res.status(400).json({
+          error: 'داتای بڕگەی یادگە نادروستە.',
+          issues: parsed.error.issues
+        });
         return;
       }
 
+      await researchMemoryService.hydrateProjectState(userId, projectId);
       const newItem = await researchMemoryService.addMemoryItem(userId, projectId, {
         userId,
         topic: parsed.data.topic || 'توێژینەوەی ئەکادیمی',
@@ -69,29 +83,32 @@ export function createResearchMemoryRouter(getGeminiClient: () => GoogleGenAI): 
         metadata: parsed.data.metadata
       });
 
-      res.json(newItem);
+      res.status(201).json(newItem);
     } catch (err: unknown) {
       console.error('Research Memory Add Item Error:', err);
       res.status(500).json({ error: 'کێشەیەک لە تۆمارکردنی بڕگەی نوێدا ڕووی دا.' });
     }
   });
 
-  /**
-   * POST /api/research-memory/:projectId/summarize
-   */
   router.post('/:projectId/summarize', async (req: AuthRequest, res) => {
     try {
-      const userId = (req as any).user?.uid;
+      const userId = req.user?.uid;
       if (!userId) {
         res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
         return;
       }
-      const { projectId } = req.params;
-      if (!projectId || projectId.length > 128) {
+
+      const projectId = parseProjectId(req.params.projectId);
+      if (!projectId) {
         res.status(400).json({ error: 'ناسنامەی پڕۆژە نادروستە.' });
         return;
       }
-      const summary = await researchMemoryService.summarizeMemoryWithAI(userId, projectId, getGeminiClient);
+
+      const summary = await researchMemoryService.summarizeMemoryWithAI(
+        userId,
+        projectId,
+        getGeminiClient
+      );
       res.json({ summary });
     } catch (err: unknown) {
       console.error('Research Memory Summarize Error:', err);
