@@ -28,7 +28,7 @@ import { ReviewCriterion, ReviewsService } from '../../services/reviews';
         </div>
 
         <span class="text-[11px] bg-amber-500/10 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full font-mono font-bold">
-          Veritas Rigor 3.0
+          ئەنجامی پشکنینی سێرڤەر
         </span>
       </div>
 
