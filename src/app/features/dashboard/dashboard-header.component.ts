@@ -70,12 +70,12 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
       </nav>
 
       <div class="mam-sidebar-bottom">
-        <button type="button" class="mam-sidebar-action" (click)="openReadingMode.emit(); closeMobileNav()">
-          <mat-icon>menu_book</mat-icon>
-          <span>دۆخی خوێندنەوە</span>
+        <button type="button" class="mam-sidebar-action" (click)="selectTab.emit('google_drive'); closeMobileNav()">
+          <mat-icon>cloud</mat-icon>
+          <span>هاوبەشی و فایل</span>
         </button>
 
-        <button type="button" class="mam-sidebar-action" (click)="toggleDarkMode.emit()">
+        <button type="button" class="mam-sidebar-action" (click)="openReadingMode.emit(); closeMobileNav()">
           <mat-icon>{{ academicDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
           <span>{{ academicDarkMode() ? 'ڕووناکی' : 'تاریکی' }}</span>
         </button>
@@ -174,10 +174,10 @@ export class DashboardHeaderComponent {
     const labels: Record<MainTab, string> = {
       library: 'کتێبخانە',
       editor: 'نووسین',
-      suite: 'ئامرازەکان',
+      suite: 'ئامراز و هەناردە',
       advanced_research: 'توێژینەوە',
       google_drive: 'هاوبەشی و فایل',
-      platform: 'پلاتفۆرمی زانستی'
+      platform: 'پشکنین و بڕواپێکراوی'
     };
     return labels[tab];
   }
