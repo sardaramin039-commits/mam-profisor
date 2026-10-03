@@ -59,7 +59,7 @@ export class ReviewsService {
   async runAcademicReview(
     title: string,
     content: string,
-    discipline: string
+    _discipline: string
   ): Promise<ReviewResponse> {
     const response = await firstValueFrom(
       this.http.post<{ success: boolean; report: ReviewerReport }>(
