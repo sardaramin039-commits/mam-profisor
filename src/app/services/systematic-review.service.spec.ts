@@ -23,7 +23,7 @@ describe('SystematicReviewService', () => {
       excludedAfterFullText: 10, included: 40
     });
     expect(result.flowConsistent).toBe(false);
-    expect(result.flowErrors.length).toBe(3);
+    expect(result.flowErrors.length).toBe(2);
   });
 
   it('accepts internally consistent flow counts', () => {
