@@ -47,8 +47,7 @@ import {
   TableExtractorResult,
   AcademicReferenceItem,
   ProfessorModeLevel,
-  ResearchMemoryState,
-  ResearchIntegrityAuditResult
+  ResearchMemoryState
 } from '../models/multi-agent.types';
 
 @Injectable({
