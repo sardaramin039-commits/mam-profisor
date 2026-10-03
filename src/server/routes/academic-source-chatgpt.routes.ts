@@ -13,8 +13,8 @@ const organizeReferencesSchema = z.object({
   topic: z.string().trim().min(1).max(2000),
   discipline: z.string().trim().max(200).optional(),
   rawReferences: z.string().max(100_000).default(''),
-  citationStyle: z.string().trim().max(50).default('harvard'),
-  language: z.string().trim().max(20).default('ckb')
+  citationStyle: z.enum(['apa', 'harvard', 'mla', 'chicago']).default('harvard'),
+  language: z.enum(['ckb', 'en', 'ar']).default('ckb')
 }).strict();
 
 export function createChatGptAcademicSourcesRouter(): Router {
