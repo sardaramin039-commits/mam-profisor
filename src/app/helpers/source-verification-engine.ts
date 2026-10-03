@@ -1,4 +1,6 @@
 export type VerificationStatus = 'VERIFIED' | 'PARTIALLY_VERIFIED' | 'UNVERIFIED';
+export type IdentityVerificationStatus = 'verified' | 'unverified';
+export type EvidenceVerificationStatus = 'verified' | 'unverified' | 'not_available';
 
 export type SourceTierLevel = 'Tier 1' | 'Tier 2' | 'Tier 3';
 
@@ -27,6 +29,9 @@ export interface VerifiedCitationRecord {
   exactEvidenceSnippet: string;
   sourceUrl?: string;
   verificationStatus: VerificationStatus;
+  identityStatus: IdentityVerificationStatus;
+  evidenceStatus: EvidenceVerificationStatus;
+  citationEligible: boolean;
   verificationNotes?: string;
   auditDate: string;
 
@@ -215,10 +220,25 @@ export class SourceVerificationEngine {
 
     let status: VerificationStatus = 'UNVERIFIED';
     let notes = 'ناسنامەی دەرەکی یان پشتڕاستکردنەوەی authority بەردەست نییە؛ source ـەکە Verified ناکرێت.';
+    const evidenceStatus: EvidenceVerificationStatus =
+      !snippet || snippet.length < 10
+        ? 'not_available'
+        : claimMatch
+          ? 'verified'
+          : 'unverified';
+    const identityStatus: IdentityVerificationStatus =
+      candidateSource.externallyVerified === true &&
+      retrieved &&
+      authoritativeIdentifier
+        ? 'verified'
+        : 'unverified';
 
-    if (candidateSource.externallyVerified === true && retrieved && read && authoritativeIdentifier) {
+    if (
+      identityStatus === 'verified' &&
+      evidenceStatus === 'verified'
+    ) {
       status = 'VERIFIED';
-      notes = 'پشتڕاستکردنەوەی دەرەکی و evidence ـی source بەردەستە؛ source مافی citation هەیە.';
+      notes = 'ناسنامەی source و evidence ـی claim هەردووکیان پشتڕاستکراونەتەوە؛ source مافی citation هەیە.';
     } else if (retrieved && read && claimMatch) {
       status = 'PARTIALLY_VERIFIED';
       notes = 'Claim ـەکە لە snippet ـی وەرگیراودا هەڵکەوتووە، بەڵام identity ـی source بە authority دەرەکی پشتڕاست نەکراوەتەوە.';
@@ -250,6 +270,9 @@ export class SourceVerificationEngine {
       exactEvidenceSnippet: snippet,
       sourceUrl: candidateSource.sourceUrl || candidateSource.doiOrUrl,
       verificationStatus: status,
+      identityStatus,
+      evidenceStatus,
+      citationEligible: identityStatus === 'verified' && evidenceStatus === 'verified',
       verificationNotes: notes,
       auditDate: new Date().toISOString(),
       tier: tierInfo.tier,
