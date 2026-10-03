@@ -64,7 +64,7 @@ export class ReviewsService {
     const response = await firstValueFrom(
       this.http.post<{ success: boolean; report: ReviewerReport }>(
         '/api/platform/academic-review',
-        { topic: title, draftText: content }
+        { topic: title, draftText: content, discipline: _discipline }
       )
     );
 
