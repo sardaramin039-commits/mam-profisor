@@ -25,7 +25,13 @@ export class ExportContractService {
     const gate = response?.qa;
     const contract = gate?.exportContract;
 
-    if (!gate || gate.exportBlocked === true || contract?.approved !== true) {
+    if (
+      !gate ||
+      gate.exportBlocked === true ||
+      contract?.approved !== true ||
+      contract.version !== '1.0' ||
+      !contract.fingerprint
+    ) {
       throw new Error(
         gate?.kurdishSummaryStatus ||
         'Export بەهۆی پشکنینی بەڵگە و verification ـەوە بلۆک کرا.'
