@@ -231,6 +231,30 @@ export class ResearchApiClientService {
     }>(`/api/workspace/${encodeURIComponent(workspaceId)}`);
   }
 
+  requestExportGate(
+    documentText: string,
+    sources: Array<Record<string, unknown>>
+  ): Observable<{
+    success: boolean;
+    qa: {
+      exportBlocked: boolean;
+      kurdishSummaryStatus?: string;
+      exportContract: {
+        version: '1.0';
+        approved: boolean;
+        fingerprint: string;
+        identityVerifiedSourceCount: number;
+        citationEligibleSourceCount: number;
+        createdAt: string;
+      };
+    };
+  }> {
+    return this.http.post('/api/platform/qa-gate', {
+      documentText: documentText.trim(),
+      sources
+    });
+  }
+
   listResearchDecisions(projectId: string): Observable<{ decisions: Array<Record<string, unknown>> }> {
     return this.http.get<{ decisions: Array<Record<string, unknown>> }>(`/api/research-decisions/${encodeURIComponent(projectId)}`);
   }
