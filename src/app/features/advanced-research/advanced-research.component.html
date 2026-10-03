@@ -68,7 +68,6 @@
       }
       @if (navigationGroup() === 'review') {
         <button type="button" (click)="activeTab.set('peer_review')" [class]="activeTab()==='peer_review' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>rate_review</mat-icon> Peer Review</button>
-        <button type="button" (click)="activeTab.set('integrity_audit')" [class]="activeTab()==='integrity_audit' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>fact_check</mat-icon> Integrity Audit</button>
         <button type="button" (click)="activeTab.set('methods_lab')" [class]="activeTab()==='methods_lab' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>science</mat-icon> Methods Lab</button>
         <button type="button" (click)="activeTab.set('systematic_review')" [class]="activeTab()==='systematic_review' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>checklist</mat-icon> PRISMA Review</button>
       }
@@ -78,7 +77,6 @@
       }
       @if (navigationGroup() === 'memory') {
         <button type="button" (click)="activeTab.set('memory')" [class]="activeTab()==='memory' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>history</mat-icon> بیرگە و مێژوو</button>
-        <button type="button" (click)="activeTab.set('scholarship_55')" [class]="activeTab()==='scholarship_55' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>school</mat-icon> Scholarship 55</button>
       }
     </div>
   </div>
@@ -108,9 +106,6 @@
     @if (activeTab() === 'extended_tools') {
       <app-advanced-research-extended-tools-tab></app-advanced-research-extended-tools-tab>
     }
-    @if (activeTab() === 'integrity_audit') {
-      <app-advanced-research-integrity-audit-tab></app-advanced-research-integrity-audit-tab>
-    }
     @if (activeTab() === 'methods_lab') {
       <app-advanced-research-methods-lab-tab></app-advanced-research-methods-lab-tab>
     }
@@ -119,9 +114,6 @@
     }
     @if (activeTab() === 'memory') {
       <app-advanced-research-memory-tab></app-advanced-research-memory-tab>
-    }
-    @if (activeTab() === 'scholarship_55') {
-      <app-scholarship-55-tab></app-scholarship-55-tab>
     }
   </div>
 </div>
