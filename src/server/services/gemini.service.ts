@@ -9,6 +9,7 @@ export function isTransientError(error: unknown): boolean {
   return (
     lowerMsg.includes('503') ||
     lowerMsg.includes('429') ||
+    lowerMsg.includes('quota') ||
     lowerMsg.includes('unavailable') ||
     lowerMsg.includes('resource_exhausted') ||
     lowerMsg.includes('limit') ||
@@ -74,7 +75,7 @@ export function getGeminiClient(): GoogleGenAI {
         const originalModel = typedParams?.model || 'gemini-3.8-flash';
 
         const modelSequence = [originalModel];
-        const textModelsBackup = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+        const textModelsBackup = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
         for (const m of textModelsBackup) {
           if (!modelSequence.includes(m)) {
             modelSequence.push(m);
@@ -85,7 +86,7 @@ export function getGeminiClient(): GoogleGenAI {
           let currentParams = { ...typedParams, model: targetModel };
           if (currentParams.config && typeof currentParams.config === 'object') {
             const cleanedConfig = { ...currentParams.config } as Record<string, unknown>;
-            if (!targetModel.startsWith('gemini-3.8') && !targetModel.startsWith('gemini-3.7') && !targetModel.startsWith('gemini-3.6') && !targetModel.startsWith('gemini-3.5')) {
+            if (!targetModel.startsWith('gemini-3.8') && !targetModel.startsWith('gemini-3.1')) {
               delete cleanedConfig['thinkingConfig'];
             }
             const tools = cleanedConfig['tools'];

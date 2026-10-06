@@ -86,3 +86,20 @@ export interface ResearchMemoryState {
   notes: string[];
   lastUpdated: string;
 }
+
+export interface ResearchIntegrityAuditResult {
+  score?: number;
+  overallScore?: number;
+  summary?: string;
+  critique?: string;
+  violations?: string[];
+  recommendations?: string[];
+  findings?: Array<{
+    category?: string;
+    severity?: 'info' | 'warning' | 'critical';
+    message?: string;
+    suggestion?: string;
+  }>;
+  details?: Record<string, unknown>;
+  [key: string]: unknown;
+}

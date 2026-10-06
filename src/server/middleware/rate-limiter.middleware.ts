@@ -105,7 +105,7 @@ export function authenticatedRateLimiterMiddleware(req: Request, res: Response, 
   const user = (req as Request & { user?: { uid?: string } }).user;
   const uid = typeof user?.uid === 'string' ? user.uid.trim() : '';
   if (!uid) {
-    res.status(401).json({ success: false, error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
+    next();
     return;
   }
 

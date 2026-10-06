@@ -16,9 +16,16 @@ function createSnapshotHash(text: string): string {
   return (hash >>> 0).toString(16).padStart(8, '0');
 }
 import { AppTemplateBridgeWritingService } from './app-template-bridge-writing.service';
+import { AcademicToulminArgumentService } from './academic-toulmin-argument.service';
+import { AcademicHedgingStanceService } from './academic-hedging-stance.service';
+import { AcademicLexiconStandardsService } from './academic-lexicon-standards.service';
 
 @Injectable()
 export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingService {
+  readonly toulminService = inject(AcademicToulminArgumentService);
+  readonly hedgingService = inject(AcademicHedgingStanceService);
+  readonly lexiconService = inject(AcademicLexiconStandardsService);
+
   anonymizeActiveChapterData(chapter: any) {
     if (!chapter) return;
     this.isAnonymizingData.set(true);
@@ -151,7 +158,7 @@ export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingSe
   appendCitationToChapter(chapter: any) {}
 
   toggleAcademicRule(id: string) {
-    this.academicRules.update(list => list.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+    this.academicRules.update(list => list.map(r => r.id === id ? { ...r, active: !r.active } : r));
   }
   removeCustomRule(id: string) {
     this.academicRules.update(list => list.filter(r => r.id !== id));
@@ -272,5 +279,25 @@ export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingSe
         this.isEvaluatingDefense.set(false);
       }
     });
+  }
+
+  evaluateToulminRigor(chapter: any) {
+    if (!chapter) return;
+    this.toulminService.analyzeText(chapter.content || '', chapter.title || 'تێز').subscribe();
+  }
+
+  evaluateHedgingStance(chapter: any) {
+    if (!chapter) return;
+    this.hedgingService.evaluateText(chapter.content || '');
+  }
+
+  applyAutoHedging(chapter: any) {
+    if (!chapter || !chapter.content) return;
+    chapter.content = this.hedgingService.applyAutoHedging(chapter.content);
+    this.saveCurrentChapterDirectly(chapter);
+  }
+
+  selectUniversityPreset(presetId: string) {
+    this.lexiconService.activeUniversityPreset.set(presetId);
   }
 }

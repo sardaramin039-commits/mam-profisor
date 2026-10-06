@@ -137,7 +137,7 @@ export function repairJson(str: string): string {
   return repaired;
 }
 
-export function robustParseJson(str: string): any {
+export function robustParseJson<T = any>(str: string): T {
   let cleaned = str.trim();
   
   if (cleaned.includes('```json')) {
@@ -206,14 +206,14 @@ export function robustParseJson(str: string): any {
   }
   
   try {
-    return JSON.parse(cleaned);
+    return JSON.parse(cleaned) as T;
   } catch (err) {
     try {
       const repaired = repairJson(cleaned);
-      return JSON.parse(repaired);
+      return JSON.parse(repaired) as T;
     } catch {
       try {
-        return extractFieldsByRegex(cleaned);
+        return extractFieldsByRegex(cleaned) as unknown as T;
       } catch {
         throw err;
       }

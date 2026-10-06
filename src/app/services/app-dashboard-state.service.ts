@@ -251,6 +251,7 @@ export class AppDashboardStateService {
   }
 
   verifyChunkSource(chunk: RetrievedChunk) {
-    chunk.isVerified = true;
+    if (!chunk?.id) return;
+    this.retrievedChunks.update(list => list.map(c => c.id === chunk.id ? { ...c, isVerified: true } : c));
   }
 }

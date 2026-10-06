@@ -262,13 +262,14 @@ export abstract class AppControllerBase implements OnInit {
     customTOCOn: [false], customTOCText: [''],
     includeDedication: [true], includeIntro: [true], includeTOC: [true],
     includeConclusion: [true], includeRecommendations: [true], includeReferences: [true],
-    ragModel: ['gemini-3.8-flash'], ragLimit: [5],
-    temperature: [0.7], thinkingTokens: [1024], writingTokens: [4096],
+    ragModel: ['gemini-3.1-pro-preview'], ragLimit: [8],
+    temperature: [0.7], thinkingTokens: [2048], writingTokens: [8192],
     thesisDefense: [false]
   });
 
 
   ngOnInit(): void {
+    this.bridge.refineForm = this.refineForm;
     this.startupService.init();
   }
 

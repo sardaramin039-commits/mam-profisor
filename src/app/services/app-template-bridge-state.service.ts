@@ -5,6 +5,7 @@ import { EditorService } from '../features/editor/services/editor';
 import { Data } from './data';
 import { ChapterItemModel as ChapterItem } from '../domain/models';
 import { ACADEMIC_GLOSSARY as GLOSSARY_PROMPT } from '../../prompts/academic-glossary';
+import { DEFAULT_ACADEMIC_RULES, AcademicRule } from '../../prompts/academic-rules';
 import { CitationBuilder, CitationItem } from '../helpers/citation-builder';
 
 import { createSnapshotHash } from './app-template-bridge.utils';
@@ -15,6 +16,7 @@ export class AppTemplateBridgeStateService {
   protected data = inject(Data);
   protected fb = inject(FormBuilder);
   protected http = inject(HttpClient);
+  refineForm?: FormGroup;
 
   ACADEMIC_GLOSSARY: Array<{ sorani: string; foreign: string; category: string; kurdish: string; english: string; desc: string; sourceLang: string; translation: string; definition: string }> = [
     { sorani: 'میتۆدۆلۆژی', foreign: 'Methodology', category: 'research', kurdish: 'میتۆدۆلۆژی', english: 'Methodology', desc: 'زانستی ڕێبازەکانی توێژینەوەی زانستی', sourceLang: 'یۆنانی', translation: 'Methodology', definition: 'تەواوی ڕێکارە میتۆدییەکانی توێژینەوە' },
@@ -85,10 +87,7 @@ export class AppTemplateBridgeStateService {
   historyFilterStatus = signal<string>('all');
 
   // Academic Rules
-  academicRules = signal<any[]>([
-    { id: 'rule1', name: 'قەدەغەی زمانی ڕۆژانە', enabled: true },
-    { id: 'rule2', name: 'بەکارهێنانی زاراوەی توند', enabled: true }
-  ]);
+  academicRules = signal<AcademicRule[]>([...DEFAULT_ACADEMIC_RULES]);
 
   // Citations & Verified Sources
   citationActiveTab = signal<string>('apa');

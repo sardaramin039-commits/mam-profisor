@@ -25,10 +25,11 @@ import { createResearchProjectStateRouter } from './server/routes/research-proje
 import { createResearchDecisionLedgerRouter } from './server/routes/research-decision-ledger.routes';
 import { createResearchControlPlaneRouter } from './server/routes/research-control-plane.routes';
 import { createResearchVersionHistoryRouter } from './server/routes/research-version-history.routes';
+import { createPlagiarismRouter } from './server/routes/plagiarism.routes';
 import { getGeminiClient } from './server/services/gemini.service';
 import { rateLimiterMiddleware, authenticatedRateLimiterMiddleware } from './server/middleware/rate-limiter.middleware';
 import { securityHeadersMiddleware, promptSanitizerMiddleware } from './server/middleware/security.middleware';
-import { requireAuth } from './middleware/auth';
+import { requireAuth, optionalAuth } from './middleware/auth';
 import { agentsRouter } from './routes/agents.router';
 import { academicRouter as modularAcademicRouter } from './routes/academic.router';
 import { libraryRouter as modularLibraryRouter } from './routes/library.router';
@@ -54,21 +55,24 @@ app.use('/api', promptSanitizerMiddleware);
 // Simple in-memory rate limiter middleware
 app.use('/api', rateLimiterMiddleware);
 
-const angularApp = new AngularNodeAppEngine();
+const angularApp = new AngularNodeAppEngine({
+  allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0', '*.run.app', '*.google.com']
+});
 
 // Mount API Routers (Public Docs vs Protected API Routes)
 app.use('/api/docs', createApiDocsRouter());
 
-// After public API docs, all API endpoints require authentication and receive a per-user rate limit.
-app.use('/api', requireAuth, authenticatedRateLimiterMiddleware);
+// Enable optional authentication and rate limiting for scholarly AI tools and searches
+app.use('/api', optionalAuth, authenticatedRateLimiterMiddleware);
 
-// Unified security middleware enforcing requireAuth for protected API endpoints & AI tools
+// Public & Scholarly AI Tools
 app.use('/api/ai-tools', createAiToolsRouter(getGeminiClient));
 app.use('/api/library', createLibraryRouter(getGeminiClient));
 app.use('/api/external-integrations', createExternalApiRouter());
 app.use('/api', createAcademicRouter(getGeminiClient));
 app.use('/api', createThesisWritingRouter(getGeminiClient));
 app.use('/api', createResearchAnalysisRouter(getGeminiClient));
+app.use('/api', createPlagiarismRouter(getGeminiClient));
 app.use('/api', createEvaluationReviewRouter(getGeminiClient));
 app.use('/api', createAcademicSearchIntegrationsRouter(getGeminiClient));
 app.use('/api/chatgpt-sources', createChatGptAcademicSourcesRouter());
@@ -76,11 +80,13 @@ app.use('/api', createAdvancedAcademicToolsRouter(getGeminiClient));
 app.use('/api/platform', createAcademicPlatformRouter(getGeminiClient));
 app.use('/api/rag', createRagRouter(getGeminiClient));
 app.use('/api/multi-agent', createMultiAgentRouter(getGeminiClient));
-app.use('/api/research-memory', createResearchMemoryRouter(getGeminiClient));
-app.use('/api/workspace', createResearchProjectStateRouter(getGeminiClient));
-app.use('/api/research-decisions', createResearchDecisionLedgerRouter());
-app.use('/api/research-control', createResearchControlPlaneRouter());
-app.use('/api/research-versions', createResearchVersionHistoryRouter());
+
+// Protected State & Workspace Persistence Endpoints (Strict Authentication Guard)
+app.use('/api/workspace', requireAuth, createResearchProjectStateRouter(getGeminiClient));
+app.use('/api/research-memory', requireAuth, createResearchMemoryRouter(getGeminiClient));
+app.use('/api/research-decisions', requireAuth, createResearchDecisionLedgerRouter());
+app.use('/api/research-control', requireAuth, createResearchControlPlaneRouter());
+app.use('/api/research-versions', requireAuth, createResearchVersionHistoryRouter());
 
 // Modular Services & Routers (Agents, Scholarly Search, Digital Library Catalog)
 app.use('/api/agents', agentsRouter);

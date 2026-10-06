@@ -77,7 +77,7 @@
               <div><h2>ڕێکخستنی پڕۆژە</h2><p>پێش ئەوەی نووسین دەستپێبکات، بنەمای کار دیاری بکە.</p></div>
             </div>
           </div>
-          <app-window-one [host]="this"></app-window-one>
+          <app-window-one [host]="host"></app-window-one>
         </section>
 
         <section class="mam-editor-section">
@@ -87,7 +87,7 @@
               <div><h2>نووسین و پشکنینی بەشەکان</h2><p>دەقی بەشەکان، سەرچاوەکان و پێداچوونەوە لێرە کۆکراونەتەوە.</p></div>
             </div>
           </div>
-          <app-window-two [host]="this"></app-window-two>
+          <app-window-two [host]="host"></app-window-two>
         </section>
       </div>
 
@@ -105,14 +105,14 @@
       <details class="mam-secondary-tools">
         <summary><mat-icon>tune</mat-icon><span>ئامرازە یارمەتیدەرەکان</span><small>گەڕان، وشەنامە و هاوکاری ئەکادیمی</small></summary>
         <div class="mam-secondary-grid">
-          <app-global-search [host]="this"></app-global-search>
-          <app-academic-tools [host]="this"></app-academic-tools>
+          <app-global-search [host]="host"></app-global-search>
+          <app-academic-tools [host]="host"></app-academic-tools>
         </div>
       </details>
 
       <details class="mam-secondary-tools">
         <summary><mat-icon>analytics</mat-icon><span>ئاماری پڕۆژە و پێشکەوتن</span><small>پێوانەکان و دۆخی گشتی</small></summary>
-        <div class="mam-secondary-grid"><app-workspace-analytics [host]="this"></app-workspace-analytics></div>
+        <div class="mam-secondary-grid"><app-workspace-analytics [host]="host"></app-workspace-analytics></div>
       </details>
     }
 

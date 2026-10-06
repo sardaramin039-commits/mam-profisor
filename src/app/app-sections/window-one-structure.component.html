@@ -1,3 +1,4 @@
+<div [formGroup]="refineForm">
             <!-- ADVANCED ACADEMIC DOCUMENT STRUCTURE COMPONENTS -->
             <div class="space-y-2.5 pt-2 border-t border-gray-100">
               <span class="block text-xs font-bold text-gray-700 flex items-center gap-1.5">
@@ -96,8 +97,8 @@
                     formControlName="ragModel"
                     (change)="updateRagModel($any($event.target).value)"
                     class="w-full text-xs p-2 border border-stone-300 rounded-lg bg-white font-serif font-bold text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-600">
-                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (شیکاریی ئەکادیمیی بەهێز & قووڵ)</option>
-                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (پەیڕەوی خێرا & بەردەست)</option>
+                    <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (ئاستی پڕۆ • شیکاریی ئەکادیمیی باڵا & قووڵ)</option>
+                    <option value="gemini-3.8-flash">Gemini 3.8 Flash (پەیڕەوی خێرا & کارامە)</option>
                   </select>
                 </div>
 
@@ -220,5 +221,6 @@
               
               <textarea formControlName="copyStyleText" rows="2" class="w-full p-3 text-xs rounded-lg border-2 border-stone-850 bg-white focus:outline-none focus:border-amber-600 placeholder-stone-400 shadow-inner text-black font-semibold" placeholder="بۆ نموونە: شێوازی فەرمی فەلسەفەی کوردی کە دەتەوێت ئامێرەکە کۆپی بکات..."></textarea>
             </div>
+</div>
 
 

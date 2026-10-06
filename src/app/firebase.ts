@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { initializeFirestore, doc, getDoc } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 
 const firebaseConfig = {
   projectId: "annular-xenolalia-x71nt",
@@ -15,9 +15,11 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true
-}, firebaseConfig.firestoreDatabaseId); // CRITICAL: The app will break without this databaseId!
+  experimentalForceLongPolling: true,
+  localCache: typeof window !== 'undefined' ? persistentLocalCache({ tabManager: persistentMultipleTabManager() }) : undefined
+}, firebaseConfig.firestoreDatabaseId); // CRITICAL: Points to the provisioned database
 export const auth = getAuth();
 export const googleAuthProvider = new GoogleAuthProvider();
 
@@ -69,20 +71,3 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Startup connection validator to comply with guidelines
-async function testConnection() {
-  // Only execute in browser context to avoid Node SSR startup loops
-  if (typeof window === 'undefined') return;
-  
-  try {
-    await getDoc(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error) {
-      const msg = error.message.toLowerCase();
-      if (msg.includes('the client is offline') || msg.includes('offline') || msg.includes('could not reach')) {
-        console.warn("Please check your Firebase configuration. The application will degrade gracefully and operate in offline-first mode.");
-      }
-    }
-  }
-}
-testConnection();

@@ -26,6 +26,15 @@ export class GlobalErrorHandlerService implements ErrorHandler {
     const message = errObj?.message || (typeof error === 'string' ? error : 'زانستگاوە: هەڵەیەکی نەدیار ڕوویدا');
     const stack = errObj?.stack || undefined;
 
+    // Suppress benign offline fallback notices from Firestore SDK
+    if (message.includes('Could not reach Cloud Firestore backend') ||
+        message.includes('client will operate in offline mode') ||
+        message.includes("Database '(default)' not found") ||
+        (message.includes('@firebase/firestore') && message.includes('unavailable'))) {
+      console.warn('[GlobalErrorHandler: Offline Notice]', message);
+      return;
+    }
+
     console.error('[GlobalErrorHandler]', message, error);
 
     const log: AppErrorLog = {

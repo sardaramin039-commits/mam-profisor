@@ -195,9 +195,42 @@ export abstract class AppControllerActions extends AppControllerBase {
     const val = this.refineForm.get(feat)?.value;
     this.refineForm.patchValue({ [feat]: !val });
   }
-  onCustomSourcesInput(event: Event, element: HTMLElement) {}
-  onCustomSourcesClick(element: HTMLElement) {}
-  addCustomRule(input: HTMLInputElement) { if (input) input.value = ''; }
+  onCustomSourcesInput(event: Event, element: HTMLElement) {
+    const val = (event.target as HTMLTextAreaElement)?.value || '';
+    if (val.trim().length > 3) {
+      this.bridge.isQuickPreviewVisible.set(true);
+      this.bridge.quickPreviewSuggestions.set([
+        { author: 'ئەمین، سەردار', title: 'فەلسەفەی زمان و گوتاری کوردی', year: 2024, publisher: 'چاپخانەی زانکۆ' },
+        { author: 'مستەفا، کەمال', title: 'میتۆدۆلۆژیای توێژینەوەی ئەکادیمی', year: 2023, publisher: 'سلێمانی' },
+        { author: 'حەمە، د. ڕەئوف', title: 'زانستی مێژوو و ناسینناسی', year: 2022, publisher: 'هەولێر' }
+      ]);
+    } else {
+      this.bridge.isQuickPreviewVisible.set(false);
+    }
+  }
+  onCustomSourcesClick(element: HTMLElement) {
+    const val = (element as HTMLTextAreaElement)?.value || '';
+    if (val.trim().length > 3) {
+      this.bridge.isQuickPreviewVisible.set(true);
+    }
+  }
+  addCustomRule(input: HTMLInputElement) {
+    if (!input) return;
+    const text = (input.value || '').trim();
+    if (!text) return;
+    const newRule = {
+      id: 'custom_' + Date.now(),
+      icon: 'rule',
+      title: text.length > 35 ? text.slice(0, 35) + '...' : text,
+      desc: text,
+      active: true,
+      enabled: true,
+      isCustom: true
+    };
+    this.bridge.academicRules.update(list => [newRule, ...list]);
+    input.value = '';
+    this.toastService.showSuccess('مەرجی تایبەت زیادکرا', `مەرجی «${newRule.title}» بە سەرکەوتوویی زیادکرا و چالاک کرا.`);
+  }
   loadHistoryItem(item: any) {
     if (!item) return;
     if (item.title) this.refineForm.patchValue({ title: item.title });

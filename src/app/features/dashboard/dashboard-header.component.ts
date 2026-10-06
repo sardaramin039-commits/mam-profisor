@@ -121,6 +121,11 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
       </div>
 
       <div class="mam-topbar-right">
+        <div class="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 text-white rounded-full text-xs font-bold shadow-sm border border-amber-300/40">
+          <mat-icon class="!text-sm">workspace_premium</mat-icon>
+          <span>ئاستی پڕۆ • Pro Active</span>
+        </div>
+
         <div class="mam-trust-badge">
           <mat-icon>verified_user</mat-icon>
           <span>جریانەی بەڵگە و پشکنین</span>

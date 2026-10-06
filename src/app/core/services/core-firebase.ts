@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { auth, googleAuthProvider } from '../../firebase';
-import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signInAnonymously, signOut, User } from 'firebase/auth';
 
 @Injectable({
   providedIn: 'root'
@@ -31,6 +31,11 @@ export class CoreFirebase {
         } else {
           this.userRole.set('student');
           this.userClaims.set({});
+          try {
+            await signInAnonymously(auth);
+          } catch (anonErr) {
+            console.warn('Anonymous guest sign-in fallback:', anonErr);
+          }
         }
         this.isAuthLoading.set(false);
       });

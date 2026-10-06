@@ -308,7 +308,7 @@ export class AcademicQAGateService {
       ).length;
       const aiScore = clampScore(parsed['overallQAScore']);
       const overallQAScore = criticalCount > 0 ? Math.min(aiScore, 49) : aiScore;
-      const approved = !Boolean(parsed['exportBlocked']) && criticalCount === 0;
+      const approved = !parsed['exportBlocked'] && criticalCount === 0;
       const sourceIds = safeSources
         .filter(hasCitationEligibleSource)
         .map(source => String((source as Record<string, unknown>)['sourceId'] || ''))

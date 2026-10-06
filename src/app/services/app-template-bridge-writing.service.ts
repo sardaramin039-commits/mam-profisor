@@ -196,7 +196,11 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
     }
   }
 
-  setPageSizeMode(mode: string) {}
+  setPageSizeMode(mode: string) {
+    if (mode === 'target' || mode === 'range') {
+      this.refineForm?.patchValue({ sizeMode: mode });
+    }
+  }
   closeQuickPreview() { this.isQuickPreviewVisible.set(false); }
   applySourceSuggestion(s: any) {
     if (!s) return;
@@ -210,24 +214,96 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
     });
     this.sourceMessage.set({ type: 'success', text: 'تەنها metadata هێنرا؛ source هێشتا Verified نییە.' });
   }
-  toggleAcademicSection(sec: string) {}
-  updateRagModel(model: string) {}
-  updateRagLimit(limit: number) {}
-  toggleRole(role: string) {}
-  toggleDialect(dialect: string) {}
-  onDragOver(e: Event, type: string) { e.preventDefault(); }
-  onDragLeave(e: Event, type: string) { e.preventDefault(); }
-  onFileDrop(e: DragEvent, type: string) { e.preventDefault(); }
-  onFileSelected(e: Event, type: string) {}
-  onSendToSecondWindow() {}
+  toggleAcademicSection(sec: string) {
+    const cur = !!this.refineForm?.get(sec)?.value;
+    this.refineForm?.patchValue({ [sec]: !cur });
+  }
+  updateRagModel(model: string) {
+    if (model) {
+      this.refineForm?.patchValue({ ragModel: model });
+    }
+  }
+  updateRagLimit(limit: number) {
+    if (typeof limit === 'number' && !isNaN(limit)) {
+      this.refineForm?.patchValue({ ragLimit: limit });
+    }
+  }
+  toggleRole(role: string) {
+    if (role === 'writer') {
+      const cur = !!this.refineForm?.get('roleAuthor')?.value;
+      this.refineForm?.patchValue({ roleAuthor: !cur });
+    } else if (role === 'critic') {
+      const cur = !!this.refineForm?.get('roleCritic')?.value;
+      this.refineForm?.patchValue({ roleCritic: !cur });
+    } else if (role === 'reviewer') {
+      const cur = !!this.refineForm?.get('roleReviewer')?.value;
+      this.refineForm?.patchValue({ roleReviewer: !cur });
+    }
+  }
+  toggleDialect(dialect: string) {
+    if (dialect === 'thesis') {
+      const cur = !!this.refineForm?.get('dialectThesis')?.value;
+      this.refineForm?.patchValue({ dialectThesis: !cur });
+    } else if (dialect === 'antithesis') {
+      const cur = !!this.refineForm?.get('dialectAntithesis')?.value;
+      this.refineForm?.patchValue({ dialectAntithesis: !cur });
+    } else if (dialect === 'synthesis') {
+      const cur = !!this.refineForm?.get('dialectSynthesis')?.value;
+      this.refineForm?.patchValue({ dialectSynthesis: !cur });
+    }
+  }
+  onDragOver(e: Event, type: string) {
+    e.preventDefault();
+    if (type === 'copyStyle') this.isDraggingCopyStyle.set(true);
+    else if (type === 'comp1') this.isDraggingComp1.set(true);
+    else if (type === 'comp2') this.isDraggingComp2.set(true);
+  }
+  onDragLeave(e: Event, type: string) {
+    e.preventDefault();
+    if (type === 'copyStyle') this.isDraggingCopyStyle.set(false);
+    else if (type === 'comp1') this.isDraggingComp1.set(false);
+    else if (type === 'comp2') this.isDraggingComp2.set(false);
+  }
+  onFileDrop(e: DragEvent, type: string) {
+    e.preventDefault();
+    this.onDragLeave(e, type);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) this.handleDroppedFile(file, type);
+  }
+  onFileSelected(e: Event, type: string) {
+    const input = e.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (file) this.handleDroppedFile(file, type);
+  }
+  private handleDroppedFile(file: File, type: string) {
+    if (type === 'copyStyle') {
+      this.copyStyleFileName.set(file.name);
+      if (file.type.includes('text') || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const text = reader.result as string;
+          if (text) this.refineForm?.patchValue({ copyStyleText: text.slice(0, 5000) });
+        };
+        reader.readAsText(file);
+      }
+    } else if (type === 'comp1') {
+      this.compareFile1Name.set(file.name);
+    } else if (type === 'comp2') {
+      this.compareFile2Name.set(file.name);
+    }
+  }
   activateAllAcademicRules() {
-    this.academicRules.update(rules => rules.map(rule => ({ ...rule, enabled: true })));
+    this.academicRules.update(rules => rules.map(rule => ({ ...rule, active: true })));
   }
   deactivateAllAcademicRules() {
-    this.academicRules.update(rules => rules.map(rule => ({ ...rule, enabled: false })));
+    this.academicRules.update(rules => rules.map(rule => ({ ...rule, active: false })));
   }
-  triggerComparison(result: any) {}
-  searchLoadHistory(result: any) {}
+  triggerComparison(result: any) {
+    if (result) this.comparedResult.set(result);
+  }
+  searchLoadHistory(result: any) {
+    if (result?.title) this.refineForm?.patchValue({ title: result.title });
+  }
   onRegisterVerifiedSource() {
     if (!this.verifiedSourceForm.valid) {
       this.verifiedSourceForm.markAllAsTouched();

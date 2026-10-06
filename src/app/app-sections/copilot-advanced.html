@@ -1,3 +1,4 @@
+@if (res; as result) {
           <div class="bg-white border border-[#E5E1DA] rounded-xl p-5 space-y-5 animate-expand-fade" id="copilot-result-ontology">
             <div class="flex items-center gap-2 border-b border-stone-150 pb-3 justify-between">
               <span class="text-xs font-bold text-stone-900 flex items-center gap-1">
@@ -11,11 +12,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="p-4 bg-stone-50 border border-stone-200 rounded-xl space-y-1">
                 <span class="text-[10px] text-stone-500 font-bold font-serif uppercase">زاراوەی لۆکاڵی شیکراوە:</span>
-                <h4 class="text-sm font-extrabold text-[#A51C30]">{{ res.term }}</h4>
+                <h4 class="text-sm font-extrabold text-[#A51C30]">{{ result.term }}</h4>
               </div>
               <div class="p-4 bg-stone-50 border border-stone-200 rounded-xl space-y-1">
                 <span class="text-[10px] text-stone-500 font-bold font-serif uppercase">نەژادناسی و زمانەوانیی چەمک (Etymology):</span>
-                <p class="text-xs text-stone-700 leading-relaxed font-serif">{{ res.etymology }}</p>
+                <p class="text-xs text-stone-700 leading-relaxed font-serif">{{ result.etymology }}</p>
               </div>
             </div>
 
@@ -26,7 +27,7 @@
                 هاوتاکردن و پردکردنەوەی چەمکە کوردییەکە لەگەڵ تیۆرە جیهانییەکان (Global Parallels):
               </span>
               <div class="grid grid-cols-1 gap-3">
-                @for (parallel of res.parallels; track parallel.theorist) {
+                @for (parallel of result.parallels; track parallel.theorist) {
                   <div class="p-3.5 bg-amber-50/20 border border-amber-200/50 rounded-xl space-y-1 font-serif text-justify">
                     <strong class="text-xs text-amber-950 block">👤 {{ parallel.theorist }}:</strong>
                     <p class="text-[11px] text-stone-700 leading-relaxed">{{ parallel.comparison }}</p>
@@ -41,7 +42,7 @@
                 <mat-icon class="text-emerald-700 !text-sm">share</mat-icon>
                 پێشنیاری داڕشتنەوە و جێگیرکردنی یەکپارچەی زانستی لەناو تێزەکەدا (Proposed Synthesis Block):
               </strong>
-              <p class="text-[11px] text-stone-850 leading-relaxed">{{ res.proposedIntegration }}</p>
+              <p class="text-[11px] text-stone-850 leading-relaxed">{{ result.proposedIntegration }}</p>
             </div>
 
             <!-- Action Area: Apply to selected chapter -->
@@ -65,3 +66,4 @@
             </div>
 
           </div>
+}

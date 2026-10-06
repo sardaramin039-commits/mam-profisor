@@ -103,6 +103,14 @@
                 </div>
               }
 
+              <!-- Floating Academic Citation & Markup Toolbar -->
+              <div class="mb-2">
+                <app-floating-academic-toolbar 
+                  [targetTextarea]="chapterTextarea"
+                  (markupInserted)="viewedChapter() && updateChapterContent(viewedChapter()!.id, chapterTextarea.value)">
+                </app-floating-academic-toolbar>
+              </div>
+
               <textarea 
                 #chapterTextarea 
                 [value]="viewedChapter()?.content || ''" 

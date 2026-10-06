@@ -93,7 +93,7 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
 }`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: (req.body.model || req.body.ragModel || 'gemini-3.8-flash'),
         contents: userPrompt,
         config: {
           systemInstruction: systemPrompt,
@@ -183,7 +183,7 @@ ${JSON.stringify(chaptersList)}
 }`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: (req.body.model || req.body.ragModel || 'gemini-3.8-flash'),
         contents: userPrompt,
         config: {
           systemInstruction: systemPrompt,
@@ -342,7 +342,7 @@ ${comparisonPrompt}
       }
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: (req.body.model || req.body.ragModel || 'gemini-3.8-flash'),
         contents: userPrompt,
         config
       });
@@ -438,7 +438,7 @@ ${comparisonPrompt}
 }`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: (req.body.model || req.body.ragModel || 'gemini-3.8-flash'),
         contents: userPrompt,
         config: {
           systemInstruction: systemPrompt,

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Document, HeadingLevel, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
+import type { Paragraph } from 'docx';
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +11,7 @@ export class WordExportService {
     academicLevel: string,
     chapters: { title: string; content: string }[]
   ): Promise<Blob> {
+    const { Document, HeadingLevel, Packer, Paragraph, TextRun, AlignmentType } = await import('docx');
     const children: Paragraph[] = [
       new Paragraph({
         children: [new TextRun({ text: title || 'توێژینەوەی زانستی', bold: true, size: 36, font: 'Noto Sans Arabic' })],

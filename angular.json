@@ -45,6 +45,7 @@
               "dotenv"
             ],
             "server": "src/main.server.ts",
+            "outputMode": "server",
             "ssr": {
               "entry": "src/server.ts"
             },
@@ -95,7 +96,15 @@
           "builder": "@angular/build:dev-server",
           "options": {
             "host": "0.0.0.0",
-            "port": 3000
+            "port": 3000,
+            "allowedHosts": [
+              "localhost",
+              "127.0.0.1",
+              "0.0.0.0",
+              "ais-dev-ayekpdfdqja7byvwvchwet-68604374778.europe-west2.run.app",
+              ".run.app",
+              ".google.com"
+            ]
           },
           "configurations": {
             "production": {

@@ -46,6 +46,7 @@ import { GlobalToastContainerComponent } from './components/global-toast-contain
 import { AcademicPlatformComponent } from './features/academic-platform/academic-platform.component';
 import { LibraryWorkspaceComponent } from './features/digital-library/library-workspace.component';
 import { VipWritingQualityComponent } from './features/editor/components/vip-writing-quality.component';
+import { FloatingAcademicToolbarComponent } from './features/editor/components/floating-academic-toolbar.component';
 
 export const BASIC_VIEW_IMPORTS = [
   CommonModule,
@@ -97,6 +98,7 @@ export const WORKSPACE_FEATURE_IMPORTS = [
   AcademicAdditionsSidebarComponent,
   ConceptGraphComponent,
   VipWritingQualityComponent,
+  FloatingAcademicToolbarComponent,
 ] as const;
 
 /** Legacy aggregate kept for compatibility with feature code outside template sections. */
@@ -149,4 +151,5 @@ export const APP_VIEW_IMPORTS = [
   AcademicPlatformComponent,
   LibraryWorkspaceComponent,
   VipWritingQualityComponent,
+  FloatingAcademicToolbarComponent,
 ];
