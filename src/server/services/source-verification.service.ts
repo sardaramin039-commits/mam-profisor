@@ -79,6 +79,54 @@ type InputSource = {
   pageNumber?: string | number | null;
 };
 
+function normalize(value: string): string {
+  return value
+    .toLocaleLowerCase()
+    .normalize('NFKC')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function titleTokens(value: string): Set<string> {
+  return new Set(normalize(value).split(' ').filter(token => token.length > 2));
+}
+
+function authorOverlap(inputAuthor: string | undefined, externalAuthors: string[]): number {
+  const inputTokens = new Set(
+    normalize(inputAuthor || '').split(' ').filter(token => token.length > 2)
+  );
+  const externalTokens = new Set(
+    normalize(externalAuthors.join(' ')).split(' ').filter(token => token.length > 2)
+  );
+  if (inputTokens.size === 0 || externalTokens.size === 0) return 0;
+
+  let overlap = 0;
+  for (const token of inputTokens) {
+    if (externalTokens.has(token)) overlap++;
+  }
+  return overlap / inputTokens.size;
+}
+
+function titleSimilarity(a: string, b: string): number {
+  const left = titleTokens(a);
+  const right = titleTokens(b);
+  if (left.size === 0 || right.size === 0) return 0;
+
+  let overlap = 0;
+  for (const token of left) {
+    if (right.has(token)) overlap++;
+  }
+  return overlap / Math.max(left.size, right.size);
+}
+
+function normalizeDoi(value?: string): string {
+  return (value || '')
+    .trim()
+    .replace(/^https?:\/\/(dx\.)?doi\.org\//i, '')
+    .toLowerCase();
+}
+
 function buildBaseReport(
   source: InputSource,
   sourceId: string,
