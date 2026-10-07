@@ -1,6 +1,7 @@
 import type { EvidenceProvenance, EvidenceType } from './evidence-verification-policy';
 
 export interface FullTextEnrichmentSource {
+  claimText?: string;
   id?: string;
   sourceId?: string;
   title?: string;
