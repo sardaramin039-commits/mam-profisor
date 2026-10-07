@@ -122,6 +122,22 @@ async function resolveOpenAlexHtmlUrl(source: FullTextEnrichmentSource): Promise
   }
 }
 
+const MIN_HTML_FULLTEXT_CHARS = 1600;
+const MIN_HTML_PARAGRAPHS = 3;
+
+function looksLikeFullTextHtml(body: string, text: string): boolean {
+  const paragraphCount = (body.match(/<p(?:\s|>)/gi) || []).length;
+  const hasArticleStructure = /<(article|main|section)(?:\s|>)/i.test(body);
+  const hasScholarlySections =
+    /\b(introduction|method(?:s|ology)?|results|discussion|references|bibliography)\b/i.test(text);
+
+  return (
+    text.length >= MIN_HTML_FULLTEXT_CHARS &&
+    paragraphCount >= MIN_HTML_PARAGRAPHS &&
+    (hasArticleStructure || hasScholarlySections)
+  );
+}
+
 async function readHtmlText(url: string): Promise<string> {
   if (!url) return '';
 
@@ -138,7 +154,7 @@ async function readHtmlText(url: string): Promise<string> {
     if (!/text\/html|application\/xhtml\+xml|text\/plain/i.test(contentType)) return '';
 
     const body = await response.text();
-    return body
+    const text = body
       .replace(/<script[\\s\\S]*?<\/script>/gi, ' ')
       .replace(/<style[\\s\\S]*?<\/style>/gi, ' ')
       .replace(/<[^>]+>/g, ' ')
@@ -150,6 +166,8 @@ async function readHtmlText(url: string): Promise<string> {
       .replace(/&#39;/gi, "'")
       .replace(/\s+/g, ' ')
       .trim();
+
+    return looksLikeFullTextHtml(body, text) ? text : '';
   } catch {
     return '';
   }
