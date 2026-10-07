@@ -140,7 +140,7 @@ export function assessEvidenceVerification(source: {
     return { status: 'not_available' };
   }
 
-  if (evidence.includes(claim) || claim.includes(evidence)) {
+  if (evidence.includes(claim)) {
     return {
       status: 'verified',
       method: 'exact-normalized-claim-match'
