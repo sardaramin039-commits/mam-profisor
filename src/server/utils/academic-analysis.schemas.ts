@@ -35,7 +35,8 @@ export const multiAgentPipelineSchema = z.object({
     topic: text(500),
     discipline: z.string().trim().max(200).default('گشتی'),
     draftText: z.string().max(250_000).default(''),
-    rawSources: z.array(z.record(z.string(), z.unknown())).max(100).default([])
+    rawSources: z.array(z.record(z.string(), z.unknown())).max(100).default([]),
+    citationStyle: z.enum(['APA7', 'MLA9', 'ChicagoAD', 'ChicagoNB', 'Harvard', 'IEEE']).default('APA7')
   }).passthrough()
 });
 
