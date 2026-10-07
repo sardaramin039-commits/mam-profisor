@@ -300,7 +300,13 @@ JSON:
 
     return {
       discovery,
-      planner: safeJson(plannerRes.text || '', {
+      analysisStatus: {
+        planner: statusOf(plannerRes),
+        methodology: statusOf(methodologyRes),
+        factCheck: statusOf(factRes),
+        consistency: statusOf(consistencyRes)
+      },
+      planner: safeJson(textOf(plannerRes), {
         researchQuestion: request.researchQuestion || '',
         subQuestions: [],
         objectives: [],
