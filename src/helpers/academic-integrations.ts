@@ -22,9 +22,9 @@ type SourceMetadata = {
   authors?: string[];
 };
 
-function validYear(year?: string | number): string | undefined {
+function validYear(year?: string | number): string {
   const value = String(year ?? '').trim();
-  return value && /^\d{4}(?:-\d{2})?(?:-\d{2})?$/.test(value) ? value : undefined;
+  return value && /^\d{4}(?:-\d{2})?(?:-\d{2})?$/.test(value) ? value : 'n.d.';
 }
 
 function cleanAuthors(authors: unknown): string[] {
