@@ -166,11 +166,18 @@ export class AcademicSearchService {
       .filter(item => Boolean(item.title && item.id))
       .map(item => ({ ...item, title: item.title.trim() }));
 
-    const seen = new Set<string>();
+    const seenIdentifiers = new Set<string>();
+    const seenTitleYears = new Set<string>();
     const deduplicated = combined.filter(item => {
-      const key = (item.doi || item.isbn || item.title).toLocaleLowerCase().trim();
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
+      const identifier = String(item.doi || item.isbn || '').toLocaleLowerCase().trim();
+      const titleYear = `${item.title.toLocaleLowerCase().trim()}::${item.publicationYear || 'n.d.'}`;
+
+      if ((identifier && seenIdentifiers.has(identifier)) || seenTitleYears.has(titleYear)) {
+        return false;
+      }
+
+      if (identifier) seenIdentifiers.add(identifier);
+      seenTitleYears.add(titleYear);
       return true;
     });
 
