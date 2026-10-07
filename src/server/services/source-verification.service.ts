@@ -2,7 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import { lookupIsbn, lookupIssn, resolveDoi } from '../../helpers/extended-academic-tools';
 import {
   assessEvidenceVerification,
-  isCitationEligibleEvidence
+  isCitationEligibleEvidence,
+  readEvidence
 } from './evidence-verification-policy';
 import type {
   EvidenceProvenance,
