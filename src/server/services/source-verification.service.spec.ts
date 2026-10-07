@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { assessEvidenceVerification } from './source-verification.service';
 
 describe('source evidence verification policy', () => {
@@ -17,11 +17,6 @@ describe('source evidence verification policy', () => {
     expect(result.status).toBe('verified');
     expect(result.method).toBe('exact-normalized-claim-match');
   });
-});
-
-
-afterEach(() => {
-  // Restore fetch for any test that stubs the network layer.
 });
 
 describe('source verification lookup policy', () => {
