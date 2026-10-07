@@ -9,6 +9,9 @@ export interface EvidenceLink {
   status: 'candidate' | 'strong-candidate';
   verificationStatus: 'verified' | 'unverified' | 'not_available';
   claimCitationEligible: boolean;
+  evidenceUrl?: string;
+  evidenceType?: 'abstract' | 'snippet' | 'full-text';
+  provider?: string;
 }
 
 function normalize(value: unknown): string {
@@ -47,6 +50,9 @@ export function linkClaimsToEvidence(
     sourceId?: string;
     title?: string;
     evidenceText?: string;
+    evidenceUrl?: string;
+    evidenceType?: 'abstract' | 'snippet' | 'full-text';
+    sourceType?: string;
   }>,
   reports: SourceVerificationReport[] = [],
   limit = 40
@@ -78,7 +84,10 @@ export function linkClaimsToEvidence(
           verificationStatus: evidenceVerification.status,
           claimCitationEligible:
             report?.identityStatus === 'verified' &&
-            evidenceVerification.status === 'verified'
+            evidenceVerification.status === 'verified',
+          evidenceUrl: String(source.evidenceUrl || '').trim() || undefined,
+          evidenceType: source.evidenceType,
+          provider: String(source.sourceType || '').trim() || undefined
         };
       })
       .filter(item => item.sourceId && item.evidenceText && item.overlapScore >= 35)
