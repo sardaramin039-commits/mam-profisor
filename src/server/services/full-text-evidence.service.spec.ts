@@ -86,6 +86,7 @@ describe('full-text evidence enrichment', () => {
 <p>References. The article concludes with a scholarly reference list and identifies the literature used to frame the research question, methodology, results, and discussion.</p>
 <p>Implications. The evidence has practical implications for classroom practice and future educational research, while the authors distinguish these implications from direct causal conclusions.</p>
 <p>Limitations. The study notes limitations in sampling, measurement, and context and recommends replication with broader populations and additional sources of evidence.</p>
+<p>Practical significance. The article also explains how the findings may inform school improvement, student support, teacher development, and future empirical studies, while emphasizing that practical recommendations should remain proportional to the strength and scope of the observed evidence.</p>
 </article></body></html>`,
           {
             status: 200,
