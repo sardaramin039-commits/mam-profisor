@@ -90,4 +90,28 @@ export const researchMethodsLabSchema = z.object({
   })
 });
 
+
+export const researchIntelligenceSchema = z.object({
+  body: z.object({
+    topic: text(500),
+    discipline: z.string().trim().max(200).default('گشتی'),
+    academicLevel: z.string().trim().max(100).optional(),
+    draftText: z.string().max(250_000).optional(),
+    chapters: z.array(z.object({
+      id: z.string().max(200).optional(),
+      title: z.string().max(500).optional(),
+      content: z.string().max(30_000).optional()
+    })).max(20).optional(),
+    researchQuestion: z.string().max(10_000).optional(),
+    objectives: z.string().max(20_000).optional(),
+    hypotheses: z.string().max(20_000).optional(),
+    methodology: z.string().max(40_000).optional(),
+    populationSample: z.string().max(20_000).optional(),
+    variables: z.string().max(20_000).optional(),
+    dataCollection: z.string().max(20_000).optional(),
+    analysisPlan: z.string().max(20_000).optional(),
+    rawSources: z.array(z.record(z.string(), z.unknown())).max(100).default([])
+  }).passthrough()
+});
+
 export const scholarship55Schema = z.object({ body: z.object({ payload: z.record(z.string(), z.unknown()).default({}) }).passthrough() });
