@@ -241,6 +241,15 @@ export class AcademicQualityCenterComponent {
     }).slice(0, 100);
   }
 
+  verificationReport(source: any, intel: any): any | null {
+    const sourceId = String(source?.id || source?.sourceId || '').trim();
+    if (!sourceId) return null;
+    const reports = Array.isArray(intel?.sourceVerification?.reports)
+      ? intel.sourceVerification.reports
+      : [];
+    return reports.find((report: any) => String(report?.sourceId || '') === sourceId) || null;
+  }
+
   severityLabel(value: string): string {
     const labels: Record<string, string> = {
       low: 'کەم',
