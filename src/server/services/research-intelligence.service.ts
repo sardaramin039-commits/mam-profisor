@@ -323,7 +323,7 @@ JSON:
     const claimTexts = Array.isArray(factCheck?.claims)
       ? factCheck.claims.map((item: any) => String(item?.claim || '').trim()).filter(Boolean)
       : [];
-    const evidenceLinks = linkClaimsToEvidence(
+    const evidenceLinks = await linkClaimsToEvidence(
       claimTexts,
       discovery.sources.map((source: any) => ({
         id: source?.id,
