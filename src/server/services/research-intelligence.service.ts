@@ -93,7 +93,9 @@ function dedupeSources(sources: any[], limit = 24): any[] {
 function safeJson(responseText: string, fallback: any): any {
   try {
     const parsed = robustParseJson(responseText || '{}');
-    return parsed && typeof parsed === 'object' ? parsed : fallback;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Object.keys(parsed).length
+      ? parsed
+      : fallback;
   } catch {
     return fallback;
   }
