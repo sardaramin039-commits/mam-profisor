@@ -323,12 +323,109 @@ describe('claim to evidence linking', () => {
       expect(result.evidenceLinks[0]?.sourceId).toBe('S-EVID-1');
       expect(result.evidenceLinks[0]?.overlapScore).toBeGreaterThanOrEqual(70);
       expect(result.evidenceLinks[0]?.verificationStatus).toBe('verified');
-      expect(result.evidenceLinks[0]?.claimCitationEligible).toBe(true);
+      expect(result.evidenceLinks[0]?.claimCitationEligible).toBe(false);
       expect(result.evidenceLinks[0]?.evidenceUrl).toBe('https://example.org/evidence');
       expect(result.evidenceLinks[0]?.evidenceType).toBe('abstract');
       expect(result.evidenceLinks[0]?.provider).toBe('OpenAlex');
+      expect(result.evidenceLinks[0]?.evidenceProvenance).toBe('unknown');
       expect(result.evidenceLinks[0]?.evidenceFingerprint).toMatch(/^[a-f0-9]{64}$/);
       expect(result.sourceVerification.citationEligible).toBe(0);
+    } finally {
+      researchIntelligenceService.discover = originalDiscover;
+      sourceVerificationService.verifySources = originalVerify;
+    }
+  });
+});
+
+
+describe('strict citation evidence gate', () => {
+  it('allows citation eligibility only for server-verified full text', async () => {
+    const originalDiscover = researchIntelligenceService.discover;
+    const originalVerify = sourceVerificationService.verifySources;
+
+    researchIntelligenceService.discover = async () => ({
+      query: 'topic discipline',
+      sources: [{
+        id: 'S-FULL-1',
+        title: 'Full Text Study',
+        authors: ['Researcher'],
+        year: '2025',
+        sourceType: 'OpenAlex',
+        url: 'https://example.org/full',
+        snippet: '',
+        evidenceText: 'peer tutoring improves academic achievement among students',
+        evidenceType: 'full-text',
+        evidenceProvenance: 'server-verified-fulltext',
+        evidenceUrl: 'https://example.org/full',
+        confidenceScore: 90,
+        peerReviewed: false
+      }],
+      total: 1,
+      providers: ['OpenAlex'],
+      verificationPolicy: 'verified-only'
+    });
+
+    sourceVerificationService.verifySources = async () => ({
+      verifiedSources: [{
+        sourceId: 'S-FULL-1',
+        sourceTitle: 'Full Text Study',
+        author: 'Researcher',
+        publisher: 'Journal',
+        integrityScore: 90,
+        trustLevel: 'C',
+        existenceVerified: true,
+        identityStatus: 'verified',
+        evidenceStatus: 'not_available',
+        citationEligible: false,
+        metadataAccuracy: 100,
+        peerReviewed: false,
+        rejectedAsFabricated: false,
+        kurdishVerificationDetails: 'verified identity'
+      }],
+      citationEligibleSources: [],
+      rejectedSources: [],
+      unverifiedSources: [],
+      allReports: [{
+        sourceId: 'S-FULL-1',
+        sourceTitle: 'Full Text Study',
+        author: 'Researcher',
+        publisher: 'Journal',
+        integrityScore: 90,
+        trustLevel: 'C',
+        existenceVerified: true,
+        identityStatus: 'verified',
+        evidenceStatus: 'not_available',
+        citationEligible: false,
+        metadataAccuracy: 100,
+        peerReviewed: false,
+        rejectedAsFabricated: false,
+        kurdishVerificationDetails: 'verified identity'
+      }],
+      rejectedSourcesCount: 0
+    });
+
+    const ai = {
+      models: {
+        generateContent: async () => ({
+          text: JSON.stringify({
+            claims: [{
+              claim: 'peer tutoring improves academic achievement among students'
+            }]
+          })
+        })
+      }
+    } as any;
+
+    try {
+      const result = await researchIntelligenceService.execute({
+        topic: 'topic',
+        discipline: 'discipline',
+        draftText: 'peer tutoring improves academic achievement among students'
+      }, () => ai);
+
+      expect(result.evidenceLinks[0]?.claimCitationEligible).toBe(true);
+      expect(result.evidenceLinks[0]?.evidenceType).toBe('full-text');
+      expect(result.evidenceLinks[0]?.evidenceProvenance).toBe('server-verified-fulltext');
     } finally {
       researchIntelligenceService.discover = originalDiscover;
       sourceVerificationService.verifySources = originalVerify;
