@@ -1,6 +1,10 @@
 import { GoogleGenAI } from '@google/genai';
 import { claimEvidenceGraphService } from './claim-evidence-graph.service';
-import type { EvidenceProvenance } from './claim-evidence-graph.service';
+import {
+  isCitationEligibleEvidence,
+  type EvidenceProvenance,
+  type EvidenceType
+} from './evidence-verification-policy';
 
 export interface GroundedClaim {
   claimId: string;
@@ -52,15 +56,35 @@ export class EvidenceGroundingService {
    * Citation Eligibility Gate
    * Enforces that ONLY VERIFIED sources with actual evidence chunks are eligible for citations.
    */
-  public evaluateCitationEligibility(sourceStatus: string, hasEvidence: boolean, provenance: EvidenceProvenance = 'unknown'): { eligible: boolean; status: 'verified' | 'partially_verified' | 'unverified' } {
+  public evaluateCitationEligibility(
+    sourceStatus: string,
+    hasEvidence: boolean,
+    evidenceType: EvidenceType = 'snippet',
+    provenance: EvidenceProvenance = 'unknown'
+  ): {
+    eligible: boolean;
+    status: 'verified' | 'partially_verified' | 'unverified'
+  } {
     const normalized = (sourceStatus || '').toLowerCase();
-    if (normalized === 'verified' && hasEvidence && provenance === 'server-verified-fulltext') {
-      return { eligible: true, status: 'verified' };
-    }
-    if (normalized === 'partially_verified') {
-      return { eligible: false, status: 'partially_verified' };
-    }
-    return { eligible: false, status: 'unverified' };
+    const status =
+      normalized === 'verified'
+        ? 'verified' as const
+        : normalized === 'partially_verified'
+          ? 'partially_verified' as const
+          : 'unverified' as const;
+
+    return {
+      eligible:
+        isCitationEligibleEvidence(
+          status === 'verified' ? 'verified' : status === 'partially_verified'
+            ? 'unverified'
+            : 'unverified',
+          hasEvidence,
+          evidenceType,
+          provenance
+        ),
+      status
+    };
   }
 
   /**
@@ -75,9 +99,10 @@ export class EvidenceGroundingService {
       chunkText: string;
       verificationStatus: 'verified' | 'partially_verified' | 'unverified';
       pageNumber?: string;
-      author?: string;
-      year?: string;
-      provenance?: EvidenceProvenance;
+    author?: string;
+    year?: string;
+    evidenceType?: EvidenceType;
+    provenance?: EvidenceProvenance;
     }>,
     getGeminiClient: () => GoogleGenAI
   ): Promise<GroundedGenerationResult> {
@@ -90,6 +115,7 @@ export class EvidenceGroundingService {
       this.evaluateCitationEligibility(
         chunk.verificationStatus,
         !!chunk.chunkText?.trim(),
+        chunk.evidenceType || 'snippet',
         chunk.provenance || 'unknown'
       ).eligible
     );
