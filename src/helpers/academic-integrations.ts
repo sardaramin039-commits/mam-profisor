@@ -265,6 +265,7 @@ export async function fetchDOAJ(query: string): Promise<AcademicSourceItem[]> {
           title?: string;
           authors?: Array<{ name?: string }>;
           year?: string;
+          abstract?: string;
           link?: Array<{ url?: string }>;
         };
       }>;
@@ -283,7 +284,10 @@ export async function fetchDOAJ(query: string): Promise<AcademicSourceItem[]> {
           sourceType: 'DOAJ',
           url,
           snippet: '',
-          peerReviewed: false
+          peerReviewed: false,
+          ...(bib.abstract?.trim()
+            ? { evidenceText: bib.abstract.trim(), evidenceType: 'abstract' as const, evidenceUrl: url || undefined }
+            : {})
         });
       });
   } catch (err) {
