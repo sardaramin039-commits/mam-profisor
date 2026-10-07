@@ -83,11 +83,16 @@ async function resolveOpenAccessPmcId(
   return record.pmcid.trim().toUpperCase();
 }
 
-function findExcerpts(fullText: string, claims: string[], maxChars = 9000): string {
+function findExcerpts(
+  fullText: string,
+  claims: string[],
+  maxChars = 9000
+): { excerpt: string; claim: string } {
   const normalizedText = normalize(fullText);
-  if (!normalizedText) return '';
+  if (!normalizedText) return { excerpt: '', claim: '' };
 
   const excerpts: string[] = [];
+  let matchedClaim = '';
   const seen = new Set<number>();
 
   for (const claim of claims) {
@@ -97,6 +102,7 @@ function findExcerpts(fullText: string, claims: string[], maxChars = 9000): stri
     const index = normalizedText.indexOf(normalizedClaim);
     if (index < 0) continue;
 
+    if (!matchedClaim) matchedClaim = claim;
     const start = Math.max(0, index - 700);
     const end = Math.min(normalizedText.length, index + normalizedClaim.length + 700);
     excerpts.push(normalizedText.slice(start, end));
@@ -106,7 +112,10 @@ function findExcerpts(fullText: string, claims: string[], maxChars = 9000): stri
     if (joined.length >= maxChars) break;
   }
 
-  return excerpts.join(' … ').slice(0, maxChars);
+  return {
+    excerpt: excerpts.join(' … ').slice(0, maxChars),
+    claim: matchedClaim
+  };
 }
 
 export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSource>(
@@ -132,12 +141,13 @@ export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSour
 
       const xml = await response.text();
       const fullText = cleanFullText(xml);
-      const excerpt = findExcerpts(fullText, claims);
-      if (!excerpt) return source;
+      const match = findExcerpts(fullText, claims);
+      if (!match.excerpt) return source;
 
       return {
         ...source,
-        evidenceText: excerpt,
+        claimText: match.claim,
+        evidenceText: match.excerpt,
         evidenceType: 'full-text',
         evidenceProvenance: 'server-verified-fulltext',
         evidenceUrl: url
