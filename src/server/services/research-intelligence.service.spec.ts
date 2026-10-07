@@ -261,11 +261,41 @@ describe('claim to evidence linking', () => {
     });
 
     sourceVerificationService.verifySources = async () => ({
-      verifiedSources: [],
+      verifiedSources: [{
+        sourceId: 'S-EVID-1',
+        sourceTitle: 'Evidence Study',
+        author: 'Researcher',
+        publisher: 'Journal',
+        integrityScore: 80,
+        trustLevel: 'C',
+        existenceVerified: true,
+        identityStatus: 'verified',
+        evidenceStatus: 'not_available',
+        citationEligible: false,
+        metadataAccuracy: 100,
+        peerReviewed: false,
+        rejectedAsFabricated: false,
+        kurdishVerificationDetails: 'verified identity'
+      }],
       citationEligibleSources: [],
       rejectedSources: [],
       unverifiedSources: [],
-      allReports: [],
+      allReports: [{
+        sourceId: 'S-EVID-1',
+        sourceTitle: 'Evidence Study',
+        author: 'Researcher',
+        publisher: 'Journal',
+        integrityScore: 80,
+        trustLevel: 'C',
+        existenceVerified: true,
+        identityStatus: 'verified',
+        evidenceStatus: 'not_available',
+        citationEligible: false,
+        metadataAccuracy: 100,
+        peerReviewed: false,
+        rejectedAsFabricated: false,
+        kurdishVerificationDetails: 'verified identity'
+      }],
       rejectedSourcesCount: 0
     });
 
