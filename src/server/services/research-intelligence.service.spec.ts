@@ -327,6 +327,7 @@ describe('claim to evidence linking', () => {
       expect(result.evidenceLinks[0]?.evidenceUrl).toBe('https://example.org/evidence');
       expect(result.evidenceLinks[0]?.evidenceType).toBe('abstract');
       expect(result.evidenceLinks[0]?.provider).toBe('OpenAlex');
+      expect(result.evidenceLinks[0]?.evidenceFingerprint).toMatch(/^[a-f0-9]{64}$/);
       expect(result.sourceVerification.citationEligible).toBe(0);
     } finally {
       researchIntelligenceService.discover = originalDiscover;

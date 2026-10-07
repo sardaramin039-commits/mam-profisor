@@ -12,6 +12,7 @@ export interface EvidenceLink {
   evidenceUrl?: string;
   evidenceType?: 'abstract' | 'snippet' | 'full-text';
   provider?: string;
+  evidenceFingerprint: string;
 }
 
 function normalize(value: unknown): string {
@@ -21,6 +22,14 @@ function normalize(value: unknown): string {
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+async function fingerprint(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 function tokens(value: string): Set<string> {
@@ -43,7 +52,7 @@ function overlapScore(claim: string, evidence: string): number {
   return Math.round((overlap / left.size) * 100);
 }
 
-export function linkClaimsToEvidence(
+export async function linkClaimsToEvidence(
   claims: string[],
   sources: Array<{
     id?: string;
@@ -56,7 +65,7 @@ export function linkClaimsToEvidence(
   }>,
   reports: SourceVerificationReport[] = [],
   limit = 40
-): EvidenceLink[] {
+): Promise<EvidenceLink[]> {
   const links: EvidenceLink[] = [];
   const reportById = new Map(reports.map(report => [report.sourceId, report]));
 
@@ -64,8 +73,7 @@ export function linkClaimsToEvidence(
     const claim = String(claimValue || '').trim();
     if (!claim) continue;
 
-    const ranked = sources
-      .map(source => {
+    const ranked = (await Promise.all(sources.map(async source => {
         const evidence = String(source.evidenceText || '').trim();
         const score = evidence ? overlapScore(claim, evidence) : 0;
         const sourceId = String(source.id || source.sourceId || '').trim();
@@ -87,9 +95,10 @@ export function linkClaimsToEvidence(
             evidenceVerification.status === 'verified',
           evidenceUrl: String(source.evidenceUrl || '').trim() || undefined,
           evidenceType: source.evidenceType,
-          provider: String(source.sourceType || '').trim() || undefined
+          provider: String(source.sourceType || '').trim() || undefined,
+          evidenceFingerprint: evidence ? await fingerprint(normalize(evidence)) : ''
         };
-      })
+      })))
       .filter(item => item.sourceId && item.evidenceText && item.overlapScore >= 35)
       .sort((a, b) =>
         Number(b.claimCitationEligible) - Number(a.claimCitationEligible) ||

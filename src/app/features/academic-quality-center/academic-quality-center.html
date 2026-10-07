@@ -111,6 +111,10 @@
                       <a [href]="link.evidenceUrl" target="_blank" rel="noopener noreferrer"
                         class="text-blue-700 hover:underline font-semibold">بینینی بەڵگە</a>
                     }
+                    @if (link.evidenceFingerprint) {
+                      <span class="px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200 font-mono"
+                        title="SHA-256 fingerprint ـی evidence">FP {{ link.evidenceFingerprint.slice(0, 12) }}</span>
+                    }
                   </div>
                 }
                 <div class="flex flex-wrap gap-1 mt-1.5">
