@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { assessEvidenceVerification, SourceVerificationReport } from './source-verification.service';
 
 export interface EvidenceLink {
@@ -12,6 +13,7 @@ export interface EvidenceLink {
   evidenceUrl?: string;
   evidenceType?: 'abstract' | 'snippet' | 'full-text';
   provider?: string;
+  evidenceFingerprint: string;
 }
 
 function normalize(value: unknown): string {
@@ -21,6 +23,10 @@ function normalize(value: unknown): string {
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function fingerprint(value: string): string {
+  return createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
 function tokens(value: string): Set<string> {
@@ -87,7 +93,8 @@ export function linkClaimsToEvidence(
             evidenceVerification.status === 'verified',
           evidenceUrl: String(source.evidenceUrl || '').trim() || undefined,
           evidenceType: source.evidenceType,
-          provider: String(source.sourceType || '').trim() || undefined
+          provider: String(source.sourceType || '').trim() || undefined,
+          evidenceFingerprint: evidence ? fingerprint(normalize(evidence)) : ''
         };
       })
       .filter(item => item.sourceId && item.evidenceText && item.overlapScore >= 35)
