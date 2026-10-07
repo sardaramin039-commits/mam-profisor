@@ -84,8 +84,18 @@ export function getGeminiClient(): GoogleGenAI {
 
         for (const targetModel of modelSequence) {
           let currentParams = { ...typedParams, model: targetModel };
-          if (currentParams.config && typeof currentParams.config === 'object') {
-            const cleanedConfig = { ...currentParams.config } as Record<string, unknown>;
+          if (currentParams['config'] && typeof currentParams['config'] === 'object') {
+            const cleanedConfig = { ...(currentParams['config'] as Record<string, unknown>) };
+            if (!cleanedConfig['maxOutputTokens']) {
+              cleanedConfig['maxOutputTokens'] = 32000;
+            }
+            if (!cleanedConfig['thinkingConfig'] && (targetModel.startsWith('gemini-3.8') || targetModel.startsWith('gemini-3.1'))) {
+              const promptStr = typeof typedParams['contents'] === 'string'
+                ? (typedParams['contents'] as string)
+                : JSON.stringify(typedParams['contents'] || '');
+              const isDeepWriting = promptStr.length > 2500 || promptStr.includes('تێز') || promptStr.includes('chapter');
+              cleanedConfig['thinkingConfig'] = { thinkingBudget: isDeepWriting ? 16000 : 4096 };
+            }
             if (!targetModel.startsWith('gemini-3.8') && !targetModel.startsWith('gemini-3.1')) {
               delete cleanedConfig['thinkingConfig'];
             }

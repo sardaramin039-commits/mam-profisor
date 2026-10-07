@@ -19,9 +19,23 @@ class ApiConfigService {
     return trimmed.slice(0, 4) + '...' + trimmed.slice(-4);
   }
 
+  private readonly DEFAULT_MODELS: Record<AiProvider, string> = {
+    gemini: 'gemini-3.8-flash',
+    openai: 'gpt-4o',
+    claude: 'claude-3-7-sonnet-20250219',
+    perplexity: 'sonar'
+  };
+
+  private readonly DEFAULT_SUPPORTED_MODELS: Record<AiProvider, string[]> = {
+    gemini: ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite', 'gemini-2.5-pro', 'gemini-2.5-flash'],
+    openai: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o3-mini', 'o1-mini', 'gpt-4.5-preview'],
+    claude: ['claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'],
+    perplexity: ['sonar', 'sonar-pro', 'sonar-reasoning', 'sonar-deep-research']
+  };
+
   private getConfiguredModels(provider: AiProvider): string[] {
     const raw = process.env[`${provider.toUpperCase()}_MODELS`]?.trim();
-    if (!raw) return [];
+    if (!raw) return this.DEFAULT_SUPPORTED_MODELS[provider] || [];
     return raw
       .split(',')
       .map(model => model.trim())
@@ -31,7 +45,8 @@ class ApiConfigService {
 
   private getDefaultModel(provider: AiProvider): string {
     return process.env[`${provider.toUpperCase()}_MODEL`]?.trim()
-      || 'لە ڕێکخستنی deployment ـەوە دیاری نەکراوە';
+      || this.DEFAULT_MODELS[provider]
+      || 'gemini-3.8-flash';
   }
 
   public getProviderConfig(provider: AiProvider): ProviderConfig {

@@ -197,8 +197,22 @@
                             </div>
                           </div>
                           
-                          <!-- Chapter card action buttons -->
                           <div class="flex items-center gap-1.5 flex-wrap">
+                            <button 
+                              type="button" 
+                              (click)="toggleChapterLock(c.id)" 
+                              class="px-2.5 py-1.5 border text-[10.5px] font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                              [class.bg-rose-50]="c.isLocked"
+                              [class.border-rose-300]="c.isLocked"
+                              [class.text-rose-800]="c.isLocked"
+                              [class.bg-stone-50]="!c.isLocked"
+                              [class.border-stone-300]="!c.isLocked"
+                              [class.text-stone-700]="!c.isLocked"
+                              [title]="c.isLocked ? 'بەشەکە قفڵکراوە (ON) - کرتە بکە بۆ کردنەوە' : 'بێ قفڵە (OFF) - کرتە بکە بۆ قفڵکردن'">
+                              <mat-icon class="!text-xs !w-3.5 !h-3.5" [class.text-rose-700]="c.isLocked">{{ c.isLocked ? 'lock' : 'lock_open' }}</mat-icon>
+                              <span>{{ c.isLocked ? 'قفڵکراو (ON)' : 'بێ قفڵ (OFF)' }}</span>
+                            </button>
+
                             <button 
                               type="button" 
                               (click)="fixChapterSpelling(c.id)" 

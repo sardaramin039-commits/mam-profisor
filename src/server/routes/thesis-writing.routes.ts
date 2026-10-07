@@ -325,15 +325,23 @@ ${comparisonPrompt}
   "academicNotes": "تێبینی زمانەوانی و پێشنیاری نووسەر بۆ توێژەرەکە"
 }`;
 
+      const targetWordsNum = Number(targetWordsPerChapter) || (targetPages ? Number(targetPages) * 350 : 0) || 1500;
+      const adaptiveThinkingBudget = Math.min(16000, Math.max(4096, Math.round(targetWordsNum * 6)));
+      const adaptiveOutputTokens = Math.min(32000, Math.max(8192, Math.round(targetWordsNum * 8)));
+
       const config: {
         systemInstruction?: string;
         responseMimeType?: string;
         temperature?: number;
         tools?: { googleSearch: Record<string, never> }[];
+        maxOutputTokens?: number;
+        thinkingConfig?: { thinkingBudget?: number };
       } = {
-        systemInstruction: systemPrompt,
+        systemInstruction: systemPrompt + '\n📌 چڕیی زانستی: دەبێت هەموو ڕستەیەک زانیاری و بەڵگەی نوێ بدات و بە تەواوی لە درێژدادڕی دوور بکەوێتەوە.',
         responseMimeType: 'application/json',
-        temperature: temperature || 0.7
+        temperature: temperature || 0.65,
+        maxOutputTokens: adaptiveOutputTokens,
+        thinkingConfig: { thinkingBudget: adaptiveThinkingBudget }
       };
 
       if (!customSourcesOn) {

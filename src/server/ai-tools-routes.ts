@@ -63,11 +63,11 @@ function resolveProviderModel(
   requestedModel: string | undefined
 ): string {
   const config = apiConfigService.getProviderConfig(provider);
-  const model = requestedModel?.trim() || config.defaultModel;
-  if (!config.supportedModels.includes(model)) {
-    throw new Error(`مۆدێلی ${model} بۆ ${provider} لەم پڕۆژەیەدا ڕێگەپێدراو نییە.`);
+  const model = requestedModel?.trim();
+  if (model && config.supportedModels.includes(model)) {
+    return model;
   }
-  return model;
+  return config.defaultModel;
 }
 
 const fetchWithTimeout = async (url: string, init: RequestInit, timeoutMs = 45_000): Promise<globalThis.Response> => {

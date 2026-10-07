@@ -293,8 +293,11 @@ export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingSe
 
   applyAutoHedging(chapter: any) {
     if (!chapter || !chapter.content) return;
-    chapter.content = this.hedgingService.applyAutoHedging(chapter.content);
-    this.saveCurrentChapterDirectly(chapter);
+    const hedged = this.hedgingService.applyAutoHedging(chapter.content);
+    chapter.content = hedged;
+    if (chapter.id != null) {
+      this.editorService.updateChapterContent(chapter.id, hedged, 'پەیڕەوکردنی زمانی ئیحتیاتی ئەکادیمی');
+    }
   }
 
   selectUniversityPreset(presetId: string) {

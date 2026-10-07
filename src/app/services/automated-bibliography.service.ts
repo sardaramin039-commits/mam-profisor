@@ -203,6 +203,10 @@ export class AutomatedBibliographyService {
       case 'Kurdish':
       case 'KurdishAcademic':
         return CitationBuilder.formatKurdishAcademic(citationItem);
+      case AcademicStyle.LC_APA:
+      case 'LC_APA':
+      case 'LC. APA':
+        return CitationBuilder.formatLC_APA(citationItem);
       case AcademicStyle.APA:
       case 'APA':
       default:

@@ -192,8 +192,16 @@ export abstract class AppControllerActions extends AppControllerBase {
     if (!isNaN(val)) this.refineForm.patchValue({ [field]: val });
   }
   toggleCustomFeature(feat: string) {
-    const val = this.refineForm.get(feat)?.value;
-    this.refineForm.patchValue({ [feat]: !val });
+    const val = !this.refineForm.get(feat)?.value;
+    this.refineForm.patchValue({ [feat]: val });
+    if (feat === 'customSourcesOn' || feat === 'fieldWorkOn') {
+      this.chapters.update(list => list.map(c => ({ ...c, [feat]: val })));
+      if (this.viewedChapter()) this.viewedChapter.update(c => c ? ({ ...c, [feat]: val }) : c);
+    }
+    const names: Record<string, string> = { customSourcesOn: 'سەرچاوەی تایبەت', customTOCOn: 'پێڕستی تایبەت', fieldWorkOn: 'کاری مەیدانی' };
+    const title = names[feat] || feat;
+    if (val) this.toastService.showSuccess(`تایبەتمەندی ${title} چالاک کرا (ON)`, `ئێستا بژاردەی ${title} بە ١٠٠٪ کاریگەرە.`);
+    else this.toastService.showInfo(`تایبەتمەندی ${title} ناچالاک کرا (OFF)`, `بژاردەی ${title} لەسەر دۆخی ناچالاک دانرا.`);
   }
   onCustomSourcesInput(event: Event, element: HTMLElement) {
     const val = (event.target as HTMLTextAreaElement)?.value || '';
@@ -246,6 +254,14 @@ export abstract class AppControllerActions extends AppControllerBase {
     this.toastService.showWarning('تێز سڕایەوە', 'توێژینەوەکە لە مێژووی هەورەکە سڕایەوە.');
   }
   openChapterPreview(c: ChapterItem) { this.viewedChapter.set(c); }
+  toggleChapterLock(chapterId: number) {
+    this.editorService.toggleLock(chapterId);
+    this.chapters.set(this.editorService.chapters());
+    const target = this.chapters().find(c => c.id === chapterId);
+    if (this.viewedChapter()?.id === chapterId && target) this.viewedChapter.set(target);
+    if (target?.isLocked) this.toastService.showWarning('بەشەکە قفڵکرا (ON)', `بەشی «${target.title}» لە دەستکاری پارێزرا.`);
+    else this.toastService.showSuccess('قفڵەکە کرایەوە (OFF)', `بەشی «${target?.title}» بۆ نووسین ئامادەیە.`);
+  }
   insertMythologicalSynthesisToChapter(c: ChapterItem, myth: any) { this.dashboardState.insertMythologicalSynthesisToChapter(c, myth); }
   toggleChunkUsage(id: string) { this.dashboardState.toggleChunkUsage(id); }
   verifyChunkSource(chunk: any) { this.dashboardState.verifyChunkSource(chunk); }
@@ -262,7 +278,20 @@ export abstract class AppControllerActions extends AppControllerBase {
   setPageSizeMode(mode: string) { this.bridge.setPageSizeMode(mode); }
   closeQuickPreview() { this.bridge.closeQuickPreview(); }
   applySourceSuggestion(s: any) { this.bridge.applySourceSuggestion(s); }
-  toggleAcademicSection(sec: string) { this.bridge.toggleAcademicSection(sec); }
+  toggleAcademicSection(sec: string) {
+    this.bridge.toggleAcademicSection(sec);
+    const cur = !!this.refineForm.get(sec)?.value;
+    const names: Record<string, string> = {
+      includeDedication: 'پێشکەشە',
+      includeIntro: 'پێشەکی',
+      includeTOC: 'پێڕست',
+      includeConclusion: 'ئەنجام',
+      includeRecommendations: 'ڕاسپاردەکان',
+      includeReferences: 'سەرچاوەکان'
+    };
+    const title = names[sec] || sec;
+    this.toastService.showToast('دۆخی پێکهاتە', `بڕگەی «${title}» ${cur ? 'چالاک کرا (ON)' : 'ناچالاک کرا (OFF)'}`, cur ? 'success' : 'info', 2500);
+  }
   updateRagModel(m: string) { this.bridge.updateRagModel(m); }
   updateRagLimit(l: number) { this.bridge.updateRagLimit(l); }
   toggleRole(role: string) { this.bridge.toggleRole(role); }
@@ -289,7 +318,13 @@ export abstract class AppControllerActions extends AppControllerBase {
       includeTOC: val.includeTOC,
       includeConclusion: val.includeConclusion,
       includeRecommendations: val.includeRecommendations,
-      includeReferences: val.includeReferences
+      includeReferences: val.includeReferences,
+      customSourcesOn: val.customSourcesOn,
+      customSourcesText: val.customSourcesText,
+      customTOCOn: val.customTOCOn,
+      customTOCText: val.customTOCText,
+      fieldWorkOn: val.fieldWorkOn,
+      fieldWorkText: val.fieldWorkText
     });
     this.chapters.set(newChapters);
     this.editorService.setChapters(newChapters);
@@ -306,14 +341,25 @@ export abstract class AppControllerActions extends AppControllerBase {
       }
     }
   }
-  activateAllAcademicRules() { this.bridge.activateAllAcademicRules(); }
-  deactivateAllAcademicRules() { this.bridge.deactivateAllAcademicRules(); }
+  activateAllAcademicRules() {
+    this.bridge.activateAllAcademicRules();
+    this.toastService.showSuccess('هەموو مەرجەکان کارا کران (ON)', 'سەرجەم ڕێسا زانستییەکان بە ١٠٠٪ چالاک کران.');
+  }
+  deactivateAllAcademicRules() {
+    this.bridge.deactivateAllAcademicRules();
+    this.toastService.showInfo('هەموو مەرجەکان ناچالاک کران (OFF)', 'سەرجەم ڕێسا زانستییەکان ناچالاک کران.');
+  }
   triggerComparison(r: any) { this.bridge.triggerComparison(r); }
   searchLoadHistory(r: any) { this.bridge.searchLoadHistory(r); }
   onRegisterVerifiedSource() { this.bridge.onRegisterVerifiedSource(); }
   expandGlossaryTerm(entry: any) { this.bridge.expandGlossaryTerm(entry); }
   applyGlossaryRealtimeFix(orig: string, fix: string) { this.bridge.applyGlossaryRealtimeFix(orig, fix); }
-  toggleAcademicRule(id: string) { this.bridge.toggleAcademicRule(id); }
+  toggleAcademicRule(id: string) {
+    this.bridge.toggleAcademicRule(id);
+    const rule = this.bridge.academicRules().find(r => r.id === id);
+    const active = rule?.active;
+    this.toastService.showToast('ڕێسای ئەکادیمی', `مەرجی «${rule?.title || id}» ${active ? 'چالاک کرا (ON)' : 'ناچالاک کرا (OFF)'}`, active ? 'success' : 'info', 2500);
+  }
   removeCustomRule(id: string) { this.bridge.removeCustomRule(id); }
   onGlobalSearchInput(e: Event) { this.bridge.onGlobalSearchInput(e); }
   searchOpenChapter(r: any) { this.bridge.searchOpenChapter(r); }

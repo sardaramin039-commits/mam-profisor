@@ -12,6 +12,12 @@ export interface ThesisOutlineOptions {
   includeConclusion?: boolean;
   includeRecommendations?: boolean;
   includeReferences?: boolean;
+  customSourcesOn?: boolean;
+  customSourcesText?: string;
+  customTOCOn?: boolean;
+  customTOCText?: string;
+  fieldWorkOn?: boolean;
+  fieldWorkText?: string;
 }
 
 export function buildAcademicThesisOutline(options: ThesisOutlineOptions): ChapterItem[] {
@@ -65,14 +71,26 @@ export function buildAcademicThesisOutline(options: ThesisOutlineOptions): Chapt
   const coreChaptersCount = Math.max(2, Math.min(5, Math.round(targetPages / 5)));
   const coreWordBudget = Math.round((totalTargetWords * 0.55) / coreChaptersCount);
 
-  const coreTitles = [
+  let coreTitles = [
     `بەشی یەکەم: چوارچێوەی تیۆری و چەمکسازیی «${title}»`,
     `بەشی دووەم: میتۆدۆلۆژیا و ڕێبازی ئەکادیمی پەیڕەوکراو`,
     `بەشی سێیەم: شیکاریی پڕاکتیکی و لێکدانەوەی ڕەخنەگرانەی داتاکان`,
     `بەشی چوارەم: هەڵسەنگاندنی بەراوردکاری و تاوتوێکردنی دەرئەنجامەکان`
   ];
 
-  for (let i = 0; i < coreChaptersCount; i++) {
+  if (options.customTOCOn && options.customTOCText?.trim()) {
+    const userLines = options.customTOCText
+      .split('\n')
+      .map(line => line.trim().replace(/^[-*•\d.]+\s*/, ''))
+      .filter(line => line.length > 2);
+    if (userLines.length > 0) {
+      coreTitles = userLines;
+    }
+  }
+
+  const effectiveCount = Math.min(coreTitles.length, Math.max(coreChaptersCount, coreTitles.length));
+
+  for (let i = 0; i < effectiveCount; i++) {
     const chTitle = coreTitles[i] || `بەشی ${i + 1}: تاوتوێی لێکۆڵینەوە لەسەر «${title}»`;
     chapters.push({
       id: currentId++,
@@ -80,7 +98,7 @@ export function buildAcademicThesisOutline(options: ThesisOutlineOptions): Chapt
       wordCount: 0,
       status: 'pending',
       content: `## ${chTitle}\n\nلەم بەشەدا بە پشتبەستن بە سەرچاوە زانستییە متمانەپێکراوەکان و تیۆرییە سەردەمییەکان، ڕەهەندە پراکتیکی و فیکرییەکان بە درێژی دەخرێنە بەر شیکاری ورد.\n\n### تەوەری سەرەکی:\nدەستنیشانکردنی هۆکارە بنەڕەتییەکان و بەراوردکردنیان لەگەڵ توێژینەوە پێشینەکان.`,
-      academicNotes: 'شیکاری ئەکادیمی بێ لایەنانە و بەستنەوەی سەرچاوە هاوچەرخەکان بە داتا.',
+      academicNotes: options.fieldWorkOn ? 'کاری مەیدانی و داتای ڕاستەوخۆ بەکارهاتووە.' : 'شیکاری ئەکادیمی بێ لایەنانە و بەستنەوەی سەرچاوە هاوچەرخەکان بە داتا.',
       customTargetWords: coreWordBudget
     });
   }
@@ -123,6 +141,11 @@ export function buildAcademicThesisOutline(options: ThesisOutlineOptions): Chapt
       customTargetWords: 350
     });
   }
+
+  chapters.forEach(ch => {
+    ch.customSourcesOn = Boolean(options.customSourcesOn);
+    ch.fieldWorkOn = Boolean(options.fieldWorkOn);
+  });
 
   return chapters;
 }

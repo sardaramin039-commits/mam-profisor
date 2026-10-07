@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, FormGroup } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 
-export type CitationStyle = 'APA' | 'MLA' | 'CHICAGO';
+export type CitationStyle = 'APA' | 'LC_APA' | 'MLA' | 'CHICAGO';
 
 export interface MarkupOption {
   id: string;
@@ -55,7 +55,7 @@ export interface MarkupOption {
                 <h4 class="text-xs font-serif font-bold text-white flex items-center gap-2">
                   شریتی ئەکادیمیی سەرچاوەدانان و مارکئەپ
                   <span class="text-[9.5px] px-2 py-0.2 rounded-full font-mono font-bold bg-amber-950 text-amber-300 border border-amber-700">
-                    {{ activeStyle() }} 7th / 9th / 17th
+                    {{ activeStyle() }} 7th / LC
                   </span>
                 </h4>
                 <p class="text-[10px] text-stone-400 font-serif">
@@ -91,6 +91,14 @@ export interface MarkupOption {
                   ? 'px-3 py-1 bg-amber-500 text-stone-950 font-extrabold rounded-lg text-xs shadow-sm transition' 
                   : 'px-3 py-1 text-stone-400 hover:text-white rounded-lg text-xs transition cursor-pointer'">
                 APA 7th
+              </button>
+              <button
+                type="button"
+                (click)="selectStyle('LC_APA')"
+                [class]="activeStyle() === 'LC_APA' 
+                  ? 'px-3 py-1 bg-amber-500 text-stone-950 font-extrabold rounded-lg text-xs shadow-sm transition' 
+                  : 'px-3 py-1 text-stone-400 hover:text-white rounded-lg text-xs transition cursor-pointer'">
+                LC. APA
               </button>
               <button
                 type="button"
@@ -350,6 +358,9 @@ export class FloatingAcademicToolbarComponent {
       case 'CHICAGO':
         snippet = `(${a} ${y}, ${p})`;
         break;
+      case 'LC_APA':
+        snippet = `(${a}، ${y}، ل. ${p})`;
+        break;
       case 'APA':
       default:
         snippet = `(${a}، ${y}، ل. ${p})`;
@@ -371,6 +382,9 @@ export class FloatingAcademicToolbarComponent {
         break;
       case 'CHICAGO':
         snippet = `\n${a}. ${y}. *${t}*. شوێنی چاپ: ناوەندی بڵاوکردنەوە.\n`;
+        break;
+      case 'LC_APA':
+        snippet = `\n${a} (${y}). *${t}*. دەزگای چاپ و بڵاوکردنەوە. [LCC: Z695.Z8] [LCSH: Kurdish Studies].\n`;
         break;
       case 'APA':
       default:

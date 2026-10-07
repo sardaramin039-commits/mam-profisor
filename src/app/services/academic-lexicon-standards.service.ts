@@ -136,6 +136,24 @@ export class AcademicLexiconStandardsService {
       discipline: 'زانستە سروشتییەکان',
       academicDefinition: 'پێوەرێکی ئامارییە کە ڕادەی بڵاوبوونەوە یان جیاوازیی بەهاکان لە تێکڕای ژمێریاری نیشان دەدات.',
       usageContextKurdish: 'نمرەی بەشداربووان خاوەنی تێکڕای لادانی پێوانەیی (SD = 1.42) بووە.'
+    },
+    {
+      id: 'lex_7',
+      kurdishTerm: 'مرۆڤایەتییە دیجیتاڵییەکان (زانستە مرۆییە دیجیتاڵییەکان)',
+      englishTerm: 'Digital Humanities',
+      arabicTerm: 'العلوم الإنسانية الرقمية',
+      discipline: 'زانستە مرۆڤایەتییەکان',
+      academicDefinition: 'کایەیەکی نێودیسپلینییە کە تەکنەلۆژیای ژمێریاری و شیکاریی داتای گەورە لە بواری مێژوو، زمان و کولتووردا بەکاردەهێنێت.',
+      usageContextKurdish: 'ئەرشیڤکردنی دەستنووسە کەڤنارەکان بە میتۆدی مرۆڤایەتییە دیجیتاڵییەکان ئەنجامدراوە.'
+    },
+    {
+      id: 'lex_8',
+      kurdishTerm: 'سێگۆشەسازیی میتۆدۆلۆژی (تێکەڵاوکردنی چەندایەتی و چۆنایەتی)',
+      englishTerm: 'Methodological Triangulation',
+      arabicTerm: 'التثليث المنهجي',
+      discipline: 'میتۆدۆلۆژیا و فەلسەفە',
+      academicDefinition: 'بەکارهێنانی زیاتر لە یەک میتۆدی توێژینەوە (وەک داتای ئاماری لەگەڵ چاوپێکەوتنی قووڵ) بۆ دڵنیابوون لە ڕاستگۆیی دەرئەنجامەکان.',
+      usageContextKurdish: 'بۆ بەهێزکردنی باوەڕپێکراوی، سێگۆشەسازیی میتۆدۆلۆژی لە نێوان ڕاپرسی و شیکاریی دەقدا پەیڕەوکرا.'
     }
   ];
 
@@ -147,7 +165,7 @@ export class AcademicLexiconStandardsService {
     year: string | number,
     title: string,
     publisher: string,
-    style: 'APA' | 'Chicago' | 'IEEE' = 'APA',
+    style: 'APA' | 'LC_APA' | 'Chicago' | 'IEEE' = 'APA',
     page?: string
   ): FormattedCitationKurdish {
     const safeYear = year ? String(year) : 'بێ بەروار';
@@ -167,6 +185,14 @@ export class AcademicLexiconStandardsService {
         styleName: 'Chicago (پەراوێز و سەرچاوە)',
         inTextCitation: `(${safeAuthor} ${safeYear}${pageStr})`,
         fullBibliography: `${safeAuthor}. ${safeYear}. ${title}. ${publisher}.`
+      };
+    }
+
+    if (style === 'LC_APA') {
+      return {
+        styleName: 'LC. APA (پۆلێنکاری کتێبخانەی کۆنگرێس و APA 7th)',
+        inTextCitation: `(${safeAuthor}، ${safeYear}${pageStr})`,
+        fullBibliography: `${safeAuthor} (${safeYear}). ${title}. ${publisher}. [LCC: Z695] [LCSH: Academic Discourse].`
       };
     }
 

@@ -4,6 +4,7 @@
 
 export enum AcademicStyle {
   APA = 'APA',
+  LC_APA = 'LC_APA',
   MLA = 'MLA',
   Chicago = 'Chicago',
   IEEE = 'IEEE',

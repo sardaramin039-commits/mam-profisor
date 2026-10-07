@@ -56,6 +56,24 @@ export class CitationBuilder {
   }
 
   /**
+   * Library of Congress (LC) & APA 7th Edition Unified Formatting
+   */
+  public static formatLC_APA(item: CitationItem, lcCallNumber?: string, lcSubjectHeading?: string): string {
+    const baseApa = this.formatAPA(item);
+    const lcTags: string[] = [];
+    if (lcCallNumber) {
+      lcTags.push(`[LCC: ${lcCallNumber}]`);
+    }
+    if (lcSubjectHeading) {
+      lcTags.push(`[LCSH: ${lcSubjectHeading}]`);
+    }
+    if (lcTags.length > 0) {
+      return `${baseApa} ${lcTags.join(' ')}`;
+    }
+    return baseApa;
+  }
+
+  /**
    * MLA 9th Edition Formatting
    */
   public static formatMLA(item: CitationItem): string {
