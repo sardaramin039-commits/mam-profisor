@@ -320,12 +320,25 @@ export class SourceVerificationService {
       })
     ]);
 
-    const metadataResolved = await Promise.all(
-      uniqueSources.map(source =>
-        !source.doi && !source.isbn && !source.issn
-          ? searchCrossrefByMetadata(source)
-          : Promise.resolve(undefined)
+    const metadataResolved = new Map<number, CrossrefCandidate>();
+    const metadataCandidates = uniqueSources
+      .map((source, index) => ({ source, index }))
+      .filter(({ source }) =>
+        !source.doi &&
+        !source.isbn &&
+        !source.issn &&
+        !source.openAlexId &&
+        !source.crossrefId &&
+        !source.semanticScholarId &&
+        !source.pmid
       )
+      .slice(0, 16);
+
+    await Promise.all(
+      metadataCandidates.map(async ({ source, index }) => {
+        const candidate = await searchCrossrefByMetadata(source);
+        if (candidate) metadataResolved.set(index, candidate);
+      })
     );
 
     const reports = uniqueSources.map((source, index): SourceVerificationReport => {
@@ -402,8 +415,8 @@ export class SourceVerificationService {
         );
       }
 
-      if (metadataResolved[index]) {
-        const candidate = metadataResolved[index]!;
+      const candidate = metadataResolved.get(index);
+      if (candidate) {
         return buildBaseReport(
           { ...source, title: candidate.title, author: candidate.authors.join(', ') || source.author, year: candidate.year || source.year, publisher: candidate.publisher || source.publisher, doi: candidate.doi || source.doi },
           sourceId,

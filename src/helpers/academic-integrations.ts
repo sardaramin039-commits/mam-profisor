@@ -20,6 +20,8 @@ export type SourceMetadata = {
   peerReviewed?: boolean;
   title?: string;
   authors?: string[];
+  evidenceText?: string;
+  evidenceType?: 'abstract' | 'snippet' | 'full-text';
 };
 
 export function validYear(year?: string | number): string {
@@ -118,7 +120,10 @@ export async function fetchSemanticScholar(query: string): Promise<AcademicSourc
         url: item.url || `https://www.semanticscholar.org/paper/${item.paperId}`,
         snippet: item.abstract?.trim() || '',
         citationCount: Number.isFinite(item.citationCount) ? item.citationCount : undefined,
-        peerReviewed: false
+        peerReviewed: false,
+        ...(item.abstract?.trim()
+          ? { evidenceText: item.abstract.trim(), evidenceType: 'abstract' as const, evidenceUrl: item.url || `https://www.semanticscholar.org/paper/${item.paperId}` }
+          : {})
       }));
   } catch (err) {
     console.warn('Semantic Scholar fetch failed; returning no synthetic records.', err);
@@ -260,6 +265,7 @@ export async function fetchDOAJ(query: string): Promise<AcademicSourceItem[]> {
           title?: string;
           authors?: Array<{ name?: string }>;
           year?: string;
+          abstract?: string;
           link?: Array<{ url?: string }>;
         };
       }>;
@@ -278,7 +284,10 @@ export async function fetchDOAJ(query: string): Promise<AcademicSourceItem[]> {
           sourceType: 'DOAJ',
           url,
           snippet: '',
-          peerReviewed: false
+          peerReviewed: false,
+          ...(bib.abstract?.trim()
+            ? { evidenceText: bib.abstract.trim(), evidenceType: 'abstract' as const, evidenceUrl: url || undefined }
+            : {})
         });
       });
   } catch (err) {

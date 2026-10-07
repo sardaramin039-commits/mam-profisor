@@ -66,6 +66,48 @@
         </div>
       </div>
 
+      @if (intel.analysisStatus) {
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+          @for (module of [
+            { key: 'planner', label: 'Planner' },
+            { key: 'methodology', label: 'Methodology' },
+            { key: 'factCheck', label: 'Fact Check' },
+            { key: 'consistency', label: 'Consistency' }
+          ]; track module.key) {
+            <div class="px-3 py-2 rounded-lg border bg-white"
+              [class.border-emerald-200]="intel.analysisStatus[module.key] === 'ok'"
+              [class.border-amber-200]="intel.analysisStatus[module.key] !== 'ok'">
+              <div class="text-[8px] text-stone-500">{{ module.label }}</div>
+              <strong class="text-[9px]" [class.text-emerald-800]="intel.analysisStatus[module.key] === 'ok'"
+                [class.text-amber-900]="intel.analysisStatus[module.key] !== 'ok'">
+                {{ intel.analysisStatus[module.key] === 'ok' ? 'OK' : 'DEGRADED / REVIEW' }}
+              </strong>
+            </div>
+          }
+        </div>
+      }
+
+      @if ((intel.evidenceLinks || []).length > 0) {
+        <div class="p-3 rounded-xl border border-blue-200 bg-blue-50/40">
+          <div class="flex items-center justify-between mb-2">
+            <h5 class="text-[11px] font-extrabold text-blue-950">Claim → Evidence Candidates</h5>
+            <span class="text-[8px] text-blue-800">candidate ـە؛ verification نییە</span>
+          </div>
+          <div class="space-y-1.5">
+            @for (link of intel.evidenceLinks.slice(0, 8); track $index) {
+              <div class="p-2 rounded-lg bg-white border border-blue-100">
+                <div class="flex items-start justify-between gap-2">
+                  <span class="text-[9px] text-stone-800">{{ link.claim }}</span>
+                  <span class="text-[8px] font-mono text-blue-800 shrink-0">{{ link.overlapScore }}%</span>
+                </div>
+                <div class="text-[8px] font-semibold text-stone-600 mt-1">{{ link.sourceTitle }}</div>
+                <div class="text-[8px] text-stone-500 leading-relaxed mt-1">{{ link.evidenceText.slice(0, 260) }}{{ link.evidenceText.length > 260 ? '…' : '' }}</div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
       <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <div class="p-3 rounded-xl border border-stone-200 bg-white space-y-2">
           <h5 class="text-[11px] font-extrabold text-stone-900">Research Planner</h5>
@@ -138,6 +180,12 @@
                 <span class="text-[7.5px] font-mono">{{ source.sourceType }}</span>
                 <span class="text-[7.5px] text-indigo-700">{{ source.confidenceScore ?? 0 }}% discovery score</span>
               </div>
+              @if (source.evidenceText) {
+                <div class="px-1.5 py-1 rounded border border-blue-100 bg-blue-50 text-blue-900 text-[7.5px] leading-relaxed">
+                  <strong>Evidence candidate:</strong>
+                  {{ source.evidenceText.slice(0, 360) }}{{ source.evidenceText.length > 360 ? '…' : '' }}
+                </div>
+              }
               @if (verification) {
                 <div class="flex flex-wrap gap-1 pt-0.5">
                   <span class="px-1.5 py-0.5 rounded border text-[7px] font-bold"

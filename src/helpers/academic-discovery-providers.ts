@@ -9,7 +9,7 @@ import {
 export async function fetchOpenAlex(query: string): Promise<AcademicSourceItem[]> {
   try {
     const url =
-      `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=4&select=id,doi,title,authorships,publication_year,primary_location,cited_by_count`;
+      `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=4&select=id,doi,title,authorships,publication_year,primary_location,cited_by_count,abstract_inverted_index`;
     const res = await fetch(url, {
       headers: { Accept: 'application/json', 'User-Agent': 'Mam-Professor-Academic-Platform/1.0' },
       signal: AbortSignal.timeout(5000)
@@ -28,6 +28,7 @@ export async function fetchOpenAlex(query: string): Promise<AcademicSourceItem[]
           source?: { display_name?: string | null };
         };
         cited_by_count?: number;
+        abstract_inverted_index?: Record<string, number[]>;
       }>;
     };
 
@@ -41,6 +42,11 @@ export async function fetchOpenAlex(query: string): Promise<AcademicSourceItem[]
         const authors = cleanAuthors(
           item.authorships?.map(authorship => authorship.author?.display_name)
         );
+        const abstractWords = Object.entries(item.abstract_inverted_index || {})
+          .flatMap(([word, positions]) => positions.map(position => ({ position, word })))
+          .sort((a, b) => a.position - b.position)
+          .map(item => item.word);
+        const evidenceText = abstractWords.join(' ').trim();
         return buildSource({
           id: sourceId('openalex', openAlexId || doi, index),
           title: item.title!.trim(),
@@ -52,7 +58,11 @@ export async function fetchOpenAlex(query: string): Promise<AcademicSourceItem[]
           citationCount: Number.isFinite(item.cited_by_count) ? item.cited_by_count : undefined,
           peerReviewed: false,
           ...(doi ? { doi } : {}),
-          openAlexId
+          openAlexId,
+          ...(evidenceText ? { evidenceText, evidenceType: 'abstract' as const } : {}),
+          ...(item.primary_location?.landing_page_url
+            ? { evidenceUrl: item.primary_location.landing_page_url }
+            : {})
         });
       });
   } catch (err) {
@@ -66,7 +76,7 @@ export async function fetchCrossref(query: string): Promise<AcademicSourceItem[]
     const mailto = String(process.env['CROSSREF_MAILTO'] || '').trim();
     const mailtoParam = mailto ? `&mailto=${encodeURIComponent(mailto)}` : '';
     const url =
-      `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(query)}&rows=4&select=DOI,title,author,publisher,published,issued,URL,container-title,is-referenced-by-count${mailtoParam}`;
+      `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(query)}&rows=4&select=DOI,title,author,publisher,published,issued,URL,container-title,is-referenced-by-count,abstract${mailtoParam}`;
     const res = await fetch(url, {
       headers: { Accept: 'application/json', 'User-Agent': 'Mam-Professor-Academic-Platform/1.0' },
       signal: AbortSignal.timeout(5000)
@@ -85,6 +95,7 @@ export async function fetchCrossref(query: string): Promise<AcademicSourceItem[]
           URL?: string;
           'container-title'?: string[];
           'is-referenced-by-count'?: number;
+          abstract?: string;
         }>;
       };
     };
@@ -100,6 +111,10 @@ export async function fetchCrossref(query: string): Promise<AcademicSourceItem[]
           item.issued?.['date-parts']?.[0]?.[0];
         const title = item.title![0].trim();
         const journal = item['container-title']?.[0]?.trim() || '';
+        const evidenceText = String(item.abstract || '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
         return buildSource({
           id: sourceId('crossref', doi, index),
           title,
@@ -114,7 +129,9 @@ export async function fetchCrossref(query: string): Promise<AcademicSourceItem[]
           peerReviewed: false,
           doi,
           crossrefId: doi,
-          publisher: item.publisher?.trim() || undefined
+          publisher: item.publisher?.trim() || undefined,
+          ...(evidenceText ? { evidenceText, evidenceType: 'abstract' as const } : {}),
+          ...(item.URL ? { evidenceUrl: item.URL } : {})
         });
       });
   } catch (err) {

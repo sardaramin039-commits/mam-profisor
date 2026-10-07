@@ -11,6 +11,9 @@ export interface AcademicSourceItem {
   openAlexId?: string;
   crossrefId?: string;
   publisher?: string;
+  evidenceText?: string;
+  evidenceType?: 'abstract' | 'snippet' | 'full-text';
+  evidenceUrl?: string;
   confidenceScore: number; // 0 - 100
   peerReviewed: boolean;
 }
