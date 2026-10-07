@@ -20,6 +20,8 @@ export type SourceMetadata = {
   peerReviewed?: boolean;
   title?: string;
   authors?: string[];
+  evidenceText?: string;
+  evidenceType?: 'abstract' | 'snippet' | 'full-text';
 };
 
 export function validYear(year?: string | number): string {
