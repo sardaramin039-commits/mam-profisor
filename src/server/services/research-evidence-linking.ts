@@ -108,7 +108,7 @@ export async function linkClaimsToEvidence(
             ),
           evidenceUrl: String(source.evidenceUrl || '').trim() || undefined,
           evidenceType: source.evidenceType,
-          evidenceProvenance: source.evidenceProvenance,
+          evidenceProvenance: source.evidenceProvenance || 'unknown',
           provider: String(source.sourceType || '').trim() || undefined,
           evidenceFingerprint: evidence ? await fingerprint(normalize(evidence)) : ''
         };
