@@ -32,6 +32,10 @@ describe('academic integrity services', () => {
             citationId: 'CIT-1',
             citationEligible: true,
             verificationStatus: 'verified',
+            evidenceQuote: 'دەقی پشتبەستوو بە بەڵگە',
+            evidenceStatus: 'verified',
+            evidenceType: 'full-text',
+            evidenceProvenance: 'server-verified-fulltext',
             page: '12'
           },
           {
@@ -49,7 +53,12 @@ describe('academic integrity services', () => {
         author: 'A. Author',
         year: '2025',
         publisher: 'Publisher',
-        doiOrIsbn: '10.1234/example'
+        doiOrIsbn: '10.1234/example',
+        citationEligible: true,
+        evidenceStatus: 'verified',
+        evidenceType: 'full-text',
+        evidenceProvenance: 'server-verified-fulltext',
+        evidenceText: 'دەقی پشتبەستوو بە بەڵگە لە full text ـی سەرچاوەکەدا هەیە.'
       }],
       'APA7'
     );
