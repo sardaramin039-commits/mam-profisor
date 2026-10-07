@@ -175,7 +175,8 @@ export async function fetchPubMed(query: string): Promise<AcademicSourceItem[]> 
         sourceType: 'PubMed',
         url,
         snippet: [journal, location].filter(Boolean).join(' | '),
-        peerReviewed: false
+        peerReviewed: false,
+        pmid: id
       })];
     });
   } catch (err) {
