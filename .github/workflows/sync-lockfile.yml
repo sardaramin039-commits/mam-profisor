@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: sync-lockfile-main
@@ -46,6 +47,8 @@ jobs:
         run: test -f package-lock.json
 
       - name: Commit lockfile when changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if ! git status --porcelain -- package-lock.json | grep -q .; then
             echo "package-lock.json is already synchronized."
@@ -59,3 +62,7 @@ jobs:
 
           git pull --rebase origin main
           git push origin main
+
+          echo "Lockfile changed. Dispatching validation against the updated main branch."
+          gh workflow run quality-gate.yml --ref main
+          gh workflow run academic-integrity-ci.yml --ref main
