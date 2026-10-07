@@ -7,15 +7,38 @@ const groundingService = new EvidenceGroundingService();
 
 // 1. Test Citation Eligibility Gate
 console.log('Testing Citation Eligibility Gate...');
-const gate1 = groundingService.evaluateCitationEligibility('verified', true);
-assert.equal(gate1.eligible, true, 'Verified source with evidence MUST be eligible for citation');
+const gate1 = groundingService.evaluateCitationEligibility(
+  'verified',
+  true,
+  'full-text',
+  'server-verified-fulltext'
+);
+assert.equal(gate1.eligible, true, 'Only server-verified full text MUST be eligible for citation');
 assert.equal(gate1.status, 'verified');
 
-const gate2 = groundingService.evaluateCitationEligibility('unverified', true);
+const gate2 = groundingService.evaluateCitationEligibility(
+  'unverified',
+  true,
+  'full-text',
+  'server-verified-fulltext'
+);
 assert.equal(gate2.eligible, false, 'Unverified source MUST be blocked from citations');
 
-const gate3 = groundingService.evaluateCitationEligibility('verified', false);
+const gate3 = groundingService.evaluateCitationEligibility(
+  'verified',
+  false,
+  'full-text',
+  'server-verified-fulltext'
+);
 assert.equal(gate3.eligible, false, 'Source without evidence chunk MUST be blocked from citations');
+
+const gate4 = groundingService.evaluateCitationEligibility(
+  'verified',
+  true,
+  'abstract',
+  'unknown'
+);
+assert.equal(gate4.eligible, false, 'Abstract evidence MUST be blocked from final citations');
 
 console.log('✅ Citation Eligibility Gate assertions passed.');
 
@@ -82,6 +105,8 @@ const mockEvidenceChunks = [
     sourceTitle: 'ڕێزمانی سۆرانی',
     chunkText: 'دەقی بەڵگەی سەلمێنراو ناو سەرچاوەکە',
     verificationStatus: 'verified',
+    evidenceType: 'full-text',
+    provenance: 'server-verified-fulltext',
     pageNumber: '45',
     author: 'سەعید',
     year: '2023'
