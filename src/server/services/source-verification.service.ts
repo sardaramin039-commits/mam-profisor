@@ -4,6 +4,11 @@ import { lookupIsbn, lookupIssn, resolveDoi } from '../../helpers/extended-acade
 export type TrustLevel = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
 export type IdentityVerificationStatus = 'verified' | 'unverified' | 'rejected';
 export type EvidenceVerificationStatus = 'verified' | 'unverified' | 'not_available';
+export type EvidenceType = 'abstract' | 'snippet' | 'full-text';
+export type EvidenceProvenance =
+  | 'server-verified-fulltext'
+  | 'user-supplied-content'
+  | 'unknown';
 
 export interface SourceVerificationReport {
   sourceId: string;
@@ -20,6 +25,8 @@ export interface SourceVerificationReport {
   citationEligible: boolean;
   evidenceVerificationMethod?: 'exact-normalized-claim-match';
   evidenceText?: string;
+  evidenceType?: EvidenceType;
+  evidenceProvenance?: EvidenceProvenance;
   pageNumber?: string | number | null;
   metadataAccuracy: number;
   peerReviewed: boolean;
@@ -54,6 +61,8 @@ type InputSource = {
   fullText?: string;
   text?: string;
   chunkText?: string;
+  evidenceType?: EvidenceType;
+  evidenceProvenance?: EvidenceProvenance;
   pageNumber?: string | number | null;
 };
 
@@ -150,6 +159,20 @@ export function assessEvidenceVerification(source: {
   return { status: 'unverified' };
 }
 
+export function isCitationEligibleEvidence(
+  evidenceStatus: EvidenceVerificationStatus,
+  hasEvidence: boolean,
+  evidenceType: EvidenceType | undefined,
+  evidenceProvenance: EvidenceProvenance | undefined
+): boolean {
+  return (
+    evidenceStatus === 'verified' &&
+    hasEvidence &&
+    evidenceType === 'full-text' &&
+    evidenceProvenance === 'server-verified-fulltext'
+  );
+}
+
 function buildBaseReport(
   source: InputSource,
   sourceId: string,
@@ -163,7 +186,14 @@ function buildBaseReport(
   overrides: Partial<SourceVerificationReport> = {}
 ): SourceVerificationReport {
   const evidence = assessEvidenceVerification(source);
-  const citationEligible = identityStatus === 'verified' && evidence.status === 'verified';
+  const citationEligible =
+    identityStatus === 'verified' &&
+    isCitationEligibleEvidence(
+      evidence.status,
+      Boolean(readEvidence(source)),
+      source.evidenceType,
+      source.evidenceProvenance
+    );
 
   return {
     sourceId,
@@ -180,6 +210,8 @@ function buildBaseReport(
     citationEligible,
     evidenceVerificationMethod: evidence.method,
     evidenceText: readEvidence(source) || undefined,
+    evidenceType: source.evidenceType,
+    evidenceProvenance: source.evidenceProvenance || 'unknown',
     pageNumber: source.pageNumber ?? null,
     metadataAccuracy,
     peerReviewed: false,
