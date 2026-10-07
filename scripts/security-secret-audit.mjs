@@ -26,7 +26,12 @@ for (const file of trackedFiles) {
 
   const lines = text.split(/\r?\n/);
   for (let index = 0; index < lines.length; index += 1) {
-    if (patterns.some(pattern => pattern.test(lines[index]))) {
+    const line = lines[index];
+    const isPublicFirebaseWebConfig =
+      (file === 'firebase-applet-config.json' || file === 'src/app/firebase.ts') &&
+      /(?:^|[\s"'`])apiKey[\s"'`]*[:=][\s"'`]*AIza[0-9A-Za-z_-]{20,}/.test(line);
+
+    if (patterns.some(pattern => pattern.test(line)) && !isPublicFirebaseWebConfig) {
       findings.push({ file, line: index + 1 });
     }
   }
