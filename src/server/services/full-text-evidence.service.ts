@@ -109,10 +109,10 @@ function findExcerpts(fullText: string, claims: string[], maxChars = 9000): stri
   return excerpts.join(' … ').slice(0, maxChars);
 }
 
-export async function enrichSourcesWithFullText(
-  sources: FullTextEnrichmentSource[],
+export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSource>(
+  sources: T[],
   claims: string[]
-): Promise<FullTextEnrichmentSource[]> {
+): Promise<T[]> {
   if (!Array.isArray(sources) || !claims.some(claim => normalize(claim))) {
     return sources;
   }
@@ -141,7 +141,7 @@ export async function enrichSourcesWithFullText(
         evidenceType: 'full-text',
         evidenceProvenance: 'server-verified-fulltext',
         evidenceUrl: url
-      };
+      } as T;
     } catch {
       return source;
     }
