@@ -3,10 +3,14 @@ export interface AcademicSourceItem {
   title: string;
   authors: string[];
   year: string;
-  sourceType: 'SemanticScholar' | 'PubMed' | 'OpenLibrary' | 'InternetArchive' | 'DOAJ' | 'WorldCat' | 'Europeana' | 'LibraryOfCongress' | 'OAIPMH' | 'PeerReviewedJournal';
+  sourceType: 'SemanticScholar' | 'PubMed' | 'OpenLibrary' | 'InternetArchive' | 'DOAJ' | 'WorldCat' | 'Europeana' | 'LibraryOfCongress' | 'OAIPMH' | 'PeerReviewedJournal' | 'OpenAlex' | 'Crossref';
   url: string;
   snippet: string;
   citationCount?: number;
+  doi?: string;
+  openAlexId?: string;
+  crossrefId?: string;
+  publisher?: string;
   confidenceScore: number; // 0 - 100
   peerReviewed: boolean;
 }

@@ -6,7 +6,9 @@ import {
   fetchOpenLibrary,
   fetchInternetArchive,
   fetchLibraryOfCongress,
-  fetchEuropeana
+  fetchEuropeana,
+  fetchOpenAlex,
+  fetchCrossref
 } from '../../helpers/academic-integrations';
 import { robustParseJson } from '../utils/json-repair';
 import { sourceVerificationService } from './source-verification.service';
@@ -92,7 +94,9 @@ export class ResearchIntelligenceService {
       ['Open Library', fetchOpenLibrary(query)],
       ['Internet Archive', fetchInternetArchive(query)],
       ['Library of Congress', fetchLibraryOfCongress(query)],
-      ['Europeana', fetchEuropeana(query)]
+      ['Europeana', fetchEuropeana(query)],
+      ['OpenAlex', fetchOpenAlex(query)],
+      ['Crossref', fetchCrossref(query)]
     ] as const;
 
     const results = await Promise.allSettled(tasks.map(([, task]) => task));
