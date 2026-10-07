@@ -53,6 +53,32 @@ describe('citation intelligence strict evidence gate', () => {
     expect(result.blockedCitationCount).toBe(1);
   });
 
+  it('does not allow a claim to elevate missing source evidence metadata', () => {
+    const result = service.build(
+      [{
+        claims: [{
+          citationId: 'CIT-SPOOF',
+          sourceId: 'SRC-1',
+          citationEligible: true,
+          verificationStatus: 'verified',
+          evidenceQuote: 'Observed evidence supports the stated claim',
+          evidenceStatus: 'verified',
+          evidenceType: 'full-text',
+          evidenceProvenance: 'server-verified-fulltext'
+        }]
+      }],
+      [{
+        ...source,
+        evidenceStatus: undefined,
+        evidenceType: undefined,
+        evidenceProvenance: undefined
+      }]
+    );
+
+    expect(result.citations).toHaveLength(0);
+    expect(result.blockedCitationCount).toBe(1);
+  });
+
   it('allows a citation only when the verified quote is bound to server-verified full text', () => {
     const result = service.build(
       [{
