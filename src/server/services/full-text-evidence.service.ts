@@ -1,7 +1,6 @@
 import type { EvidenceProvenance, EvidenceType } from './evidence-verification-policy';
 
 export interface FullTextEnrichmentSource {
-  claimText?: string;
   id?: string;
   sourceId?: string;
   title?: string;
@@ -126,9 +125,9 @@ function findExcerpts(
 export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSource>(
   sources: T[],
   claims: string[]
-): Promise<Array<T & { claimText?: string }>> {
+): Promise<Array<T & Partial<FullTextEnrichmentSource>>> {
   if (!Array.isArray(sources) || !claims.some(claim => normalize(claim))) {
-    return sources as Array<T & { claimText?: string }>;
+    return sources;
   }
 
   return Promise.all(sources.map(async source => {
@@ -156,9 +155,9 @@ export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSour
         evidenceType: 'full-text',
         evidenceProvenance: 'server-verified-fulltext',
         evidenceUrl: url
-      } as T & { claimText?: string };
+      } as T & Partial<FullTextEnrichmentSource>;
     } catch {
-      return source as T & { claimText?: string };
+      return source;
     }
   }));
 }
