@@ -120,7 +120,10 @@ export async function fetchSemanticScholar(query: string): Promise<AcademicSourc
         url: item.url || `https://www.semanticscholar.org/paper/${item.paperId}`,
         snippet: item.abstract?.trim() || '',
         citationCount: Number.isFinite(item.citationCount) ? item.citationCount : undefined,
-        peerReviewed: false
+        peerReviewed: false,
+        ...(item.abstract?.trim()
+          ? { evidenceText: item.abstract.trim(), evidenceType: 'abstract' as const, evidenceUrl: item.url || `https://www.semanticscholar.org/paper/${item.paperId}` }
+          : {})
       }));
   } catch (err) {
     console.warn('Semantic Scholar fetch failed; returning no synthetic records.', err);
