@@ -39,9 +39,9 @@
 
 ## 🔐 یاساکانی Citation Eligibility Gate
 
-* **`VERIFIED` Source + Evidence Chunk** ➔ `citationEligible: true`, Citation generated.
-* **`PARTIALLY_VERIFIED` Source** ➔ `citationEligible: false`, Citation blocked.
-* **`UNVERIFIED` Source or Missing Chunk** ➔ `citationEligible: false`, Citation blocked, `gapDetected: true` flagged.
+* **`VERIFIED` + `full-text` + `server-verified-fulltext`** ➔ `citationEligible: true`.
+* **`VERIFIED` + abstract/snippet** ➔ evidence may be useful for research, but `citationEligible: false`.
+* **`PARTIALLY_VERIFIED`** or **`UNVERIFIED`** or missing provenance ➔ `citationEligible: false`, citation blocked, `gapDetected: true`.
 
 ---
 
@@ -114,3 +114,13 @@
 
 لێدان و ئەنجام:
 `node scripts/p5-evidence-intelligence-test.mjs` ➔ **PASS ✅**
+
+
+## 🔒 Strict Evidence Provenance Contract
+
+ئێستا `Evidence Verified` بە تەنیا مافی Citation ـی کۆتایی نادات. بۆ ئەوەی Claim ـێک `citationEligible: true` بێت، هەمان Evidence دەبێت هەموو ئەمانەی هەبێت:
+1. `verificationStatus = verified`
+2. `evidenceType = full-text`
+3. `provenance = server-verified-fulltext`
+
+`abstract` و `snippet` بۆ discovery و grounding candidate بەکاردێن، بەڵام نابنە citation ـی کۆتایی تا full-text ـی لەلایەن server ـەوە خوێندراو و پشتڕاستکراو بەردەست بێت.
