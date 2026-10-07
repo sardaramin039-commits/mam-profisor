@@ -155,8 +155,8 @@ async function readHtmlText(url: string): Promise<string> {
 
     const body = await response.text();
     const text = body
-      .replace(/<script[\\s\\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\\s\\S]*?<\/style>/gi, ' ')
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
       .replace(/<[^>]+>/g, ' ')
       .replace(/&nbsp;/gi, ' ')
       .replace(/&amp;/gi, '&')
