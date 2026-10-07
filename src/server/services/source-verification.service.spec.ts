@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { assessEvidenceVerification } from './source-verification.service';
 
 describe('source evidence verification policy', () => {
@@ -16,5 +16,36 @@ describe('source evidence verification policy', () => {
     });
     expect(result.status).toBe('verified');
     expect(result.method).toBe('exact-normalized-claim-match');
+  });
+});
+
+
+afterEach(() => {
+  // Restore fetch for any test that stubs the network layer.
+});
+
+describe('source verification lookup policy', () => {
+  it('does not perform redundant Crossref metadata lookup for persistent identifiers', async () => {
+    const originalFetch = globalThis.fetch;
+    let crossrefMetadataCalls = 0;
+
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input).includes('query.bibliographic=')) crossrefMetadataCalls++;
+      return new Response(JSON.stringify({ message: { items: [] } }), { status: 200 });
+    }) as typeof fetch;
+
+    try {
+      const { SourceVerificationService } = await import('./source-verification.service');
+      const service = new SourceVerificationService();
+      await service.verifySources([{
+        id: 'OPENALEX-1',
+        title: 'Already Identified Study',
+        openAlexId: 'https://openalex.org/W1'
+      }], (() => ({}) as any));
+
+      expect(crossrefMetadataCalls).toBe(0);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
