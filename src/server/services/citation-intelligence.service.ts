@@ -1,3 +1,5 @@
+import { isCitationEligibleEvidence } from './evidence-verification-policy';
+
 export type CitationStyle = 'APA7' | 'MLA9' | 'ChicagoAD' | 'ChicagoNB' | 'Harvard' | 'IEEE';
 
 export interface CitationRecord {
@@ -21,6 +23,14 @@ function clean(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function normalizeEvidence(value: unknown): string {
+  return clean(value)
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .replace(/\\s+/g, ' ')
+    .trim();
+}
+
 function authorsValue(source: any): string {
   if (typeof source?.author === 'string') return clean(source.author);
   if (Array.isArray(source?.authors)) {
@@ -38,6 +48,35 @@ function isPlaceholder(value: string): boolean {
     'unknown publisher',
     'untitled'
   ]).has(normalized);
+}
+
+function hasStrictEvidenceBinding(source: any, claim: any): boolean {
+  const evidenceQuote = clean(claim?.evidenceQuote);
+  const sourceEvidence = clean(
+    source?.evidenceText ??
+    source?.fullText ??
+    source?.content ??
+    source?.text ??
+    source?.chunkText
+  );
+  const evidenceStatus = clean(claim?.evidenceStatus || source?.evidenceStatus);
+  const evidenceType = claim?.evidenceType || source?.evidenceType;
+  const evidenceProvenance = claim?.evidenceProvenance || source?.evidenceProvenance;
+
+  if (
+    !isCitationEligibleEvidence(
+      evidenceStatus === 'verified' ? 'verified' : 'not_available',
+      Boolean(evidenceQuote && sourceEvidence),
+      evidenceType,
+      evidenceProvenance
+    )
+  ) {
+    return false;
+  }
+
+  const quote = normalizeEvidence(evidenceQuote);
+  const evidence = normalizeEvidence(sourceEvidence);
+  return Boolean(quote && evidence && evidence.includes(quote));
 }
 
 export class CitationIntelligenceService {
@@ -65,12 +104,13 @@ export class CitationIntelligenceService {
         const sourceId = clean(claim?.sourceId);
         const source = sourceById.get(sourceId);
 
-        if (
-          !source ||
-          source.citationEligible === false ||
-          claim?.citationEligible !== true ||
-          claim?.verificationStatus !== 'verified'
-        ) {
+        const sourceAndClaimVerified =
+          source &&
+          source.citationEligible !== false &&
+          claim?.citationEligible === true &&
+          claim?.verificationStatus === 'verified';
+
+        if (!sourceAndClaimVerified || !hasStrictEvidenceBinding(source, claim)) {
           blockedCitationCount++;
           if (!sourceId || !source) unmappedClaimCount++;
           continue;
