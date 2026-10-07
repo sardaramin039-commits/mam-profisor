@@ -57,6 +57,7 @@ export interface ResearchIntelligenceResult {
     claimCitationEligible: boolean;
     evidenceUrl?: string;
     evidenceType?: 'abstract' | 'snippet' | 'full-text';
+    evidenceProvenance?: 'server-verified-fulltext' | 'user-supplied-content' | 'unknown';
     provider?: string;
     evidenceFingerprint: string;
   }>;
@@ -332,6 +333,7 @@ JSON:
         evidenceText: source?.evidenceText,
         evidenceUrl: source?.evidenceUrl,
         evidenceType: source?.evidenceType,
+        evidenceProvenance: source?.evidenceProvenance,
         sourceType: source?.sourceType
       })),
       verification.allReports
