@@ -27,6 +27,9 @@ export class AcademicQualityCenterComponent {
   readonly gapError = signal<string | null>(null);
   readonly pipeline = signal<any | null>(null);
   readonly gapResult = signal<any | null>(null);
+  readonly isResearchIntelRunning = signal(false);
+  readonly researchIntelError = signal<string | null>(null);
+  readonly researchIntel = signal<any | null>(null);
 
   readonly evidenceRows = computed<EvidenceRow[]>(() => {
     const paragraphs = this.pipeline()?.groundedGeneration?.paragraphs;
@@ -53,6 +56,67 @@ export class AcademicQualityCenterComponent {
     const chapter = this.activeChapter;
     const formTitle = this.vm?.refineForm?.get?.('title')?.value;
     this.topic.set(String(chapter?.title || formTitle || '').trim());
+  }
+
+  runResearchIntelligence(): void {
+    const chapter = this.activeChapter;
+    const topic = (this.topic() || chapter?.title || this.vm?.refineForm?.get?.('title')?.value || '').trim();
+    const chapters = (this.vm?.chapters?.() || [])
+      .map((item: any) => ({
+        id: String(item?.id || ''),
+        title: String(item?.title || ''),
+        content: String(item?.content || '').slice(0, 12000)
+      }))
+      .filter((item: any) => item.title || item.content)
+      .slice(0, 20);
+
+    if (!topic) {
+      this.researchIntelError.set('ناونیشانی توێژینەوە پێویستە.');
+      return;
+    }
+
+    this.isResearchIntelRunning.set(true);
+    this.researchIntelError.set(null);
+
+    const rawSources = this.collectSources();
+    const discipline = String(this.vm?.refineForm?.get?.('discipline')?.value || 'گشتی');
+    const academicLevel = String(this.vm?.refineForm?.get?.('academicLevel')?.value || '');
+    const draftText = String(chapter?.content || this.vm?.getActiveThesisText?.() || '').trim();
+
+    const readText = (key: string): string => {
+      const control = this.vm?.refineForm?.get?.(key)?.value;
+      if (typeof control === 'string' && control.trim()) return control.trim();
+      const value = this.vm?.[key];
+      if (typeof value === 'function') return String(value() || '').trim();
+      return typeof value === 'string' ? value.trim() : '';
+    };
+
+    this.http.post<any>('/api/research_intelligence', {
+      topic,
+      discipline,
+      academicLevel,
+      draftText: draftText.slice(0, 250000),
+      chapters,
+      researchQuestion: readText('researchQuestion'),
+      objectives: readText('objectives'),
+      hypotheses: readText('hypotheses') || String(this.vm?.hypothesesInput?.() || ''),
+      methodology: readText('methodology') || String(this.vm?.methodologyResult?.()?.methodologyText || ''),
+      populationSample: readText('populationSample'),
+      variables: readText('variables'),
+      dataCollection: readText('dataCollection'),
+      analysisPlan: readText('analysisPlan'),
+      rawSources
+    }).subscribe({
+      next: result => {
+        this.researchIntel.set(result?.result || null);
+        this.isResearchIntelRunning.set(false);
+      },
+      error: err => {
+        console.error('Research intelligence error:', err);
+        this.researchIntelError.set('Research Intelligence ـەکە سەرکەوتوو نەبوو.');
+        this.isResearchIntelRunning.set(false);
+      }
+    });
   }
 
   runFullAudit(): void {
