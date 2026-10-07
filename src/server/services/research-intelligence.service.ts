@@ -11,6 +11,7 @@ import {
 import { fetchOpenAlex, fetchCrossref } from '../../helpers/academic-discovery-providers';
 import { robustParseJson } from '../utils/json-repair';
 import { sourceVerificationService } from './source-verification.service';
+import { linkClaimsToEvidence } from './research-evidence-linking';
 
 export interface ResearchIntelligenceRequest {
   topic: string;
@@ -45,6 +46,14 @@ export interface ResearchIntelligenceResult {
   };
   planner: any;
   factCheck: any;
+  evidenceLinks: Array<{
+    claim: string;
+    sourceId: string;
+    sourceTitle: string;
+    evidenceText: string;
+    overlapScore: number;
+    status: 'candidate' | 'strong-candidate';
+  }>;
   methodology: any;
   consistency: any;
   sourceVerification: {
@@ -300,6 +309,24 @@ JSON:
       };
     }
 
+    const factCheck = safeJson(textOf(factRes), {
+      summary: { totalClaims: 0, supported: 0, insufficientEvidence: 0, unsupported: 0 },
+      claims: [],
+      policy: 'هیچ claim ـێک بەبێ evidence بە پشتڕاستکراو دانانرێت.'
+    });
+    const claimTexts = Array.isArray(factCheck?.claims)
+      ? factCheck.claims.map((item: any) => String(item?.claim || '').trim()).filter(Boolean)
+      : [];
+    const evidenceLinks = linkClaimsToEvidence(
+      claimTexts,
+      discovery.sources.map((source: any) => ({
+        id: source?.id,
+        sourceId: source?.sourceId,
+        title: source?.title,
+        evidenceText: source?.evidenceText
+      }))
+    );
+
     return {
       discovery,
       analysisStatus: {
@@ -319,11 +346,7 @@ JSON:
         plannedSections: [],
         riskNotes: ['پلان بەهۆی کێشەی AI بە تەواوی نەدرا.']
       }),
-      factCheck: safeJson(textOf(factRes), {
-        summary: { totalClaims: 0, supported: 0, insufficientEvidence: 0, unsupported: 0 },
-        claims: [],
-        policy: 'هیچ claim ـێک بەبێ evidence بە پشتڕاستکراو دانانرێت.'
-      }),
+      factCheck,
       methodology: safeJson(textOf(methodologyRes), {
         overallScore: 0,
         status: 'review',
