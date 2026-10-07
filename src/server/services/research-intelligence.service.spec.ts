@@ -32,7 +32,12 @@ describe('research intelligence discovery', () => {
               landing_page_url: 'https://example.org/paper',
               source: { display_name: 'Example Journal' }
             },
-            cited_by_count: 12
+            cited_by_count: 12,
+            abstract_inverted_index: {
+              Example: [0],
+              'academic': [1],
+              abstract: [2]
+            }
           }]
         });
       }
@@ -48,7 +53,8 @@ describe('research intelligence discovery', () => {
               published: { 'date-parts': [[2025]] },
               URL: 'https://doi.org/10.1000/example',
               'container-title': ['Example Journal'],
-              'is-referenced-by-count': 12
+              'is-referenced-by-count': 12,
+              abstract: '<jats:p>Example academic abstract evidence.</jats:p>'
             }]
           }
         });
@@ -66,6 +72,8 @@ describe('research intelligence discovery', () => {
     expect(result.providers).toContain('Crossref');
     expect(result.sources.filter(source => source.doi === '10.1000/example')).toHaveLength(1);
     expect(result.sources[0]?.title).toBe('Example Academic Study');
+    expect(result.sources[0]?.evidenceText).toBeTruthy();
+    expect(result.sources[0]?.evidenceType).toBe('abstract');
   });
 });
 
