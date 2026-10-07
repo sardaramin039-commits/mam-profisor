@@ -47,6 +47,7 @@ import { AcademicPlatformComponent } from './features/academic-platform/academic
 import { LibraryWorkspaceComponent } from './features/digital-library/library-workspace.component';
 import { VipWritingQualityComponent } from './features/editor/components/vip-writing-quality.component';
 import { FloatingAcademicToolbarComponent } from './features/editor/components/floating-academic-toolbar.component';
+import { AcademicQualityCenterComponent } from './features/academic-quality-center/academic-quality-center';
 
 export const BASIC_VIEW_IMPORTS = [
   CommonModule,
@@ -99,6 +100,7 @@ export const WORKSPACE_FEATURE_IMPORTS = [
   ConceptGraphComponent,
   VipWritingQualityComponent,
   FloatingAcademicToolbarComponent,
+  AcademicQualityCenterComponent,
 ] as const;
 
 /** Legacy aggregate kept for compatibility with feature code outside template sections. */
@@ -152,4 +154,5 @@ export const APP_VIEW_IMPORTS = [
   LibraryWorkspaceComponent,
   VipWritingQualityComponent,
   FloatingAcademicToolbarComponent,
+  AcademicQualityCenterComponent,
 ];
