@@ -1,50 +1,36 @@
 import assert from 'node:assert/strict';
-import { sourceVerificationService } from '../src/server/services/source-verification.service.ts';
+import { assessEvidenceVerification } from '../src/server/services/source-verification.service.ts';
 
 console.log('🧪 Starting P1 Academic Integrity Smoke Test...\n');
 
-const mockGeminiClient = () => ({
-  models: {
-    generateContent: async () => ({
-      text: JSON.stringify({
-        reports: [
-          {
-            sourceTitle: 'کتێبی سەلمێنراو',
-            author: 'د. ڕێبوار',
-            publisher: 'چاپخانەی هارفەرد',
-            integrityScore: 95,
-            trustLevel: 'A+',
-            existenceVerified: true,
-            metadataAccuracy: 95,
-            peerReviewed: true,
-            rejectedAsFabricated: false,
-            kurdishVerificationDetails: 'سەرچاوەی بەرز'
-          },
-          {
-            sourceTitle: 'سەرچاوەی بێبەڵگە',
-            author: 'نادیار',
-            publisher: 'نادیار',
-            integrityScore: 20,
-            trustLevel: 'F',
-            existenceVerified: false,
-            metadataAccuracy: 10,
-            peerReviewed: false,
-            rejectedAsFabricated: true,
-            kurdishVerificationDetails: 'سەرچاوەی ڕەتکراوە'
-          }
-        ]
-      })
-    })
-  }
+const missingEvidence = assessEvidenceVerification({
+  claimText: 'بانگەشەی زانستی',
+  evidenceText: ''
 });
-
-const result = await sourceVerificationService.verifySources(
-  [{ title: 'کتێبی سەلمێنراو', author: 'د. ڕێبوار', year: '2024' }],
-  mockGeminiClient
+assert.equal(
+  missingEvidence.status,
+  'not_available',
+  'A claim without evidence MUST remain unavailable'
 );
 
-assert.equal(result.verifiedSources.length, 2, 'Verified sources count must be 2');
-assert.equal(result.verifiedSources[0].trustLevel, 'A+');
-assert.equal(result.rejectedSourcesCount, 1, 'One source with Trust Level F must be flagged as rejected');
+const verifiedEvidence = assessEvidenceVerification({
+  claimText: 'ئەم وتارە پێشکەوتنێکی گرنگە.',
+  evidenceText: 'ئەم وتارە پێشکەوتنێکی گرنگە.'
+});
+assert.equal(
+  verifiedEvidence.status,
+  'verified',
+  'An exact normalized claim/evidence match MUST be verified'
+);
+
+const mismatchedEvidence = assessEvidenceVerification({
+  claimText: 'ئەم وتارە پێشکەوتنێکی گرنگە.',
+  evidenceText: 'دەقی تر کە هیچ پەیوەندییەکی نییە.'
+});
+assert.equal(
+  mismatchedEvidence.status,
+  'unverified',
+  'A mismatched evidence chunk MUST NOT become verified'
+);
 
 console.log('✅ P1 Academic Integrity Smoke Test PASSED SUCCESSFULLY!');
