@@ -27,7 +27,7 @@ function normalizeEvidence(value: unknown): string {
   return clean(value)
     .normalize('NFKC')
     .toLocaleLowerCase()
-    .replace(/\\s+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
