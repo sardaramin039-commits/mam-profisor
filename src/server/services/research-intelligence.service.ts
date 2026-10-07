@@ -37,6 +37,12 @@ export interface ResearchIntelligenceResult {
     providers: string[];
     verificationPolicy: string;
   };
+  analysisStatus: {
+    planner: 'ok' | 'degraded';
+    methodology: 'ok' | 'degraded';
+    factCheck: 'ok' | 'degraded';
+    consistency: 'ok' | 'degraded';
+  };
   planner: any;
   factCheck: any;
   methodology: any;
