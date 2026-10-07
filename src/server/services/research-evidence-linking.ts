@@ -1,4 +1,10 @@
-import { assessEvidenceVerification, SourceVerificationReport } from './source-verification.service';
+import {
+  assessEvidenceVerification,
+  EvidenceProvenance,
+  EvidenceType,
+  isCitationEligibleEvidence,
+  SourceVerificationReport
+} from './source-verification.service';
 
 export interface EvidenceLink {
   claim: string;
@@ -10,7 +16,8 @@ export interface EvidenceLink {
   verificationStatus: 'verified' | 'unverified' | 'not_available';
   claimCitationEligible: boolean;
   evidenceUrl?: string;
-  evidenceType?: 'abstract' | 'snippet' | 'full-text';
+  evidenceType?: EvidenceType;
+  evidenceProvenance?: EvidenceProvenance;
   provider?: string;
   evidenceFingerprint: string;
 }
@@ -60,7 +67,8 @@ export async function linkClaimsToEvidence(
     title?: string;
     evidenceText?: string;
     evidenceUrl?: string;
-    evidenceType?: 'abstract' | 'snippet' | 'full-text';
+    evidenceType?: EvidenceType;
+    evidenceProvenance?: EvidenceProvenance;
     sourceType?: string;
   }>,
   reports: SourceVerificationReport[] = [],
@@ -92,9 +100,15 @@ export async function linkClaimsToEvidence(
           verificationStatus: evidenceVerification.status,
           claimCitationEligible:
             report?.identityStatus === 'verified' &&
-            evidenceVerification.status === 'verified',
+            isCitationEligibleEvidence(
+              evidenceVerification.status,
+              Boolean(evidence),
+              source.evidenceType,
+              source.evidenceProvenance
+            ),
           evidenceUrl: String(source.evidenceUrl || '').trim() || undefined,
           evidenceType: source.evidenceType,
+          evidenceProvenance: source.evidenceProvenance,
           provider: String(source.sourceType || '').trim() || undefined,
           evidenceFingerprint: evidence ? await fingerprint(normalize(evidence)) : ''
         };
