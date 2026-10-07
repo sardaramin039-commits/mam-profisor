@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { MatIconModule } from '@angular/material/icon';
 
 interface EvidenceRow {
   claim: string;
@@ -10,7 +11,7 @@ interface EvidenceRow {
 @Component({
   selector: 'app-academic-quality-center',
   standalone: true,
-  imports: [],
+  imports: [MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './academic-quality-center.html'
 })
