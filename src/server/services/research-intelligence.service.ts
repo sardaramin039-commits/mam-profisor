@@ -328,7 +328,6 @@ JSON:
         evidenceText: source?.evidenceText
       })),
       verification.allReports
-    )
     );
 
     return {
