@@ -143,3 +143,55 @@ describe('research intelligence verification flow', () => {
     }
   });
 });
+
+
+describe('research intelligence resilience', () => {
+  it('keeps the audit usable when one AI analysis module fails', async () => {
+    const originalDiscover = researchIntelligenceService.discover;
+    const originalVerify = sourceVerificationService.verifySources;
+
+    researchIntelligenceService.discover = async () => ({
+      query: 'topic discipline',
+      sources: [],
+      total: 0,
+      providers: [],
+      verificationPolicy: 'verified-only'
+    });
+
+    sourceVerificationService.verifySources = async () => ({
+      verifiedSources: [],
+      citationEligibleSources: [],
+      rejectedSources: [],
+      unverifiedSources: [],
+      allReports: [],
+      rejectedSourcesCount: 0
+    });
+
+    let callCount = 0;
+    const ai = {
+      models: {
+        generateContent: async () => {
+          callCount++;
+          if (callCount === 2) throw new Error('forced methodology failure');
+          return { text: '{}' };
+        }
+      }
+    } as any;
+
+    try {
+      const result = await researchIntelligenceService.execute({
+        topic: 'topic',
+        discipline: 'discipline'
+      }, () => ai);
+
+      expect(result.analysisStatus.planner).toBe('ok');
+      expect(result.analysisStatus.methodology).toBe('degraded');
+      expect(result.analysisStatus.factCheck).toBe('ok');
+      expect(result.analysisStatus.consistency).toBe('ok');
+      expect(result.methodology.status).toBe('review');
+    } finally {
+      researchIntelligenceService.discover = originalDiscover;
+      sourceVerificationService.verifySources = originalVerify;
+    }
+  });
+});
