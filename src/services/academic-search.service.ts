@@ -25,7 +25,7 @@ export class AcademicSearchService {
     try {
       const apiKey = process.env['OPENALEX_API_KEY'];
       const headers: Record<string, string> = {
-        'User-Agent': 'AcademicKurdishPlatform/1.0 (mailto:admin@example.com)',
+        'User-Agent': 'Mam-Professor-Academic-Platform/1.0',
       };
       if (apiKey) {
         headers['api_key'] = apiKey;
@@ -40,16 +40,18 @@ export class AcademicSearchService {
       const results = response.data?.results;
       if (!Array.isArray(results)) return [];
 
-      return results.map((item: any) => ({
-        id: item.id || item.doi || `openalex:${this.stableId(item.display_name || item.title || '')}`,
-        title: item.display_name || item.title || 'سەردێڕی دیارینەکراو',
-        doi: item.doi || undefined,
-        authors: item.authorships?.map((a: any) => a.author?.display_name || '').filter(Boolean) || [],
-        publicationYear: item.publication_year ?? 0,
-        abstract: item.abstract_inverted_index ? this.decodeAbstract(item.abstract_inverted_index) : undefined,
-        source: 'openalex' as const,
-        url: item.doi || (item.id ? `https://openalex.org/${item.id}` : undefined),
-      }));
+      return results
+        .map((item: any) => ({
+          id: item.id || item.doi || `openalex:${this.stableId(item.display_name || item.title || '')}`,
+          title: String(item.display_name || item.title || '').trim(),
+          doi: item.doi || undefined,
+          authors: item.authorships?.map((a: any) => a.author?.display_name || '').filter(Boolean) || [],
+          publicationYear: Number.isInteger(item.publication_year) ? item.publication_year : 0,
+          abstract: item.abstract_inverted_index ? this.decodeAbstract(item.abstract_inverted_index) : undefined,
+          source: 'openalex' as const,
+          url: item.doi || (item.id ? (String(item.id).startsWith('http') ? item.id : `https://openalex.org/${item.id}`) : undefined),
+        }))
+        .filter(item => Boolean(item.title && item.id));
     } catch (error) {
       console.warn('[OpenAlex Error]:', error);
       return [];
@@ -79,15 +81,19 @@ export class AcademicSearchService {
       const items = response.data?.message?.items;
       if (!Array.isArray(items)) return [];
 
-      return items.map((item: any) => ({
-        id: item.DOI || `crossref:${this.stableId(item.title?.[0] || '')}`,
-        title: item.title?.[0] || 'سەردێڕی دیارینەکراو',
-        doi: item.DOI,
-        authors: item.author?.map((a: any) => `${a.given || ''} ${a.family || ''}`.trim()).filter(Boolean) || [],
-        publicationYear: item.published?.['date-parts']?.[0]?.[0] ?? 0,
-        source: 'crossref' as const,
-        url: item.URL || (item.DOI ? `https://doi.org/${item.DOI}` : undefined),
-      }));
+      return items
+        .map((item: any) => ({
+          id: item.DOI || `crossref:${this.stableId(item.title?.[0] || '')}`,
+          title: String(item.title?.[0] || '').trim(),
+          doi: item.DOI,
+          authors: item.author?.map((a: any) => `${a.given || ''} ${a.family || ''}`.trim()).filter(Boolean) || [],
+          publicationYear: Number.isInteger(item.published?.['date-parts']?.[0]?.[0])
+            ? item.published['date-parts'][0][0]
+            : 0,
+          source: 'crossref' as const,
+          url: item.URL || (item.DOI ? `https://doi.org/${item.DOI}` : undefined),
+        }))
+        .filter(item => Boolean(item.title && item.id));
     } catch (error) {
       console.warn('[CrossRef Error]:', error);
       return [];
@@ -131,7 +137,7 @@ export class AcademicSearchService {
           || info.industryIdentifiers?.find((entry: any) => entry?.type === 'ISBN_10')?.identifier;
         return {
           id: item.id || isbn || `gbooks:${this.stableId(info.title || '')}`,
-          title: info.title || 'سەردێڕی دیارینەکراو',
+          title: String(info.title || '').trim(),
           isbn,
           authors: info.authors || [],
           publicationYear: year,
@@ -156,11 +162,19 @@ export class AcademicSearchService {
       this.searchGoogleBooks(query, subLimit),
     ]);
 
-    const combined = [...openAlex, ...crossref, ...googleBooks];
-    if (combined.length > 0) return combined.slice(0, limit);
+    const combined = [...openAlex, ...crossref, ...googleBooks]
+      .filter(item => Boolean(item.title && item.id))
+      .map(item => ({ ...item, title: item.title.trim() }));
 
-    // Never invent a scholarly record when external indexes return no results.
-    return [];
+    const seen = new Set<string>();
+    const deduplicated = combined.filter(item => {
+      const key = (item.doi || item.isbn || item.title).toLocaleLowerCase().trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return deduplicated.slice(0, limit);
   }
 
   /**
