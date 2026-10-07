@@ -12,6 +12,7 @@ import { fetchOpenAlex, fetchCrossref } from '../../helpers/academic-discovery-p
 import { robustParseJson } from '../utils/json-repair';
 import { sourceVerificationService } from './source-verification.service';
 import { linkClaimsToEvidence } from './research-evidence-linking';
+import { enrichSourcesWithFullText } from './full-text-evidence.service';
 
 export interface ResearchIntelligenceRequest {
   topic: string;
@@ -324,9 +325,35 @@ JSON:
     const claimTexts = Array.isArray(factCheck?.claims)
       ? factCheck.claims.map((item: any) => String(item?.claim || '').trim()).filter(Boolean)
       : [];
+
+    const enrichedSources = await enrichSourcesWithFullText(
+      verificationSources.map((source: any) => ({
+        id: source?.id,
+        sourceId: source?.sourceId,
+        title: source?.title || source?.sourceTitle,
+        url: source?.url,
+        pmid: source?.pmid,
+        pmcid: source?.pmcid,
+        evidenceText: source?.evidenceText,
+        evidenceType: source?.evidenceType,
+        evidenceProvenance: source?.evidenceProvenance || 'unknown',
+        evidenceUrl: source?.evidenceUrl
+      })),
+      claimTexts
+    );
+
+    try {
+      verification = await sourceVerificationService.verifySources(
+        enrichedSources,
+        getGeminiClient
+      );
+    } catch {
+      // Keep the identity verification result if full-text re-verification is unavailable.
+    }
+
     const evidenceLinks = await linkClaimsToEvidence(
       claimTexts,
-      discovery.sources.map((source: any) => ({
+      enrichedSources.map((source: any) => ({
         id: source?.id,
         sourceId: source?.sourceId,
         title: source?.title,
