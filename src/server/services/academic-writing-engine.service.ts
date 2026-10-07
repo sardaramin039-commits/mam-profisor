@@ -29,16 +29,16 @@ export class AcademicWritingEngineService {
     const ai = getGeminiClient();
     const profile = disciplineProfileService.getProfile(discipline);
 
-    const prompt = `تۆ سەرنووسەری ئەکادیمی باڵای زانکۆی هارفەردیت. بونیادێکی بەهێزی بەڵگەداری ئارگومێنتی (Argument Architecture) بۆ ئەم بابەتە بنووسە:
+    const prompt = `تۆ سەرنووسەرێکی ئەکادیمیی زانکۆیییت. بونیادێکی ڕێکخراوی ئارگومێنتی (Argument Architecture) بۆ ئەم بابەتە دابنێ:
 بابەت: ${topic}
 بوار: ${discipline}
 پرۆفایلی بوار: ${JSON.stringify(profile)}
 
-بونیادەکە بە پێوەرەکانی هارفەرد:
+بونیادەکە بەپێی پێوەرە باوەڕپێکراوەکانی نووسینی ئەکادیمی دابنێ:
 1. Research Question (پرسیاری سەرەکی توێژینەوە)
 2. Thesis Statement (فرزیەی بنەڕەتی)
 3. Arguments & Sub-arguments (ئارگومێنت و لاوەکییەکان)
-4. Evidence & Quotes (بەڵگە و وتەکان)
+4. Evidence & Quotes (بەڵگە و وتەکان؛ لەم سەروەرەدا هیچ quote ـێکی ڕاستەقینە دروست مەکە، تەنها خانەکە بەتاڵ بهێڵە)
 5. Counterarguments & Synthesis (وەڵامی دژە-ئارگومێنت و تێکەڵکردن)
 6. Conclusion (ئەنجامگیری)
 
@@ -51,7 +51,7 @@ export class AcademicWritingEngineService {
       "id": "ARG-01",
       "claim": "ئارگومێنتی سەرەکی یەکەم",
       "subArguments": ["خاڵی لاوەکی A", "خاڵی لاوەکی B"],
-      "evidenceQuotes": ["بەڵگەی بەهێزی زانستی"],
+      "evidenceQuotes": [],
       "counterArguments": ["دژە-ئارگومێنتی ئەگەری"],
       "synthesisKurdish": "شیکاری تێکەڵکردن و بەرگری زانستی"
     }
@@ -71,23 +71,23 @@ export class AcademicWritingEngineService {
 
       const parsed = JSON.parse(response.text || '{}');
       return {
-        researchQuestion: parsed.researchQuestion || `چۆن ${topic} کاریگەری لەسەر ئاڕاستە ئەکادیمییەکان دەکات؟`,
-        thesisStatement: parsed.thesisStatement || `ئەم توێژینەوەیە دەسەلمێنێت کە ${topic} پایەیەکی گرنگی زانستییە.`,
+        researchQuestion: parsed.researchQuestion || `پرسیاری توێژینەوەی پێشنیارکراو لەسەر «${topic}»؛ پێویستی بە پشکنینی ئەدەبیات هەیە.`,
+        thesisStatement: parsed.thesisStatement || `فرزیەی پێشنیارکراو بۆ «${topic}»؛ پێویستە بە Evidence ـی ڕاستەقینە پشتڕاست بکرێتەوە.`,
         arguments: parsed.arguments || [],
-        overallConclusion: parsed.overallConclusion || `ئەم توێژینەوەیە دەروازەیەکی نوێ بۆ بوارەکە دەکاتەوە.`
+        overallConclusion: parsed.overallConclusion || `کۆتایی و دەرئەنجامی توێژینەوەکە دوای کۆکردنەوە و هەڵسەنگاندنی Evidence دیاری دەکرێت.`
       };
     } catch (err: any) {
       console.error('Error in AcademicWritingEngineService:', err);
       return {
-        researchQuestion: `پرسیاری سەرەکی بۆ توێژینەوەی "${topic}" (پێویستی بە پشکنینی توێژەر هەیە)`,
-        thesisStatement: `فرزیەی کارییەتی بۆ "${topic}"؛ ئەمە نموونەی داڕشتنە و نابێت وەک دەرئەنجامی سەلمێنراو وەربگیرێت.`,
+        researchQuestion: `پرسیاری پێشنیارکراو بۆ توێژینەوەی «${topic}»؛ پێویستی بە دیاریکردنی scope و پشکنینی ئەدەبیات هەیە.`,
+        thesisStatement: `فرزیەی پێشنیارکراو بۆ «${topic}»؛ نابێت وەک دەرئەنجامی سەلمێنراو وەربگیرێت تا Evidence کۆنەکرێت و پشکنین نەکرێت.`,
         arguments: [
           {
             id: 'ARG-DRAFT-01',
-            claim: `خاڵی شیکاری بۆ "${topic}" پێویستی بە بەڵگەی ڕەسەن هەیە.`,
-            subArguments: ['خاڵی شیکاری یەکەم', 'خاڵی شیکاری دووەم'],
+            claim: `خاڵێکی شیکاری پێشنیارکراو بۆ «${topic}»؛ پێویستی بە بەڵگەی ڕەسەن هەیە.`,
+            subArguments: ['ژێرپرسیاری یەکەم بۆ پشکنین', 'ژێرپرسیاری دووەم بۆ پشکنین'],
             evidenceQuotes: [],
-            counterArguments: ['دژە-ئارگومێنتێک دیاری بکە لە دوای پشکنینی ئەدەبیات.'],
+            counterArguments: ['دژە-ئارگومێنتێکی ئەگەری دیاری بکە دوای خوێندنەوەی ئەدەبیات.'],
             synthesisKurdish: 'ئەم بونیادە تەنها scaffold ـە؛ پێویستە Claim و Evidence ـەکان لە سەرچاوەی ڕەسەنەوە پشتڕاست بکرێن.'
           }
         ],

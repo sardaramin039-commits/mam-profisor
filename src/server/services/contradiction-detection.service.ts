@@ -37,6 +37,19 @@ export class ContradictionDetectionService {
       return { findings: [], contradictionCount: 0, highSeverityCount: 0, status: 'insufficient_evidence' };
     }
 
+    const findClaim = (reference: string, text: string) => {
+      const normalizedText = safeText(text);
+      return safeClaims.find(claim => {
+        const claimId = safeText(claim?.claimId);
+        const sourceId = safeText(claim?.sourceId);
+        const claimText = safeText(claim?.text ?? claim?.sentenceText);
+        return (
+          (reference && (claimId === reference || sourceId === reference)) ||
+          (normalizedText && claimText === normalizedText)
+        );
+      });
+    };
+
     const sourceName = (id: string) => {
       const source = safeSources.find(item =>
         String(item?.id ?? item?.sourceId ?? item?.doiOrIsbn ?? item?.doi ?? '') === id
@@ -74,10 +87,16 @@ ${JSON.stringify(safeClaims.map(claim => ({
           const claimA = safeText(item?.claimA);
           const claimB = safeText(item?.claimB);
           const severity = ['low', 'medium', 'high'].includes(item?.severity) ? item.severity : 'medium';
+          const claimRefA = findClaim(sourceA, claimA);
+          const claimRefB = findClaim(sourceB, claimB);
           const supported = Boolean(
-            claimA && claimB && sourceA && sourceB &&
-            safeClaims.some(c => c.claimId === sourceA || c.sourceId === sourceA || c.text === claimA) &&
-            safeClaims.some(c => c.claimId === sourceB || c.sourceId === sourceB || c.text === claimB)
+            claimA &&
+            claimB &&
+            sourceA &&
+            sourceB &&
+            claimRefA &&
+            claimRefB &&
+            claimRefA !== claimRefB
           );
           return {
             id: safeText(item?.id) || `CON-${String(index + 1).padStart(3, '0')}`,
