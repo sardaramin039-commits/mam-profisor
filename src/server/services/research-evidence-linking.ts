@@ -73,7 +73,7 @@ export async function linkClaimsToEvidence(
     const claim = String(claimValue || '').trim();
     if (!claim) continue;
 
-    const ranked = await Promise.all(sources.map(async source => {
+    const ranked = (await Promise.all(sources.map(async source => {
         const evidence = String(source.evidenceText || '').trim();
         const score = evidence ? overlapScore(claim, evidence) : 0;
         const sourceId = String(source.id || source.sourceId || '').trim();
@@ -98,7 +98,7 @@ export async function linkClaimsToEvidence(
           provider: String(source.sourceType || '').trim() || undefined,
           evidenceFingerprint: evidence ? await fingerprint(normalize(evidence)) : ''
         };
-      }))
+      })))
       .filter(item => item.sourceId && item.evidenceText && item.overlapScore >= 35)
       .sort((a, b) =>
         Number(b.claimCitationEligible) - Number(a.claimCitationEligible) ||
