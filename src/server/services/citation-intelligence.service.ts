@@ -59,9 +59,9 @@ function hasStrictEvidenceBinding(source: any, claim: any): boolean {
     source?.text ??
     source?.chunkText
   );
-  const evidenceStatus = clean(claim?.evidenceStatus || source?.evidenceStatus);
-  const evidenceType = claim?.evidenceType || source?.evidenceType;
-  const evidenceProvenance = claim?.evidenceProvenance || source?.evidenceProvenance;
+  const evidenceStatus = clean(source?.evidenceStatus);
+  const evidenceType = source?.evidenceType;
+  const evidenceProvenance = source?.evidenceProvenance;
 
   if (
     !isCitationEligibleEvidence(
