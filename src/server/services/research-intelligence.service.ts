@@ -46,6 +46,16 @@ export interface ResearchIntelligenceResult {
     identityVerified: number;
     citationEligible: number;
     rejected: number;
+    reports: Array<{
+      sourceId: string;
+      sourceTitle: string;
+      identityStatus: string;
+      evidenceStatus: string;
+      citationEligible: boolean;
+      trustLevel: string;
+      metadataAccuracy: number;
+      rejectionReasonKurdish?: string;
+    }>;
   };
 }
 
@@ -304,7 +314,17 @@ JSON:
         received: verificationSources.length,
         identityVerified: verification.verifiedSources?.length || 0,
         citationEligible: verification.citationEligibleSources?.length || 0,
-        rejected: verification.rejectedSources?.length || 0
+        rejected: verification.rejectedSources?.length || 0,
+        reports: (verification.allReports || []).slice(0, 30).map(report => ({
+          sourceId: report.sourceId,
+          sourceTitle: report.sourceTitle,
+          identityStatus: report.identityStatus,
+          evidenceStatus: report.evidenceStatus,
+          citationEligible: report.citationEligible,
+          trustLevel: report.trustLevel,
+          metadataAccuracy: report.metadataAccuracy,
+          rejectionReasonKurdish: report.rejectionReasonKurdish
+        }))
       }
     };
   }
