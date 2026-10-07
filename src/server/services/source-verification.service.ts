@@ -7,7 +7,8 @@ import {
 } from './evidence-verification-policy';
 import type {
   EvidenceProvenance,
-  EvidenceType
+  EvidenceType,
+  EvidenceVerificationStatus
 } from './evidence-verification-policy';
 
 export {
