@@ -264,7 +264,8 @@ JSON:
       ? providedSources
       : discovery.sources.slice(0, 100);
 
-    let verification;
+    type VerificationResult = Awaited<ReturnType<typeof sourceVerificationService.verifySources>>;
+    let verification: VerificationResult;
     try {
       verification = await sourceVerificationService.verifySources(
         verificationSources,
@@ -274,8 +275,11 @@ JSON:
       verification = {
         verifiedSources: [],
         citationEligibleSources: [],
-        rejectedSources: []
-      } as any;
+        rejectedSources: [],
+        unverifiedSources: [],
+        allReports: [],
+        rejectedSourcesCount: 0
+      };
     }
 
     return {
