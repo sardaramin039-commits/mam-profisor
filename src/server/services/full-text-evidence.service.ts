@@ -148,7 +148,7 @@ async function readHtmlText(url: string): Promise<string> {
       .replace(/&gt;/gi, '>')
       .replace(/&quot;/gi, '"')
       .replace(/&#39;/gi, "'")
-      .replace(/\\s+/g, ' ')
+      .replace(/\s+/g, ' ')
       .trim();
   } catch {
     return '';
