@@ -102,6 +102,26 @@
                 </div>
                 <div class="text-[8px] font-semibold text-stone-600 mt-1">{{ link.sourceTitle }}</div>
                 <div class="text-[8px] text-stone-500 leading-relaxed mt-1">{{ link.evidenceText.slice(0, 260) }}{{ link.evidenceText.length > 260 ? '…' : '' }}</div>
+                <div class="flex flex-wrap gap-1 mt-1.5">
+                  <span class="px-1.5 py-0.5 rounded border text-[7px] font-bold"
+                    [class.border-emerald-200]="link.verificationStatus === 'verified'"
+                    [class.bg-emerald-50]="link.verificationStatus === 'verified'"
+                    [class.text-emerald-800]="link.verificationStatus === 'verified'"
+                    [class.border-amber-200]="link.verificationStatus !== 'verified'"
+                    [class.bg-amber-50]="link.verificationStatus !== 'verified'"
+                    [class.text-amber-900]="link.verificationStatus !== 'verified'">
+                    {{ link.verificationStatus === 'verified' ? 'Evidence بۆ claim پشتڕاستکراوە' : link.verificationStatus === 'unverified' ? 'Evidence هاوتای تەواو نییە' : 'Evidence هێشتا نەسەلمێنراوە' }}
+                  </span>
+                  <span class="px-1.5 py-0.5 rounded border text-[7px] font-bold"
+                    [class.border-emerald-200]="link.claimCitationEligible"
+                    [class.bg-emerald-50]="link.claimCitationEligible"
+                    [class.text-emerald-800]="link.claimCitationEligible"
+                    [class.border-stone-200]="!link.claimCitationEligible"
+                    [class.bg-white]="!link.claimCitationEligible"
+                    [class.text-stone-600]="!link.claimCitationEligible">
+                    {{ link.claimCitationEligible ? 'Claim Citation Eligible' : 'Claim Citation قەدەغەیە' }}
+                  </span>
+                </div>
               </div>
             }
           </div>
