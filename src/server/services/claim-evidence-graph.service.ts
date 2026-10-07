@@ -59,6 +59,7 @@ function containsGroundedQuote(source: any, evidence: any): boolean {
     source?.text ??
     source?.rawText ??
     source?.chunkText ??
+    source?.evidenceText ??
     ''
   ).trim();
 
@@ -156,9 +157,7 @@ export class ClaimEvidenceGraphService {
           sourceTitle: String(source.title || ''),
           doiOrIsbn: source.doiOrIsbn || source.doi || undefined,
           pageNumber: raw.pageNumber ? String(raw.pageNumber) : undefined,
-          provenance: source?.evidenceProvenance === 'server-verified-fulltext'
-            ? 'server-verified-fulltext'
-            : 'user-supplied-content'
+          provenance: source?.evidenceProvenance || 'unknown'
         });
       }
 
@@ -173,7 +172,13 @@ export class ClaimEvidenceGraphService {
             )
           : undefined;
 
-        const grounded = Boolean(source && evidence && containsGroundedQuote(source, raw));
+        const grounded = Boolean(
+          source &&
+          evidence &&
+          containsGroundedQuote(source, raw) &&
+          source?.evidenceType === 'full-text' &&
+          source?.evidenceProvenance === 'server-verified-fulltext'
+        );
         const provenance = evidence?.provenance || 'unknown';
         const actualSourceId = source
           ? String(source.id || source.sourceId || source.doiOrIsbn || source.doi || '')
