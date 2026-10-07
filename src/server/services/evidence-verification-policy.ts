@@ -14,7 +14,7 @@ function normalize(value: string): string {
     .trim();
 }
 
-function readEvidence(source: {
+export function readEvidence(source: {
   evidenceText?: string;
   content?: string;
   fullText?: string;
