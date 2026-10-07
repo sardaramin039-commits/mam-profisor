@@ -70,12 +70,24 @@ export class AcademicQualityCenterComponent {
 
     const rawSources = this.collectSources();
     const discipline = String(this.vm?.refineForm?.get?.('discipline')?.value || 'گشتی');
+    const selectedStyle = String(this.vm?.refineForm?.get?.('academicStyle')?.value || 'apa7').toLowerCase();
+    const citationStyleMap: Record<string, string> = {
+      apa7: 'APA7',
+      mla9: 'MLA9',
+      chicago: 'ChicagoAD',
+      chicago_ad: 'ChicagoAD',
+      chicago_nb: 'ChicagoNB',
+      harvard: 'Harvard',
+      ieee: 'IEEE'
+    };
+    const citationStyle = citationStyleMap[selectedStyle] || 'APA7';
 
     this.http.post<any>('/api/multi_agent_pipeline', {
       topic,
       discipline,
       draftText: draftText.slice(0, 250000),
-      rawSources
+      rawSources,
+      citationStyle
     }).subscribe({
       next: result => {
         this.pipeline.set(result?.pipeline || null);
