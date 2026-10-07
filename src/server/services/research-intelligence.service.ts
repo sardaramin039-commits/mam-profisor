@@ -333,7 +333,7 @@ JSON:
         evidenceText: source?.evidenceText,
         evidenceUrl: source?.evidenceUrl,
         evidenceType: source?.evidenceType,
-        evidenceProvenance: source?.evidenceProvenance,
+        evidenceProvenance: source?.evidenceProvenance || 'unknown',
         sourceType: source?.sourceType
       })),
       verification.allReports
