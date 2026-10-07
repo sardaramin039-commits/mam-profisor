@@ -130,10 +130,48 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
           @for (source of (intel.discovery?.sources || []).slice(0, 12); track source.id || source.title) {
-            <div class="p-2 rounded-lg bg-stone-50 border border-stone-100">
+            @let verification = verificationReport(source, intel);
+            <div class="p-2 rounded-lg bg-stone-50 border border-stone-100 space-y-1.5">
               <div class="text-[9px] font-bold text-stone-900 line-clamp-2">{{ source.title }}</div>
-              <div class="text-[8px] text-stone-600 mt-1">{{ (source.authors || []).slice(0, 2).join(', ') }} · {{ source.year || 'n.d.' }}</div>
-              <div class="flex items-center justify-between mt-1"><span class="text-[7.5px] font-mono">{{ source.sourceType }}</span><span class="text-[7.5px] text-indigo-700">{{ source.confidenceScore ?? 0 }}% discovery score</span></div>
+              <div class="text-[8px] text-stone-600">{{ (source.authors || []).slice(0, 2).join(', ') }} · {{ source.year || 'n.d.' }}</div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[7.5px] font-mono">{{ source.sourceType }}</span>
+                <span class="text-[7.5px] text-indigo-700">{{ source.confidenceScore ?? 0 }}% discovery score</span>
+              </div>
+              @if (verification) {
+                <div class="flex flex-wrap gap-1 pt-0.5">
+                  <span class="px-1.5 py-0.5 rounded border text-[7px] font-bold"
+                    [class.border-emerald-200]="verification.identityStatus === 'verified'"
+                    [class.bg-emerald-50]="verification.identityStatus === 'verified'"
+                    [class.text-emerald-800]="verification.identityStatus === 'verified'"
+                    [class.border-red-200]="verification.identityStatus === 'rejected'"
+                    [class.bg-red-50]="verification.identityStatus === 'rejected'"
+                    [class.text-red-800]="verification.identityStatus === 'rejected'"
+                    [class.border-amber-200]="verification.identityStatus !== 'verified' && verification.identityStatus !== 'rejected'"
+                    [class.bg-amber-50]="verification.identityStatus !== 'verified' && verification.identityStatus !== 'rejected'"
+                    [class.text-amber-900]="verification.identityStatus !== 'verified' && verification.identityStatus !== 'rejected'">
+                    {{ verification.identityStatus === 'verified' ? 'ناسنامە پشتڕاستکراوە' : verification.identityStatus === 'rejected' ? 'ڕەتکراوەتەوە' : 'ناسنامە نەسەلمێنراوە' }}
+                  </span>
+                  <span class="px-1.5 py-0.5 rounded border text-[7px] font-bold"
+                    [class.border-emerald-200]="verification.evidenceStatus === 'verified'"
+                    [class.bg-emerald-50]="verification.evidenceStatus === 'verified'"
+                    [class.text-emerald-800]="verification.evidenceStatus === 'verified'"
+                    [class.border-stone-200]="verification.evidenceStatus !== 'verified'"
+                    [class.bg-white]="verification.evidenceStatus !== 'verified'"
+                    [class.text-stone-600]="verification.evidenceStatus !== 'verified'">
+                    {{ verification.evidenceStatus === 'verified' ? 'Evidence پشتڕاستکراوە' : verification.evidenceStatus === 'not_available' ? 'Evidence بەردەست نییە' : 'Evidence نەسەلمێنراوە' }}
+                  </span>
+                  <span class="px-1.5 py-0.5 rounded border text-[7px] font-bold"
+                    [class.border-emerald-200]="verification.citationEligible"
+                    [class.bg-emerald-50]="verification.citationEligible"
+                    [class.text-emerald-800]="verification.citationEligible"
+                    [class.border-stone-200]="!verification.citationEligible"
+                    [class.bg-white]="!verification.citationEligible"
+                    [class.text-stone-600]="!verification.citationEligible">
+                    {{ verification.citationEligible ? 'Citation Eligible' : 'Citation قەدەغەیە' }}
+                  </span>
+                </div>
+              }
             </div>
           }
         </div>
