@@ -203,3 +203,68 @@ describe('research intelligence resilience', () => {
     }
   });
 });
+
+
+describe('claim to evidence linking', () => {
+  it('links claims only to sources with evidence and never marks them verified', async () => {
+    const originalDiscover = researchIntelligenceService.discover;
+    const originalVerify = sourceVerificationService.verifySources;
+
+    researchIntelligenceService.discover = async () => ({
+      query: 'topic discipline',
+      sources: [{
+        id: 'S-EVID-1',
+        title: 'Evidence Study',
+        authors: ['Researcher'],
+        year: '2025',
+        sourceType: 'OpenAlex',
+        url: 'https://openalex.org/W1',
+        snippet: '',
+        evidenceText: 'peer tutoring improves academic achievement among students',
+        evidenceType: 'abstract',
+        confidenceScore: 70,
+        peerReviewed: false
+      }],
+      total: 1,
+      providers: ['OpenAlex'],
+      verificationPolicy: 'verified-only'
+    });
+
+    sourceVerificationService.verifySources = async () => ({
+      verifiedSources: [],
+      citationEligibleSources: [],
+      rejectedSources: [],
+      unverifiedSources: [],
+      allReports: [],
+      rejectedSourcesCount: 0
+    });
+
+    const ai = {
+      models: {
+        generateContent: async () => ({
+          text: JSON.stringify({
+            claims: [{
+              claim: 'peer tutoring improves academic achievement among students'
+            }]
+          })
+        })
+      }
+    } as any;
+
+    try {
+      const result = await researchIntelligenceService.execute({
+        topic: 'topic',
+        discipline: 'discipline',
+        draftText: 'peer tutoring improves academic achievement among students'
+      }, () => ai);
+
+      expect(result.evidenceLinks).toHaveLength(1);
+      expect(result.evidenceLinks[0]?.sourceId).toBe('S-EVID-1');
+      expect(result.evidenceLinks[0]?.overlapScore).toBeGreaterThanOrEqual(70);
+      expect(result.sourceVerification.citationEligible).toBe(0);
+    } finally {
+      researchIntelligenceService.discover = originalDiscover;
+      sourceVerificationService.verifySources = originalVerify;
+    }
+  });
+});
