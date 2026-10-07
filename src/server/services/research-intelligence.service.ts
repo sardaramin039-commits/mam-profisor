@@ -58,6 +58,7 @@ export interface ResearchIntelligenceResult {
     evidenceUrl?: string;
     evidenceType?: 'abstract' | 'snippet' | 'full-text';
     provider?: string;
+    evidenceFingerprint: string;
   }>;
   methodology: any;
   consistency: any;
