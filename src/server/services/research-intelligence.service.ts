@@ -6,10 +6,9 @@ import {
   fetchOpenLibrary,
   fetchInternetArchive,
   fetchLibraryOfCongress,
-  fetchEuropeana,
-  fetchOpenAlex,
-  fetchCrossref
+  fetchEuropeana
 } from '../../helpers/academic-integrations';
+import { fetchOpenAlex, fetchCrossref } from '../../helpers/academic-discovery-providers';
 import { robustParseJson } from '../utils/json-repair';
 import { sourceVerificationService } from './source-verification.service';
 
