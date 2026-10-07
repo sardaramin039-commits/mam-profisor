@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { researchIntelligenceService } from './research-intelligence.service';
+import { sourceVerificationService } from './source-verification.service';
 
 const originalFetch = globalThis.fetch;
 
@@ -65,5 +66,80 @@ describe('research intelligence discovery', () => {
     expect(result.providers).toContain('Crossref');
     expect(result.sources.filter(source => source.doi === '10.1000/example')).toHaveLength(1);
     expect(result.sources[0]?.title).toBe('Example Academic Study');
+  });
+});
+
+
+describe('research intelligence verification flow', () => {
+  it('verifies discovered candidates when no source records were provided', async () => {
+    const originalDiscover = researchIntelligenceService.discover;
+    const originalVerify = sourceVerificationService.verifySources;
+
+    researchIntelligenceService.discover = async () => ({
+      query: 'topic discipline',
+      sources: [{
+        id: 'S-DISC-1',
+        title: 'Discovered Study',
+        authors: ['Researcher'],
+        year: '2025',
+        sourceType: 'OpenAlex',
+        url: 'https://openalex.org/W1',
+        snippet: '',
+        confidenceScore: 70,
+        peerReviewed: false
+      }],
+      total: 1,
+      providers: ['OpenAlex'],
+      verificationPolicy: 'verified-only'
+    });
+
+    let verifiedInput: any[] = [];
+    sourceVerificationService.verifySources = async (sources: any[]) => {
+      verifiedInput = sources;
+      return {
+        verifiedSources: [{
+          sourceId: 'S-DISC-1',
+          sourceTitle: 'Discovered Study',
+          author: 'Researcher',
+          publisher: 'Journal',
+          integrityScore: 80,
+          trustLevel: 'C',
+          existenceVerified: true,
+          identityStatus: 'verified',
+          evidenceStatus: 'not_available',
+          citationEligible: false,
+          metadataAccuracy: 100,
+          peerReviewed: false,
+          rejectedAsFabricated: false,
+          kurdishVerificationDetails: 'verified identity'
+        }],
+        citationEligibleSources: [],
+        rejectedSources: [],
+        unverifiedSources: [],
+        allReports: [],
+        rejectedSourcesCount: 0
+      };
+    };
+
+    const ai = {
+      models: {
+        generateContent: async () => ({ text: '{}' })
+      }
+    } as any;
+
+    try {
+      const result = await researchIntelligenceService.execute({
+        topic: 'topic',
+        discipline: 'discipline'
+      }, () => ai);
+
+      expect(verifiedInput).toHaveLength(1);
+      expect(verifiedInput[0]?.id).toBe('S-DISC-1');
+      expect(result.sourceVerification.received).toBe(1);
+      expect(result.sourceVerification.identityVerified).toBe(1);
+    } finally {
+      researchIntelligenceService.discover = originalDiscover;
+      sourceVerificationService.verifySources = originalVerify;
+    }
   });
 });
