@@ -79,6 +79,29 @@ describe('citation intelligence strict evidence gate', () => {
     expect(result.blockedCitationCount).toBe(1);
   });
 
+  it('preserves both authors in author-date in-text citations', () => {
+    const result = service.build(
+      [{
+        claims: [{
+          citationId: 'CIT-2A',
+          sourceId: 'SRC-2',
+          citationEligible: true,
+          verificationStatus: 'verified',
+          evidenceQuote: 'Observed evidence supports the stated claim'
+        }]
+      }],
+      [{
+        ...source,
+        id: 'SRC-2',
+        author: undefined,
+        authors: ['Bandura', 'Walters']
+      }],
+      'APA7'
+    );
+
+    expect(result.citations[0]?.inText).toBe('(Bandura & Walters, 1977)');
+  });
+
   it('allows a citation only when the verified quote is bound to server-verified full text', () => {
     const result = service.build(
       [{
