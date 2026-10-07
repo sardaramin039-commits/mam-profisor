@@ -66,6 +66,27 @@
         </div>
       </div>
 
+      @if (intel.analysisStatus) {
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+          @for (module of [
+            { key: 'planner', label: 'Planner' },
+            { key: 'methodology', label: 'Methodology' },
+            { key: 'factCheck', label: 'Fact Check' },
+            { key: 'consistency', label: 'Consistency' }
+          ]; track module.key) {
+            <div class="px-3 py-2 rounded-lg border bg-white"
+              [class.border-emerald-200]="intel.analysisStatus[module.key] === 'ok'"
+              [class.border-amber-200]="intel.analysisStatus[module.key] !== 'ok'">
+              <div class="text-[8px] text-stone-500">{{ module.label }}</div>
+              <strong class="text-[9px]" [class.text-emerald-800]="intel.analysisStatus[module.key] === 'ok'"
+                [class.text-amber-900]="intel.analysisStatus[module.key] !== 'ok'">
+                {{ intel.analysisStatus[module.key] === 'ok' ? 'OK' : 'DEGRADED / REVIEW' }}
+              </strong>
+            </div>
+          }
+        </div>
+      }
+
       <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <div class="p-3 rounded-xl border border-stone-200 bg-white space-y-2">
           <h5 class="text-[11px] font-extrabold text-stone-900">Research Planner</h5>
