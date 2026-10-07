@@ -123,12 +123,12 @@ function findExcerpts(
   };
 }
 
-export async function enrichSourcesWithFullText<T>(
+export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSource>(
   sources: T[],
   claims: string[]
-): Promise<Array<T & Partial<FullTextEnrichmentSource>>> {
+): Promise<Array<T & { claimText?: string }>> {
   if (!Array.isArray(sources) || !claims.some(claim => normalize(claim))) {
-    return sources;
+    return sources as Array<T & { claimText?: string }>;
   }
 
   return Promise.all(sources.map(async source => {
@@ -158,7 +158,7 @@ export async function enrichSourcesWithFullText<T>(
         evidenceUrl: url
       } as T & { claimText?: string };
     } catch {
-      return source;
+      return source as T & { claimText?: string };
     }
   }));
 }
