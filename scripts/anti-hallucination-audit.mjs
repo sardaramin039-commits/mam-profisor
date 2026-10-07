@@ -15,7 +15,9 @@ const rules = [
   { name: 'random ID generation', pattern: /Math\.random\(\)\.toString\(36\)/g, allowed: [/src\/server\/services\/gemini\.service\.ts$/] },
   { name: 'unsupported Cross-Encoder claim', pattern: /(?:Cross-Encoder Score|Cross-Encoder Reranking Engine)/gi, allowed: [] },
   { name: 'unsupported Harvard affiliation branding', pattern: /(?:پڕۆژەی هارڤارد|Harvard Project|Harvard affiliation)/gi, allowed: [] },
-  { name: 'known fabricated academic score fallback', pattern: /(?:overallLanguageScore\s*:\s*88|scholarlyScore\s*:\s*60|vocabularyRichness\s*:\s*60|readability\s*:\s*70|overallScore\s*:\s*8\.2)/g, allowed: [] }
+  { name: 'known fabricated academic score fallback', pattern: /(?:overallLanguageScore\s*:\s*88|scholarlyScore\s*:\s*60|vocabularyRichness\s*:\s*60|readability\s*:\s*70|overallScore\s*:\s*8\.2)/g, allowed: [] },
+  { name: 'synthetic academic provider fallback record', pattern: /(?:\b(?:sem|pubmed|openlib|ia|doaj|eur|loc)-fallback-\d+\b|Academic Foundations|DOAJ Academic Consortium|Historical Digital Archives|Library of Congress Research Team|Global University Academic Consortia)/g, allowed: [] },
+  { name: 'placeholder academic author', pattern: /(?:Unknown Author|Open Library Author|Archive Contributor|DOAJ Author|Open Access Researcher|European Cultural Heritage Inst|Library of Congress Cataloger)/g, allowed: [] }
 ];
 
 async function walk(dir, files = []) {
