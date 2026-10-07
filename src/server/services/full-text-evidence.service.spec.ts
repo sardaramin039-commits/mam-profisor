@@ -78,7 +78,16 @@ describe('full-text evidence enrichment', () => {
 
       if (url.includes('publisher.example.org/articles/oa-study')) {
         return new Response(
-          '<html><head><title>Open access study</title></head><body><main>School belonging is associated with stronger student engagement in secondary education.</main></body></html>',
+          `<html><head><title>Open access study</title></head><body><article>
+<p>Introduction. School belonging is associated with stronger student engagement in secondary education. This relationship is discussed across educational psychology and classroom research, with attention to motivation, participation, and persistence.</p>
+<p>Method. The study examines student experiences using a structured academic design and compares patterns across relevant classroom contexts. The analysis considers engagement, perceived support, and the conditions that shape participation in school activities.</p>
+<p>Results. The findings indicate meaningful variation in engagement and show how supportive learning environments can strengthen students' participation. The evidence is interpreted alongside prior research and clearly distinguishes observed findings from broader theoretical claims.</p>
+<p>Discussion. The results are consistent with research on belonging, motivation, and social support in education. The authors discuss implications for teachers, school leaders, and researchers and identify limitations that should guide future work.</p>
+<p>References. The article concludes with a scholarly reference list and identifies the literature used to frame the research question, methodology, results, and discussion.</p>
+<p>Implications. The evidence has practical implications for classroom practice and future educational research, while the authors distinguish these implications from direct causal conclusions.</p>
+<p>Limitations. The study notes limitations in sampling, measurement, and context and recommends replication with broader populations and additional sources of evidence.</p>
+<p>Practical significance. The article also explains how the findings may inform school improvement, student support, teacher development, and future empirical studies, while emphasizing that practical recommendations should remain proportional to the strength and scope of the observed evidence.</p>
+</article></body></html>`,
           {
             status: 200,
             headers: { 'content-type': 'text/html; charset=utf-8' }
@@ -118,7 +127,7 @@ describe('full-text evidence enrichment', () => {
 
       if (url.includes('doaj.example.org/article/42')) {
         return new Response(
-          '<article><p>Teacher feedback can improve revision quality when students receive actionable guidance.</p></article>',
+          '<article><h1>Teacher Feedback Study</h1><p>Introduction. Teacher feedback can improve revision quality when students receive actionable guidance. The study considers how specific comments support revision and learning.</p><p>Method. Researchers compare revision tasks and examine how students respond to feedback that identifies concrete next steps. The design records changes in draft quality across multiple classroom activities.</p><p>Results. Students receiving actionable feedback show clearer revisions in the observed tasks. The evidence is discussed with reference to writing development, classroom assessment, and teacher practice.</p><p>Discussion. The findings support careful use of feedback that is specific, understandable, and connected to revision goals. The authors also discuss limitations and implications for teaching.</p><p>References. Prior studies on formative assessment and academic writing are reviewed to position the findings within the literature.</p><p>Implications. The results suggest that teachers can strengthen revision quality by giving students feedback that is specific, actionable, and connected to clearly stated learning goals.</p><p>Limitations. The authors identify limits related to the classroom context, sample size, and measurement approach and recommend further studies across different educational settings.</p><p>Conclusion. The study concludes that effective feedback works best when learners can understand the comment and use it to make a concrete revision.</p><p>Future research. Further work should examine how feedback quality interacts with student experience, assignment type, and teacher training across multiple classrooms and institutions.</p></article>',
           {
             status: 200,
             headers: { 'content-type': 'text/html' }
@@ -179,5 +188,28 @@ describe('full-text evidence enrichment', () => {
     );
 
     expect(enriched).toEqual(source);
+  });
+});
+
+
+describe('HTML full-text validation', () => {
+  it('rejects a short abstract-like HTML landing page', async () => {
+    globalThis.fetch = (async () => new Response(
+      '<html><main><p>School belonging improves engagement among students.</p></main></html>',
+      { status: 200, headers: { 'content-type': 'text/html' } }
+    )) as typeof fetch;
+
+    const [enriched] = await enrichSourcesWithFullText(
+      [{
+        id: 'openalex-short',
+        title: 'Abstract-like page',
+        sourceType: 'DOAJ',
+        url: 'https://example.org/abstract'
+      }],
+      ['school belonging improves engagement']
+    );
+
+    expect(enriched.evidenceType).toBeUndefined();
+    expect(enriched.evidenceProvenance).toBeUndefined();
   });
 });
