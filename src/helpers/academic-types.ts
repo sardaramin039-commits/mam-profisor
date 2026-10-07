@@ -15,6 +15,8 @@ export interface AcademicSourceItem {
   doi?: string;
   openAlexId?: string;
   crossrefId?: string;
+  pmid?: string;
+  pmcid?: string;
   publisher?: string;
   evidenceText?: string;
   evidenceType?: 'abstract' | 'snippet' | 'full-text';
