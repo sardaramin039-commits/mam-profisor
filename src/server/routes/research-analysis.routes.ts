@@ -165,7 +165,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
    */
   router.post('/multi_agent_pipeline', validateRequest(multiAgentPipelineSchema), async (req, res) => {
     try {
-      const { topic, discipline = 'گشتی', draftText = '', rawSources = [] } = req.body || {};
+      const { topic, discipline = 'گشتی', draftText = '', rawSources = [], citationStyle = 'APA7' } = req.body || {};
 
       if (!topic || typeof topic !== 'string' || topic.trim().length < 2) {
         res.status(400).json({ error: 'بابەتی توێژینەوە پێویستە.' });
@@ -177,7 +177,8 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
           topic: topic.trim().slice(0, 500),
           discipline: typeof discipline === 'string' ? discipline.trim().slice(0, 200) : 'گشتی',
           draftText: typeof draftText === 'string' ? draftText.slice(0, 250000) : '',
-          rawSources: Array.isArray(rawSources) ? rawSources.slice(0, 100) : []
+          rawSources: Array.isArray(rawSources) ? rawSources.slice(0, 100) : [],
+          citationStyle
         },
         getGeminiClient
       );
