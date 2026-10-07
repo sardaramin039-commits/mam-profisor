@@ -39,6 +39,13 @@ function authorsValue(source: any): string {
   return '';
 }
 
+function authorNamesValue(source: any, authors: string): string[] {
+  if (Array.isArray(source?.authors)) {
+    return source.authors.map((value: unknown) => clean(value)).filter(Boolean);
+  }
+  return authors ? [authors] : [];
+}
+
 function isPlaceholder(value: string): boolean {
   const normalized = value.toLocaleLowerCase().trim();
   return !normalized || new Set([
@@ -141,7 +148,13 @@ export class CitationIntelligenceService {
           referenceNumber = citationNumber;
         }
 
-        const inText = this.formatInText(authors, year, page, style, referenceNumber);
+        const inText = this.formatInText(
+          authorNamesValue(source, authors),
+          year,
+          page,
+          style,
+          referenceNumber
+        );
         const bibliography = this.formatBibliography(
           authors,
           year,
@@ -172,20 +185,22 @@ export class CitationIntelligenceService {
   }
 
   private formatInText(
-    authors: string,
+    authorNames: string[],
     year: string,
     page: string,
     style: CitationStyle,
     number: number
   ): string {
-    const authorNames = authors.split(/[,;]+/).map(value => value.trim()).filter(Boolean);
     const author = authorNames[0] || '';
     const withEtAl = authorNames.length >= 3 ? `${author} et al.` : author;
+    const twoAuthors = authorNames.slice(0, 2);
+    const pair = twoAuthors.length === 2 ? twoAuthors.join(' and ') : author;
+    const apaPair = twoAuthors.length === 2 ? twoAuthors.join(' & ') : author;
 
     if (style === 'IEEE' || style === 'ChicagoNB') return `[${number}]`;
-    if (style === 'MLA9') return `(${authorNames.length >= 2 ? withEtAl : author}${page ? ` ${page}` : ''})`;
-    if (style === 'ChicagoAD') return `(${author}, ${year}${page ? `, ${page}` : ''})`;
-    return `(${withEtAl}, ${year}${page ? `, p. ${page}` : ''})`;
+    if (style === 'MLA9') return `(${authorNames.length >= 3 ? withEtAl : pair}${page ? ` ${page}` : ''})`;
+    if (style === 'ChicagoAD') return `(${authorNames.length >= 3 ? withEtAl : pair}, ${year}${page ? `, ${page}` : ''})`;
+    return `(${authorNames.length >= 3 ? withEtAl : apaPair}, ${year}${page ? `, p. ${page}` : ''})`;
   }
 
   private formatBibliography(
