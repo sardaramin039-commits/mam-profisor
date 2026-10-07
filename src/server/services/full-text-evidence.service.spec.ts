@@ -78,13 +78,13 @@ describe('full-text evidence enrichment', () => {
 
       if (url.includes('publisher.example.org/articles/oa-study')) {
         return new Response(
-          '<html><head><title>Open access study</title></head><body><article>
+          `<html><head><title>Open access study</title></head><body><article>
 <p>Introduction. School belonging is associated with stronger student engagement in secondary education. This relationship is discussed across educational psychology and classroom research, with attention to motivation, participation, and persistence.</p>
 <p>Method. The study examines student experiences using a structured academic design and compares patterns across relevant classroom contexts. The analysis considers engagement, perceived support, and the conditions that shape participation in school activities.</p>
 <p>Results. The findings indicate meaningful variation in engagement and show how supportive learning environments can strengthen students' participation. The evidence is interpreted alongside prior research and clearly distinguishes observed findings from broader theoretical claims.</p>
 <p>Discussion. The results are consistent with research on belonging, motivation, and social support in education. The authors discuss implications for teachers, school leaders, and researchers and identify limitations that should guide future work.</p>
 <p>References. The article concludes with a scholarly reference list and identifies the literature used to frame the research question, methodology, results, and discussion.</p>
-</article></body></html>',
+</article></body></html>`,
           {
             status: 200,
             headers: { 'content-type': 'text/html; charset=utf-8' }
