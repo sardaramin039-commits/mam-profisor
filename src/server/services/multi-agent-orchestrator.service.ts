@@ -14,6 +14,7 @@ import { citationIntelligenceService } from './citation-intelligence.service';
 import type { CitationStyle } from './citation-intelligence.service';
 import { textSimilarityService } from './text-similarity.service';
 import { observabilityService } from './observability.service';
+import { researchIntelligenceService } from './research-intelligence.service';
 
 export interface MultiAgentOrchestrationRequest {
   topic: string;
@@ -41,6 +42,8 @@ export interface MultiAgentOrchestrationResult {
   kurdishLanguageAnalysis: any;
   disciplineProfile: any;
   finalThesisDraftKurdish: string;
+  discoveredSources?: any[];
+  sourceDiscoveryProviders?: string[];
 }
 
 function sourceKey(source: any): string {
@@ -59,9 +62,22 @@ export class MultiAgentOrchestratorService {
 
     const profile = disciplineProfileService.getProfile(request.discipline);
     const rawSources = Array.isArray(request.rawSources) ? request.rawSources.slice(0, 100) : [];
+    let effectiveSources = rawSources;
+    let discovery: { sources: any[]; providers: string[] } = { sources: [], providers: [] };
+
+    if (effectiveSources.length === 0) {
+      const discovered = await researchIntelligenceService.discover(request.topic, request.discipline);
+      effectiveSources = discovered.sources.slice(0, 100);
+      discovery = { sources: effectiveSources, providers: discovered.providers };
+      log(
+        '00',
+        'Automatic Source Discovery Agent',
+        `${effectiveSources.length} candidate source(s) from ${discovered.providers.length} provider(s)`
+      );
+    }
 
     log('01', 'Research Planner Agent', 'Creating discipline-specific research framework');
-    const verification = await sourceVerificationService.verifySources(rawSources, getGeminiClient);
+    const verification = await sourceVerificationService.verifySources(effectiveSources, getGeminiClient);
     const citationEligibleSources = verification.citationEligibleSources;
     log(
       '02',
@@ -79,7 +95,7 @@ export class MultiAgentOrchestratorService {
     const verifiedByKey = new Map(
       citationEligibleSources.map(source => [source.sourceId, source])
     );
-    const evidenceChunks = rawSources
+    const evidenceChunks = effectiveSources
       .map(source => {
         const id = sourceKey(source);
         const verified = verifiedByKey.get(id);
@@ -145,7 +161,7 @@ export class MultiAgentOrchestratorService {
 
     const finalText = humanProse.refinedText || languageAnalysis.refinedTextKurdish;
 
-    const graphSources = rawSources.map(source => {
+    const graphSources = effectiveSources.map(source => {
       const verified = verifiedByKey.get(sourceKey(source));
       return {
         ...source,
@@ -178,15 +194,15 @@ export class MultiAgentOrchestratorService {
       request.citationStyle || 'APA7'
     );
 
-    const similarity = textSimilarityService.screen(finalText, rawSources);
+    const similarity = textSimilarityService.screen(finalText, effectiveSources);
     const confidence = academicConfidenceService.assess({
       verifiedClaims: grounded.integrityMetrics.verifiedClaims,
       totalClaims: grounded.integrityMetrics.totalClaims,
       citationEligibleClaims: citationIntelligence.verifiedCitationCount,
       contradictionCount: contradictions.contradictionCount,
       similarityScore: similarity.overallSimilarityScore,
-      sourceVerificationRate: rawSources.length
-        ? (citationEligibleSources.length / rawSources.length) * 100
+      sourceVerificationRate: effectiveSources.length
+        ? (citationEligibleSources.length / effectiveSources.length) * 100
         : 0
     });
     log('09', 'Academic Confidence Agent', confidence.labelKurdish);
@@ -259,7 +275,9 @@ export class MultiAgentOrchestratorService {
       qaGateResult: qa,
       kurdishLanguageAnalysis: languageAnalysis,
       disciplineProfile: profile,
-      finalThesisDraftKurdish: finalText
+      finalThesisDraftKurdish: finalText,
+      discoveredSources: discovery.sources,
+      sourceDiscoveryProviders: discovery.providers
     };
   }
 }
