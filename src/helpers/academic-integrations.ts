@@ -352,7 +352,7 @@ export async function fetchOpenAlex(query: string): Promise<AcademicSourceItem[]
  */
 export async function fetchCrossref(query: string): Promise<AcademicSourceItem[]> {
   try {
-    const mailto = String(process.env.CROSSREF_MAILTO || '').trim();
+    const mailto = String(process.env['CROSSREF_MAILTO'] || '').trim();
     const mailtoParam = mailto ? `&mailto=${encodeURIComponent(mailto)}` : '';
     const url =
       `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(query)}&rows=4&select=DOI,title,author,publisher,published,issued,URL,container-title,is-referenced-by-count${mailtoParam}`;
