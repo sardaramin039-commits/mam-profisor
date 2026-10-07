@@ -107,6 +107,13 @@
                     <span class="font-semibold">Provenance:</span>
                     @if (link.provider) { <span class="px-1.5 py-0.5 rounded bg-stone-100 border border-stone-200">{{ link.provider }}</span> }
                     @if (link.evidenceType) { <span class="px-1.5 py-0.5 rounded bg-stone-100 border border-stone-200">{{ link.evidenceType }}</span> }
+                    @if (link.evidenceProvenance === 'server-verified-fulltext') {
+                      <span class="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800"
+                        title="تەنها server-verified full text دەتوانێت citation ـی کۆتایی eligible بکات">server-verified full-text</span>
+                    } @else {
+                      <span class="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-900"
+                        title="ئەم بەڵگەیە candidate ـە؛ بۆ citation ـی کۆتایی full text ـی server-verified پێویستە">candidate evidence</span>
+                    }
                     @if (link.evidenceUrl) {
                       <a [href]="link.evidenceUrl" target="_blank" rel="noopener noreferrer"
                         class="text-blue-700 hover:underline font-semibold">بینینی بەڵگە</a>

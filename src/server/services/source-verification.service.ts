@@ -1,10 +1,28 @@
 import { GoogleGenAI } from '@google/genai';
 import { lookupIsbn, lookupIssn, resolveDoi } from '../../helpers/extended-academic-tools';
+import {
+  assessEvidenceVerification,
+  isCitationEligibleEvidence,
+  readEvidence
+} from './evidence-verification-policy';
+import type {
+  EvidenceProvenance,
+  EvidenceType,
+  EvidenceVerificationStatus
+} from './evidence-verification-policy';
+
+export {
+  assessEvidenceVerification,
+  isCitationEligibleEvidence
+} from './evidence-verification-policy';
+export type {
+  EvidenceProvenance,
+  EvidenceType,
+  EvidenceVerificationStatus
+} from './evidence-verification-policy';
 
 export type TrustLevel = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
 export type IdentityVerificationStatus = 'verified' | 'unverified' | 'rejected';
-export type EvidenceVerificationStatus = 'verified' | 'unverified' | 'not_available';
-
 export interface SourceVerificationReport {
   sourceId: string;
   sourceTitle: string;
@@ -20,6 +38,8 @@ export interface SourceVerificationReport {
   citationEligible: boolean;
   evidenceVerificationMethod?: 'exact-normalized-claim-match';
   evidenceText?: string;
+  evidenceType?: EvidenceType;
+  evidenceProvenance?: EvidenceProvenance;
   pageNumber?: string | number | null;
   metadataAccuracy: number;
   peerReviewed: boolean;
@@ -54,6 +74,8 @@ type InputSource = {
   fullText?: string;
   text?: string;
   chunkText?: string;
+  evidenceType?: EvidenceType;
+  evidenceProvenance?: EvidenceProvenance;
   pageNumber?: string | number | null;
 };
 
@@ -105,51 +127,6 @@ function normalizeDoi(value?: string): string {
     .toLowerCase();
 }
 
-function readEvidence(source: {
-  evidenceText?: string;
-  content?: string;
-  fullText?: string;
-  text?: string;
-  chunkText?: string;
-}): string {
-  return String(
-    source.evidenceText ??
-    source.content ??
-    source.fullText ??
-    source.text ??
-    source.chunkText ??
-    ''
-  ).trim();
-}
-
-export function assessEvidenceVerification(source: {
-  claimText?: string;
-  evidenceText?: string;
-  content?: string;
-  fullText?: string;
-  text?: string;
-  chunkText?: string;
-}): {
-  status: EvidenceVerificationStatus;
-  method?: 'exact-normalized-claim-match';
-} {
-  const claim = normalize(String(source.claimText || ''));
-  const evidence = normalize(readEvidence(source));
-
-  if (!claim || !evidence || evidence.length < 10) {
-    return { status: 'not_available' };
-  }
-
-  if (evidence.includes(claim)) {
-    return {
-      status: 'verified',
-      method: 'exact-normalized-claim-match'
-    };
-  }
-
-  return { status: 'unverified' };
-}
-
 function buildBaseReport(
   source: InputSource,
   sourceId: string,
@@ -163,7 +140,14 @@ function buildBaseReport(
   overrides: Partial<SourceVerificationReport> = {}
 ): SourceVerificationReport {
   const evidence = assessEvidenceVerification(source);
-  const citationEligible = identityStatus === 'verified' && evidence.status === 'verified';
+  const citationEligible =
+    identityStatus === 'verified' &&
+    isCitationEligibleEvidence(
+      evidence.status,
+      Boolean(readEvidence(source)),
+      source.evidenceType,
+      source.evidenceProvenance
+    );
 
   return {
     sourceId,
@@ -180,6 +164,8 @@ function buildBaseReport(
     citationEligible,
     evidenceVerificationMethod: evidence.method,
     evidenceText: readEvidence(source) || undefined,
+    evidenceType: source.evidenceType,
+    evidenceProvenance: source.evidenceProvenance || 'unknown',
     pageNumber: source.pageNumber ?? null,
     metadataAccuracy,
     peerReviewed: false,

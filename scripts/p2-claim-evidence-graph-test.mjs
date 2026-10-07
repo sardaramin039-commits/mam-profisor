@@ -41,12 +41,42 @@ const mockGeminiClient = () => ({
 const graph = await claimEvidenceGraphService.buildGraph(
   'مێژووی کوردستان',
   'کوردستان هەرێمێکی باکووری ڕۆژهەڵاتی ناوەڕاستە.',
-  [{ sourceId: 'SRC-1', sourceTitle: 'مێژووی کورد - مەکدواڵ', chunkText: 'کوردستان لە باکووری ڕۆژهەڵاتی ناوەڕاستە', verificationStatus: 'verified' }],
+  [{
+    sourceId: 'SRC-1',
+    title: 'مێژووی کورد',
+    doi: '10.1000/182',
+    evidenceText: 'کوردستان لە باکووری ڕۆژهەڵاتی ناوەڕاستە',
+    evidenceType: 'full-text',
+    evidenceProvenance: 'server-verified-fulltext',
+    verificationStatus: 'verified'
+  }],
   mockGeminiClient
 );
 
 assert.ok(graph.claims.length >= 1, 'Graph must contain claims');
 assert.ok(graph.evidences.length >= 1, 'Graph must contain evidences');
-assert.equal(graph.graphIntegrityScore, 95);
+assert.equal(graph.graphIntegrityScore, 100);
+assert.equal(graph.claims[0]?.verificationStatus, 'verified');
+assert.equal(graph.claims[0]?.evidenceProvenance, 'server-verified-fulltext');
+
+const blockedGraph = await claimEvidenceGraphService.buildGraph(
+  'مێژووی کوردستان',
+  'ئەم بانگەشەیە پشتیوانییەکی citation ـی کۆتایی پێویستە.',
+  [{
+    sourceId: 'SRC-2',
+    title: 'مێژووی کورد',
+    doi: '10.1000/182',
+    evidenceText: 'ئەم بانگەشەیە پشتیوانییەکی citation ـی کۆتایی پێویستە.',
+    evidenceType: 'abstract',
+    evidenceProvenance: 'unknown',
+    verificationStatus: 'verified'
+  }],
+  mockGeminiClient
+);
+
+assert.ok(
+  blockedGraph.syntheticCitationsBlockedCount >= 1,
+  'Abstract evidence MUST remain blocked from final citation verification'
+);
 
 console.log('✅ P2 Claim-Evidence Graph Contract Test PASSED SUCCESSFULLY!');

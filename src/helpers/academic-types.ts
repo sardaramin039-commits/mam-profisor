@@ -1,3 +1,8 @@
+export type EvidenceProvenance =
+  | 'server-verified-fulltext'
+  | 'user-supplied-content'
+  | 'unknown';
+
 export interface AcademicSourceItem {
   id: string;
   title: string;
@@ -10,9 +15,12 @@ export interface AcademicSourceItem {
   doi?: string;
   openAlexId?: string;
   crossrefId?: string;
+  pmid?: string;
+  pmcid?: string;
   publisher?: string;
   evidenceText?: string;
   evidenceType?: 'abstract' | 'snippet' | 'full-text';
+  evidenceProvenance?: EvidenceProvenance;
   evidenceUrl?: string;
   confidenceScore: number; // 0 - 100
   peerReviewed: boolean;

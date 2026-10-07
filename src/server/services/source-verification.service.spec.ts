@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { assessEvidenceVerification } from './source-verification.service';
+import {
+  assessEvidenceVerification,
+  isCitationEligibleEvidence
+} from './source-verification.service';
 
 describe('source evidence verification policy', () => {
   it('requires both claim and evidence text', () => {
@@ -16,5 +19,33 @@ describe('source evidence verification policy', () => {
     });
     expect(result.status).toBe('verified');
     expect(result.method).toBe('exact-normalized-claim-match');
+  });
+});
+
+
+describe('citation evidence eligibility policy', () => {
+  it('blocks abstracts even when the claim exactly matches the evidence', () => {
+    expect(
+      isCitationEligibleEvidence('verified', true, 'abstract', 'unknown')
+    ).toBe(false);
+  });
+
+  it('requires server-verified full text for citation eligibility', () => {
+    expect(
+      isCitationEligibleEvidence(
+        'verified',
+        true,
+        'full-text',
+        'server-verified-fulltext'
+      )
+    ).toBe(true);
+    expect(
+      isCitationEligibleEvidence(
+        'verified',
+        true,
+        'full-text',
+        'user-supplied-content'
+      )
+    ).toBe(false);
   });
 });

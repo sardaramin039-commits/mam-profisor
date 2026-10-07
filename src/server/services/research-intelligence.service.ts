@@ -12,6 +12,7 @@ import { fetchOpenAlex, fetchCrossref } from '../../helpers/academic-discovery-p
 import { robustParseJson } from '../utils/json-repair';
 import { sourceVerificationService } from './source-verification.service';
 import { linkClaimsToEvidence } from './research-evidence-linking';
+import { enrichSourcesWithFullText } from './full-text-evidence.service';
 
 export interface ResearchIntelligenceRequest {
   topic: string;
@@ -57,6 +58,7 @@ export interface ResearchIntelligenceResult {
     claimCitationEligible: boolean;
     evidenceUrl?: string;
     evidenceType?: 'abstract' | 'snippet' | 'full-text';
+    evidenceProvenance?: 'server-verified-fulltext' | 'user-supplied-content' | 'unknown';
     provider?: string;
     evidenceFingerprint: string;
   }>;
@@ -323,15 +325,31 @@ JSON:
     const claimTexts = Array.isArray(factCheck?.claims)
       ? factCheck.claims.map((item: any) => String(item?.claim || '').trim()).filter(Boolean)
       : [];
+
+    const enrichedSources = await enrichSourcesWithFullText(
+      verificationSources,
+      claimTexts
+    );
+
+    try {
+      verification = await sourceVerificationService.verifySources(
+        enrichedSources,
+        getGeminiClient
+      );
+    } catch {
+      // Keep the identity verification result if full-text re-verification is unavailable.
+    }
+
     const evidenceLinks = await linkClaimsToEvidence(
       claimTexts,
-      discovery.sources.map((source: any) => ({
+      enrichedSources.map((source: any) => ({
         id: source?.id,
         sourceId: source?.sourceId,
         title: source?.title,
         evidenceText: source?.evidenceText,
         evidenceUrl: source?.evidenceUrl,
         evidenceType: source?.evidenceType,
+        evidenceProvenance: source?.evidenceProvenance || 'unknown',
         sourceType: source?.sourceType
       })),
       verification.allReports
