@@ -320,7 +320,7 @@ export async function fetchOpenAlex(query: string): Promise<AcademicSourceItem[]
     return (data.results || [])
       .filter(item => Boolean(item.id && item.title?.trim()))
       .map((item, index) => {
-        const doi = String(item.doi || '').replace(/^https?:\\/\\/(dx\\.)?doi\\.org\\//i, '').trim();
+        const doi = String(item.doi || '').replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').trim();
         const openAlexId = String(item.id || '').trim();
         const authors = cleanAuthors(
           item.authorships?.map(authorship => authorship.author?.display_name)
