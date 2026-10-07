@@ -1,6 +1,7 @@
 import type { EvidenceProvenance, EvidenceType } from './evidence-verification-policy';
 
 export interface FullTextEnrichmentSource {
+  claimText?: string;
   id?: string;
   sourceId?: string;
   title?: string;
@@ -150,11 +151,12 @@ export async function enrichSourcesWithFullText<T>(
 
       return {
         ...source,
+        claimText: match.claim,
         evidenceText: match.excerpt,
         evidenceType: 'full-text',
         evidenceProvenance: 'server-verified-fulltext',
         evidenceUrl: url
-      } as T & Partial<FullTextEnrichmentSource>;
+      } as T & { claimText?: string };
     } catch {
       return source;
     }
