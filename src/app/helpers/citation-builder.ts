@@ -24,9 +24,10 @@ export class CitationBuilder {
    * APA 7th Edition Formatting
    */
   public static formatAPA(item: CitationItem): string {
+    if (!item.authors?.trim() || !item.title?.trim()) return '';
     const authors = this.formatAPAAuthors(item.authors);
     const year = item.year ? `(${item.year})` : '(n.d.)';
-    const title = item.title?.trim() || 'Untitled';
+    const title = item.title?.trim() || '';
     const type = item.type || (item.journal ? 'journal' : 'book');
 
     let body = '';
@@ -40,7 +41,7 @@ export class CitationBuilder {
       const pp = item.pages ? `, ${item.pages}` : '';
       body = `${title}. *${item.journal}*${vol}${issue}${pp}.${doiUrl}`;
     } else if (type === 'thesis') {
-      const inst = item.institution || item.publisher || 'Institution';
+      const inst = item.institution || item.publisher || '';
       body = `*${title}* [Doctoral dissertation, ${inst}].${doiUrl}`;
     } else if (type === 'website') {
       const site = item.publisher || item.journal ? ` ${item.publisher || item.journal}.` : '';
@@ -77,8 +78,9 @@ export class CitationBuilder {
    * MLA 9th Edition Formatting
    */
   public static formatMLA(item: CitationItem): string {
+    if (!item.authors?.trim() || !item.title?.trim()) return '';
     const authors = this.formatMLAAuthors(item.authors);
-    const title = item.title?.trim() || 'Untitled';
+    const title = item.title?.trim() || '';
     const type = item.type || (item.journal ? 'journal' : 'book');
     const year = item.year ? `${item.year}` : '';
 
@@ -96,7 +98,7 @@ export class CitationBuilder {
       const accessed = item.accessedDate ? `, Accessed ${item.accessedDate}` : '';
       details = `"${title}." ${site}${year}${url}${accessed}.`;
     } else if (type === 'thesis') {
-      const inst = item.institution || item.publisher || 'Institution';
+      const inst = item.institution || item.publisher || '';
       details = `*${title}*. ${year}. ${inst}, Dissertation.`;
     } else {
       // Book
@@ -113,9 +115,10 @@ export class CitationBuilder {
    * Harvard Citation Style Formatting
    */
   public static formatHarvard(item: CitationItem): string {
+    if (!item.authors?.trim() || !item.title?.trim()) return '';
     const authors = this.formatHarvardAuthors(item.authors);
     const year = item.year ? `(${item.year})` : '(no date)';
-    const title = item.title?.trim() || 'Untitled';
+    const title = item.title?.trim() || '';
     const type = item.type || (item.journal ? 'journal' : 'book');
 
     let body = '';
@@ -130,7 +133,7 @@ export class CitationBuilder {
       const url = item.url ? ` Available at: ${item.url}` : '';
       body = `*${title}*.${url}${accessed}.`;
     } else if (type === 'thesis') {
-      const inst = item.institution || item.publisher || 'Institution';
+      const inst = item.institution || item.publisher || '';
       body = `*${title}*. PhD thesis. ${inst}.`;
     } else {
       // Book
@@ -147,8 +150,9 @@ export class CitationBuilder {
    * Chicago Notes & Bibliography bibliography formatting.
    */
   public static formatChicago(item: CitationItem): string {
-    const authors = item.authors?.trim() || 'Unknown Author';
-    const title = item.title?.trim() || 'Untitled';
+    if (!item.authors?.trim() || !item.title?.trim()) return '';
+    const authors = item.authors.trim();
+    const title = item.title.trim();
     const year = item.year ? String(item.year) : 'n.d.';
     if (item.journal) {
       const volume = item.volume ? `, ${item.volume}` : '';
@@ -167,8 +171,9 @@ export class CitationBuilder {
    * final document renderer because citation order is document-context dependent.
    */
   public static formatIEEE(item: CitationItem): string {
-    const authors = item.authors?.trim() || 'Unknown Author';
-    const title = item.title?.trim() || 'Untitled';
+    if (!item.authors?.trim() || !item.title?.trim()) return '';
+    const authors = item.authors.trim();
+    const title = item.title.trim();
     const year = item.year ? String(item.year) : 'n.d.';
     if (item.journal) {
       const volume = item.volume ? `, vol. ${item.volume}` : '';
@@ -185,7 +190,8 @@ export class CitationBuilder {
    * Kurdish Academic Citation Formatting
    */
   public static formatKurdishAcademic(item: CitationItem): string {
-    const authors = item.authors?.trim() || 'نووسەری دیارینەکراو';
+    if (!item.authors?.trim() || !item.title?.trim()) return '';
+    const authors = item.authors.trim();
     const soraniYear = item.year ? `(${toSoraniNumber(item.year)})` : '(بێ مێژوو)';
     const title = item.title?.trim() || 'ناونیشانی توێژینەوە';
     const publisher = item.publisher ? `، چاپخانە/دەزگا: ${item.publisher}` : '';
@@ -198,27 +204,27 @@ export class CitationBuilder {
   // --- Helper Author Formatters ---
 
   private static formatAPAAuthors(authorsStr: string): string {
-    if (!authorsStr || !authorsStr.trim()) return 'Unknown Author';
+    if (!authorsStr || !authorsStr.trim()) return '';
     const list = authorsStr.split(/[,;&]|\band\b/i).map(a => a.trim()).filter(Boolean);
-    if (list.length === 0) return 'Unknown Author';
+    if (list.length === 0) return '';
     if (list.length === 1) return list[0];
     if (list.length === 2) return `${list[0]} & ${list[1]}`;
     return `${list[0]}, et al.`;
   }
 
   private static formatMLAAuthors(authorsStr: string): string {
-    if (!authorsStr || !authorsStr.trim()) return 'Unknown Author';
+    if (!authorsStr || !authorsStr.trim()) return '';
     const list = authorsStr.split(/[,;&]|\band\b/i).map(a => a.trim()).filter(Boolean);
-    if (list.length === 0) return 'Unknown Author';
+    if (list.length === 0) return '';
     if (list.length === 1) return list[0];
     if (list.length === 2) return `${list[0]}, and ${list[1]}`;
     return `${list[0]}, et al`;
   }
 
   private static formatHarvardAuthors(authorsStr: string): string {
-    if (!authorsStr || !authorsStr.trim()) return 'Anon.';
+    if (!authorsStr || !authorsStr.trim()) return '';
     const list = authorsStr.split(/[,;&]|\band\b/i).map(a => a.trim()).filter(Boolean);
-    if (list.length === 0) return 'Anon.';
+    if (list.length === 0) return '';
     if (list.length === 1) return list[0];
     if (list.length === 2) return `${list[0]} and ${list[1]}`;
     return `${list[0]} et al.`;
