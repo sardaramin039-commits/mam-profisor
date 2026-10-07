@@ -63,13 +63,14 @@ async function resolveOpenAccessPmcId(
   source: FullTextEnrichmentSource
 ): Promise<string> {
   const direct = extractPmcId(source);
-  if (direct) return direct;
-
   const pmid = String(source.pmid || '').trim();
-  if (!pmid) return '';
+  if (!direct && !pmid) return '';
 
+  const query = direct
+    ? `PMCID:${direct} AND OPEN_ACCESS:y`
+    : `EXT_ID:${pmid} AND OPEN_ACCESS:y`;
   const searchUrl =
-    `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:${encodeURIComponent(pmid)}&format=json&resultType=core&pageSize=1`;
+    `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(query)}&format=json&resultType=core&pageSize=1`;
   const response = await fetch(searchUrl, {
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(5000)
@@ -78,7 +79,7 @@ async function resolveOpenAccessPmcId(
 
   const data = await response.json() as EuropePmcSearchResponse;
   const record = data.resultList?.result?.[0];
-  if (record?.isOpenAccess !== 'Y' || !record.pmcid) return '';
+  if (!record?.pmcid || record.isOpenAccess === 'N') return '';
 
   return record.pmcid.trim().toUpperCase();
 }
