@@ -167,11 +167,41 @@ describe('research intelligence resilience', () => {
     });
 
     sourceVerificationService.verifySources = async () => ({
-      verifiedSources: [],
+      verifiedSources: [{
+        sourceId: 'S-EVID-1',
+        sourceTitle: 'Evidence Study',
+        author: 'Researcher',
+        publisher: 'Journal',
+        integrityScore: 80,
+        trustLevel: 'C',
+        existenceVerified: true,
+        identityStatus: 'verified',
+        evidenceStatus: 'not_available',
+        citationEligible: false,
+        metadataAccuracy: 100,
+        peerReviewed: false,
+        rejectedAsFabricated: false,
+        kurdishVerificationDetails: 'verified identity'
+      }],
       citationEligibleSources: [],
       rejectedSources: [],
       unverifiedSources: [],
-      allReports: [],
+      allReports: [{
+        sourceId: 'S-EVID-1',
+        sourceTitle: 'Evidence Study',
+        author: 'Researcher',
+        publisher: 'Journal',
+        integrityScore: 80,
+        trustLevel: 'C',
+        existenceVerified: true,
+        identityStatus: 'verified',
+        evidenceStatus: 'not_available',
+        citationEligible: false,
+        metadataAccuracy: 100,
+        peerReviewed: false,
+        rejectedAsFabricated: false,
+        kurdishVerificationDetails: 'verified identity'
+      }],
       rejectedSourcesCount: 0
     });
 
@@ -231,11 +261,41 @@ describe('claim to evidence linking', () => {
     });
 
     sourceVerificationService.verifySources = async () => ({
-      verifiedSources: [],
+      verifiedSources: [{
+        sourceId: 'S-EVID-1',
+        sourceTitle: 'Evidence Study',
+        author: 'Researcher',
+        publisher: 'Journal',
+        integrityScore: 80,
+        trustLevel: 'C',
+        existenceVerified: true,
+        identityStatus: 'verified',
+        evidenceStatus: 'not_available',
+        citationEligible: false,
+        metadataAccuracy: 100,
+        peerReviewed: false,
+        rejectedAsFabricated: false,
+        kurdishVerificationDetails: 'verified identity'
+      }],
       citationEligibleSources: [],
       rejectedSources: [],
       unverifiedSources: [],
-      allReports: [],
+      allReports: [{
+        sourceId: 'S-EVID-1',
+        sourceTitle: 'Evidence Study',
+        author: 'Researcher',
+        publisher: 'Journal',
+        integrityScore: 80,
+        trustLevel: 'C',
+        existenceVerified: true,
+        identityStatus: 'verified',
+        evidenceStatus: 'not_available',
+        citationEligible: false,
+        metadataAccuracy: 100,
+        peerReviewed: false,
+        rejectedAsFabricated: false,
+        kurdishVerificationDetails: 'verified identity'
+      }],
       rejectedSourcesCount: 0
     });
 
@@ -261,6 +321,8 @@ describe('claim to evidence linking', () => {
       expect(result.evidenceLinks).toHaveLength(1);
       expect(result.evidenceLinks[0]?.sourceId).toBe('S-EVID-1');
       expect(result.evidenceLinks[0]?.overlapScore).toBeGreaterThanOrEqual(70);
+      expect(result.evidenceLinks[0]?.verificationStatus).toBe('verified');
+      expect(result.evidenceLinks[0]?.claimCitationEligible).toBe(true);
       expect(result.sourceVerification.citationEligible).toBe(0);
     } finally {
       researchIntelligenceService.discover = originalDiscover;

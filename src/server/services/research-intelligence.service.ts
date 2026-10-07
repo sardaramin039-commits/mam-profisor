@@ -53,6 +53,8 @@ export interface ResearchIntelligenceResult {
     evidenceText: string;
     overlapScore: number;
     status: 'candidate' | 'strong-candidate';
+    verificationStatus: 'verified' | 'unverified' | 'not_available';
+    claimCitationEligible: boolean;
   }>;
   methodology: any;
   consistency: any;
@@ -324,7 +326,8 @@ JSON:
         sourceId: source?.sourceId,
         title: source?.title,
         evidenceText: source?.evidenceText
-      }))
+      })),
+      verification.allReports
     );
 
     return {
