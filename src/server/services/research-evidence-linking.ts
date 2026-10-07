@@ -52,7 +52,7 @@ function overlapScore(claim: string, evidence: string): number {
   return Math.round((overlap / left.size) * 100);
 }
 
-export function linkClaimsToEvidence(
+export async function linkClaimsToEvidence(
   claims: string[],
   sources: Array<{
     id?: string;
