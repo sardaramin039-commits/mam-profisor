@@ -38,6 +38,10 @@ describe('academic integrity services', () => {
             citationId: 'CIT-1',
             citationEligible: true,
             verificationStatus: 'verified',
+            evidenceQuote: 'دەقی پشتبەستوو بە بەڵگە',
+            evidenceStatus: 'verified',
+            evidenceType: 'full-text',
+            evidenceProvenance: 'server-verified-fulltext',
             page: '12'
           },
           {
@@ -53,7 +57,12 @@ describe('academic integrity services', () => {
         sourceTitle: 'Academic Study',
         author: 'Smith, John',
         year: '2024',
-        publisher: 'University Press'
+        publisher: 'University Press',
+        citationEligible: true,
+        evidenceStatus: 'verified',
+        evidenceType: 'full-text',
+        evidenceProvenance: 'server-verified-fulltext',
+        evidenceText: 'دەقی پشتبەستوو بە بەڵگە لە full text ـی سەرچاوەکەدا هەیە.'
       }],
       'APA7'
     );
