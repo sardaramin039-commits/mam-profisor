@@ -65,7 +65,7 @@ export class AcademicSearchService {
     if (!query || query.trim() === '') return [];
     try {
       const headers: Record<string, string> = {
-        'User-Agent': 'AcademicKurdishPlatform/1.0 (mailto:admin@example.com)',
+        'User-Agent': 'Mam-Professor-Academic-Platform/1.0',
       };
       const token = process.env['CROSSREF_PLUS_TOKEN'];
       if (token) {
