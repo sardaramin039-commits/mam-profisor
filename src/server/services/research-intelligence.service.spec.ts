@@ -252,6 +252,7 @@ describe('claim to evidence linking', () => {
         snippet: '',
         evidenceText: 'peer tutoring improves academic achievement among students',
         evidenceType: 'abstract',
+        evidenceUrl: 'https://example.org/evidence',
         confidenceScore: 70,
         peerReviewed: false
       }],
@@ -323,6 +324,9 @@ describe('claim to evidence linking', () => {
       expect(result.evidenceLinks[0]?.overlapScore).toBeGreaterThanOrEqual(70);
       expect(result.evidenceLinks[0]?.verificationStatus).toBe('verified');
       expect(result.evidenceLinks[0]?.claimCitationEligible).toBe(true);
+      expect(result.evidenceLinks[0]?.evidenceUrl).toBe('https://example.org/evidence');
+      expect(result.evidenceLinks[0]?.evidenceType).toBe('abstract');
+      expect(result.evidenceLinks[0]?.provider).toBe('OpenAlex');
       expect(result.sourceVerification.citationEligible).toBe(0);
     } finally {
       researchIntelligenceService.discover = originalDiscover;

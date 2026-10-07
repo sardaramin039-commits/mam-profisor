@@ -102,6 +102,17 @@
                 </div>
                 <div class="text-[8px] font-semibold text-stone-600 mt-1">{{ link.sourceTitle }}</div>
                 <div class="text-[8px] text-stone-500 leading-relaxed mt-1">{{ link.evidenceText.slice(0, 260) }}{{ link.evidenceText.length > 260 ? '…' : '' }}</div>
+                @if (link.evidenceUrl || link.provider || link.evidenceType) {
+                  <div class="flex flex-wrap items-center gap-1.5 mt-1.5 text-[7px] text-stone-500">
+                    <span class="font-semibold">Provenance:</span>
+                    @if (link.provider) { <span class="px-1.5 py-0.5 rounded bg-stone-100 border border-stone-200">{{ link.provider }}</span> }
+                    @if (link.evidenceType) { <span class="px-1.5 py-0.5 rounded bg-stone-100 border border-stone-200">{{ link.evidenceType }}</span> }
+                    @if (link.evidenceUrl) {
+                      <a [href]="link.evidenceUrl" target="_blank" rel="noopener noreferrer"
+                        class="text-blue-700 hover:underline font-semibold">بینینی بەڵگە</a>
+                    }
+                  </div>
+                }
                 <div class="flex flex-wrap gap-1 mt-1.5">
                   <span class="px-1.5 py-0.5 rounded border text-[7px] font-bold"
                     [class.border-emerald-200]="link.verificationStatus === 'verified'"
