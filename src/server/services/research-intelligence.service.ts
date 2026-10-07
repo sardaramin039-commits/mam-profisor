@@ -327,18 +327,7 @@ JSON:
       : [];
 
     const enrichedSources = await enrichSourcesWithFullText(
-      verificationSources.map((source: any) => ({
-        id: source?.id,
-        sourceId: source?.sourceId,
-        title: source?.title || source?.sourceTitle,
-        url: source?.url,
-        pmid: source?.pmid,
-        pmcid: source?.pmcid,
-        evidenceText: source?.evidenceText,
-        evidenceType: source?.evidenceType,
-        evidenceProvenance: source?.evidenceProvenance || 'unknown',
-        evidenceUrl: source?.evidenceUrl
-      })),
+      verificationSources,
       claimTexts
     );
 
