@@ -29,6 +29,7 @@ interface DogmaticRule {
   providedIn: 'root'
 })
 export class AcademicHedgingStanceService {
+  private issueSequence = 0;
   readonly isEvaluating = signal<boolean>(false);
   readonly analysisResult = signal<HedgingAnalysisResult | null>(null);
 
@@ -117,7 +118,7 @@ export class AcademicHedgingStanceService {
 
       while ((match = regex.exec(text)) !== null) {
         issues.push({
-          id: 'hedge_' + Math.random().toString(36).substring(2, 8),
+          id: `hedge_${++this.issueSequence}`,
           originalPhrase: match[0],
           suggestedPhrase: rule.suggested,
           startIndex: match.index,

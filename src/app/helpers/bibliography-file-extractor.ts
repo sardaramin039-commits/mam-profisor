@@ -89,10 +89,11 @@ export class BibliographyFileExtractor {
         return m ? m[1].trim() : '';
       };
 
-      const author = getField('author') || 'Unknown Author';
-      const year = this.extractYear(getField('year') || '2024');
-      const title = getField('title') || 'Untitled Work';
-      const journalOrPub = getField('journal') || getField('publisher') || getField('booktitle') || 'Academic Press';
+      const author = getField('author');
+      const year = this.extractYear(getField('year'));
+      const title = getField('title');
+      const journalOrPub = getField('journal') || getField('publisher') || getField('booktitle');
+      if (!author || !title) continue;
       const doi = getField('doi');
       const url = getField('url');
       const pages = getField('pages');
@@ -151,7 +152,7 @@ export class BibliographyFileExtractor {
       const lines = entry.split('\n');
       let author = '';
       let title = '';
-      let year: number | string = 2024;
+      let year: number | string = 'n.d.';
       let pub = '';
       let doi = '';
       let url = '';
@@ -171,13 +172,13 @@ export class BibliographyFileExtractor {
         else if (trimmed.startsWith('UR  -')) url = trimmed.substring(5).trim();
       }
 
-      if (!author && !title) continue;
+      if (!author || !title) continue;
 
       const sourceType: ExtractedCitationItem['sourceType'] = typeStr.includes('JOUR') ? 'journal' : 'book';
       const citationItem: CitationItem = {
-        authors: author || 'نووسەری دیارینەکراو',
+        authors: author,
         year,
-        title: title || 'ناونیشانی بێ ناو',
+        title,
         publisher: pub,
         doi,
         url,
@@ -187,9 +188,9 @@ export class BibliographyFileExtractor {
       items.push({
         id: `ris_${items.length + 1}`,
         rawText: entry,
-        author: author || 'نووسەری دیارینەکراو',
+        author,
         year,
-        title: title || 'ناونیشانی بێ ناو',
+        title,
         journalOrPublisher: pub,
         doi,
         url,
@@ -214,6 +215,8 @@ export class BibliographyFileExtractor {
     for (let i = 0; i < rawLines.length; i++) {
       const line = rawLines[i];
       const parsed = this.parseSingleReferenceLine(line);
+
+      if (!parsed.author || !parsed.title) continue;
 
       const citationItem: CitationItem = {
         authors: parsed.author,
@@ -275,8 +278,8 @@ export class BibliographyFileExtractor {
       const year = this.extractYear(yearParenMatch[2]);
       const rest = yearParenMatch[3].trim();
       const restParts = rest.split(/[.?!]/).map(s => s.trim()).filter(Boolean);
-      const title = restParts[0] || 'ناونیشانی سەرچاوە';
-      const journalOrPublisher = restParts.slice(1).join('. ') || 'دەزگای زانستی';
+      const title = restParts[0] || '';
+      const journalOrPublisher = restParts.slice(1).join('. ');
 
       return {
         author,
@@ -291,11 +294,11 @@ export class BibliographyFileExtractor {
 
     // 3. Fallback: split by period or comma
     const parts = clean.split(/[.]/).map(p => p.trim()).filter(Boolean);
-    const author = parts[0] || 'نووسەری سەرچاوە';
+    const author = parts[0] || '';
     const yearMatch = clean.match(/\b(19\d\d|20\d\d|[\u0660-\u0669\u06F0-\u06F9]{4})\b/);
-    const year = yearMatch ? this.extractYear(yearMatch[1]) : 2024;
-    const title = parts[1] || 'ناونیشانی لێکۆڵینەوە';
-    const journalOrPublisher = parts.slice(2).join('. ') || 'چاپکراوی ئەکادیمی';
+    const year = yearMatch ? this.extractYear(yearMatch[1]) : 'n.d.';
+    const title = parts[1] || '';
+    const journalOrPublisher = parts.slice(2).join('. ');
 
     return {
       author,
@@ -321,7 +324,7 @@ export class BibliographyFileExtractor {
     } else if (styleKey.includes('chicago')) {
       return `${item.authors}. ${item.year}. "${item.title}." ${item.publisher ? `${item.publisher}.` : ''}${item.doi ? ` https://doi.org/${item.doi}` : ''}`;
     } else if (styleKey.includes('ieee')) {
-      return `${item.authors}, "${item.title}," ${item.publisher || item.journal || 'Academic Press'}, ${item.year}.`;
+      return `${item.authors}, "${item.title}," ${item.publisher || item.journal || ''}${item.year ? `, ${item.year}` : ''}.`.replace(/\s+/g, ' ').trim();
     } else if (styleKey.includes('kurdish')) {
       return CitationBuilder.formatKurdishAcademic(item);
     } else {
@@ -350,13 +353,13 @@ export class BibliographyFileExtractor {
   /**
    * Converts Western or Eastern Arabic/Persian numbers to standard 4-digit number.
    */
-  private static extractYear(raw: string): number {
+  private static extractYear(raw: string): number | string {
     const easternDigits: { [key: string]: string } = {
       '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
       '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4', '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9'
     };
     const normalized = raw.replace(/[٠-٩۰-۹]/g, d => easternDigits[d] || d);
     const num = parseInt(normalized.replace(/\D/g, ''), 10);
-    return isNaN(num) ? 2024 : num;
+    return isNaN(num) ? 'n.d.' : num;
   }
 }

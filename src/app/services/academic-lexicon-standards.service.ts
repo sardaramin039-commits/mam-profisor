@@ -169,14 +169,20 @@ export class AcademicLexiconStandardsService {
     page?: string
   ): FormattedCitationKurdish {
     const safeYear = year ? String(year) : 'بێ بەروار';
-    const safeAuthor = author || 'نووسەری نەناسراو';
+    const safeAuthor = author?.trim() || '';
+    const safeTitle = title?.trim() || '';
+    const safePublisher = publisher?.trim() || '';
     const pageStr = page ? `، ل. ${page}` : '';
+
+    if (!safeAuthor || !safeTitle) {
+      return { styleName: 'Metadata ناتەواو', inTextCitation: '', fullBibliography: '' };
+    }
 
     if (style === 'IEEE') {
       return {
         styleName: 'IEEE',
         inTextCitation: '[1]',
-        fullBibliography: `[1] ${safeAuthor}, "${title}," ${publisher}, ${safeYear}.`
+        fullBibliography: `[1] ${safeAuthor}, "${safeTitle},"${safePublisher ? ` ${safePublisher},` : ''} ${safeYear}.`
       };
     }
 
@@ -184,7 +190,7 @@ export class AcademicLexiconStandardsService {
       return {
         styleName: 'Chicago (پەراوێز و سەرچاوە)',
         inTextCitation: `(${safeAuthor} ${safeYear}${pageStr})`,
-        fullBibliography: `${safeAuthor}. ${safeYear}. ${title}. ${publisher}.`
+        fullBibliography: `${safeAuthor}. ${safeYear}. ${safeTitle}.${safePublisher ? ` ${safePublisher}.` : ''}`
       };
     }
 
@@ -192,7 +198,7 @@ export class AcademicLexiconStandardsService {
       return {
         styleName: 'LC. APA (پۆلێنکاری کتێبخانەی کۆنگرێس و APA 7th)',
         inTextCitation: `(${safeAuthor}، ${safeYear}${pageStr})`,
-        fullBibliography: `${safeAuthor} (${safeYear}). ${title}. ${publisher}. [LCC: Z695] [LCSH: Academic Discourse].`
+        fullBibliography: `${safeAuthor} (${safeYear}). ${safeTitle}.${safePublisher ? ` ${safePublisher}.` : ''}`
       };
     }
 
@@ -200,7 +206,7 @@ export class AcademicLexiconStandardsService {
     return {
       styleName: 'APA 7th Edition (پێوەری کوردی)',
       inTextCitation: `(${safeAuthor}، ${safeYear}${pageStr})`,
-      fullBibliography: `${safeAuthor} (${safeYear}). ${title}. ${publisher}.`
+      fullBibliography: `${safeAuthor} (${safeYear}). ${safeTitle}.${safePublisher ? ` ${safePublisher}.` : ''}`
     };
   }
 
