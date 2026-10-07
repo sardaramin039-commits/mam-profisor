@@ -236,7 +236,7 @@ JSON:
  "normalizationSuggestions":[]
 }`;
 
-    const [plannerRes, methodologyRes, factRes, consistencyRes] = await Promise.all([
+    const analysisResults = await Promise.allSettled([
       ai.models.generateContent({
         model: 'gemini-3.8-flash',
         contents: plannerPrompt,
@@ -259,6 +259,16 @@ JSON:
       })
     ]);
 
+    const textOf = (result: PromiseSettledResult<{ text?: string }>): string =>
+      result.status === 'fulfilled' ? String(result.value.text || '') : '';
+    const statusOf = (result: PromiseSettledResult<unknown>): 'ok' | 'degraded' =>
+      result.status === 'fulfilled' ? 'ok' : 'degraded';
+
+    const plannerRes = analysisResults[0];
+    const methodologyRes = analysisResults[1];
+    const factRes = analysisResults[2];
+    const consistencyRes = analysisResults[3];
+
     const providedSources = Array.isArray(request.rawSources) ? request.rawSources.slice(0, 100) : [];
     const verificationSources = providedSources.length
       ? providedSources
@@ -280,7 +290,13 @@ JSON:
 
     return {
       discovery,
-      planner: safeJson(plannerRes.text || '', {
+      analysisStatus: {
+        planner: statusOf(plannerRes),
+        methodology: statusOf(methodologyRes),
+        factCheck: statusOf(factRes),
+        consistency: statusOf(consistencyRes)
+      },
+      planner: safeJson(textOf(plannerRes), {
         researchQuestion: request.researchQuestion || '',
         subQuestions: [],
         objectives: [],
@@ -291,19 +307,19 @@ JSON:
         plannedSections: [],
         riskNotes: ['پلان بەهۆی کێشەی AI بە تەواوی نەدرا.']
       }),
-      factCheck: safeJson(factRes.text || '', {
+      factCheck: safeJson(textOf(factRes), {
         summary: { totalClaims: 0, supported: 0, insufficientEvidence: 0, unsupported: 0 },
         claims: [],
         policy: 'هیچ claim ـێک بەبێ evidence بە پشتڕاستکراو دانانرێت.'
       }),
-      methodology: safeJson(methodologyRes.text || '', {
+      methodology: safeJson(textOf(methodologyRes), {
         overallScore: 0,
         status: 'review',
         checks: [],
         blockingIssues: ['پشکنینی مێتۆدۆلۆژیا تەواو نەبوو.'],
         strengths: []
       }),
-      consistency: safeJson(consistencyRes.text || '', {
+      consistency: safeJson(textOf(consistencyRes), {
         overallScore: chapters.length ? 0 : null,
         status: chapters.length ? 'review' : 'consistent',
         conflicts: [],
