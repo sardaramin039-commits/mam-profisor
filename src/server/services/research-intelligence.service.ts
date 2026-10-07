@@ -55,6 +55,9 @@ export interface ResearchIntelligenceResult {
     status: 'candidate' | 'strong-candidate';
     verificationStatus: 'verified' | 'unverified' | 'not_available';
     claimCitationEligible: boolean;
+    evidenceUrl?: string;
+    evidenceType?: 'abstract' | 'snippet' | 'full-text';
+    provider?: string;
   }>;
   methodology: any;
   consistency: any;
@@ -325,7 +328,10 @@ JSON:
         id: source?.id,
         sourceId: source?.sourceId,
         title: source?.title,
-        evidenceText: source?.evidenceText
+        evidenceText: source?.evidenceText,
+        evidenceUrl: source?.evidenceUrl,
+        evidenceType: source?.evidenceType,
+        sourceType: source?.sourceType
       })),
       verification.allReports
     );
