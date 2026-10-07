@@ -89,25 +89,28 @@ function findExcerpts(
   claims: string[],
   maxChars = 9000
 ): { excerpt: string; claim: string } {
-  const normalizedText = normalize(fullText);
-  if (!normalizedText) return { excerpt: '', claim: '' };
+  const units = fullText
+    .split(/(?<=[.!?؟؛…])\s+/u)
+    .map(unit => unit.trim())
+    .filter(Boolean);
+  if (!units.length) return { excerpt: '', claim: '' };
 
   const excerpts: string[] = [];
   let matchedClaim = '';
-  const seen = new Set<number>();
 
   for (const claim of claims) {
     const normalizedClaim = normalize(claim);
-    if (!normalizedClaim || seen.has(normalizedClaim.length)) continue;
+    if (!normalizedClaim || matchedClaim === claim) continue;
 
-    const index = normalizedText.indexOf(normalizedClaim);
+    const index = units.findIndex(unit =>
+      normalize(unit).includes(normalizedClaim)
+    );
     if (index < 0) continue;
 
     if (!matchedClaim) matchedClaim = claim;
-    const start = Math.max(0, index - 700);
-    const end = Math.min(normalizedText.length, index + normalizedClaim.length + 700);
-    excerpts.push(normalizedText.slice(start, end));
-    seen.add(normalizedClaim.length);
+    const startIndex = Math.max(0, index - 1);
+    const endIndex = Math.min(units.length, index + 2);
+    excerpts.push(units.slice(startIndex, endIndex).join(' '));
 
     const joined = excerpts.join(' … ');
     if (joined.length >= maxChars) break;
