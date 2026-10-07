@@ -4,7 +4,6 @@ import { inject } from '@angular/core';
 import { FormalityToneConfig } from './features/editor/components/formality-tone-control.component';
 import { TextLineageNode } from './features/editor/components/text-lineage-connector.component';
 import { AppAcademicActions } from './helpers/app-academic-actions';
-import { calculateChapterTargetWords } from './helpers/chapter-calculator';
 import { buildAcademicThesisOutline } from './helpers/outline-structure';
 import { calculateWordValidationStatus } from './helpers/word-validation.helper';
 import { ChapterItemModel as ChapterItem } from './domain/models';
@@ -57,10 +56,6 @@ export abstract class AppControllerActions extends AppControllerBase {
   onDriveFileImported(file: { name: string; content: string }) {
     this.updateActiveChapterContent(file.content);
     this.mainTab.set('editor');
-  }
-
-  override getChapterTargetWords(chapter: ChapterItem, list: ChapterItem[], totalWords: number): number {
-    return calculateChapterTargetWords(chapter, list, totalWords);
   }
 
   getWordProgressPct(chapter: ChapterItem | null): number {
