@@ -30,6 +30,11 @@
         class="px-3 py-2 text-[10px] font-bold rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-900 hover:bg-indigo-100 disabled:opacity-50">
         {{ isGapRunning() ? 'کەلێن شیکردنەوە...' : 'دۆزینەوەی کەلێنی توێژینەوە' }}
       </button>
+      <button type="button" (click)="runResearchIntelligence()" [disabled]="isResearchIntelRunning()"
+        class="px-3 py-2 text-[10px] font-bold rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 disabled:opacity-50 flex items-center gap-1">
+        <mat-icon class="!text-sm">{{ isResearchIntelRunning() ? 'progress_activity' : 'hub' }}</mat-icon>
+        {{ isResearchIntelRunning() ? 'ژیرایی توێژینەوە...' : 'Research Intelligence' }}
+      </button>
     </div>
   </div>
 
@@ -38,6 +43,102 @@
   }
   @if (gapError()) {
     <div class="px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 text-[10px] font-semibold">{{ gapError() }}</div>
+  }
+  @if (researchIntelError()) {
+    <div class="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-800 text-[10px] font-semibold">{{ researchIntelError() }}</div>
+  }
+
+  @if (researchIntel(); as intel) {
+    <section class="p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50/30 space-y-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 border-b border-emerald-100 pb-3">
+        <div>
+          <h4 class="text-sm font-extrabold text-emerald-950 flex items-center gap-1.5">
+            <mat-icon class="text-emerald-800">hub</mat-icon>
+            Research Intelligence Hub
+          </h4>
+          <p class="text-[9px] text-emerald-900 mt-1">Planner، Source Discovery، Claim Fact Check، Methodology Validator و Long-Form Consistency</p>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+          <div class="px-3 py-2 rounded-lg bg-white border border-emerald-100"><span class="block text-[8px] text-stone-500">Sources</span><strong class="font-mono text-sm">{{ intel.discovery?.total ?? 0 }}</strong></div>
+          <div class="px-3 py-2 rounded-lg bg-white border border-emerald-100"><span class="block text-[8px] text-stone-500">Identity</span><strong class="font-mono text-sm">{{ intel.sourceVerification?.identityVerified ?? 0 }}</strong></div>
+          <div class="px-3 py-2 rounded-lg bg-white border border-emerald-100"><span class="block text-[8px] text-stone-500">Fact Support</span><strong class="font-mono text-sm">{{ intel.factCheck?.summary?.supported ?? 0 }}</strong></div>
+          <div class="px-3 py-2 rounded-lg bg-white border border-emerald-100"><span class="block text-[8px] text-stone-500">Consistency</span><strong class="font-mono text-sm">{{ intel.consistency?.overallScore ?? '—' }}</strong></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="p-3 rounded-xl border border-stone-200 bg-white space-y-2">
+          <h5 class="text-[11px] font-extrabold text-stone-900">Research Planner</h5>
+          <div class="text-[10px] leading-relaxed"><strong>Research Question:</strong> {{ intel.planner?.researchQuestion || '—' }}</div>
+          <div><span class="text-[9px] font-bold">Sub-questions</span><ul class="pr-4 list-disc text-[9px] text-stone-700 space-y-0.5">@for (item of (intel.planner?.subQuestions || []).slice(0, 6); track $index) { <li>{{ item }}</li> }</ul></div>
+          <div><span class="text-[9px] font-bold">Evidence Needs</span><ul class="pr-4 list-disc text-[9px] text-stone-700 space-y-0.5">@for (item of (intel.planner?.evidenceNeeds || []).slice(0, 6); track $index) { <li>{{ item }}</li> }</ul></div>
+        </div>
+
+        <div class="p-3 rounded-xl border border-stone-200 bg-white space-y-2">
+          <div class="flex items-center justify-between">
+            <h5 class="text-[11px] font-extrabold text-stone-900">Methodology Validator</h5>
+            <span class="font-mono text-sm">{{ intel.methodology?.overallScore ?? 0 }}/100</span>
+          </div>
+          <div class="flex items-center justify-between text-[9px]">
+            <span>دۆخ</span>
+            <strong>{{ intel.methodology?.status || 'review' }}</strong>
+          </div>
+          @for (check of (intel.methodology?.checks || []).slice(0, 6); track $index) {
+            <div class="grid grid-cols-12 gap-2 p-2 rounded-lg bg-stone-50 border border-stone-100">
+              <span class="col-span-2 font-mono text-[8px]">{{ check.score ?? 0 }}</span>
+              <span class="col-span-10 text-[9px] leading-relaxed">{{ check.finding || '—' }}<span class="block text-indigo-800 mt-0.5">{{ check.recommendation || '' }}</span></span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="p-3 rounded-xl border border-red-100 bg-white space-y-2">
+          <div class="flex items-center justify-between">
+            <h5 class="text-[11px] font-extrabold">Claim-by-Claim Fact Check</h5>
+            <span class="font-mono text-[9px]">پشتڕاستکراو: {{ intel.factCheck?.summary?.supported ?? 0 }} / {{ intel.factCheck?.summary?.totalClaims ?? 0 }}</span>
+          </div>
+          @for (claim of (intel.factCheck?.claims || []).slice(0, 8); track $index) {
+            <div class="p-2 rounded-lg border border-stone-100 bg-stone-50">
+              <div class="flex justify-between gap-2"><span class="text-[9px] text-stone-800 leading-relaxed">{{ claim.claim }}</span><strong class="text-[8px] shrink-0">{{ claim.status }}</strong></div>
+              <div class="text-[8.5px] text-stone-600 mt-1">{{ claim.reason }}</div>
+            </div>
+          }
+          <p class="text-[8px] text-stone-500">هیچ claim ـێک بەبێ evidence ـی پێدراو بە "supported" دانانرێت.</p>
+        </div>
+
+        <div class="p-3 rounded-xl border border-amber-100 bg-white space-y-2">
+          <div class="flex items-center justify-between">
+            <h5 class="text-[11px] font-extrabold">Long-Form Consistency</h5>
+            <span class="font-mono text-sm">{{ intel.consistency?.overallScore ?? '—' }}</span>
+          </div>
+          <div class="text-[9px] text-stone-600">{{ intel.consistency?.status || 'review' }}</div>
+          @for (conflict of (intel.consistency?.conflicts || []).slice(0, 8); track $index) {
+            <div class="p-2 rounded-lg bg-amber-50 border border-amber-100">
+              <div class="flex items-center justify-between"><span class="text-[8px] font-bold">{{ conflict.type }}</span><strong class="text-[8px]">{{ conflict.severity }}</strong></div>
+              <p class="text-[9px] text-stone-700 leading-relaxed mt-1">{{ conflict.description }}</p>
+              <p class="text-[9px] text-amber-900 leading-relaxed mt-1">{{ conflict.recommendation }}</p>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="p-3 rounded-xl border border-stone-200 bg-white">
+        <div class="flex items-center justify-between mb-2">
+          <h5 class="text-[11px] font-extrabold">Automatic Source Discovery</h5>
+          <span class="text-[8px] text-stone-500">ئەم تۆمارانە candidate ـن، نە citation ـی تەواو</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+          @for (source of (intel.discovery?.sources || []).slice(0, 12); track source.id || source.title) {
+            <div class="p-2 rounded-lg bg-stone-50 border border-stone-100">
+              <div class="text-[9px] font-bold text-stone-900 line-clamp-2">{{ source.title }}</div>
+              <div class="text-[8px] text-stone-600 mt-1">{{ (source.authors || []).slice(0, 2).join(', ') }} · {{ source.year || 'n.d.' }}</div>
+              <div class="flex items-center justify-between mt-1"><span class="text-[7.5px] font-mono">{{ source.sourceType }}</span><span class="text-[7.5px] text-indigo-700">{{ source.confidenceScore ?? 0 }}% discovery score</span></div>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
   }
 
   @if (pipeline(); as p) {
