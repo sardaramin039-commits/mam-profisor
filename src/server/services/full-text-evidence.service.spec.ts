@@ -10,7 +10,7 @@ afterEach(() => {
 describe('full-text evidence enrichment', () => {
   it('retrieves only open-access Europe PMC full text and preserves source metadata', async () => {
     globalThis.fetch = (async (input: RequestInfo | URL) => {
-      const url = String(input);
+      const url = decodeURIComponent(String(input));
 
       if (url.includes('/search?query=EXT_ID:12345')) {
         return new Response(JSON.stringify({
@@ -58,13 +58,13 @@ describe('full-text evidence enrichment', () => {
     expect(enriched.claimText).toBe(
       'peer tutoring improves academic achievement among students'
     );
-    expect(enriched.evidenceText).toContain('peer tutoring improves academic achievement');
+    expect(enriched.evidenceText).toContain('Peer tutoring improves academic achievement');
     expect(enriched.evidenceUrl).toContain('/PMC123456/fullTextXML');
   });
 
   it('leaves a source unchanged when Europe PMC does not mark it as open access', async () => {
     globalThis.fetch = (async (input: RequestInfo | URL) => {
-      const url = String(input);
+      const url = decodeURIComponent(String(input));
 
       if (url.includes('/search?query=EXT_ID:98765')) {
         return new Response(JSON.stringify({
