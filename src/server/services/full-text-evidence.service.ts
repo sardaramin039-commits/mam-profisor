@@ -8,6 +8,8 @@ export interface FullTextEnrichmentSource {
   url?: string;
   pmid?: string;
   pmcid?: string;
+  openAlexId?: string;
+  sourceType?: string;
   evidenceText?: string;
   evidenceType?: EvidenceType;
   evidenceProvenance?: EvidenceProvenance;
@@ -20,6 +22,14 @@ type EuropePmcSearchResponse = {
       pmcid?: string;
       isOpenAccess?: string;
     }>;
+  };
+};
+
+type OpenAlexWorkResponse = {
+  best_oa_location?: {
+    is_oa?: boolean;
+    landing_page_url?: string | null;
+    pdf_url?: string | null;
   };
 };
 
@@ -85,6 +95,66 @@ async function resolveOpenAccessPmcId(
   return record.pmcid.trim().toUpperCase();
 }
 
+async function resolveOpenAlexHtmlUrl(source: FullTextEnrichmentSource): Promise<string> {
+  const rawId = String(source.openAlexId || '').trim();
+  if (!rawId) return '';
+
+  const workId = rawId.replace(/^https?:\/\/openalex\.org\//i, '').trim();
+  if (!/^W\d+$/i.test(workId)) return '';
+
+  try {
+    const response = await fetch(
+      `https://api.openalex.org/works/${encodeURIComponent(workId)}`,
+      {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      }
+    );
+    if (!response.ok) return '';
+
+    const data = await response.json() as OpenAlexWorkResponse;
+    const location = data.best_oa_location;
+    if (location?.is_oa !== true || !location.landing_page_url) return '';
+
+    return location.landing_page_url.trim();
+  } catch {
+    return '';
+  }
+}
+
+async function readHtmlText(url: string): Promise<string> {
+  if (!url) return '';
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'text/html,application/xhtml+xml;q=0.9,text/plain;q=0.8'
+      },
+      signal: AbortSignal.timeout(7000)
+    });
+    if (!response.ok) return '';
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!/text\/html|application\/xhtml\+xml|text\/plain/i.test(contentType)) return '';
+
+    const body = await response.text();
+    return body
+      .replace(/<script[\\s\\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\\s\\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\\s+/g, ' ')
+      .trim();
+  } catch {
+    return '';
+  }
+}
+
 function findExcerpts(
   fullText: string,
   claims: string[],
@@ -134,28 +204,47 @@ export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSour
   return Promise.all(sources.map(async source => {
     try {
       const pmcid = await resolveOpenAccessPmcId(source);
-      if (!pmcid) return source;
+      if (pmcid) {
+        const url =
+          `https://www.ebi.ac.uk/europepmc/webservices/rest/${encodeURIComponent(pmcid)}/fullTextXML`;
+        const response = await fetch(url, {
+          headers: { Accept: 'application/xml,text/xml' },
+          signal: AbortSignal.timeout(7000)
+        });
+        if (response.ok) {
+          const xml = await response.text();
+          const match = findExcerpts(cleanFullText(xml), claims);
+          if (match.excerpt) {
+            return {
+              ...source,
+              claimText: match.claim,
+              evidenceText: match.excerpt,
+              evidenceType: 'full-text',
+              evidenceProvenance: 'server-verified-fulltext',
+              evidenceUrl: url
+            } as T & Partial<FullTextEnrichmentSource>;
+          }
+        }
+      }
 
-      const url =
-        `https://www.ebi.ac.uk/europepmc/webservices/rest/${encodeURIComponent(pmcid)}/fullTextXML`;
-      const response = await fetch(url, {
-        headers: { Accept: 'application/xml,text/xml' },
-        signal: AbortSignal.timeout(7000)
-      });
-      if (!response.ok) return source;
-
-      const xml = await response.text();
-      const fullText = cleanFullText(xml);
-      const match = findExcerpts(fullText, claims);
-      if (!match.excerpt) return source;
+      const htmlUrl = String(
+        source.sourceType === 'OpenAlex'
+          ? await resolveOpenAlexHtmlUrl(source)
+          : source.sourceType === 'DOAJ'
+            ? source.url || source.evidenceUrl || ''
+            : ''
+      ).trim();
+      const htmlText = await readHtmlText(htmlUrl);
+      const htmlMatch = findExcerpts(htmlText, claims);
+      if (!htmlMatch.excerpt) return source;
 
       return {
         ...source,
-        claimText: match.claim,
-        evidenceText: match.excerpt,
+        claimText: htmlMatch.claim,
+        evidenceText: htmlMatch.excerpt,
         evidenceType: 'full-text',
         evidenceProvenance: 'server-verified-fulltext',
-        evidenceUrl: url
+        evidenceUrl: htmlUrl
       } as T & Partial<FullTextEnrichmentSource>;
     } catch {
       return source;
