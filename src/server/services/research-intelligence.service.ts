@@ -250,10 +250,15 @@ JSON:
       })
     ]);
 
+    const providedSources = Array.isArray(request.rawSources) ? request.rawSources.slice(0, 100) : [];
+    const verificationSources = providedSources.length
+      ? providedSources
+      : discovery.sources.slice(0, 100);
+
     let verification;
     try {
       verification = await sourceVerificationService.verifySources(
-        (request.rawSources || []).slice(0, 100),
+        verificationSources,
         getGeminiClient
       );
     } catch {
@@ -297,7 +302,7 @@ JSON:
         normalizationSuggestions: []
       }),
       sourceVerification: {
-        received: (request.rawSources || []).length,
+        received: verificationSources.length,
         identityVerified: verification.verifiedSources?.length || 0,
         citationEligible: verification.citationEligibleSources?.length || 0,
         rejected: verification.rejectedSources?.length || 0
