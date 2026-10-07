@@ -3,12 +3,14 @@ import { GoogleGenAI } from '@google/genai';
 import { SYSTEM_PROMPT_ANALYZE_RIGOR } from '../../prompts/system-prompts';
 import { robustParseJson } from '../utils/json-repair';
 import { multiAgentOrchestratorService } from '../services/multi-agent-orchestrator.service';
+import { researchIntelligenceService } from '../services/research-intelligence.service';
 import { validateRequest } from '../../middleware/validate.middleware';
 import {
   academicRigorSchema,
   academicConsultationSchema,
   methodologySchema,
-  multiAgentPipelineSchema
+  multiAgentPipelineSchema,
+  researchIntelligenceSchema
 } from '../utils/academic-analysis.schemas';
 
 export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI): Router {
@@ -195,6 +197,30 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
     } catch (err: unknown) {
       console.error('Multi-agent pipeline error:', err);
       res.status(500).json({ error: 'کێشەیەک لە ڕاکێشانی پڕۆسەی Multi-Agent دا ڕوویدا.' });
+    }
+  });
+
+
+  /**
+   * Research Intelligence Hub: Planner + Discovery + Claim Audit + Methodology + Consistency
+   */
+  router.post('/research_intelligence', validateRequest(researchIntelligenceSchema), async (req, res) => {
+    try {
+      const result = await researchIntelligenceService.execute(req.body, getGeminiClient);
+      res.json({
+        success: true,
+        result,
+        integrityPolicy: {
+          discovery: 'real-index-results-only',
+          citations: 'never fabricated',
+          factCheck: 'review aid; unsupported claims remain unsupported',
+          methodology: 'missing inputs reduce score',
+          consistency: 'reported conflicts require researcher review'
+        }
+      });
+    } catch (err: unknown) {
+      console.error('Research intelligence error:', err);
+      res.status(500).json({ error: 'کێشەیەک لە Research Intelligence ـدا ڕوویدا.' });
     }
   });
 
