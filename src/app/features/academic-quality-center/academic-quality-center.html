@@ -138,6 +138,12 @@
                 <span class="text-[7.5px] font-mono">{{ source.sourceType }}</span>
                 <span class="text-[7.5px] text-indigo-700">{{ source.confidenceScore ?? 0 }}% discovery score</span>
               </div>
+              @if (source.evidenceText) {
+                <div class="px-1.5 py-1 rounded border border-blue-100 bg-blue-50 text-blue-900 text-[7.5px] leading-relaxed">
+                  <strong>Evidence candidate:</strong>
+                  {{ source.evidenceText.slice(0, 360) }}{{ source.evidenceText.length > 360 ? '…' : '' }}
+                </div>
+              }
               @if (verification) {
                 <div class="flex flex-wrap gap-1 pt-0.5">
                   <span class="px-1.5 py-0.5 rounded border text-[7px] font-bold"
