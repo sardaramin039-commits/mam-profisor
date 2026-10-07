@@ -347,6 +347,7 @@ JSON:
         riskNotes: ['پلان بەهۆی کێشەی AI بە تەواوی نەدرا.']
       }),
       factCheck,
+      evidenceLinks,
       methodology: safeJson(textOf(methodologyRes), {
         overallScore: 0,
         status: 'review',
