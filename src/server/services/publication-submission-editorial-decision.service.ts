@@ -1,0 +1,473 @@
+import { adminDb } from '../../lib/firebase-admin';
+import { sha256 } from './text-sha256.service';
+import { buildSubmissionAuditEvent } from './publication-submission-audit.service';
+import type { SubmissionReceipt } from './publication-submission-receipt.service';
+import { canTransition } from './publication-submission-lifecycle.policy';
+import { publicationSubmissionLifecycleService } from './publication-submission-lifecycle.service';
+import type { SubmissionLifecycleRecord, SubmissionLifecycleStatus } from './publication-submission-lifecycle.service';
+
+export type EditorialDecisionType = 'MINOR_REVISION' | 'MAJOR_REVISION' | 'ACCEPT' | 'REJECT' | 'WITHDRAW';
+export type RevisionTaskStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'WAIVED';
+export type RevisionScope = 'MANUSCRIPT' | 'SECTION' | 'CITATION' | 'FORMATTING' | 'OTHER';
+
+export interface RevisionTask {
+  id: string;
+  order: number;
+  title: string;
+  details: string;
+  scope: RevisionScope;
+  required: boolean;
+  status: RevisionTaskStatus;
+  dueAt?: string;
+  completionNote?: string;
+  updatedAt: string;
+}
+
+export interface RevisionPlan {
+  id: string;
+  submissionId: string;
+  decisionId: string;
+  submissionVersionId: string;
+  severity: 'MINOR' | 'MAJOR';
+  status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED';
+  tasks: RevisionTask[];
+  createdAt: string;
+  updatedAt: string;
+  planHash: string;
+}
+
+export interface EditorialDecision {
+  id: string;
+  submissionId: string;
+  userId: string;
+  workspaceId: string;
+  decisionType: EditorialDecisionType;
+  resultingStatus: SubmissionLifecycleStatus;
+  submissionVersionId: string;
+  receiptId?: string;
+  revisionPlanId?: string;
+  note: string;
+  externalReference?: string;
+  lifecycleVersion: number;
+  decidedAt: string;
+  immutableHash: string;
+}
+
+export interface RecordEditorialDecisionInput {
+  decisionType: EditorialDecisionType;
+  note?: string;
+  externalReference?: string;
+  tasks?: Array<{
+    title: string;
+    details: string;
+    scope: RevisionScope;
+    required: boolean;
+    dueAt?: string;
+  }>;
+}
+
+export interface RevisionGateReport {
+  ready: boolean;
+  plan: RevisionPlan | null;
+  pendingRequiredTasks: RevisionTask[];
+  reason?: string;
+}
+
+function clean(value: unknown): string {
+  return String(value ?? '').trim();
+}
+
+function validId(value: string): boolean {
+  return /^[A-Za-z0-9_-]{1,128}$/u.test(value);
+}
+
+function validHash(value: string): boolean {
+  return /^[a-f0-9]{64}$/u.test(value);
+}
+
+function isRevision(type: EditorialDecisionType): boolean {
+  return type === 'MINOR_REVISION' || type === 'MAJOR_REVISION';
+}
+
+function resultingStatus(type: EditorialDecisionType): SubmissionLifecycleStatus {
+  if (type === 'MINOR_REVISION' || type === 'MAJOR_REVISION') return 'REVISION_REQUESTED';
+  if (type === 'ACCEPT') return 'ACCEPTED';
+  if (type === 'REJECT') return 'REJECTED';
+  return 'WITHDRAWN';
+}
+
+function allowedDecisionStatus(status: SubmissionLifecycleStatus): boolean {
+  return status === 'SUBMITTED' || status === 'UNDER_REVIEW' ||
+    status === 'RESUBMITTED' || status === 'REVISION_REQUESTED';
+}
+
+function validIsoDate(value: string | undefined): boolean {
+  if (!value) return true;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed);
+}
+
+function taskPayload(task: RevisionTask): Record<string, unknown> {
+  return {
+    id: task.id,
+    order: task.order,
+    title: task.title,
+    details: task.details,
+    scope: task.scope,
+    required: task.required,
+    status: task.status,
+    dueAt: task.dueAt || '',
+    completionNote: task.completionNote || '',
+    updatedAt: task.updatedAt
+  };
+}
+
+function planHash(plan: Omit<RevisionPlan, 'planHash'>): string {
+  return sha256(JSON.stringify({
+    id: plan.id,
+    submissionId: plan.submissionId,
+    decisionId: plan.decisionId,
+    submissionVersionId: plan.submissionVersionId,
+    severity: plan.severity,
+    status: plan.status,
+    tasks: plan.tasks.map(taskPayload),
+    createdAt: plan.createdAt,
+    updatedAt: plan.updatedAt
+  }));
+}
+
+export function buildEditorialDecision(input: Omit<EditorialDecision, 'id' | 'immutableHash'>): EditorialDecision {
+  if (!validId(clean(input.submissionId)) || !clean(input.userId) || !clean(input.workspaceId)) {
+    throw new Error('Editorial decision identity is incomplete.');
+  }
+  if (!validHash(input.submissionVersionId)) {
+    throw new Error('Editorial decision version binding is invalid.');
+  }
+  if (!clean(input.note) && !clean(input.externalReference)) {
+    throw new Error('Editorial decision requires a note or external reference.');
+  }
+  if (!clean(input.decidedAt)) throw new Error('Editorial decision timestamp is required.');
+  const canonical = JSON.stringify({
+    submissionId: input.submissionId,
+    userId: input.userId,
+    workspaceId: input.workspaceId,
+    decisionType: input.decisionType,
+    resultingStatus: input.resultingStatus,
+    submissionVersionId: input.submissionVersionId,
+    receiptId: clean(input.receiptId),
+    revisionPlanId: clean(input.revisionPlanId),
+    note: clean(input.note),
+    externalReference: clean(input.externalReference),
+    lifecycleVersion: input.lifecycleVersion,
+    decidedAt: input.decidedAt
+  });
+  const immutableHash = sha256(canonical);
+  return {
+    ...input,
+    id: 'DEC-' + immutableHash.slice(0, 32),
+    note: clean(input.note),
+    ...(input.receiptId ? { receiptId: clean(input.receiptId) } : {}),
+    ...(input.revisionPlanId ? { revisionPlanId: clean(input.revisionPlanId) } : {}),
+    ...(input.externalReference ? { externalReference: clean(input.externalReference) } : {}),
+    immutableHash
+  };
+}
+
+function buildRevisionPlan(
+  decisionId: string,
+  submissionId: string,
+  submissionVersionId: string,
+  severity: 'MINOR' | 'MAJOR',
+  tasks: RecordEditorialDecisionInput['tasks'],
+  createdAt: string
+): RevisionPlan {
+  const normalized = tasks ?? [];
+  if (!normalized.length) throw new Error('Revision decision requires at least one revision task.');
+  if (normalized.length > 50) throw new Error('A revision plan cannot contain more than 50 tasks.');
+  const baseId = 'RVP-' + sha256(JSON.stringify({ decisionId, submissionVersionId })).slice(0, 32);
+  const items: RevisionTask[] = normalized.map((task, index) => {
+    const title = clean(task.title);
+    const details = clean(task.details);
+    const dueAt = clean(task.dueAt);
+    if (!title || !details) throw new Error('Every revision task requires a title and details.');
+    if (!validIsoDate(dueAt || undefined)) throw new Error('Revision task due date is invalid.');
+    if (task.required !== true && task.required !== false) throw new Error('Revision task required flag is invalid.');
+    const itemSeed = JSON.stringify({ baseId, order: index + 1, title, details, scope: task.scope });
+    return {
+      id: 'RVT-' + sha256(itemSeed).slice(0, 32),
+      order: index + 1,
+      title,
+      details,
+      scope: task.scope,
+      required: task.required,
+      status: 'OPEN',
+      ...(dueAt ? { dueAt } : {}),
+      updatedAt: createdAt
+    };
+  });
+  const base: Omit<RevisionPlan, 'planHash'> = {
+    id: baseId,
+    submissionId,
+    decisionId,
+    submissionVersionId,
+    severity,
+    status: 'OPEN',
+    tasks: items,
+    createdAt,
+    updatedAt: createdAt
+  };
+  return { ...base, planHash: planHash(base) };
+}
+
+function computePlanStatus(tasks: RevisionTask[]): RevisionPlan['status'] {
+  if (tasks.length > 0 && tasks.every(task => !task.required || task.status === 'DONE' || task.status === 'WAIVED')) {
+    return 'COMPLETED';
+  }
+  return tasks.some(task => task.status !== 'OPEN') ? 'IN_PROGRESS' : 'OPEN';
+}
+
+function planReference(userId: string, submissionId: string) {
+  return adminDb.collection('publication_submission_lifecycle').doc(userId)
+    .collection('items').doc(submissionId).collection('revision-plans');
+}
+
+function decisionReference(userId: string, submissionId: string) {
+  return adminDb.collection('publication_submission_lifecycle').doc(userId)
+    .collection('items').doc(submissionId).collection('editorial-decisions');
+}
+
+async function latestRevisionPlan(userId: string, submissionId: string): Promise<RevisionPlan | null> {
+  const snapshot = await planReference(userId, submissionId).limit(100).get();
+  const plans = snapshot.docs.map(doc => doc.data() as RevisionPlan)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return plans[0] ?? null;
+}
+
+function assertDecisionPreconditions(
+  current: SubmissionLifecycleRecord,
+  input: RecordEditorialDecisionInput
+): void {
+  if (!allowedDecisionStatus(current.currentStatus)) {
+    throw new Error('Editorial decision is only available after submission reaches an active editorial state.');
+  }
+  if (!current.auditHeadHash || !validHash(current.auditHeadHash)) {
+    throw new Error('P17 audit chain is required before recording an editorial decision.');
+  }
+  if (!current.currentVersionId || !Number.isInteger(current.versionCount) || current.versionCount < 1) {
+    throw new Error('P18 submission version snapshot is required before an editorial decision.');
+  }
+  const transition = canTransition(current.currentStatus, resultingStatus(input.decisionType));
+  if (!transition.allowed) throw new Error(transition.reason ?? 'Editorial decision transition is not allowed.');
+  if (isRevision(input.decisionType) && !(input.tasks?.length)) {
+    throw new Error('A revision decision must include at least one structured revision task.');
+  }
+}
+
+async function loadDecisionReceipt(
+  transaction: FirebaseFirestore.Transaction,
+  userId: string,
+  submissionId: string,
+  current: SubmissionLifecycleRecord
+): Promise<SubmissionReceipt | null> {
+  if (!current.submissionReceiptId) return null;
+  const reference = adminDb.collection('publication_submission_lifecycle').doc(userId)
+    .collection('items').doc(submissionId).collection('receipts').doc(current.submissionReceiptId);
+  const snapshot = await transaction.get(reference);
+  return snapshot.exists ? snapshot.data() as SubmissionReceipt : null;
+}
+
+class PublicationSubmissionEditorialDecisionService {
+  async record(
+    userId: string,
+    workspaceId: string,
+    submissionId: string,
+    input: RecordEditorialDecisionInput
+  ): Promise<{ decision: EditorialDecision; submission: SubmissionLifecycleRecord; revisionPlan?: RevisionPlan }> {
+    const reference = adminDb.collection('publication_submission_lifecycle').doc(userId)
+      .collection('items').doc(submissionId);
+    const now = new Date().toISOString();
+
+    return adminDb.runTransaction(async transaction => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists) throw new Error('Submission lifecycle record was not found.');
+      const current = snapshot.data() as SubmissionLifecycleRecord;
+      if (current.workspaceId !== workspaceId) throw new Error('Submission does not belong to this workspace.');
+      assertDecisionPreconditions(current, input);
+
+      const targetStatus = resultingStatus(input.decisionType);
+      const receipt = input.decisionType === 'ACCEPT' || input.decisionType === 'REJECT'
+        ? await loadDecisionReceipt(transaction, userId, submissionId, current)
+        : null;
+      if ((input.decisionType === 'ACCEPT' || input.decisionType === 'REJECT') && !receipt) {
+        throw new Error('Accepted or rejected submissions require a recorded submission receipt.');
+      }
+      if (receipt && current.currentStatus === 'SUBMITTED' && receipt.submissionVersionId !== current.currentVersionId) {
+        throw new Error('The submission receipt is not bound to the current submitted version.');
+      }
+
+      const decisionIdSeed = JSON.stringify({
+        submissionId,
+        lifecycleVersion: current.version + 1,
+        decisionType: input.decisionType,
+        submissionVersionId: current.currentVersionId
+      });
+      const decisionId = 'DEC-' + sha256(decisionIdSeed).slice(0, 32);
+      const revision = isRevision(input.decisionType)
+        ? buildRevisionPlan(
+          decisionId,
+          current.id,
+          current.currentVersionId,
+          input.decisionType === 'MAJOR_REVISION' ? 'MAJOR' : 'MINOR',
+          input.tasks,
+          now
+        )
+        : undefined;
+      const decision = buildEditorialDecision({
+        submissionId: current.id,
+        userId,
+        workspaceId,
+        decisionType: input.decisionType,
+        resultingStatus: targetStatus,
+        submissionVersionId: current.currentVersionId,
+        ...(receipt ? { receiptId: receipt.id } : {}),
+        ...(revision ? { revisionPlanId: revision.id } : {}),
+        note: clean(input.note) || 'Editorial decision recorded.',
+        ...(input.externalReference ? { externalReference: clean(input.externalReference) } : {}),
+        lifecycleVersion: current.version + 1,
+        decidedAt: now
+      });
+      const auditEvent = buildSubmissionAuditEvent({
+        submissionId: current.id,
+        version: current.version + 1,
+        from: current.currentStatus,
+        to: targetStatus,
+        note: `Editorial decision: ${input.decisionType}. ${clean(input.note) || 'Decision recorded.'}`,
+        externalReference: input.externalReference,
+        receiptId: receipt?.id,
+        occurredAt: now,
+        previousHash: current.auditHeadHash
+      });
+      const event = {
+        id: 'SEV-' + sha256(JSON.stringify({
+          submissionId: current.id,
+          lifecycleVersion: current.version + 1,
+          decisionId: decision.id,
+          occurredAt: now
+        })).slice(0, 32),
+        from: current.currentStatus,
+        to: targetStatus,
+        note: decision.note,
+        ...(input.externalReference ? { externalReference: clean(input.externalReference) } : {}),
+        occurredAt: now
+      };
+      const events = Array.isArray(current.events) ? current.events : [];
+      const submission: SubmissionLifecycleRecord = {
+        ...current,
+        currentStatus: targetStatus,
+        version: current.version + 1,
+        events: [...events, event].slice(-100),
+        auditHeadHash: auditEvent.eventHash,
+        updatedAt: now
+      };
+
+      transaction.create(decisionReference(userId, submissionId).doc(decision.id), decision);
+      if (revision) transaction.create(planReference(userId, submissionId).doc(revision.id), revision);
+      transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
+      transaction.set(reference, submission);
+      return { decision, submission, ...(revision ? { revisionPlan: revision } : {}) };
+    });
+  }
+
+  async listDecisions(userId: string, workspaceId: string, submissionId: string): Promise<EditorialDecision[]> {
+    const current = await publicationSubmissionLifecycleService.get(userId, submissionId);
+    if (!current || current.workspaceId !== workspaceId) throw new Error('Submission was not found.');
+    const snapshot = await decisionReference(userId, submissionId).limit(100).get();
+    return snapshot.docs.map(doc => doc.data() as EditorialDecision)
+      .sort((a, b) => b.decidedAt.localeCompare(a.decidedAt));
+  }
+
+  async getRevisionPlan(userId: string, workspaceId: string, submissionId: string): Promise<RevisionPlan | null> {
+    const current = await publicationSubmissionLifecycleService.get(userId, submissionId);
+    if (!current || current.workspaceId !== workspaceId) throw new Error('Submission was not found.');
+    return latestRevisionPlan(userId, submissionId);
+  }
+
+  async updateRevisionTask(
+    userId: string,
+    workspaceId: string,
+    submissionId: string,
+    taskId: string,
+    status: RevisionTaskStatus,
+    completionNote?: string
+  ): Promise<RevisionPlan> {
+    const lifecycleReference = adminDb.collection('publication_submission_lifecycle').doc(userId)
+      .collection('items').doc(submissionId);
+    const plan = await latestRevisionPlan(userId, submissionId);
+    if (!plan) throw new Error('No revision plan exists for this submission.');
+    if (plan.tasks.every(task => task.status === 'DONE' || task.status === 'WAIVED') && status === 'OPEN') {
+      throw new Error('A completed revision plan cannot reopen a task.');
+    }
+
+    return adminDb.runTransaction(async transaction => {
+      const lifecycleSnapshot = await transaction.get(lifecycleReference);
+      if (!lifecycleSnapshot.exists) throw new Error('Submission lifecycle record was not found.');
+      const current = lifecycleSnapshot.data() as SubmissionLifecycleRecord;
+      if (current.workspaceId !== workspaceId) throw new Error('Submission does not belong to this workspace.');
+      if (current.currentStatus !== 'REVISION_REQUESTED') {
+        throw new Error('Revision tasks can only be updated while revision is requested.');
+      }
+      const planReferenceValue = planReference(userId, submissionId).doc(plan.id);
+      const planSnapshot = await transaction.get(planReferenceValue);
+      if (!planSnapshot.exists) throw new Error('Revision plan was not found.');
+      const stored = planSnapshot.data() as RevisionPlan;
+      const taskIndex = stored.tasks.findIndex(task => task.id === taskId);
+      if (taskIndex < 0) throw new Error('Revision task was not found.');
+      if (status === 'WAIVED' && !clean(completionNote)) {
+        throw new Error('A waived revision task requires a completion note.');
+      }
+      const updatedAt = new Date().toISOString();
+      const updatedTasks = stored.tasks.map((task, index) => index === taskIndex ? {
+        ...task,
+        status,
+        ...(clean(completionNote) ? { completionNote: clean(completionNote) } : { completionNote: undefined }),
+        updatedAt
+      } : task);
+      const base: Omit<RevisionPlan, 'planHash'> = {
+        ...stored,
+        tasks: updatedTasks,
+        status: computePlanStatus(updatedTasks),
+        updatedAt
+      };
+      const updated: RevisionPlan = { ...base, planHash: planHash(base) };
+      transaction.set(planReferenceValue, updated);
+      return updated;
+    });
+  }
+
+  async assertResubmissionGate(
+    userId: string,
+    workspaceId: string,
+    submissionId: string
+  ): Promise<RevisionGateReport> {
+    const current = await publicationSubmissionLifecycleService.get(userId, submissionId);
+    if (!current || current.workspaceId !== workspaceId) {
+      throw new Error('Submission was not found.');
+    }
+    if (current.currentStatus !== 'REVISION_REQUESTED') {
+      return { ready: false, plan: null, pendingRequiredTasks: [], reason: 'Submission is not awaiting revision.' };
+    }
+    const plan = await latestRevisionPlan(userId, submissionId);
+    if (!plan) {
+      return { ready: false, plan: null, pendingRequiredTasks: [], reason: 'No structured revision plan exists.' };
+    }
+    const pendingRequiredTasks = plan.tasks.filter(task =>
+      task.required && task.status !== 'DONE' && task.status !== 'WAIVED'
+    );
+    return pendingRequiredTasks.length
+      ? { ready: false, plan, pendingRequiredTasks, reason: 'Required revision tasks are not complete.' }
+      : { ready: true, plan, pendingRequiredTasks: [] };
+  }
+}
+
+export const publicationSubmissionEditorialDecisionService =
+  new PublicationSubmissionEditorialDecisionService();
