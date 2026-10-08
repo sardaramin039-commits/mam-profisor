@@ -49,6 +49,13 @@ describe('P17 submission audit chain', () => {
     expect(report.eventCount).toBe(0);
   });
 
+  it('detects an audit head mismatch', () => {
+    const first = event(1, null, 'DRAFT', '');
+    const report = verifySubmissionAuditChain([first], 'DRAFT', 1, 'wrong-head');
+    expect(report.status).toBe('INVALID');
+    expect(report.errors.some(error => error.includes('audit head'))).toBe(true);
+  });
+
   it('rejects an altered event hash', () => {
     const first = event(1, null, 'DRAFT', '');
     const altered = { ...first, eventHash: '0'.repeat(64) };
