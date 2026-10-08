@@ -14,6 +14,10 @@ describe('P15 submission lifecycle policy', () => {
     expect(canTransition('REVISION_REQUESTED', 'RESUBMITTED').allowed).toBe(true);
   });
 
+  it('does not allow DRAFT to become READY without the integrity gate', () => {
+    expect(canTransition('DRAFT', 'READY').allowed).toBe(false);
+  });
+
   it('rejects impossible terminal-state transitions', () => {
     expect(canTransition('ACCEPTED', 'SUBMITTED').allowed).toBe(false);
     expect(canTransition('REJECTED', 'UNDER_REVIEW').allowed).toBe(false);
