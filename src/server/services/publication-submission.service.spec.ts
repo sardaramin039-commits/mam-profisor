@@ -56,12 +56,23 @@ describe('P13 publication submission package', () => {
     expect(result.titlePage).toBeNull();
   });
 
-  it('blocks missing required sections', () => {
+  it('blocks a package when a required section is missing', () => {
+    const incomplete = { ...manuscript, sections: manuscript.sections.filter(section => section.type !== 'conclusion') };
     const result = buildPublicationSubmissionPackage({
-      manuscript,
+      manuscript: incomplete,
       policy: { journalName: 'Test Journal', requiredSections: ['abstract', 'methodology', 'chapter', 'conclusion'] }
     });
-    expect(result.status).toBe('READY');
+    expect(result.status).toBe('BLOCKED');
+    expect(result.checks.some(item => item.rule === 'Required section: conclusion')).toBe(true);
+  });
+
+  it('blocks an invalid keyword range', () => {
+    const result = buildPublicationSubmissionPackage({
+      manuscript,
+      policy: { journalName: 'Test Journal', minKeywords: 6, maxKeywords: 3 }
+    });
+    expect(result.status).toBe('BLOCKED');
+    expect(result.checks.some(item => item.rule === 'Keyword range')).toBe(true);
   });
 
   it('requires author metadata when the journal policy says so', () => {
