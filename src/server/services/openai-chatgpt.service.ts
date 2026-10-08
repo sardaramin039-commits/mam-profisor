@@ -245,7 +245,11 @@ export class OpenAiChatGptService {
     const query = [request.query.trim(), request.discipline?.trim()].filter(Boolean).join(' ');
     const apiKey = this.getOptionalApiKey();
 
-    if (process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] !== 'true' || !apiKey) {
+    if (
+      process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] !== 'true' ||
+      process.env['ALLOW_BILLABLE_AI'] !== 'true' ||
+      !apiKey
+    ) {
       const records = await academicSearchService.searchAll(query, limit);
       const sources = records.map(mapFreeAcademicRecord);
       return {
@@ -375,7 +379,11 @@ Return a concise summary and keywords, but the source list must come from web-se
     }
 
     const apiKey = this.getOptionalApiKey();
-    if (process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'] !== 'true' || !apiKey) {
+    if (
+      process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'] !== 'true' ||
+      process.env['ALLOW_BILLABLE_AI'] !== 'true' ||
+      !apiKey
+    ) {
       const sortedReferences = buildDeterministicReferences(rawReferences).slice(0, 100);
       return {
         success: true,
