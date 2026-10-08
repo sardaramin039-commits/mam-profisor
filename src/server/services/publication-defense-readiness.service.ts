@@ -59,7 +59,6 @@ export function evaluatePublicationDefenseReadiness(
   if (!clean(input.researchQuestion)) revisions.push('پرسیاری توێژینەوە بە ڕوونی لە package ـی کۆتایی دابنێ.');
   if (!clean(input.conclusion)) revisions.push('ئەنجامی کۆتایی manuscript زیاد یان تەواو بکە.');
   if (input.referencedCitationCount === 0) revisions.push('هیچ citation ـی verified ـی بەکارهاتوو نییە؛ پێداچوونەوەی evidence پێویستە.');
-  if (input.overallQAScore !== undefined && input.overallQAScore < 80) revisions.push('نمرەی QA کەمترە لە ٨٠؛ پێش publication پێداچوونەوە بکە.');
 
   if (blockers.length === 0) strengths.push('بونیادی manuscript و export gate لە دۆخی ڕێگەپێدراودان.');
   if (input.verifiedCitationCount > 0) strengths.push('citation ـە بەکارهاتووەکان پشتگیریی verification ـیان هەیە.');
