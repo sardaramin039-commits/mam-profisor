@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { assembleManuscript } from '../services/manuscript-assembly.service';
 import { buildPublicationSubmissionPackage } from '../services/publication-submission.service';
 import { verifyPublicationSubmissionIntegrity } from '../services/publication-submission-integrity.service';
+import { researchControlPlaneService } from '../services/research-control-plane.service';
+import { resolveServerVerifiedCitations } from '../services/publication-research-gate.service';
 import type { AuthRequest } from '../../middleware/auth';
 
 const id = z.string().trim().min(1).max(128);
@@ -90,6 +92,12 @@ export function createPublicationSubmissionIntegrityRouter(): Router {
     }
 
     try {
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      const citations = await resolveServerVerifiedCitations(
+        userId,
+        workspaceId,
+        parsed.data.citations
+      );
       const manuscript = assembleManuscript({
         projectId: workspaceId,
         title: parsed.data.title,
@@ -98,7 +106,7 @@ export function createPublicationSubmissionIntegrityRouter(): Router {
         methodology: parsed.data.methodology,
         chapters: parsed.data.chapters,
         conclusion: parsed.data.conclusion,
-        citations: parsed.data.citations
+        citations
       });
       const submission = buildPublicationSubmissionPackage({
         manuscript,
@@ -108,8 +116,11 @@ export function createPublicationSubmissionIntegrityRouter(): Router {
       });
       const integrity = verifyPublicationSubmissionIntegrity({ package: submission });
 
-      res.status(integrity.status === 'BLOCKED' ? 409 : 200).json({
-        success: integrity.readyToSubmit,
+      const blocked = control.gates.exportBlocked || !integrity.readyToSubmit;
+      res.status(blocked ? 409 : 200).json({
+        success: !blocked,
+        exportBlocked: control.gates.exportBlocked,
+        controlPlane: control,
         integrity,
         package: submission
       });
