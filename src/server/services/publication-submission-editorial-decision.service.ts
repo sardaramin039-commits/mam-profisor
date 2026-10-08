@@ -301,6 +301,7 @@ class PublicationSubmissionEditorialDecisionService {
       if (receipt) {
         const receiptVerification = verifySubmissionReceipt(receipt, {
           submissionId: current.id,
+          userId,
           workspaceId,
           submissionFingerprint: current.submissionFingerprint,
           ...(current.currentVersionId ? { submissionVersionId: current.currentVersionId } : {})
