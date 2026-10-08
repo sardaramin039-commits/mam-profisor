@@ -75,6 +75,22 @@ describe('P18 submission versioning', () => {
     expect(report.status).toBe('EMPTY');
     expect(report.versionCount).toBe(0);
   });
+
+  it('rejects duplicate version ids and cycles', () => {
+    const first = buildSubmissionVersion({
+      submissionId: 'SUB-1',
+      cycle: 1,
+      kind: 'READY',
+      statusAtCapture: 'READY',
+      packageFingerprint: fp1,
+      capturedAt: '2026-10-08T15:00:00.000Z'
+    });
+    const duplicate = { ...first };
+    const report = verifySubmissionVersionChain([first, duplicate]);
+    expect(report.status).toBe('INVALID');
+    expect(report.errors.some(error => error.includes('Duplicate version id'))).toBe(true);
+    expect(report.errors.some(error => error.includes('Duplicate version cycle'))).toBe(true);
+  });
   it('marks legacy anchors as reconstructed rather than fully verified', () => {
     const legacy = buildSubmissionVersion({
       submissionId: 'SUB-1',
