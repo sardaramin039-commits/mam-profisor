@@ -23,6 +23,7 @@ The canonical release commands use npm and `package-lock.json`; no Bun workflow 
 `npm run release:smoke`
 
 `npm run e2e` (Chromium browser E2E)
+`node scripts/p7-p10-research-chain-test.mjs` (integrated P7–P10 research chain)
 
 `npm audit --omit=dev --audit-level=high`
 
