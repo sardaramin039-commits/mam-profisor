@@ -291,8 +291,14 @@
             </div>
           }
 
+          @if (lockedManifest()!.referenceCount > 0) {
+            <div class="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[9px] text-amber-900">
+              <strong>پاراستنی citation:</strong>
+              ئەم Version ـە {{ lockedManifest()!.referenceCount }} سەرچاوەی پێشوو هەیە. Quick resubmit لێرە ناکرێت چونکە binding ـی citation ـەکان لە مانيفێستدا خەزن نەکراوە؛ package ـی P13/P14 دوبارە assemble بکە.
+            </div>
+          }
           <div class="flex justify-end mt-3">
-            <button type="button" class="px-4 py-1.5 rounded-lg bg-emerald-700 text-white text-[10px] font-bold disabled:opacity-50" (click)="submitResubmission()" [disabled]="resubmitLoading()">
+            <button type="button" class="px-4 py-1.5 rounded-lg bg-emerald-700 text-white text-[10px] font-bold disabled:opacity-50" (click)="submitResubmission()" [disabled]="resubmitLoading() || lockedManifest()!.referenceCount > 0">
               {{ resubmitLoading() ? 'خەریکی resubmit...' : 'ناردنی Version ـی نوێ' }}
             </button>
           </div>
