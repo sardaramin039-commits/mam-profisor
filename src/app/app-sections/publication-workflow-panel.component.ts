@@ -84,6 +84,29 @@ interface VersionReport {
   errors: string[];
 }
 
+interface SubmissionPolicy {
+  journalName: string;
+  manuscriptType?: 'article' | 'review' | 'thesis' | 'book-chapter';
+  maxWords?: number;
+  maxAbstractWords?: number;
+  minKeywords?: number;
+  maxKeywords?: number;
+  maxReferences?: number;
+  blindedReview?: boolean;
+  requiredSections?: Array<'abstract' | 'research-question' | 'methodology' | 'chapter' | 'conclusion'>;
+  requireCoverLetter?: boolean;
+  requireAuthorMetadata?: boolean;
+}
+
+interface SubmissionManifestSummary {
+  id: string;
+  versionId: string;
+  policy: SubmissionPolicy;
+  journalName: string;
+  manuscriptType: string;
+  policyFingerprint: string;
+}
+
 @Component({
   selector: 'app-publication-workflow-panel',
   standalone: true,
@@ -116,6 +139,19 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
   });
   readonly decisionLoading = signal(false);
   readonly editorialWriteBlocked = signal(false);
+  readonly lockedManifest = signal<SubmissionManifestSummary | null>(null);
+  readonly resubmitTitle = signal('');
+  readonly resubmitAbstract = signal('');
+  readonly resubmitResearchQuestion = signal('');
+  readonly resubmitMethodology = signal('');
+  readonly resubmitConclusion = signal('');
+  readonly resubmitKeywords = signal('');
+  readonly resubmitAuthorName = signal('');
+  readonly resubmitAuthorAffiliation = signal('');
+  readonly resubmitAuthorEmail = signal('');
+  readonly resubmitNote = signal('');
+  readonly resubmitExternalReference = signal('');
+  readonly resubmitLoading = signal(false);
 
   override ngOnInit(): void {
     this.workspaceId.set(this.host.historyList()[0]?.id || '');
@@ -166,13 +202,21 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
       const [decisions, revision, versionHistory] = await Promise.all([
         firstValueFrom(this.workflowHttp.get<{ decisions: EditorialDecision[] }>(`${base}/decisions`)),
         firstValueFrom(this.workflowHttp.get<{ plan: RevisionPlan | null; gate: RevisionGate }>(`${base}/revision`)),
-        firstValueFrom(this.workflowHttp.get<{ versions: VersionReport; items: SubmissionVersion[] }>(`${base}/versions`))
+        firstValueFrom(this.workflowHttp.get<{ versions: VersionReport; items: SubmissionVersion[] }>(`${base}/versions`)),
+        firstValueFrom(this.workflowHttp.get<{ manifests: SubmissionManifestSummary[] }>(
+          `/api/publication-submission-manifest/${encodeURIComponent(this.workspaceId())}`
+        ))
       ]);
       this.decisions.set(decisions.decisions || []);
       this.revisionPlan.set(revision.plan);
       this.revisionGate.set(revision.gate);
       this.versionReport.set(versionHistory.versions || null);
       this.versions.set(versionHistory.items || []);
+      const manifestList = (versionHistory as unknown as { manifests?: SubmissionManifestSummary[] }).manifests || [];
+      const currentVersionId = this.currentSubmission()?.currentVersionId || '';
+      const locked = manifestList.find(manifest => manifest.versionId === currentVersionId) || null;
+      this.lockedManifest.set(locked);
+      this.prefillResubmitForm(locked);
     } catch (error) {
       this.handleError(error, 'نەتوانرا زانیاریی submission و revision بخوێندرێتەوە.');
     } finally {
@@ -313,6 +357,112 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     }
   }
 
+  prefillResubmitForm(manifest: SubmissionManifestSummary | null): void {
+    if (!manifest) return;
+    if (!this.resubmitTitle()) this.resubmitTitle.set(this.host.refineForm.get('title')?.value || this.manuscriptTitle());
+  }
+
+  canResubmit(): boolean {
+    return this.currentSubmission()?.currentStatus === 'REVISION_REQUESTED' &&
+      this.revisionGate()?.ready === true &&
+      this.lockedManifest() !== null;
+  }
+
+  updateResubmitSignal(
+    field: 'title' | 'abstract' | 'researchQuestion' | 'methodology' | 'conclusion' |
+      'keywords' | 'authorName' | 'authorAffiliation' | 'authorEmail' | 'note' | 'externalReference',
+    value: string
+  ): void {
+    const setters: Record<string, (next: string) => void> = {
+      title: value => this.resubmitTitle.set(value),
+      abstract: value => this.resubmitAbstract.set(value),
+      researchQuestion: value => this.resubmitResearchQuestion.set(value),
+      methodology: value => this.resubmitMethodology.set(value),
+      conclusion: value => this.resubmitConclusion.set(value),
+      keywords: value => this.resubmitKeywords.set(value),
+      authorName: value => this.resubmitAuthorName.set(value),
+      authorAffiliation: value => this.resubmitAuthorAffiliation.set(value),
+      authorEmail: value => this.resubmitAuthorEmail.set(value),
+      note: value => this.resubmitNote.set(value),
+      externalReference: value => this.resubmitExternalReference.set(value)
+    };
+    setters[field](value);
+  }
+
+  private resubmitChapters(): Array<{ id: string; title: string; order: number; content: string; citationIds: string[] }> {
+    return this.chapters().map((chapter, index) => ({
+      id: `CH-${chapter.id}`,
+      title: chapter.title,
+      order: index + 1,
+      content: chapter.content || '',
+      citationIds: []
+    }));
+  }
+
+  async submitResubmission(): Promise<void> {
+    const manifest = this.lockedManifest();
+    if (!this.canResubmit() || !manifest) {
+      this.errorMessage.set('Resubmission هێشتا ئامادە نییە؛ revision gate و P19 manifest پشکنە.');
+      return;
+    }
+    if (!this.resubmitTitle().trim() || !this.resubmitAbstract().trim()) {
+      this.errorMessage.set('بۆ resubmission، ناونیشان و پوختە پێویستن.');
+      return;
+    }
+    const policy = manifest.policy;
+    const keywords = this.resubmitKeywords().split(',').map(value => value.trim()).filter(Boolean);
+    if (policy.minKeywords !== undefined && keywords.length < policy.minKeywords) {
+      this.errorMessage.set(`لانیکەم ${policy.minKeywords} keyword پێویستە.`);
+      return;
+    }
+    if (policy.maxKeywords !== undefined && keywords.length > policy.maxKeywords) {
+      this.errorMessage.set(`زۆرترین ${policy.maxKeywords} keyword ڕێگەپێدراوە.`);
+      return;
+    }
+    if (policy.requireAuthorMetadata && !this.resubmitAuthorName().trim()) {
+      this.errorMessage.set('P19 policy داوای زانیاریی نووسەر دەکات.');
+      return;
+    }
+    const chapters = this.resubmitChapters();
+    if (chapters.length === 0 || chapters.some(chapter => !chapter.content.trim())) {
+      this.errorMessage.set('هەموو chapter ـەکان دەبێت ناوەڕۆکیان هەبێت.');
+      return;
+    }
+    this.resubmitLoading.set(true);
+    this.errorMessage.set('');
+    try {
+      const base = `/api/publication-submission-lifecycle/${encodeURIComponent(this.workspaceId())}/${encodeURIComponent(this.submissionId())}`;
+      const authors = this.resubmitAuthorName().trim()
+        ? [{
+          name: this.resubmitAuthorName().trim(),
+          ...(this.resubmitAuthorAffiliation().trim() ? { affiliation: this.resubmitAuthorAffiliation().trim() } : {}),
+          ...(this.resubmitAuthorEmail().trim() ? { email: this.resubmitAuthorEmail().trim() } : {})
+        }]
+        : [];
+      await firstValueFrom(this.workflowHttp.post<{ success: boolean }>(`${base}/resubmit`, {
+        title: this.resubmitTitle().trim(),
+        abstract: this.resubmitAbstract().trim(),
+        researchQuestion: this.resubmitResearchQuestion().trim() || undefined,
+        methodology: this.resubmitMethodology().trim() || undefined,
+        chapters,
+        conclusion: this.resubmitConclusion().trim() || undefined,
+        citations: [],
+        keywords,
+        authors,
+        policy,
+        note: this.resubmitNote().trim() || undefined,
+        externalReference: this.resubmitExternalReference().trim() || undefined
+      }));
+      this.resubmitLoading.set(false);
+      await this.loadSubmissions();
+      this.host.toastService.showSuccess('Resubmission سەرکەوتوو بوو', 'Version ـی نوێ بە integrity gate ـەوە تۆمارکرا.');
+    } catch (error) {
+      this.handleError(error, 'نەتوانرا resubmission تۆمار بکرێت.');
+    } finally {
+      this.resubmitLoading.set(false);
+    }
+  }
+
   versionKindLabel(kind: SubmissionVersion['kind']): string {
     const labels: Record<SubmissionVersion['kind'], string> = {
       READY: 'ئامادەی ناردن',
@@ -348,6 +498,7 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     this.revisionGate.set(null);
     this.versions.set([]);
     this.versionReport.set(null);
+    this.lockedManifest.set(null);
     this.errorMessage.set('');
   }
 
