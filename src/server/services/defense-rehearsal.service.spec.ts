@@ -42,7 +42,6 @@ describe('P12 defense rehearsal engine', () => {
     expect(result.status).toBe('MISSING');
     expect(result.score).toBe(0);
   });
-});
 
   it('recognizes Kurdish terminology aliases in answers', () => {
     const session = defenseRehearsalService.prepare(base);
