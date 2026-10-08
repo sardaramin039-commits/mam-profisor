@@ -145,6 +145,9 @@ class PublicationSubmissionLifecycleService {
       if (current.currentStatus !== 'DRAFT') {
         throw new Error('Only a DRAFT submission can be promoted to READY.');
       }
+      if (!current.auditHeadHash) {
+        throw new Error('Submission predates P17 audit chain and cannot be promoted safely.');
+      }
 
       const occurredAt = new Date().toISOString();
       const eventSeed = JSON.stringify({
@@ -162,15 +165,26 @@ class PublicationSubmissionLifecycleService {
         note: 'P14 submission integrity gate passed.',
         occurredAt
       };
+      const auditEvent = buildSubmissionAuditEvent({
+        submissionId: current.id,
+        version: current.version + 1,
+        from: current.currentStatus,
+        to: 'READY',
+        note: 'P14 submission integrity gate passed.',
+        occurredAt,
+        previousHash: current.auditHeadHash
+      });
       const updated: SubmissionLifecycleRecord = {
         ...current,
         submissionFingerprint: verifiedFingerprint,
         currentStatus: 'READY',
         version: current.version + 1,
         events: [...current.events, event].slice(-100),
+        auditHeadHash: auditEvent.eventHash,
         updatedAt: occurredAt
       };
 
+      transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
       transaction.set(reference, updated);
       return updated;
     });
