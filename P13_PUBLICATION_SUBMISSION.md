@@ -27,3 +27,5 @@ Implementation:
 `src/server/services/publication-submission.service.ts`
 `src/server/services/publication-submission.service.spec.ts`
 `src/server/routes/publication-submission.routes.ts`
+## Integrated hardening
+P13 submission packages are now built only after the authenticated P9 research gate is checked. Citation verification is resolved from server-side P7 evidence before the manuscript is passed into the submission package builder. A blocked research state returns a blocked submission response rather than a misleading ready package.
