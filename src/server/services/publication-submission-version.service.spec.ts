@@ -75,4 +75,18 @@ describe('P18 submission versioning', () => {
     expect(report.status).toBe('EMPTY');
     expect(report.versionCount).toBe(0);
   });
+  it('marks legacy anchors as reconstructed rather than fully verified', () => {
+    const legacy = buildSubmissionVersion({
+      submissionId: 'SUB-1',
+      cycle: 1,
+      kind: 'LEGACY_READY',
+      statusAtCapture: 'READY',
+      packageFingerprint: fp1,
+      capturedAt: '2026-10-08T15:00:00.000Z'
+    });
+    const report = verifySubmissionVersionChain([legacy]);
+    expect(report.status).toBe('LEGACY_RECONSTRUCTED');
+    expect(report.latestFingerprint).toBe(fp1);
+  });
+
 });
