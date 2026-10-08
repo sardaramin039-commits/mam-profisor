@@ -148,7 +148,9 @@ function formatInTextCitation(item: AcademicSourceItem, style: string): string {
   const first = authors[0];
 
   if (style === 'mla') {
-    return authors.length > 1 ? `(${first} et al.)` : `(${first})`;
+    if (authors.length === 1) return `(${first})`;
+    if (authors.length === 2) return `(${first} and ${authors[1]})`;
+    return `(${first} et al.)`;
   }
 
   if (authors.length === 2) {
