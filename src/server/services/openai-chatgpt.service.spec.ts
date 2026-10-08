@@ -59,6 +59,10 @@ describe('OpenAiChatGptService reference integrity', () => {
     expect(result.sortedReferences).toHaveLength(1);
     expect(result.sortedReferences[0]?.title).toBe('Real Study');
     expect(result.sortedReferences[0]?.verificationStatus).toBe('retrieved-not-verified');
+    expect(result.sortedReferences[0]?.citationAPA).toBe(
+      'Researcher (2025). Real Study. Example Journal.'
+    );
+    expect(result.sortedReferences[0]?.citationAPA).not.toContain('Fabricated');
     expect(result.curatedBibliography).toContain('Real Study');
     expect(result.curatedBibliography).not.toContain('Fabricated Study');
     expect(result.curatedBibliography).not.toContain('10.9999/fake');
