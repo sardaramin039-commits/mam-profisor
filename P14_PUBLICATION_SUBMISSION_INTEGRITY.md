@@ -35,3 +35,5 @@ Implementation:
 - src/server/routes/publication-submission-integrity.routes.ts
 - src/server/services/text-sha256.service.ts
 - src/server/services/text-sha256.service.spec.ts
+## Integrated hardening
+P14 now repeats the P9 research gate and server-side P7 citation verification before rebuilding the P13 package. The integrity response therefore evaluates a package produced from the current authenticated research state, not a client-supplied status or citation-verification flag.
