@@ -1,6 +1,7 @@
 import { adminDb } from '../../lib/firebase-admin';
 import { sha256 } from './text-sha256.service';
 import { buildSubmissionReceipt } from './publication-submission-receipt.service';
+import { buildSubmissionAuditEvent } from './publication-submission-audit.service';
 import type { SubmissionReceipt } from './publication-submission-receipt.service';
 import {
   canTransition,
@@ -31,6 +32,7 @@ export interface SubmissionLifecycleRecord {
   version: number;
   events: SubmissionLifecycleEvent[];
   submissionReceiptId?: string;
+  auditHeadHash: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -93,6 +95,16 @@ class PublicationSubmissionLifecycleService {
     const now = new Date().toISOString();
     const seed = JSON.stringify({ userId, workspaceId, submissionFingerprint, now });
     const id = 'SUB-' + sha256(seed).slice(0, 32);
+    const currentStatus = initialSubmissionStatus(input.readyToSubmit);
+    const auditEvent = buildSubmissionAuditEvent({
+      submissionId: id,
+      version: 1,
+      from: null,
+      to: currentStatus,
+      note: 'Submission lifecycle created.',
+      occurredAt: now,
+      previousHash: ''
+    });
     const record: SubmissionLifecycleRecord = {
       id,
       userId,
@@ -100,14 +112,20 @@ class PublicationSubmissionLifecycleService {
       journalName,
       manuscriptType,
       submissionFingerprint,
-      currentStatus: initialSubmissionStatus(input.readyToSubmit),
+      currentStatus,
       version: 1,
       events: [],
+      auditHeadHash: auditEvent.eventHash,
       createdAt: now,
       updatedAt: now
     };
+    const reference = this.ref(userId).doc(id);
+    const auditReference = reference.collection('audit').doc(auditEvent.id);
 
-    await this.ref(userId).doc(id).set(record);
+    await adminDb.runTransaction(async transaction => {
+      transaction.create(reference, record);
+      transaction.create(auditReference, auditEvent);
+    });
     return record;
   }
 
