@@ -53,6 +53,9 @@ jobs:
       - name: Integrated P7-P10 research chain contract
         run: node scripts/p7-p10-research-chain-test.mjs
 
+      - name: Integrated P11-P15 publication chain contract
+        run: node scripts/p11-p15-publication-chain-test.mjs
+
 
       - name: Digital library factuality audit
         run: node scripts/library-integrity-audit.mjs
