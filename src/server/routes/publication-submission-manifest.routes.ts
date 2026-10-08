@@ -96,7 +96,6 @@ export function createPublicationSubmissionManifestRouter(): Router {
     }
 
     try {
-      const lifecycleIdValue = parsed.data.policy.journalName;
       const manuscript = assembleManuscript({
         projectId: workspaceId,
         title: parsed.data.title,
