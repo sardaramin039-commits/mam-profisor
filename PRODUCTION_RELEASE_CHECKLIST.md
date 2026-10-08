@@ -4,6 +4,8 @@
 
 ## Automated gates
 
+Validation v3: P20 test isolation and version-binding checks are included.
+
 The canonical release commands use npm and `package-lock.json`; no Bun workflow is required.
 
 `npm ci`
