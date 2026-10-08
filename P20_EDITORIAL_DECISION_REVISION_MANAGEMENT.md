@@ -44,3 +44,5 @@ P20 هیچ بانگەشەیەک لەسەر یاسای live ـی گۆڤار نا�
 `PATCH /api/publication-submission-editorial/:workspaceId/:submissionId/revision/:taskId`
 
 هەموو endpoint ـەکان بە `requireAuth` پارێزراون.
+
+لە transaction ـی P20/P18 ـدا version binding و revision plan integrity هەردووکی دووبارە پشکنرێن؛ ئەمە لە دژی update ـی ناتەواو لە نێوان gate و resubmit پارێزگاری دەکات.
