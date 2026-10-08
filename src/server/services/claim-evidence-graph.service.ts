@@ -21,6 +21,7 @@ export interface EvidenceNode {
   text: string;
   contextSnippet: string;
   sourceTitle: string;
+  sourceId?: string;
   doiOrIsbn?: string;
   pageNumber?: string;
   provenance?: EvidenceProvenance;
@@ -113,6 +114,7 @@ export class ClaimEvidenceGraphService {
       "text": "بەڵگەی پێشنیارکراو",
       "contextSnippet": "",
       "sourceTitle": "ناوی هەمان سەرچاوە",
+      "sourceId": "ID ـی هەمان سەرچاوە",
       "doiOrIsbn": ""
     }
   ]
@@ -161,12 +163,23 @@ export class ClaimEvidenceGraphService {
 
       const evidenceMap = new Map<string, EvidenceNode>();
       for (const raw of rawEvidences) {
-        const source = safeSources.find(
-          candidate =>
+        const rawSourceId = String(raw.sourceId || '').trim();
+        const source = safeSources.find(candidate => {
+          const candidateId = String(
+            candidate.id ||
+            candidate.sourceId ||
+            candidate.doiOrIsbn ||
+            candidate.doi ||
+            ''
+          ).trim();
+
+          if (rawSourceId && candidateId && rawSourceId === candidateId) return true;
+          return (
             titlesMatch(candidate.title, raw.sourceTitle) ||
             (normalizeDoi(candidate.doiOrIsbn) &&
-             normalizeDoi(candidate.doiOrIsbn) === normalizeDoi(raw.doiOrIsbn))
-        );
+              normalizeDoi(candidate.doiOrIsbn) === normalizeDoi(raw.doiOrIsbn))
+          );
+        });
 
         if (!source) continue;
 
@@ -175,6 +188,13 @@ export class ClaimEvidenceGraphService {
           text: String(raw.text || ''),
           contextSnippet: String(raw.contextSnippet || ''),
           sourceTitle: String(source.title || ''),
+          sourceId: String(
+            source.id ||
+            source.sourceId ||
+            source.doiOrIsbn ||
+            source.doi ||
+            ''
+          ) || undefined,
           doiOrIsbn: source.doiOrIsbn || source.doi || undefined,
           pageNumber: raw.pageNumber ? String(raw.pageNumber) : undefined,
           provenance: source?.evidenceProvenance || 'unknown'
@@ -185,11 +205,21 @@ export class ClaimEvidenceGraphService {
         const proposedEvidenceId = String(raw.evidenceId || '');
         const evidence = evidenceMap.get(proposedEvidenceId);
         const source = evidence
-          ? safeSources.find(
-              candidate =>
+          ? safeSources.find(candidate => {
+              const candidateId = String(
+                candidate.id ||
+                candidate.sourceId ||
+                candidate.doiOrIsbn ||
+                candidate.doi ||
+                ''
+              ).trim();
+
+              if (evidence.sourceId && candidateId === evidence.sourceId) return true;
+              return (
                 titlesMatch(candidate.title, evidence.sourceTitle) ||
                 normalizeDoi(candidate.doiOrIsbn) === normalizeDoi(evidence.doiOrIsbn)
-            )
+              );
+            })
           : undefined;
 
         const grounded = Boolean(
