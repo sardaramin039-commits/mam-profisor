@@ -18,6 +18,7 @@ import { createAcademicSearchIntegrationsRouter } from './server/routes/academic
 import { createChatGptAcademicSourcesRouter } from './server/routes/academic-source-chatgpt.routes';
 import { createAdvancedAcademicToolsRouter } from './server/routes/advanced-academic-tools.routes';
 import { createAcademicPlatformRouter } from './server/routes/academic-platform.routes';
+import { createEvidenceIntelligenceRouter } from './server/routes/evidence-intelligence.routes';
 import { createRagRouter } from './server/routes/rag.routes';
 import { createMultiAgentRouter } from './server/routes/multi-agent.routes';
 import { createResearchMemoryRouter } from './server/routes/research-memory.routes';
@@ -86,6 +87,7 @@ app.use('/api', createAcademicSearchIntegrationsRouter(getGeminiClient));
 app.use('/api/chatgpt-sources', createChatGptAcademicSourcesRouter());
 app.use('/api', createAdvancedAcademicToolsRouter(getGeminiClient));
 app.use('/api/platform', createAcademicPlatformRouter(getGeminiClient));
+app.use('/api/writing', requireAuth, createEvidenceIntelligenceRouter(getGeminiClient));
 app.use('/api/rag', createRagRouter(getGeminiClient));
 app.use('/api/multi-agent', createMultiAgentRouter(getGeminiClient));
 
