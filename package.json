@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "line-limit": "node scripts/verify-file-line-limits.mjs",
     "release:check": "node scripts/release-readiness-check.mjs",
-    "release:smoke": "node scripts/release-smoke-check.mjs"
+    "release:smoke": "node scripts/release-smoke-check.mjs",
+    "test:server": "vitest run src/server/routes/publication-submission-editorial.routes.spec.ts"
   },
   "dependencies": {
     "@angular/cdk": "^20.2.14",
