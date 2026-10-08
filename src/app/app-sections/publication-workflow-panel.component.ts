@@ -143,7 +143,7 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     try {
       const base = `/api/publication-submission-editorial/${encodeURIComponent(this.workspaceId())}/${encodeURIComponent(this.submissionId())}`;
       const body = status === 'WAIVED'
-        ? { status, completionNote: 'لە لایەن بەکارهێنەرەوە waiver تۆمارکرا.' }
+        ? { status, completionNote: 'Waiver بە approval ـی editorial تۆمارکرا.' }
         : { status };
       const response = await firstValueFrom(
         this.workflowHttp.patch<{ plan: RevisionPlan }>(`${base}/revision/${encodeURIComponent(task.id)}`, body)
