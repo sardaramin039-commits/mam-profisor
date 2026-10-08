@@ -315,9 +315,12 @@ class PublicationSubmissionEditorialDecisionService {
       }
 
       const decisionKey = JSON.stringify({
-        submissionId,
+        submissionId: current.id,
+        userId,
+        workspaceId,
         lifecycleVersion: current.version + 1,
         decisionType: input.decisionType,
+        resultingStatus: targetStatus,
         submissionVersionId: current.currentVersionId
       });
       const decisionId = 'DEC-' + sha256(decisionKey).slice(0, 32);
