@@ -4,6 +4,15 @@ import { sourceVerificationService } from './source-verification.service';
 import { linkClaimsToEvidence } from './research-evidence-linking';
 import { enrichSourcesWithFullText } from './full-text-evidence.service';
 import { openAiChatGptService } from './openai-chatgpt.service';
+import {
+  fetchSemanticScholar,
+  fetchPubMed,
+  fetchDOAJ,
+  fetchOpenLibrary,
+  fetchInternetArchive,
+  fetchEuropeana,
+  fetchLibraryOfCongress
+} from '../../helpers/academic-integrations';
 
 export interface ResearchIntelligenceRequest {
   topic: string;
@@ -98,6 +107,25 @@ function dedupeSources(sources: any[], limit = 24): any[] {
   return out;
 }
 
+async function discoverFreeAcademicSources(topic: string, discipline: string) {
+  const query = [topic.trim(), discipline.trim()].filter(Boolean).join(' ');
+  const results = await Promise.allSettled([
+    fetchSemanticScholar(query),
+    fetchPubMed(query),
+    fetchDOAJ(query),
+    fetchOpenLibrary(query),
+    fetchInternetArchive(query),
+    fetchEuropeana(query),
+    fetchLibraryOfCongress(query)
+  ]);
+  const sources = dedupeSources(
+    results.flatMap(result => result.status === 'fulfilled' ? result.value : []),
+    24
+  );
+  const providers = [...new Set(sources.map(source => String(source?.sourceType || '').trim()).filter(Boolean))];
+  return { query, sources, providers };
+}
+
 function safeJson(responseText: string, fallback: any): any {
   try {
     const parsed = robustParseJson(responseText || '{}');
@@ -111,19 +139,33 @@ function safeJson(responseText: string, fallback: any): any {
 
 export class ResearchIntelligenceService {
   async discover(topic: string, discipline: string) {
-    const result = await openAiChatGptService.discoverAcademicSources({
-      query: topic,
-      discipline,
-      limit: 24
-    });
-    const sources = dedupeSources(result.discoveredSources || [], 24);
+    const openAiEnabled =
+      process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] === 'true' &&
+      Boolean(process.env['OPENAI_API_KEY']?.trim());
 
+    if (openAiEnabled) {
+      const result = await openAiChatGptService.discoverAcademicSources({
+        query: topic,
+        discipline,
+        limit: 24
+      });
+      const sources = dedupeSources(result.discoveredSources || [], 24);
+      return {
+        query: [topic.trim(), discipline.trim()].filter(Boolean).join(' '),
+        sources,
+        total: sources.length,
+        providers: [result.provider],
+        verificationPolicy: 'ChatGPT web-search candidates are not citations until identity and evidence are verified'
+      };
+    }
+
+    const free = await discoverFreeAcademicSources(topic, discipline);
     return {
-      query: [topic.trim(), discipline.trim()].filter(Boolean).join(' '),
-      sources,
-      total: sources.length,
-      providers: [result.provider],
-      verificationPolicy: 'ChatGPT web-search candidates are not citations until identity and evidence are verified'
+      query: free.query,
+      sources: free.sources,
+      total: free.sources.length,
+      providers: free.providers,
+      verificationPolicy: 'Free academic-index candidates are not citations until identity and evidence are verified'
     };
   }
 
