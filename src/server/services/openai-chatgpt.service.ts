@@ -108,6 +108,32 @@ function isRawReferenceMatch(item: AcademicSourceItem, normalizedRaw: string): b
     .every(value => normalizedContains(normalizedRaw, value));
 }
 
+function formatValidatedReference(item: AcademicSourceItem, style: string): string {
+  const authors = (Array.isArray(item.authors) ? item.authors : []).filter(Boolean).join(', ');
+  const year = String(item.year ?? 'n.d.');
+  const title = String(item.title || '').trim();
+  const container = String(item.journalOrPublisher || '').trim();
+  const identifier = item.doi
+    ? ` https://doi.org/${item.doi.replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, '')}`
+    : item.url ? ` ${item.url}` : '';
+  if (!title) return '';
+
+  if (style === 'mla') {
+    return `${authors}. "${title}." ${container}${container ? ', ' : ''}${year}.${identifier}`.trim();
+  }
+  if (style === 'chicago') {
+    return `${authors}. "${title}." ${container}${container ? ', ' : ''}${year}.${identifier}`.trim();
+  }
+  return `${authors} (${year}). ${title}.${container ? ` ${container}.` : ''}${identifier}`.trim();
+}
+
+function formatValidatedBibliography(items: AcademicSourceItem[], style: string): string {
+  return items
+    .map(item => formatValidatedReference(item, style))
+    .filter(Boolean)
+    .join('\n');
+}
+
 function mapRecord(record: AcademicPaper, query: string): AcademicSourceItem {
   return {
     id: record.id,
@@ -344,9 +370,7 @@ export class OpenAiChatGptService {
       topic: request.topic,
       citationStyle: style,
       sortedReferences,
-      curatedBibliography: typeof parsed.curatedBibliography === 'string'
-        ? parsed.curatedBibliography
-        : '',
+      curatedBibliography: formatValidatedBibliography(sortedReferences, style),
       inTextCitationGuide: typeof parsed.inTextCitationGuide === 'string'
         ? parsed.inTextCitationGuide
         : '',
