@@ -1,77 +1,14 @@
 import { Router } from 'express';
-import { z } from 'zod';
 import { assembleManuscript } from '../services/manuscript-assembly.service';
 import { buildPublicationSubmissionPackage } from '../services/publication-submission.service';
 import { verifyPublicationSubmissionIntegrity } from '../services/publication-submission-integrity.service';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
-import { listSubmissionVersions, verifySubmissionVersionChain } from '../services/publication-submission-version.service';
-import { listSubmissionAuditEvents, verifySubmissionAuditChain } from '../services/publication-submission-audit.service';
+import { createPublicationSubmissionAuditRouter } from './publication-submission-audit.routes';
+import { createPublicationSubmissionResubmitRouter } from './publication-submission-resubmit.routes';
+import { createPublicationSubmissionVersionsRouter } from './publication-submission-versions.routes';
+import { lifecycleId, packageSchema, transitionSchema } from './publication-submission-lifecycle.schemas';
 import type { SubmissionLifecycleStatus } from '../services/publication-submission-lifecycle.policy';
 import type { AuthRequest } from '../../middleware/auth';
-
-const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/u);
-const sectionType = z.enum(['abstract','research-question','methodology','chapter','conclusion']);
-const chapter = z.object({
-  id,
-  title: z.string().trim().min(1).max(500),
-  order: z.number().int().min(1).max(1000),
-  content: z.string().max(500_000),
-  citationIds: z.array(id).max(500).default([])
-}).strict();
-const citation = z.object({
-  citationId: id,
-  sourceId: id,
-  inText: z.string().trim().max(500),
-  bibliography: z.string().trim().max(5000),
-  verified: z.boolean(),
-  evidenceId: id.optional()
-}).strict();
-const author = z.object({
-  name: z.string().trim().min(1).max(500),
-  affiliation: z.string().trim().max(500).optional(),
-  email: z.string().email().max(320).optional(),
-  orcid: z.string().trim().max(100).optional()
-}).strict();
-const policy = z.object({
-  journalName: z.string().trim().min(1).max(1000),
-  manuscriptType: z.enum(['article','review','thesis','book-chapter']).default('article'),
-  maxWords: z.number().int().positive().max(2_000_000).optional(),
-  maxAbstractWords: z.number().int().positive().max(50_000).optional(),
-  minKeywords: z.number().int().min(0).max(100).optional(),
-  maxKeywords: z.number().int().min(0).max(100).optional(),
-  maxReferences: z.number().int().min(0).max(100_000).optional(),
-  blindedReview: z.boolean().default(false),
-  requiredSections: z.array(sectionType).max(10).optional(),
-  requireCoverLetter: z.boolean().default(false),
-  requireAuthorMetadata: z.boolean().default(false)
-}).strict();
-const packageSchema = z.object({
-  title: z.string().trim().min(1).max(1000),
-  abstract: z.string().max(100_000).optional(),
-  researchQuestion: z.string().max(10_000).optional(),
-  methodology: z.string().max(100_000).optional(),
-  chapters: z.array(chapter).min(1).max(100),
-  conclusion: z.string().max(100_000).optional(),
-  citations: z.array(citation).max(500).default([]),
-  keywords: z.array(z.string().trim().max(200)).max(100).default([]),
-  authors: z.array(author).max(100).default([]),
-  policy
-}).strict();
-const resubmitSchema = packageSchema.extend({
-  note: z.string().trim().max(5000).optional(),
-  externalReference: z.string().trim().max(500).optional()
-}).strict();
-
-const transitionSchema = z.object({
-  submissionId: id,
-  to: z.enum([
-    'DRAFT','READY','SUBMITTED','UNDER_REVIEW','REVISION_REQUESTED',
-    'RESUBMITTED','ACCEPTED','REJECTED','WITHDRAWN'
-  ]),
-  note: z.string().trim().max(5000).optional(),
-  externalReference: z.string().trim().max(500).optional(),
-  submissionFingerprint: z.string().regex(/^[a-f0-9]{64}$/u).optional()
-}).strict();
 
 function requireUser(req: AuthRequest, res: import('express').Response): string | null {
   const userId = req.user?.uid;
@@ -85,11 +22,15 @@ function requireUser(req: AuthRequest, res: import('express').Response): string 
 export function createPublicationSubmissionLifecycleRouter(): Router {
   const router = Router();
 
+  router.use('/:workspaceId/:submissionId', createPublicationSubmissionAuditRouter());
+  router.use('/:workspaceId/:submissionId', createPublicationSubmissionVersionsRouter());
+  router.use('/:workspaceId/:submissionId', createPublicationSubmissionResubmitRouter());
+
   router.get('/:workspaceId', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
     const workspaceId = req.params['workspaceId'];
     if (!userId) return;
-    if (!id.safeParse(workspaceId).success) {
+    if (!lifecycleId.safeParse(workspaceId).success) {
       res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
       return;
     }
@@ -111,7 +52,7 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
     const userId = requireUser(req, res);
     const workspaceId = req.params['workspaceId'];
     if (!userId) return;
-    if (!id.safeParse(workspaceId).success) {
+    if (!lifecycleId.safeParse(workspaceId).success) {
       res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
       return;
     }
@@ -167,7 +108,7 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
     const userId = requireUser(req, res);
     const workspaceId = req.params['workspaceId'];
     if (!userId) return;
-    if (!id.safeParse(workspaceId).success) {
+    if (!lifecycleId.safeParse(workspaceId).success) {
       res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
       return;
     }
@@ -242,7 +183,7 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
     const workspaceId = req.params['workspaceId'];
     const submissionId = req.params['submissionId'];
     if (!userId) return;
-    if (!id.safeParse(workspaceId).success || !id.safeParse(submissionId).success) {
+    if (!lifecycleId.safeParse(workspaceId).success || !lifecycleId.safeParse(submissionId).success) {
       res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
       return;
     }
@@ -267,92 +208,12 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
     }
   });
 
-  router.get('/:workspaceId/:submissionId/audit', async (req: AuthRequest, res) => {
-    const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const submissionId = req.params['submissionId'];
-    if (!userId) return;
-    if (!id.safeParse(workspaceId).success || !id.safeParse(submissionId).success) {
-      res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
-      return;
-    }
-
-    try {
-      const submission = await publicationSubmissionLifecycleService.get(userId, submissionId);
-      if (!submission || submission.workspaceId !== workspaceId) {
-        res.status(404).json({ error: 'submission نەدۆزرایەوە.' });
-        return;
-      }
-
-      const events = await listSubmissionAuditEvents(userId, submissionId);
-      const report = verifySubmissionAuditChain(
-        events,
-        submission.currentStatus,
-        submission.version,
-        submission.auditHeadHash
-      );
-      res.status(report.status === 'INVALID' ? 409 : 200).json({
-        success: report.status !== 'INVALID',
-        audit: report,
-        events
-      });
-    } catch (error) {
-      console.error('Submission audit read error:', error);
-      res.status(500).json({ error: 'نەتوانرا audit ـی submission پشکنرێت.' });
-    }
-  });
-
-  router.get('/:workspaceId/:submissionId/versions', async (req: AuthRequest, res) => {
-    const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const submissionId = req.params['submissionId'];
-    if (!userId) return;
-    if (!id.safeParse(workspaceId).success || !id.safeParse(submissionId).success) {
-      res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
-      return;
-    }
-
-    try {
-      const submission = await publicationSubmissionLifecycleService.get(userId, submissionId);
-      if (!submission || submission.workspaceId !== workspaceId) {
-        res.status(404).json({ error: 'submission نەدۆزرایەوە.' });
-        return;
-      }
-      const versions = await listSubmissionVersions(userId, submissionId);
-      const report = verifySubmissionVersionChain(versions);
-      const errors = [...report.errors];
-      if (submission.versionCount !== versions.length) {
-        errors.push('Lifecycle version count does not match stored versions.');
-      }
-      if (submission.versionCount > 0 && submission.currentVersionId !== versions.at(-1)?.id) {
-        errors.push('Lifecycle currentVersionId does not match the latest version.');
-      }
-      if (submission.versionCount > 0 && submission.submissionFingerprint !== report.latestFingerprint) {
-        errors.push('Lifecycle submission fingerprint does not match the latest version.');
-      }
-      const verified = errors.length === 0 && (
-        submission.versionCount === 0
-          ? report.status === 'EMPTY'
-          : report.status === 'VERIFIED'
-      );
-      res.status(verified ? 200 : 409).json({
-        success: verified,
-        versions: report,
-        consistencyErrors: errors,
-        items: versions
-      });
-    } catch (error) {
-      console.error('Submission version history read error:', error);
-      res.status(500).json({ error: 'نەتوانرا مێژووی version ـەکانی submission بخوێندرێتەوە.' });
-    }
-  });
-
   router.get('/:workspaceId/:submissionId/receipt', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
     const workspaceId = req.params['workspaceId'];
     const submissionId = req.params['submissionId'];
     if (!userId) return;
-    if (!id.safeParse(workspaceId).success || !id.safeParse(submissionId).success) {
+    if (!lifecycleId.safeParse(workspaceId).success || !lifecycleId.safeParse(submissionId).success) {
       res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
       return;
     }
@@ -382,92 +243,12 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
     }
   });
 
-  router.post('/:workspaceId/:submissionId/resubmit', async (req: AuthRequest, res) => {
-    const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const submissionId = req.params['submissionId'];
-    if (!userId) return;
-    if (!id.safeParse(workspaceId).success || !id.safeParse(submissionId).success) {
-      res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
-      return;
-    }
-
-    const parsed = resubmitSchema.safeParse(req.body ?? {});
-    if (!parsed.success) {
-      res.status(400).json({ error: 'داتای resubmission نادروستە.', issues: parsed.error.issues });
-      return;
-    }
-    const { minKeywords, maxKeywords } = parsed.data.policy;
-    if (minKeywords !== undefined && maxKeywords !== undefined && minKeywords > maxKeywords) {
-      res.status(400).json({ error: 'کەمترین ژمارەی keyword نابێت لە زۆرترین ژمارە گەورەتر بێت.' });
-      return;
-    }
-
-    try {
-      const current = await publicationSubmissionLifecycleService.get(userId, submissionId);
-      if (!current || current.workspaceId !== workspaceId) {
-        res.status(404).json({ error: 'submission نەدۆزرایەوە.' });
-        return;
-      }
-      if (current.currentStatus !== 'REVISION_REQUESTED') {
-        res.status(409).json({
-          error: 'تەنها submission ـێکی REVISION_REQUESTED دەتوانرێت resubmit بکرێت.'
-        });
-        return;
-      }
-
-      const manuscript = assembleManuscript({
-        projectId: workspaceId,
-        title: parsed.data.title,
-        abstract: parsed.data.abstract,
-        researchQuestion: parsed.data.researchQuestion,
-        methodology: parsed.data.methodology,
-        chapters: parsed.data.chapters,
-        conclusion: parsed.data.conclusion,
-        citations: parsed.data.citations
-      });
-      const submission = buildPublicationSubmissionPackage({
-        manuscript,
-        policy: parsed.data.policy,
-        keywords: parsed.data.keywords,
-        authors: parsed.data.authors
-      });
-      const integrity = verifyPublicationSubmissionIntegrity({ package: submission });
-
-      if (!integrity.readyToSubmit) {
-        res.status(409).json({ success: false, integrity, package: submission });
-        return;
-      }
-      if (submission.journalName !== current.journalName || submission.manuscriptType !== current.manuscriptType) {
-        res.status(409).json({
-          success: false,
-          error: 'journal یان جۆری manuscript لە submission ـی هەنووکەیی جیاوازە. submission ـی نوێ دروست بکە.'
-        });
-        return;
-      }
-
-      const record = await publicationSubmissionLifecycleService.resubmit(
-        userId,
-        submissionId,
-        submission.fingerprint,
-        {
-          note: parsed.data.note,
-          externalReference: parsed.data.externalReference
-        }
-      );
-      res.json({ success: true, submission: record, integrity, package: submission });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Resubmission failed.';
-      res.status(409).json({ success: false, error: message });
-    }
-  });
-
   router.post('/:workspaceId/:submissionId/mark-ready', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
     const workspaceId = req.params['workspaceId'];
     const submissionId = req.params['submissionId'];
     if (!userId) return;
-    if (!id.safeParse(workspaceId).success || !id.safeParse(submissionId).success) {
+    if (!lifecycleId.safeParse(workspaceId).success || !lifecycleId.safeParse(submissionId).success) {
       res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
       return;
     }
