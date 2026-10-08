@@ -26,7 +26,7 @@
 
 P13 submission package، P14 integrity، P15 lifecycle، P16 receipt، P17 audit chain، P18 versioning/resubmission، P19 reproducible manifest و P20 editorial/revision management دەبێت بە یەک submission version زنجیرە بکرێن.
 
-P20 revision plan پێش resubmit verification دەکرێت و P18 لە transaction ـی خۆیدا ئەم gate ـە دووبارە پشکنێت.
+P20 revision plan پێش resubmit verification دەکرێت و component ـی workflow بە auth interceptor ـی سەرەکیی app دەچێت. و P18 لە transaction ـی خۆیدا ئەم gate ـە دووبارە پشکنێت.
 
 ## Validation note
 
