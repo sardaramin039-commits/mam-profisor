@@ -16,3 +16,5 @@ record ـی کۆن دەتوانێت legacy anchor هەبێت، بەڵام دۆخ
 Audit event ـەکان لە backend transaction ـەکاندا زیاد دەکرێن. API ـی گشتی بۆ overwrite ـکردنی audit chain نییە.
 
 P17 دڵنیایی لە integrity و traceability دەدات؛ factual correctness یان قبوڵبوونی publication پشتڕاست ناکات.
+## Hardening
+Audit verification ئێستا duplicate event ID/version، submission identity، first-event invariant، hash chain، lifecycle state continuity و validity ـی transition ـەکان لەگەڵ P15 policy دەپشکنێت.
