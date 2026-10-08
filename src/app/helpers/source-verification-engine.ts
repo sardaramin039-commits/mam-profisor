@@ -447,9 +447,9 @@ export class SourceVerificationEngine {
 
   public static generateAuditReport(records: VerifiedCitationRecord[]): VerificationAuditReport {
     const deduplicated = this.deduplicateSources(records);
-    const verifiedSources = deduplicated.filter(record => record.verificationStatus === 'VERIFIED');
-    const partiallyVerifiedSources = deduplicated.filter(record => record.verificationStatus === 'PARTIALLY_VERIFIED');
-    const unverifiedClaims = deduplicated.filter(record => record.verificationStatus === 'UNVERIFIED');
+    const verifiedSources = deduplicated.filter(hasStrictCitationEvidence);
+    const partiallyVerifiedSources = deduplicated.filter(record => record.verificationStatus === 'PARTIALLY_VERIFIED' && !hasStrictCitationEvidence(record));
+    const unverifiedClaims = deduplicated.filter(record => !hasStrictCitationEvidence(record) && record.verificationStatus !== 'PARTIALLY_VERIFIED');
 
     let markdown = '### Source Verification Audit\n\n';
     markdown += '#### 🟢 Verified Sources\n';
