@@ -138,4 +138,25 @@ describe('P19 reproducible submission manifest', () => {
     expect(manifest.auditHeadHash).toBe('a'.repeat(64));
     expect(manifest.immutableHash).toHaveLength(64);
   });
+
+  it('rejects a manifest with a forged identifier', () => {
+    const { policy, pkg, integrity } = makeInputs();
+    const manifest = buildSubmissionManifest({
+      submissionId: 'SUB-19',
+      userId: 'USER-19',
+      workspaceId: 'WS-19',
+      policy,
+      package: pkg,
+      integrity,
+      versionId: 'VER-19',
+      auditHeadHash: 'a'.repeat(64),
+      capturedAt: '2026-10-08T16:00:00.000Z'
+    });
+    const verification = verifySubmissionManifest({
+      ...manifest,
+      id: 'MAN-forged'
+    });
+    expect(verification.status).toBe('INVALID');
+    expect(verification.errors.some(error => error.includes('id does not match'))).toBe(true);
+  });
 });
