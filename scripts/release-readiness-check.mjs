@@ -37,7 +37,9 @@ for (const requiredPath of [
   'src/server/services/publication-submission-revision.policy.ts',
   'src/server/routes/publication-submission-editorial.routes.ts',
   'src/app/app-sections/publication-workflow-panel.component.ts',
-  'src/app/app-sections/publication-workflow-panel.component.html'
+  'src/app/app-sections/publication-workflow-panel.component.html',
+  'playwright.config.ts',
+  'e2e/mam-professor.spec.ts'
 ]) {
   if (!existsSync(join(root, requiredPath))) errors.push(`Required release file missing: ${requiredPath}`);
 }
@@ -90,4 +92,4 @@ if (errors.length) {
   for (const error of errors) console.error(`RELEASE CHECK: ${error}`);
   process.exit(1);
 }
-console.log('Release readiness check passed: npm lockfile, required P20 files, and line limits are consistent.');
+console.log('Release readiness check passed: npm lockfile, E2E harness, required P20 files, and line limits are consistent.');
