@@ -50,6 +50,9 @@ jobs:
 
       - name: P5 evidence intelligence contract
         run: node scripts/p5-evidence-intelligence-test.mjs
+      - name: Integrated P7-P10 research chain contract
+        run: node scripts/p7-p10-research-chain-test.mjs
+
 
       - name: Digital library factuality audit
         run: node scripts/library-integrity-audit.mjs
