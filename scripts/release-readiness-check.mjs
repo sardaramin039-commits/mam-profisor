@@ -33,13 +33,20 @@ if (!rootPkg) {
 for (const requiredPath of [
   'AGENTS.md',
   'package-lock.json',
+  'PRODUCTION_RELEASE_CHECKLIST.md',
+  'P16_P20_INTEGRATED_SUBMISSION_CHAIN.md',
   'src/server/services/publication-submission-editorial-decision.service.ts',
   'src/server/services/publication-submission-revision.policy.ts',
   'src/server/routes/publication-submission-editorial.routes.ts',
   'src/app/app-sections/publication-workflow-panel.component.ts',
   'src/app/app-sections/publication-workflow-panel.component.html',
   'playwright.config.ts',
-  'e2e/mam-professor.spec.ts'
+  'e2e/mam-professor.spec.ts',
+  'scripts/p7-p10-research-chain-test.mjs',
+  'scripts/p11-p15-publication-chain-test.mjs',
+  'scripts/p16-p20-submission-chain-test.mjs',
+  '.github/workflows/quality.yml',
+  '.github/workflows/ci-runner-diagnostic.yml'
 ]) {
   if (!existsSync(join(root, requiredPath))) errors.push(`Required release file missing: ${requiredPath}`);
 }
