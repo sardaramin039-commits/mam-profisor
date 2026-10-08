@@ -249,6 +249,13 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
         res.status(409).json({ success: false, integrity });
         return;
       }
+      if (submission.journalName !== current.journalName || submission.manuscriptType !== current.manuscriptType) {
+        res.status(409).json({
+          success: false,
+          error: 'journal یان جۆری manuscript لە submission ـی هەنووکەیی جیاوازە. submission ـی نوێ دروست بکە.'
+        });
+        return;
+      }
 
       const record = await publicationSubmissionLifecycleService.markReady(
         userId,
