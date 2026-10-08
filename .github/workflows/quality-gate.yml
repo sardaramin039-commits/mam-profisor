@@ -48,6 +48,9 @@ jobs:
       - name: Academic integrity audit
         run: npm run integrity:audit
 
+      - name: P5 evidence intelligence contract
+        run: node scripts/p5-evidence-intelligence-test.mjs
+
       - name: Digital library factuality audit
         run: node scripts/library-integrity-audit.mjs
 
