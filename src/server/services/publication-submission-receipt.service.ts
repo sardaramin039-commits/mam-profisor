@@ -7,6 +7,7 @@ export interface SubmissionReceiptInput {
   journalName: string;
   manuscriptType: string;
   submissionFingerprint: string;
+  submissionVersionId?: string;
   note?: string;
   externalReference?: string;
   submittedAt: string;
@@ -20,6 +21,7 @@ export interface SubmissionReceipt {
   journalName: string;
   manuscriptType: string;
   submissionFingerprint: string;
+  submissionVersionId?: string;
   note: string;
   externalReference?: string;
   submittedAt: string;
@@ -61,6 +63,7 @@ export function buildSubmissionReceipt(input: SubmissionReceiptInput): Submissio
     journalName,
     manuscriptType,
     submissionFingerprint,
+    submissionVersionId: clean(input.submissionVersionId),
     note,
     externalReference,
     submittedAt
@@ -74,6 +77,7 @@ export function buildSubmissionReceipt(input: SubmissionReceiptInput): Submissio
     journalName,
     manuscriptType,
     submissionFingerprint,
+    ...(input.submissionVersionId ? { submissionVersionId: clean(input.submissionVersionId) } : {}),
     note,
     ...(externalReference ? { externalReference } : {}),
     submittedAt,
