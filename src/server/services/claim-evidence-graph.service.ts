@@ -70,6 +70,17 @@ function containsGroundedQuote(source: any, evidence: any): boolean {
   return normalize(sourceText).includes(normalize(quote));
 }
 
+function resolveUniqueSource(raw: any, sources: any[]): any | undefined {
+  const rawSourceId = String(raw?.sourceId || '').trim();
+  if (rawSourceId) {
+    return sources.find(source => String(source?.id || source?.sourceId || source?.doiOrIsbn || source?.doi || '').trim() === rawSourceId);
+  }
+  const doi = normalizeDoi(raw?.doiOrIsbn);
+  const candidates = sources.filter(source => titlesMatch(source?.title, raw?.sourceTitle) ||
+    (doi && normalizeDoi(source?.doiOrIsbn) && normalizeDoi(source?.doiOrIsbn) === doi));
+  return candidates.length === 1 ? candidates[0] : undefined;
+}
+
 export class ClaimEvidenceGraphService {
   /**
    * Builds a candidate Claim-Evidence Graph, then applies deterministic grounding rules.
@@ -163,23 +174,7 @@ export class ClaimEvidenceGraphService {
 
       const evidenceMap = new Map<string, EvidenceNode>();
       for (const raw of rawEvidences) {
-        const rawSourceId = String(raw.sourceId || '').trim();
-        const source = safeSources.find(candidate => {
-          const candidateId = String(
-            candidate.id ||
-            candidate.sourceId ||
-            candidate.doiOrIsbn ||
-            candidate.doi ||
-            ''
-          ).trim();
-
-          if (rawSourceId) return Boolean(candidateId && rawSourceId === candidateId);
-          return (
-            titlesMatch(candidate.title, raw.sourceTitle) ||
-            (normalizeDoi(candidate.doiOrIsbn) &&
-              normalizeDoi(candidate.doiOrIsbn) === normalizeDoi(raw.doiOrIsbn))
-          );
-        });
+        const source = resolveUniqueSource(raw, safeSources);
 
         if (!source) continue;
 
