@@ -35,114 +35,104 @@ function validParams(workspaceId: string, submissionId: string): boolean {
   return lifecycleId.safeParse(workspaceId).success && lifecycleId.safeParse(submissionId).success;
 }
 
+async function handleDecision(req: AuthRequest, res: Response): Promise<void> {
+  const userId = requireUser(req, res);
+  const workspaceId = req.params['workspaceId'];
+  const submissionId = req.params['submissionId'];
+  if (!userId) return;
+  if (!validParams(workspaceId, submissionId)) {
+    res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
+    return;
+  }
+  const parsed = decisionSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: 'داتای editorial decision نادروستە.', issues: parsed.error.issues });
+    return;
+  }
+  try {
+    const result = await publicationSubmissionEditorialDecisionService.record(
+      userId, workspaceId, submissionId, parsed.data
+    );
+    res.status(201).json({ success: true, ...result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Editorial decision failed.';
+    res.status(409).json({ success: false, error: message });
+  }
+}
+
+async function handleDecisionList(req: AuthRequest, res: Response): Promise<void> {
+  const userId = requireUser(req, res);
+  const workspaceId = req.params['workspaceId'];
+  const submissionId = req.params['submissionId'];
+  if (!userId) return;
+  if (!validParams(workspaceId, submissionId)) {
+    res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
+    return;
+  }
+  try {
+    const decisions = await publicationSubmissionEditorialDecisionService.listDecisions(
+      userId, workspaceId, submissionId
+    );
+    res.json({ success: true, decisions });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Editorial decision history failed.';
+    res.status(404).json({ success: false, error: message });
+  }
+}
+
+async function handleRevisionRead(req: AuthRequest, res: Response): Promise<void> {
+  const userId = requireUser(req, res);
+  const workspaceId = req.params['workspaceId'];
+  const submissionId = req.params['submissionId'];
+  if (!userId) return;
+  if (!validParams(workspaceId, submissionId)) {
+    res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
+    return;
+  }
+  try {
+    const [plan, gate] = await Promise.all([
+      publicationSubmissionEditorialDecisionService.getRevisionPlan(userId, workspaceId, submissionId),
+      publicationSubmissionEditorialDecisionService.assertResubmissionGate(userId, workspaceId, submissionId)
+    ]);
+    res.json({ success: true, plan, gate });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Revision plan read failed.';
+    res.status(404).json({ success: false, error: message });
+  }
+}
+
+async function handleRevisionTaskUpdate(req: AuthRequest, res: Response): Promise<void> {
+  const userId = requireUser(req, res);
+  const workspaceId = req.params['workspaceId'];
+  const submissionId = req.params['submissionId'];
+  const taskId = req.params['taskId'];
+  if (!userId) return;
+  if (!validParams(workspaceId, submissionId) || !lifecycleId.safeParse(taskId).success) {
+    res.status(400).json({ error: 'ناسنامەی revision task یان submission نادروستە.' });
+    return;
+  }
+  const parsed = revisionTaskUpdateSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: 'داتای نوێکردنەوەی revision نادروستە.', issues: parsed.error.issues });
+    return;
+  }
+  try {
+    const plan = await publicationSubmissionEditorialDecisionService.updateRevisionTask(
+      userId, workspaceId, submissionId, taskId,
+      parsed.data.status, parsed.data.completionNote
+    );
+    res.json({ success: true, plan });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Revision task update failed.';
+    res.status(409).json({ success: false, error: message });
+  }
+}
+
 export function createPublicationSubmissionEditorialRouter(): Router {
-  const router = Router({ mergeParams: false });
-
-  router.post('/:workspaceId/:submissionId/decision', async (req: AuthRequest, res) => {
-    const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const submissionId = req.params['submissionId'];
-    if (!userId) return;
-    if (!validParams(workspaceId, submissionId)) {
-      res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
-      return;
-    }
-
-    const parsed = decisionSchema.safeParse(req.body ?? {});
-    if (!parsed.success) {
-      res.status(400).json({ error: 'داتای editorial decision نادروستە.', issues: parsed.error.issues });
-      return;
-    }
-
-    try {
-      const result = await publicationSubmissionEditorialDecisionService.record(
-        userId,
-        workspaceId,
-        submissionId,
-        parsed.data
-      );
-      res.status(201).json({ success: true, ...result });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Editorial decision failed.';
-      res.status(409).json({ success: false, error: message });
-    }
-  });
-
-  router.get('/:workspaceId/:submissionId/decisions', async (req: AuthRequest, res) => {
-    const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const submissionId = req.params['submissionId'];
-    if (!userId) return;
-    if (!validParams(workspaceId, submissionId)) {
-      res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
-      return;
-    }
-    try {
-      const decisions = await publicationSubmissionEditorialDecisionService.listDecisions(
-        userId,
-        workspaceId,
-        submissionId
-      );
-      res.json({ success: true, decisions });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Editorial decision history failed.';
-      res.status(404).json({ success: false, error: message });
-    }
-  });
-
-  router.get('/:workspaceId/:submissionId/revision', async (req: AuthRequest, res) => {
-    const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const submissionId = req.params['submissionId'];
-    if (!userId) return;
-    if (!validParams(workspaceId, submissionId)) {
-      res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
-      return;
-    }
-    try {
-      const [plan, gate] = await Promise.all([
-        publicationSubmissionEditorialDecisionService.getRevisionPlan(userId, workspaceId, submissionId),
-        publicationSubmissionEditorialDecisionService.assertResubmissionGate(userId, workspaceId, submissionId)
-      ]);
-      res.json({ success: true, plan, gate });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Revision plan read failed.';
-      res.status(404).json({ success: false, error: message });
-    }
-  });
-
-  router.patch('/:workspaceId/:submissionId/revision/:taskId', async (req: AuthRequest, res) => {
-    const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const submissionId = req.params['submissionId'];
-    const taskId = req.params['taskId'];
-    if (!userId) return;
-    if (!validParams(workspaceId, submissionId) || !lifecycleId.safeParse(taskId).success) {
-      res.status(400).json({ error: 'ناسنامەی revision task یان submission نادروستە.' });
-      return;
-    }
-
-    const parsed = revisionTaskUpdateSchema.safeParse(req.body ?? {});
-    if (!parsed.success) {
-      res.status(400).json({ error: 'داتای نوێکردنەوەی revision نادروستە.', issues: parsed.error.issues });
-      return;
-    }
-
-    try {
-      const plan = await publicationSubmissionEditorialDecisionService.updateRevisionTask(
-        userId,
-        workspaceId,
-        submissionId,
-        taskId,
-        parsed.data.status,
-        parsed.data.completionNote
-      );
-      res.json({ success: true, plan });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Revision task update failed.';
-      res.status(409).json({ success: false, error: message });
-    }
-  });
-
+  const router = Router();
+  router.post('/:workspaceId/:submissionId/decision', handleDecision);
+  router.get('/:workspaceId/:submissionId/decisions', handleDecisionList);
+  router.get('/:workspaceId/:submissionId/revision', handleRevisionRead);
+  router.patch('/:workspaceId/:submissionId/revision/:taskId', handleRevisionTaskUpdate);
   return router;
 }
