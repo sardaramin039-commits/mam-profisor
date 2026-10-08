@@ -65,11 +65,6 @@ const suspiciousSecretPatterns = [
   /serviceAccount(?:Key)?\s*[:=]\s*['"][^'"]{20,}['"]/i,
   /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/
 ];
-for (const sourcePath of ['src/server.ts', 'src/lib/firebase-admin.ts', 'src/app', 'src/server']) {
-  // Source-level secret scanning is intentionally conservative; runtime env access is allowed.
-  // A recursive scan is performed by the line-limit script's filesystem traversal.
-}
-
 function scanSourceDirectory(dir) {
   const entries = readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
