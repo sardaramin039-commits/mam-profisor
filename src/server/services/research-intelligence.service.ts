@@ -13,6 +13,7 @@ import { robustParseJson } from '../utils/json-repair';
 import { sourceVerificationService } from './source-verification.service';
 import { linkClaimsToEvidence } from './research-evidence-linking';
 import { enrichSourcesWithFullText } from './full-text-evidence.service';
+import { openAiChatGptService } from './openai-chatgpt.service';
 
 export interface ResearchIntelligenceRequest {
   topic: string;
@@ -120,36 +121,19 @@ function safeJson(responseText: string, fallback: any): any {
 
 export class ResearchIntelligenceService {
   async discover(topic: string, discipline: string) {
-    const query = [topic.trim(), discipline.trim()].filter(Boolean).join(' ');
-    const tasks = [
-      ['Semantic Scholar', fetchSemanticScholar(query)],
-      ['PubMed', fetchPubMed(query)],
-      ['DOAJ', fetchDOAJ(query)],
-      ['Open Library', fetchOpenLibrary(query)],
-      ['Internet Archive', fetchInternetArchive(query)],
-      ['Library of Congress', fetchLibraryOfCongress(query)],
-      ['Europeana', fetchEuropeana(query)],
-      ['OpenAlex', fetchOpenAlex(query)],
-      ['Crossref', fetchCrossref(query)]
-    ] as const;
-
-    const results = await Promise.allSettled(tasks.map(([, task]) => task));
-    const raw = results.flatMap(result =>
-      result.status === 'fulfilled' ? result.value : []
-    );
-    const sources = dedupeSources(raw);
-    const providers = results
-      .map((result, index) => result.status === 'fulfilled' && result.value.length
-        ? tasks[index][0]
-        : '')
-      .filter(Boolean);
+    const result = await openAiChatGptService.discoverAcademicSources({
+      query: topic,
+      discipline,
+      limit: 24
+    });
+    const sources = dedupeSources(result.discoveredSources || [], 24);
 
     return {
-      query,
+      query: [topic.trim(), discipline.trim()].filter(Boolean).join(' '),
       sources,
       total: sources.length,
-      providers,
-      verificationPolicy: 'discovery candidates are not citations until identity and evidence are verified'
+      providers: [result.provider],
+      verificationPolicy: 'ChatGPT web-search candidates are not citations until identity and evidence are verified'
     };
   }
 
