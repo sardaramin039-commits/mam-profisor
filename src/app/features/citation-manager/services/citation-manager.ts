@@ -50,9 +50,12 @@ export class CitationManagerService {
     const srcAny = (source || {}) as Record<string, any>;
     
     // Extract dynamic fields from raw or typed input source
+    const authors = Array.isArray(srcAny['authors'])
+      ? srcAny['authors'].map((value: unknown) => String(value || '').trim()).filter(Boolean).join(', ')
+      : String(srcAny['author'] || srcAny['authors'] || 'نووسەری دیارینەکراو');
     const citationItem: CitationItem = {
       id: srcAny['id'],
-      authors: srcAny['author'] || srcAny['authors'] || 'نووسەری دیارینەکراو',
+      authors,
       year: srcAny['year'] ?? srcAny['publicationYear'] ?? 'n.d.',
       title: srcAny['title'] || srcAny['bookTitle'] || srcAny['articleTitle'] || 'سەرناوی بێ ناو',
       publisher: srcAny['publisher'],
