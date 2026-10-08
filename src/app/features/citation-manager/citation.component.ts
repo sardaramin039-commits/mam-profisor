@@ -219,7 +219,7 @@ export class CitationFeatureComponent {
       const authors = Array.isArray(source.authors) && source.authors.length
         ? source.authors.join(' and ')
         : source.author;
-      const authorKey = (authors || 'ref').split(/[\\s,]+/)[0].toLowerCase();
+      const authorKey = (authors || 'ref').split(/[\s,]+/)[0].toLowerCase();
       const year = Number(source.year);
       const citeKey = `${authorKey}${Number.isFinite(year) && year > 0 ? year : 'nd'}_${index + 1}`;
       const type = source.sourceType === 'book'
