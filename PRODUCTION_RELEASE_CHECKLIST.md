@@ -4,6 +4,8 @@
 
 ## Automated gates
 
+The canonical release commands use npm and `package-lock.json`; no Bun workflow is required.
+
 `npm ci`
 
 `npm run line-limit`
