@@ -26,6 +26,16 @@ interface EditorialDecision {
   decidedAt: string;
 }
 
+type DecisionType = 'MINOR_REVISION' | 'MAJOR_REVISION' | 'ACCEPT' | 'REJECT' | 'WITHDRAW';
+
+interface DecisionTaskDraft {
+  title: string;
+  details: string;
+  scope: 'MANUSCRIPT' | 'SECTION' | 'CITATION' | 'FORMATTING' | 'OTHER';
+  required: boolean;
+  dueAt: string;
+}
+
 interface RevisionTask {
   id: string;
   order: number;
@@ -71,6 +81,16 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
   readonly taskLoading = signal<string | null>(null);
   readonly errorMessage = signal('');
   readonly taskStatuses = ['IN_PROGRESS', 'DONE', 'WAIVED'] as const;
+  readonly decisionTypes: DecisionType[] = ['MINOR_REVISION', 'MAJOR_REVISION', 'ACCEPT', 'REJECT', 'WITHDRAW'];
+  readonly decisionScopes: DecisionTaskDraft['scope'][] = ['MANUSCRIPT', 'SECTION', 'CITATION', 'FORMATTING', 'OTHER'];
+  readonly decisionType = signal<DecisionType>('MINOR_REVISION');
+  readonly decisionNote = signal('');
+  readonly decisionExternalReference = signal('');
+  readonly decisionTasks = signal<DecisionTaskDraft[]>([]);
+  readonly decisionTaskDraft = signal<DecisionTaskDraft>({
+    title: '', details: '', scope: 'MANUSCRIPT', required: true, dueAt: ''
+  });
+  readonly decisionLoading = signal(false);
 
   override ngOnInit(): void {
     this.workspaceId.set(this.host.historyList()[0]?.id || '');
@@ -156,6 +176,112 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
 
   currentSubmission(): SubmissionItem | null {
     return this.submissions().find(item => item.id === this.submissionId()) ?? null;
+  }
+
+  isDecisionRevision(): boolean {
+    return this.decisionType() === 'MINOR_REVISION' || this.decisionType() === 'MAJOR_REVISION';
+  }
+
+  decisionTypeLabel(type: DecisionType): string {
+    const labels: Record<DecisionType, string> = {
+      MINOR_REVISION: 'چاکسازیی بچووک',
+      MAJOR_REVISION: 'چاکسازیی گەورە',
+      ACCEPT: 'پەسەندکردن',
+      REJECT: 'ڕەتکردنەوە',
+      WITHDRAW: 'کشاندنەوە'
+    };
+    return labels[type];
+  }
+
+  decisionScopeLabel(scope: DecisionTaskDraft['scope']): string {
+    const labels: Record<DecisionTaskDraft['scope'], string> = {
+      MANUSCRIPT: 'هەموو دەستنووس',
+      SECTION: 'بەش',
+      CITATION: 'سەرچاوە/سایتیشن',
+      FORMATTING: 'فۆرمات',
+      OTHER: 'هی تر'
+    };
+    return labels[scope];
+  }
+
+  setDecisionType(value: string): void {
+    if (this.decisionTypes.includes(value as DecisionType)) {
+      this.decisionType.set(value as DecisionType);
+    }
+  }
+
+  updateDecisionTaskDraft(field: keyof DecisionTaskDraft, value: string | boolean): void {
+    this.decisionTaskDraft.update(current => ({ ...current, [field]: value }));
+  }
+
+  addDecisionTask(): void {
+    const draft = this.decisionTaskDraft();
+    if (!draft.title.trim() || !draft.details.trim()) {
+      this.errorMessage.set('بۆ زیادکردنی task، ناونیشان و وردەکاری پێویستە.');
+      return;
+    }
+    this.decisionTasks.update(tasks => [...tasks, {
+      title: draft.title.trim(),
+      details: draft.details.trim(),
+      scope: draft.scope,
+      required: draft.required,
+      dueAt: draft.dueAt.trim()
+    }]);
+    this.decisionTaskDraft.set({ title: '', details: '', scope: 'MANUSCRIPT', required: true, dueAt: '' });
+    this.errorMessage.set('');
+  }
+
+  removeDecisionTask(index: number): void {
+    this.decisionTasks.update(tasks => tasks.filter((_, taskIndex) => taskIndex !== index));
+  }
+
+  resetDecisionForm(): void {
+    this.decisionType.set('MINOR_REVISION');
+    this.decisionNote.set('');
+    this.decisionExternalReference.set('');
+    this.decisionTasks.set([]);
+    this.decisionTaskDraft.set({ title: '', details: '', scope: 'MANUSCRIPT', required: true, dueAt: '' });
+  }
+
+  async submitDecision(): Promise<void> {
+    if (!this.workspaceId() || !this.submissionId()) return;
+    if (this.isDecisionRevision() && this.decisionTasks().length === 0) {
+      this.errorMessage.set('بڕیاری revision دەبێت لانیکەم یەک task ـی ڕێکخراو هەبێت.');
+      return;
+    }
+    if (!this.decisionNote().trim() && !this.decisionExternalReference().trim()) {
+      this.errorMessage.set('تکایە note یان external reference بنووسە.');
+      return;
+    }
+    this.decisionLoading.set(true);
+    this.errorMessage.set('');
+    try {
+      const base = `/api/publication-submission-editorial/${encodeURIComponent(this.workspaceId())}/${encodeURIComponent(this.submissionId())}`;
+      const tasks = this.isDecisionRevision()
+        ? this.decisionTasks().map(task => ({
+          title: task.title,
+          details: task.details,
+          scope: task.scope,
+          required: task.required,
+          ...(task.dueAt ? { dueAt: task.dueAt } : {})
+        }))
+        : undefined;
+      await firstValueFrom(this.workflowHttp.post<{ success: boolean }>(`${base}/decision`, {
+        decisionType: this.decisionType(),
+        note: this.decisionNote().trim(),
+        ...(this.decisionExternalReference().trim()
+          ? { externalReference: this.decisionExternalReference().trim() }
+          : {}),
+        ...(tasks ? { tasks } : {})
+      }));
+      this.resetDecisionForm();
+      await this.loadSubmissions();
+      this.host.toastService.showSuccess('بڕیاری editorial تۆمارکرا', 'دۆخی publication بە سەرکەوتوویی نوێکرایەوە.');
+    } catch (error) {
+      this.handleError(error, 'نەتوانرا بڕیاری editorial تۆمار بکرێت.');
+    } finally {
+      this.decisionLoading.set(false);
+    }
   }
 
   statusLabel(status: string): string {
