@@ -3,6 +3,8 @@ import { sha256 } from './text-sha256.service';
 import { buildSubmissionReceipt } from './publication-submission-receipt.service';
 import { buildSubmissionAuditEvent } from './publication-submission-audit.service';
 import { buildSubmissionVersion } from './publication-submission-version.service';
+import { requiredRevisionTasksComplete, verifyRevisionPlan } from './publication-submission-revision.policy';
+import type { RevisionPlan } from './publication-submission-revision.policy';
 import type { SubmissionVersion } from './publication-submission-version.service';
 import type { SubmissionReceipt } from './publication-submission-receipt.service';
 import {
@@ -342,7 +344,7 @@ class PublicationSubmissionLifecycleService {
     userId: string,
     submissionId: string,
     newFingerprint: string,
-    input: { note?: string; externalReference?: string }
+    input: { note?: string; externalReference?: string; revisionPlanId?: string }
   ): Promise<SubmissionLifecycleRecord> {
     if (!validFingerprint(newFingerprint)) {
       throw new Error('Resubmission fingerprint is invalid.');
@@ -367,6 +369,18 @@ class PublicationSubmissionLifecycleService {
       }
       if (!current.currentVersionId || !Number.isInteger(current.versionCount) || current.versionCount < 1) {
         throw new Error('P18 version history is required before resubmission.');
+      }
+      if (!input.revisionPlanId) {
+        throw new Error('P20 revision plan is required before resubmission.');
+      }
+      const revisionReference = reference.collection('revision-plans').doc(input.revisionPlanId);
+      const revisionSnapshot = await transaction.get(revisionReference);
+      if (!revisionSnapshot.exists) throw new Error('P20 revision plan was not found.');
+      const revisionPlan = revisionSnapshot.data() as RevisionPlan;
+      const revisionErrors = verifyRevisionPlan(revisionPlan);
+      if (revisionErrors.length || revisionPlan.submissionVersionId !== current.currentVersionId ||
+          !requiredRevisionTasksComplete(revisionPlan)) {
+        throw new Error('Required P20 revision tasks must be complete before resubmission.');
       }
       if (current.submissionFingerprint === newFingerprint) {
         throw new Error('Resubmission must use a new package fingerprint.');
