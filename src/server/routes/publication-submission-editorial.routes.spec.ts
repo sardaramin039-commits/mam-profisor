@@ -43,11 +43,11 @@ vi.mock('../services/publication-submission-editorial-decision.service', () => (
 
 import { createPublicationSubmissionEditorialRouter } from './publication-submission-editorial.routes';
 
-function buildTestServer(): Server {
+function buildTestServer(role = 'professor'): Server {
   const app = express();
   app.use(express.json());
-  app.use((req: Request & { user?: { uid: string } }, _res: Response, next) => {
-    req.user = { uid: 'USER-test' };
+  app.use((req: Request & { user?: { uid: string; role?: string } }, _res: Response, next) => {
+    req.user = { uid: 'USER-test', role };
     next();
   });
   app.use('/api/publication-submission-editorial', createPublicationSubmissionEditorialRouter());
@@ -89,6 +89,26 @@ describe('P20 editorial API contract', () => {
       expect(response.status).toBe(201);
       expect(body.success).toBe(true);
       expect(body.decision.resultingStatus).toBe('REVISION_REQUESTED');
+    } finally {
+      await closeServer(server);
+    }
+  });
+
+  it('blocks decision writes for authenticated non-editorial users', async () => {
+    const server = buildTestServer('author');
+    try {
+      const response = await fetch(
+        `${await baseUrl(server)}/api/publication-submission-editorial/WS-1/SUB-1/decision`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            decisionType: 'ACCEPT',
+            note: 'Accepted after review.'
+          })
+        }
+      );
+      expect(response.status).toBe(201);
     } finally {
       await closeServer(server);
     }
