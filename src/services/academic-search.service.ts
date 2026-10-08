@@ -205,15 +205,17 @@ export class AcademicSearchService {
 
 
   private normalizeDoi(value: string): string {
-    return String(value)
-      .trim()
-      .toLocaleLowerCase()
-      .replace(/^https?:\\/\\/(?:dx\\.)?doi\\.org\\//, '')
-      .replace(/^doi:\\s*/, '');
+    let normalized = String(value).trim().toLocaleLowerCase();
+    normalized = normalized.replace('https://doi.org/', '');
+    normalized = normalized.replace('http://doi.org/', '');
+    normalized = normalized.replace('https://dx.doi.org/', '');
+    normalized = normalized.replace('http://dx.doi.org/', '');
+    normalized = normalized.replace(/^doi:\s*/, '');
+    return normalized;
   }
 
   private normalizeIsbn(value: string): string {
-    return String(value).toLocaleLowerCase().replace(/[-\\s]/g, '');
+    return String(value).toLocaleLowerCase().replace(/[-\s]/g, '');
   }
 
   private stableId(value: string): string {
