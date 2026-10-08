@@ -20,6 +20,22 @@ export interface GeneratedBibliographyItem {
   isAutoInferred: boolean;
 }
 
+function isStrictCitationEligible(source: AcademicSourceModel): boolean {
+  const sourceAny = source as AcademicSourceModel & {
+    evidenceType?: 'abstract' | 'snippet' | 'full-text';
+    evidenceProvenance?: 'server-verified-fulltext' | 'user-supplied-content' | 'unknown';
+  };
+
+  return (
+    source.identityStatus === 'verified' &&
+    source.evidenceStatus === 'verified' &&
+    source.citationEligible === true &&
+    sourceAny.evidenceType === 'full-text' &&
+    sourceAny.evidenceProvenance === 'server-verified-fulltext' &&
+    Boolean(source.evidenceText?.trim())
+  );
+}
+
 export interface BibliographyScanResult {
   scanTimestamp: string;
   totalInlineCitationsFound: number;
@@ -46,7 +62,8 @@ export class AutomatedBibliographyService {
     knownSources: AcademicSourceModel[] = [],
     style: AcademicStyle | string = AcademicStyle.APA
   ): BibliographyScanResult {
-    const audit = auditDocumentCitations(chapters, knownSources);
+    const citationEligibleSources = (knownSources || []).filter(isStrictCitationEligible);
+    const audit = auditDocumentCitations(chapters, citationEligibleSources);
     const sourceMap = new Map<string, GeneratedBibliographyItem>();
     const unresolved: InTextCitationMatch[] = [];
 
