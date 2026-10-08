@@ -4,8 +4,6 @@
  * summarize or format records already supplied to it.
  */
 
-import { academicSearchService, AcademicPaper } from '../../services/academic-search.service';
-
 export interface AcademicSourceItem {
   id?: string;
   title: string;
@@ -56,35 +54,6 @@ export interface DiscoverSourcesResponse {
   thematicSummary: string;
   suggestedKeywords: string[];
   provider: string;
-}
-
-function sourceTypeFor(record: AcademicPaper): AcademicSourceItem['sourceType'] {
-  return record.isbn ? 'book' : 'journal';
-}
-
-function yearFor(record: AcademicPaper): number | string {
-  return record.publicationYear > 0 ? record.publicationYear : 'n.d.';
-}
-
-function firstAuthor(record: AcademicPaper): string {
-  return record.authors[0] || 'Unknown author';
-}
-
-function citationApa(record: AcademicPaper): string {
-  const author = firstAuthor(record);
-  const year = yearFor(record);
-  const tail = record.doi
-    ? `https://doi.org/${record.doi.replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, '')}`
-    : record.url || '';
-  return `${author}. (${year}). ${record.title}.${tail ? ` ${tail}` : ''}`;
-}
-
-function citationHarvard(record: AcademicPaper): string {
-  return `${firstAuthor(record)} (${yearFor(record)}) ${record.title}.${record.doi ? ` DOI: ${record.doi}` : ''}`;
-}
-
-function citationMla(record: AcademicPaper): string {
-  return `${firstAuthor(record)}. "${record.title}." ${yearFor(record)}.${record.doi ? ` DOI: ${record.doi}.` : ''}`;
 }
 
 function normalizedContains(haystack: string, needle: unknown): boolean {
@@ -174,23 +143,6 @@ function formatValidatedCitationGuide(items: AcademicSourceItem[], style: string
 }
 
 
-function mapRecord(record: AcademicPaper, query: string): AcademicSourceItem {
-  return {
-    id: record.id,
-    title: record.title,
-    authors: record.authors,
-    year: yearFor(record),
-    journalOrPublisher: record.source === 'googlebooks' ? 'Google Books' : record.source,
-    doi: record.doi,
-    url: record.url,
-    sourceType: sourceTypeFor(record),
-    citationAPA: citationApa(record),
-    citationHarvard: citationHarvard(record),
-    citationMLA: citationMla(record),
-    relevanceExplanation: `تۆمارەکە لە بنکەدراوەی ${record.source} بۆ گەڕانی «${query}» وەرگیراوە. ئەم دۆخە تەنها retrieval ـە و بە تەنها verification ـی سەرچاوەکە نیشان نادات.`,
-    verificationStatus: 'retrieved-not-verified'
-  };
-}
 
 export class OpenAiChatGptService {
   public getApiKey(): string {
@@ -218,88 +170,88 @@ export class OpenAiChatGptService {
     request: DiscoverSourcesRequest
   ): Promise<DiscoverSourcesResponse> {
     const limit = Math.min(Math.max(request.limit || 8, 1), 15);
-    const query = request.discipline
-      ? `${request.query} ${request.discipline}`.trim()
-      : request.query.trim();
+    const query = [request.query.trim(), request.discipline?.trim()].filter(Boolean).join(' ');
+    const apiKey = this.getApiKey();
+    const input = `Find ${limit} high-quality academic sources for this research query.
+Query: ${query}
+Prefer peer-reviewed papers, scholarly books, university repositories, government/scientific institutions, and recognized academic indexes.
+Use web search. Do not invent sources, authors, years, DOI values, or URLs.
+Return a concise summary and keywords, but the source list must come from web-search results. Do not cite a source unless its URL was returned by web search.`;
 
-    const records = await academicSearchService.searchAll(query, limit);
-    const discoveredSources = records.map(record => mapRecord(record, query));
+    const response = await fetch(`${this.getBaseUrl()}/responses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: process.env['OPENAI_RESEARCH_MODEL'] || 'gpt-5.5',
+        reasoning: { effort: 'low' },
+        tools: [{
+          type: 'web_search',
+          filters: {
+            blocked_domains: ['reddit.com', 'quora.com', 'wikipedia.org']
+          }
+        }],
+        tool_choice: 'required',
+        include: ['web_search_call.action.sources'],
+        input
+      }),
+      signal: AbortSignal.timeout(30_000)
+    });
 
-    if (discoveredSources.length === 0) {
-      return {
-        success: true,
-        query: request.query,
-        discoveredSources: [],
-        thematicSummary: 'هیچ تۆمارێکی ڕاستەقینە لە index ـە بەردەستەکاندا نەدۆزرایەوە؛ هیچ سەرچاوەیەکی خەیاڵی دروست نەکرا.',
-        suggestedKeywords: [],
-        provider: 'Academic indexes'
-      };
+    if (!response.ok) {
+      throw new Error(`OpenAI web search failed with status ${response.status}.`);
     }
 
-    let thematicSummary = 'تۆمارەکان لە index ـە ئەکادیمییە ڕاستەقینەکان وەرگیراون و پێویستیان بە verification یەک بە یەک هەیە.';
-    let suggestedKeywords: string[] = [];
+    const payload = await response.json() as {
+      output?: Array<{
+        type?: string;
+        action?: { sources?: Array<{ url?: string; title?: string }> };
+        content?: Array<{ text?: string }>;
+      }>;
+      output_text?: string;
+    };
 
-    const apiKey = this.getOptionalApiKey();
-    if (apiKey) {
-      try {
-        const response = await fetch(`${this.getBaseUrl()}/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: this.getModel(),
-            messages: [
-              {
-                role: 'system',
-                content: 'تەنها ئەو record ـانە شیکاری بکە کە لە user content ـدا دراون. هیچ citation، DOI، ناوی نووسەر یان source record ـی نوێ دروست مەکە. وەڵام JSON بێت.'
-              },
-              {
-                role: 'user',
-                content: JSON.stringify({
-                  query: request.query,
-                  discipline: request.discipline || 'گشتی',
-                  records: discoveredSources.map(source => ({
-                    id: source.id,
-                    title: source.title,
-                    authors: source.authors,
-                    year: source.year,
-                    source: source.journalOrPublisher,
-                    doi: source.doi,
-                    url: source.url
-                  }))
-                })
-              }
-            ],
-            response_format: { type: 'json_object' },
-            temperature: 0.1
-          }),
-          signal: AbortSignal.timeout(12_000)
+    const seen = new Set<string>();
+    const discoveredSources: AcademicSourceItem[] = [];
+    for (const item of payload.output || []) {
+      if (item.type !== 'web_search_call') continue;
+      for (const source of item.action?.sources || []) {
+        const url = String(source.url || '').trim();
+        if (!/^https?:\/\//i.test(url) || seen.has(url)) continue;
+        seen.add(url);
+        discoveredSources.push({
+          id: `OPENAI-WEB-${discoveredSources.length + 1}`,
+          title: String(source.title || url).trim(),
+          authors: [],
+          year: 'n.d.',
+          journalOrPublisher: 'OpenAI Web Search',
+          url,
+          sourceType: 'report',
+          citationAPA: '',
+          citationHarvard: '',
+          citationMLA: '',
+          relevanceExplanation: 'سەرچاوەکە بە web search ـی OpenAI دۆزرایەوە؛ metadata ـەکە پێویستی بە Source Verification هەیە.',
+          verificationStatus: 'retrieved-not-verified'
         });
-
-        if (response.ok) {
-          const data = await response.json() as {
-            choices?: Array<{ message?: { content?: string } }>
-          };
-          const raw = data.choices?.[0]?.message?.content || '{}';
-          const parsed = JSON.parse(raw) as {
-            thematicSummary?: unknown;
-            suggestedKeywords?: unknown;
-          };
-          if (typeof parsed.thematicSummary === 'string') {
-            thematicSummary = parsed.thematicSummary;
-          }
-          if (Array.isArray(parsed.suggestedKeywords)) {
-            suggestedKeywords = parsed.suggestedKeywords
-              .filter((item): item is string => typeof item === 'string')
-              .slice(0, 12);
-          }
-        }
-      } catch (error) {
-        console.warn('[OpenAI discovery summarization unavailable]:', error);
+        if (discoveredSources.length >= limit) break;
       }
+      if (discoveredSources.length >= limit) break;
     }
+
+    let thematicSummary = 'ChatGPT بە web search سەرچاوەی ڕاستەقینەی web ـی دۆزییەوە؛ هەر سەرچاوەیەک پێویستی بە verification ـی جیاواز هەیە.';
+    let suggestedKeywords: string[] = [];
+    try {
+      const raw = String(payload.output_text || '').trim();
+      const parsed = JSON.parse(raw) as { thematicSummary?: unknown; suggestedKeywords?: unknown };
+      if (typeof parsed.thematicSummary === 'string') thematicSummary = parsed.thematicSummary;
+      if (Array.isArray(parsed.suggestedKeywords)) {
+        suggestedKeywords = parsed.suggestedKeywords
+          .filter((value): value is string => typeof value === 'string')
+          .slice(0, 12);
+      }
+    } catch {}
 
     return {
       success: true,
@@ -307,10 +259,9 @@ export class OpenAiChatGptService {
       discoveredSources,
       thematicSummary,
       suggestedKeywords,
-      provider: apiKey ? 'Academic indexes + optional AI summary' : 'Academic indexes'
+      provider: 'OpenAI Responses API web_search'
     };
   }
-
   public async organizeAndFormatReferences(
     request: OrganizeReferencesRequest
   ): Promise<OrganizeReferencesResponse> {
