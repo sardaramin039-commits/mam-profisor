@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -71,7 +71,7 @@ for (const sourcePath of ['src/server.ts', 'src/lib/firebase-admin.ts', 'src/app
 }
 
 function scanSourceDirectory(dir) {
-  const entries = require('node:fs').readdirSync(dir, { withFileTypes: true });
+  const entries = readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) scanSourceDirectory(full);
