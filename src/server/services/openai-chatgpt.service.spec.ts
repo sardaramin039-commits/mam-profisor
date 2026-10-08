@@ -83,6 +83,59 @@ describe('OpenAiChatGptService reference integrity', () => {
     expect(result.provider).toBe('No-Language-Model');
   });
 
+  it('uses ChatGPT web search as the source discovery engine', async () => {
+    process.env['OPENAI_API_KEY'] = 'test-key';
+    const service = new OpenAiChatGptService();
+
+    globalThis.fetch = (async () => jsonResponse({
+      output: [
+        {
+          type: 'web_search_call',
+          action: {
+            sources: [
+              {
+                title: 'Verified Study Candidate',
+                url: 'https://example.org/study'
+              },
+              {
+                title: 'Second Study Candidate',
+                url: 'https://example.org/second'
+              }
+            ]
+          }
+        },
+        {
+          type: 'message',
+          content: [{
+            text: JSON.stringify({
+              thematicSummary: 'Academic summary',
+              suggestedKeywords: ['learning', 'education']
+            })
+          }]
+        }
+      ],
+      output_text: JSON.stringify({
+        thematicSummary: 'Academic summary',
+        suggestedKeywords: ['learning', 'education']
+      })
+    })) as typeof fetch;
+
+    const result = await service.discoverAcademicSources({
+      query: 'social learning theory',
+      discipline: 'education',
+      limit: 5
+    });
+
+    expect(result.provider).toBe('OpenAI Responses API web_search');
+    expect(result.discoveredSources).toHaveLength(2);
+    expect(result.discoveredSources[0]?.url).toBe('https://example.org/study');
+    expect(result.discoveredSources[0]?.title).toBe('Verified Study Candidate');
+    expect(result.discoveredSources[0]?.verificationStatus).toBe('retrieved-not-verified');
+    expect(result.discoveredSources[1]?.url).toBe('https://example.org/second');
+    expect(result.discoveredSources[0]?.authors).toEqual([]);
+    expect(result.discoveredSources[0]?.year).toBe('n.d.');
+  });
+
   it('builds the in-text citation guide only from validated references', async () => {
     process.env['OPENAI_API_KEY'] = 'test-key';
     const service = new OpenAiChatGptService();
