@@ -432,9 +432,6 @@ class PublicationSubmissionLifecycleService {
     if (input.to === 'READY' || input.to === 'SUBMITTED' || input.to === 'RESUBMITTED') {
       throw new Error('This lifecycle status requires a dedicated integrity-gated method.');
     }
-    if (input.to === 'SUBMITTED' && !note && !externalReference) {
-      throw new Error('A submission note or external reference is required for SUBMITTED status.');
-    }
     const reference = this.ref(userId).doc(submissionId);
 
     return adminDb.runTransaction(async transaction => {
