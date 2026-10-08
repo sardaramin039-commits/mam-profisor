@@ -20,6 +20,27 @@ export interface ResearchControlPlane {
   };
 }
 
+export function evaluateResearchControlGates(input: {
+  methodologyReady: boolean;
+  evidenceReady: boolean;
+  decisionTraceable: boolean;
+  reviewRequired: boolean;
+}): ResearchControlPlane['gates'] {
+  const exportBlocked =
+    !input.methodologyReady ||
+    !input.evidenceReady ||
+    !input.decisionTraceable ||
+    input.reviewRequired;
+
+  return {
+    methodologyReady: input.methodologyReady,
+    evidenceReady: input.evidenceReady,
+    decisionTraceable: input.decisionTraceable,
+    reviewRequired: input.reviewRequired,
+    exportBlocked
+  };
+}
+
 class ResearchControlPlaneService {
   async snapshot(userId: string, projectId: string): Promise<ResearchControlPlane> {
     const memory = await researchMemoryService.hydrateProjectState(userId, projectId);
@@ -29,8 +50,13 @@ class ResearchControlPlaneService {
     const evidenceReady = memory.sourcesCount > 0 && evidence > 0;
     const decisionTraceable = decisions.length > 0;
     const reviewRequired = memory.claimsCount > 0 && memory.evidenceCoverage < 80;
-    const exportBlocked = !evidenceReady || reviewRequired;
-    const stage = exportBlocked
+    const gates = evaluateResearchControlGates({
+      methodologyReady,
+      evidenceReady,
+      decisionTraceable,
+      reviewRequired
+    });
+    const stage = gates.exportBlocked
       ? (memory.claimsCount > 0 ? 'review' : memory.sourcesCount > 0 ? 'evidence' : 'research')
       : 'export';
 
@@ -44,7 +70,7 @@ class ResearchControlPlaneService {
         decisions: decisions.length,
         evidenceCoverage: Math.max(0, Math.min(100, memory.evidenceCoverage))
       },
-      gates: { methodologyReady, evidenceReady, decisionTraceable, reviewRequired, exportBlocked }
+      gates
     };
   }
 }
