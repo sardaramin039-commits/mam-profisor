@@ -124,3 +124,26 @@
 3. `provenance = server-verified-fulltext`
 
 `abstract` و `snippet` بۆ discovery و grounding candidate بەکاردێن، بەڵام نابنە citation ـی کۆتایی تا full-text ـی لەلایەن server ـەوە خوێندراو و پشتڕاستکراو بەردەست بێت.
+
+
+## Production integration — Phase 5
+
+P5 ـی ئێستا بە route ـی پارێزراو لە:
+
+`POST /api/writing/grounded_generate`
+
+جێبەجێکراوە. Route ـەکە:
+
+1. payload ـەکە بە Zod validation دەکات.
+2. source/evidence لە server ـەوە دووبارە verification دەکات.
+3. تەنها `citationEligibleSources` دەدات بە Grounded Writer.
+4. citation ـی synthetic یان evidence ـی abstract/snippet block دەکات.
+5. Claim-Evidence Graph تەنها بە evidence ـی strict-eligible بانگ دەکات.
+6. endpoint ـەکە بە Firebase `requireAuth` پارێزراوە.
+7. Browser E2E بەبێ authentication چاوەڕێی `401` دەکات.
+
+### Release invariant
+
+**No verified full-text + server provenance = no final citation.**
+
+بوونی AI response بەخۆی هیچ مافی verification نادات؛ verification لە server ـەوە دەبێت.
