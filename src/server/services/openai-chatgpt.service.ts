@@ -196,7 +196,7 @@ Return a concise summary and keywords, but the source list must come from web-se
         Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: process.env['OPENAI_RESEARCH_MODEL'] || 'gpt-5.5',
+        model: process.env['OPENAI_RESEARCH_MODEL'] || 'gpt-6-astra',
         reasoning: { effort: 'low' },
         tools: [{
           type: 'web_search',
