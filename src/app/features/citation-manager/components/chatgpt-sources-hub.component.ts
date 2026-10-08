@@ -22,20 +22,20 @@ import { ChatGptSourcesService, DiscoveredAcademicSource } from '../../../servic
               <h4 class="text-xs font-bold text-white">مۆدیوڵی زیرەکی دەستکردی ChatGPT بۆ سەرچاوە و بەیبلۆگرافی</h4>
               <span class="text-[9px] px-2 py-0.5 rounded-full font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                ACTIVE (GPT-5.5 + Web Search)
+                FREE MODE (DEFAULT)
               </span>
               <span class="text-[9px] px-2 py-0.5 rounded-full font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center gap-1">
                 <mat-icon class="text-[10px]">verified</mat-icon>
-                VERIFICATION REQUIRED
+                CHATGPT OPTIONAL
               </span>
             </div>
-            <p class="text-[11px] text-slate-400">کلیل لە سێرڤەر پارێزراوە؛ ChatGPT بە Web Search سەرچاوەکان دەدۆزێتەوە و پاشان لە سیستەمی Verification ـدا پشکنین دەکرێن</p>
+            <p class="text-[11px] text-slate-400">لە مۆدی خۆڕایی، سەرچاوەکان لە بنکەدراوە ئەکادیمییە خۆڕاییەکان دەدۆزرێنەوە؛ ChatGPT تەنها ئەگەر بە ئەنقەست چالاک بکرێت بەکاردێت و هەموو سەرچاوەکان verification دەکرێن</p>
           </div>
         </div>
 
         <div class="flex items-center gap-1.5 bg-slate-950/60 px-3 py-1 rounded-xl border border-slate-800 text-[11px] font-mono text-slate-300">
           <mat-icon class="text-xs text-emerald-400">lock</mat-icon>
-          <span>OpenAI API Key (پارێزراو لە سێرڤەر)</span>
+          <span>دۆزینەوەی سەرچاوە: خۆڕایی</span>
         </div>
       </div>
 
@@ -112,7 +112,7 @@ import { ChatGptSourcesService, DiscoveredAcademicSource } from '../../../servic
                   <span>لە گەڕاندایە...</span>
                 } @else {
                   <mat-icon class="text-xs">travel_explore</mat-icon>
-                  <span>دۆزینەوە بە ChatGPT</span>
+                  <span>دۆزینەوەی سەرچاوەکان</span>
                 }
               </button>
             </div>
