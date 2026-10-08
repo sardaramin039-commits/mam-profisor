@@ -4,6 +4,7 @@ import { buildPublicationSubmissionPackage } from '../services/publication-submi
 import { verifyPublicationSubmissionIntegrity } from '../services/publication-submission-integrity.service';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
 import { publicationSubmissionEditorialDecisionService } from '../services/publication-submission-editorial-decision.service';
+import { getSubmissionManifest, submissionPolicyFingerprint, verifySubmissionManifest } from '../services/publication-submission-manifest.service';
 import { lifecycleId, resubmitSchema } from './publication-submission-lifecycle.schemas';
 import type { AuthRequest } from '../../middleware/auth';
 
@@ -64,6 +65,36 @@ export function createPublicationSubmissionResubmitRouter(): Router {
         return;
       }
 
+      if (!current.currentVersionId) {
+        res.status(409).json({ success: false, error: 'Current submission version is required before resubmission.' });
+        return;
+      }
+      const manifests = await import('../services/publication-submission-manifest.service')
+        .then(module => module.listSubmissionManifests(userId, workspaceId, 100));
+      const lockedManifest = manifests.find(manifest => manifest.versionId === current.currentVersionId);
+      if (!lockedManifest) {
+        res.status(409).json({
+          success: false,
+          error: 'P19 policy manifest for the current submitted version was not found; resubmission is blocked.'
+        });
+        return;
+      }
+      const manifestVerification = verifySubmissionManifest(lockedManifest);
+      if (manifestVerification.status !== 'VERIFIED') {
+        res.status(409).json({
+          success: false,
+          error: 'P19 policy manifest integrity verification failed; resubmission is blocked.',
+          verification: manifestVerification
+        });
+        return;
+      }
+      if (submissionPolicyFingerprint(parsed.data.policy) !== lockedManifest.policyFingerprint) {
+        res.status(409).json({
+          success: false,
+          error: 'Resubmission policy must match the verified P19 policy manifest.'
+        });
+        return;
+      }
       const revisionGate = await publicationSubmissionEditorialDecisionService.assertResubmissionGate(
         userId,
         workspaceId,
