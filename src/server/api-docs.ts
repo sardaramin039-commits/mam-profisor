@@ -120,7 +120,7 @@ export function createApiDocsRouter(): Router {
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
       <div class="flex items-center gap-3">
         <span class="bg-teal-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">POST</span>
-        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-lifecycle/:workspaceId/:submissionId/versions/initialize</code>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-lifecycle/:workspaceId/:submissionId/initialize</code>
       </div>
       <p class="text-slate-300 text-xs">P15 ـی کۆن بۆ P18؛ legacy version snapshot دروست دەکات بەبێ بانگەشەی verification ـی مێژووی کۆن.</p>
     </div>
