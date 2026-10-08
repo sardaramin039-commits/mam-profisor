@@ -190,7 +190,6 @@ class PublicationSubmissionLifecycleService {
       if (!current.auditHeadHash) {
         throw new Error('Submission predates P17 audit chain and cannot be promoted safely.');
       }
-
       const occurredAt = new Date().toISOString();
       const versionCount = Number.isInteger(current.versionCount) ? current.versionCount : 0;
       if (versionCount > 0 && !current.currentVersionId) {
@@ -246,13 +245,11 @@ class PublicationSubmissionLifecycleService {
         } : { versionCount }),
         updatedAt: occurredAt
       };
-
       transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
       transaction.set(reference, updated);
       return updated;
     });
   }
-
   async submit(
     userId: string,
     submissionId: string,
@@ -269,11 +266,9 @@ class PublicationSubmissionLifecycleService {
     }
     const reference = this.ref(userId).doc(submissionId);
     const receiptCollection = reference.collection('receipts');
-
     return adminDb.runTransaction(async transaction => {
       const snapshot = await transaction.get(reference);
       if (!snapshot.exists) throw new Error('Submission lifecycle record was not found.');
-
       const current = snapshot.data() as SubmissionLifecycleRecord;
       if (current.currentStatus !== 'READY') {
         throw new Error('Only a READY submission can be submitted.');
@@ -287,7 +282,6 @@ class PublicationSubmissionLifecycleService {
       if (current.submissionFingerprint !== submissionFingerprint) {
         throw new Error('Submission fingerprint does not match the READY package.');
       }
-
       const submittedAt = new Date().toISOString();
       const receipt = buildSubmissionReceipt({
         submissionId: current.id,
