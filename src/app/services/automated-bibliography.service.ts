@@ -71,12 +71,15 @@ export class AutomatedBibliographyService {
     for (const match of audit.matchedCitations) {
       if (match.matchedSource) {
         const src = match.matchedSource;
-        const key = `${this.normalizeKey(src.author)}_${src.year || '0'}`;
+        const authorKey = Array.isArray(src.authors) && src.authors.length
+          ? src.authors.join(', ')
+          : src.author;
+        const key = `${this.normalizeKey(authorKey)}_${src.year || '0'}`;
         if (!sourceMap.has(key)) {
           const formatted = this.formatSingleSource(src, style);
           sourceMap.set(key, {
             id: src.id || key,
-            author: src.author || '',
+            author: authorKey || '',
             year: src.year || 'بێ ساڵ',
             title: src.title || '',
             formattedText: formatted,
@@ -192,9 +195,12 @@ export class AutomatedBibliographyService {
 
   private formatSingleSource(source: AcademicSourceModel, style: AcademicStyle | string): string {
     const srcAny = source as any;
+    const authors = Array.isArray(srcAny.authors) && srcAny.authors.length
+      ? srcAny.authors.join(', ')
+      : source.author || 'نووسەری دیارینەکراو';
     const citationItem: CitationItem = {
       id: source.id,
-      authors: source.author || 'نووسەری دیارینەکراو',
+      authors,
       year: source.year || 2024,
       title: source.title || 'سەرناوی بێ ناو',
       publisher: source.publisher,
