@@ -39,8 +39,12 @@ function seedHistory(page: import('@playwright/test').Page): Promise<void> {
   }, { workspaceId });
 }
 
-async function mockWorkflowApis(page: import('@playwright/test').Page): Promise<{ decision: Record<string, unknown> | null }> {
+async function mockWorkflowApis(
+  page: import('@playwright/test').Page,
+  revisionReady = false
+): Promise<{ decision: Record<string, unknown> | null; resubmission: Record<string, unknown> | null }> {
   let decision: Record<string, unknown> | null = null;
+  let resubmission: Record<string, unknown> | null = null;
 
   await page.route('**/api/publication-submission-lifecycle/WS-E2E', async route => {
     if (route.request().method() === 'GET') {
@@ -73,9 +77,9 @@ async function mockWorkflowApis(page: import('@playwright/test').Page): Promise<
           }]
         },
         gate: {
-          ready: false,
-          reason: 'Required revision tasks are not complete.',
-          pendingRequiredTasks: []
+          ready: revisionReady,
+          reason: revisionReady ? undefined : 'Required revision tasks are not complete.',
+          pendingRequiredTasks: revisionReady ? [] : []
         }
       })
     });
@@ -123,6 +127,23 @@ async function mockWorkflowApis(page: import('@playwright/test').Page): Promise<
       })
     });
   });
+  await page.route('**/api/publication-submission-lifecycle/WS-E2E/SUB-E2E/resubmit', async route => {
+    resubmission = await route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        submission: {
+          ...submission,
+          currentStatus: 'RESUBMITTED',
+          currentVersionId: 'VER-E2E-2',
+          versionCount: 2
+        }
+      })
+    });
+  });
+
   await page.route('**/api/publication-submission-editorial/WS-E2E/SUB-E2E/decision', async route => {
     decision = await route.request().postDataJSON();
     await route.fulfill({
@@ -142,7 +163,10 @@ async function mockWorkflowApis(page: import('@playwright/test').Page): Promise<
     });
   });
 
-  return { get decision() { return decision; } };
+  return {
+    get decision() { return decision; },
+    get resubmission() { return resubmission; }
+  };
 }
 
 test.describe('Mam Professor browser E2E', () => {
@@ -181,6 +205,28 @@ test.describe('Mam Professor browser E2E', () => {
     expect(state.decision?.['note']).toContain('methodology');
     expect(Array.isArray(state.decision?.['tasks'])).toBe(true);
     expect((state.decision?.['tasks'] as Array<Record<string, unknown>>)[0]?.['required']).toBe(true);
+  });
+
+  test('completes a policy-locked resubmission when the revision gate is ready', async ({ page }) => {
+    await seedHistory(page);
+    const state = await mockWorkflowApis(page, true);
+    await page.goto('/');
+    await page.getByRole('button', { name: 'دەستپێکردنی پڕۆژە' }).click();
+
+    const publicationDetails = page.locator('details').filter({ hasText: 'publication و پێداچوونەوە' });
+    await publicationDetails.locator('summary').click();
+    await expect(page.getByRole('heading', { name: 'Resubmission ـی Version ـی نوێ' })).toBeVisible();
+
+    const title = page.locator('label').filter({ hasText: 'ناونیشانی manuscript' }).locator('input');
+    await title.fill('Revised E2E Research');
+    const abstract = page.locator('label').filter({ hasText: 'پوختە' }).locator('textarea');
+    await abstract.fill('This is a revised abstract for the browser E2E workflow.');
+
+    await page.getByRole('button', { name: 'ناردنی Version ـی نوێ' }).click();
+    await expect.poll(() => state.resubmission).not.toBeNull();
+    expect(state.resubmission?.['policy']).toEqual(policy);
+    expect(state.resubmission?.['title']).toBe('Revised E2E Research');
+    expect(state.resubmission?.['abstract']).toContain('revised abstract');
   });
 
   test('keeps protected publication APIs inaccessible without Firebase authentication', async ({ request, baseURL }) => {
