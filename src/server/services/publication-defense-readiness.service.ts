@@ -18,8 +18,6 @@ export interface PublicationDefenseReadinessInput {
   bibliographyCount: number;
   structuralStatus: 'PASS' | 'REJECT';
   exportBlocked: boolean;
-  overallQAScore?: number;
-  criticalViolationsCount?: number;
   topic?: string;
 }
 
@@ -53,7 +51,6 @@ export function evaluatePublicationDefenseReadiness(
   if (input.chapterCount < 1) blockers.push('هیچ بەشێکی manuscript نییە.');
   if (input.structuralStatus !== 'PASS') blockers.push('integrity ـی بونیادی manuscript پاس نەکردووە.');
   if (input.exportBlocked) blockers.push('export gate هێشتا داخراوە.');
-  if ((input.criticalViolationsCount ?? 0) > 0) blockers.push('QA violation ـی گرنگ هەیە.');
   if (!clean(input.methodology)) blockers.push('methodology بۆ publication readiness بەردەست نییە.');
   if (input.referencedCitationCount > input.verifiedCitationCount) blockers.push('هەندێک citation ـی بەکارهاتوو verified نیین.');
   if (input.referencedCitationCount > 0 && input.bibliographyCount < input.referencedCitationCount) blockers.push('bibliography پاشکەوتی تەواوی citation ـە بەکارهاتووەکان نییە.');
@@ -85,7 +82,7 @@ export function evaluatePublicationDefenseReadiness(
     clean(input.methodology) ? 20 : 0,
     clean(input.conclusion) ? 15 : 0,
     input.verifiedCitationCount > 0 ? 15 : 0,
-    (input.overallQAScore ?? 0) >= 70 ? 15 : 0,
+    input.referencedCitationCount === input.verifiedCitationCount ? 15 : 0,
     input.chapterCount >= 2 ? 10 : 0
   ].reduce((sum, value) => sum + value, 0);
 
