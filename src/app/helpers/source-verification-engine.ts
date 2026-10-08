@@ -183,6 +183,7 @@ export class SourceVerificationEngine {
       retrievedTextSnippet?: string;
       sourceUrl?: string;
       externallyVerified?: boolean;
+      serverVerifiedFullText?: boolean;
     }
   ): VerifiedCitationRecord {
     const title = (candidateSource.title || '').trim();
@@ -227,6 +228,7 @@ export class SourceVerificationEngine {
           : 'unverified';
     const identityStatus: IdentityVerificationStatus =
       candidateSource.externallyVerified === true &&
+      candidateSource.serverVerifiedFullText === true &&
       retrieved &&
       authoritativeIdentifier
         ? 'verified'
