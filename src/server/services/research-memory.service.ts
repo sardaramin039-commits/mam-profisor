@@ -58,6 +58,7 @@ class ResearchMemoryService {
         cached.memoryItems = itemsSnapshot.docs
           .map(doc => doc.data() as ResearchMemoryItem)
           .reverse();
+        this.recalculateMetrics(cached);
 
         return cached;
       }
@@ -108,6 +109,34 @@ class ResearchMemoryService {
     await batch.commit();
   }
 
+  private recalculateMetrics(project: ResearchProjectState): void {
+    const items = project.memoryItems;
+    project.claimsCount = items.filter(item => item.type === 'claim').length;
+    project.sourcesCount = items.filter(item => item.type === 'source').length;
+
+    const claimIds = new Set(
+      items.filter(item => item.type === 'claim').map(item => item.id)
+    );
+    const coveredClaims = new Set<string>();
+
+    items.filter(item => item.type === 'evidence').forEach(item => {
+      const metadata = item.metadata || {};
+      const candidateIds = [
+        metadata['claimId'],
+        ...(Array.isArray(metadata['claimIds']) ? metadata['claimIds'] : [])
+      ];
+      candidateIds
+        .map(value => String(value || '').trim())
+        .filter(id => claimIds.has(id))
+        .forEach(id => coveredClaims.add(id));
+    });
+
+    const evidenceCount = items.filter(item => item.type === 'evidence').length;
+    project.evidenceCoverage = project.claimsCount > 0
+      ? Math.round((coveredClaims.size / project.claimsCount) * 100)
+      : evidenceCount > 0 ? 100 : 0;
+  }
+
   public getOrCreateProjectState(userId: string, projectId: string, title: string, discipline: string): ResearchProjectState {
     const key = `${userId}:${projectId}`;
     if (!this.inMemoryStore.has(key)) {
@@ -139,24 +168,54 @@ class ResearchMemoryService {
     const previousSourcesCount = project.sourcesCount;
 
     project.lastUpdated = newItem.updatedAt;
-    if (item.type === 'claim') project.claimsCount++;
-    if (item.type === 'source') project.sourcesCount++;
-
     try {
-      await this.persistMemoryItem(project, newItem);
       project.memoryItems.push(newItem);
+      this.recalculateMetrics(project);
+      await this.persistMemoryItem(project, newItem);
       return newItem;
     } catch (error) {
+      project.memoryItems = project.memoryItems.filter(item => item.id !== newItem.id);
       project.lastUpdated = previousLastUpdated;
       project.claimsCount = previousClaimsCount;
       project.sourcesCount = previousSourcesCount;
+      this.recalculateMetrics(project);
       console.error('[ResearchMemory Firestore persist failed]:', (error as Error)?.message || error);
       throw new Error('Research memory persistence failed.');
     }
   }
 
   public getProjectMemory(userId: string, projectId: string): ResearchProjectState {
-    return this.getOrCreateProjectState(userId, projectId, '', '');
+    const project = this.getOrCreateProjectState(userId, projectId, '', '');
+    this.recalculateMetrics(project);
+    return project;
+  }
+
+  public async searchMemory(
+    userId: string,
+    projectId: string,
+    query: string,
+    types: ResearchMemoryItem['type'][] = [],
+    limit = 20
+  ): Promise<ResearchMemoryItem[]> {
+    const project = await this.hydrateProjectState(userId, projectId);
+    const normalizedQuery = query.normalize('NFKC').toLocaleLowerCase().trim();
+    const normalizedTypes = new Set(types);
+    const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+    const matches = project.memoryItems
+      .filter(item => normalizedTypes.size === 0 || normalizedTypes.has(item.type))
+      .map(item => ({
+        item,
+        haystack: [
+          item.topic,
+          item.content,
+          ...item.tags
+        ].join(' ').normalize('NFKC').toLocaleLowerCase()
+      }))
+      .filter(({ haystack }) => terms.every(term => haystack.includes(term)))
+      .sort((a, b) => b.item.updatedAt.localeCompare(a.item.updatedAt))
+      .slice(0, Math.min(Math.max(limit, 1), 100));
+
+    return matches.map(match => match.item);
   }
 
   public async summarizeMemoryWithAI(userId: string, projectId: string, getGeminiClient: () => GoogleGenAI): Promise<string> {
@@ -178,7 +237,15 @@ ${JSON.stringify(project.memoryItems.slice(-10), null, 2)}`;
         contents: prompt
       });
 
-      return response.text || 'پوختەی ئەکادیمی بە سەرکەوتوویی دروست کرا.';
+      const summary = response.text || 'پوختەی ئەکادیمی بە سەرکەوتوویی دروست کرا.';
+      await this.addMemoryItem(userId, projectId, {
+        userId,
+        topic: project.title,
+        type: 'summary',
+        content: summary.slice(0, 100_000),
+        tags: ['ai_summary', 'research_memory']
+      });
+      return summary;
     } catch (err: unknown) {
       console.error('ResearchMemoryService summarize error:', err);
       return `پوختەی دروستکراو بۆ پڕۆژەی ${project.title}: کۆی ${project.memoryItems.length} بڕگەی یادگە تۆمار کراوە.`;
