@@ -49,6 +49,22 @@ describe('P17 submission audit chain', () => {
     expect(report.eventCount).toBe(0);
   });
 
+  it('verifies a legacy anchor as reconstructed rather than fully verified', () => {
+    const anchor = buildSubmissionAuditEvent({
+      submissionId: 'SUB-1',
+      version: 4,
+      from: null,
+      to: 'SUBMITTED',
+      note: 'Legacy anchor',
+      occurredAt: '2026-10-08T15:00:04.000Z',
+      previousHash: '',
+      legacyAnchor: true
+    });
+    const report = verifySubmissionAuditChain([anchor], 'SUBMITTED', 4, anchor.eventHash);
+    expect(report.status).toBe('LEGACY_RECONSTRUCTED');
+    expect(report.latestVersion).toBe(4);
+  });
+
   it('detects an audit head mismatch', () => {
     const first = event(1, null, 'DRAFT', '');
     const report = verifySubmissionAuditChain([first], 'DRAFT', 1, 'wrong-head');
