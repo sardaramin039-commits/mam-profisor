@@ -3,6 +3,8 @@ import { adminDb } from '../../lib/firebase-admin';
 import { researchMemoryService, ResearchProjectState } from './research-memory.service';
 import { multiAgentOrchestratorService } from './multi-agent-orchestrator.service';
 import { researchVersionHistoryService } from './research-version-history.service';
+import { researchDecisionLedgerService } from './research-decision-ledger.service';
+import { researchControlPlaneService } from './research-control-plane.service';
 
 export interface WorkspaceSession {
   workspaceId: string;
@@ -157,6 +159,99 @@ class ResearchProjectStateService {
     return ws;
   }
 
+  private async syncOrchestrationArtifacts(
+    userId: string,
+    workspaceId: string,
+    topic: string,
+    result: any
+  ): Promise<void> {
+    const memory = await researchMemoryService.hydrateProjectState(userId, workspaceId);
+    const grounded = result.groundedGeneration;
+    const citations = Array.isArray(grounded?.verifiedCitations) ? grounded.verifiedCitations : [];
+    const existing = memory.memoryItems;
+
+    for (const citation of citations.slice(0, 25)) {
+      const sourceId = String(citation?.sourceId || '').trim();
+      if (!sourceId) continue;
+      const duplicate = existing.some(item =>
+        item.type === 'source' &&
+        String(item.metadata?.['sourceId'] || '') === sourceId
+      );
+      if (duplicate) continue;
+
+      const item = await researchMemoryService.addMemoryItem(userId, workspaceId, {
+        userId,
+        topic,
+        type: 'source',
+        content: String(citation?.evidenceQuote || citation?.inTextCitation || sourceId).slice(0, 20_000),
+        tags: ['orchestration', 'verified_source'],
+        metadata: {
+          sourceId,
+          citationId: String(citation?.citationId || ''),
+          verified: true,
+          evidenceId: String(citation?.evidenceId || '')
+        }
+      });
+      existing.push(item);
+    }
+
+    const paragraphs = Array.isArray(grounded?.paragraphs) ? grounded.paragraphs : [];
+    for (const paragraph of paragraphs) {
+      const claims = Array.isArray(paragraph?.claims) ? paragraph.claims : [];
+      for (const claim of claims.slice(0, 20)) {
+        if (claim?.citationEligible !== true) continue;
+        const sourceId = String(claim?.sourceId || '').trim();
+        const sentence = String(claim?.sentenceText || '').trim();
+        const evidenceQuote = String(claim?.evidenceQuote || '').trim();
+        if (!sourceId || !sentence || !evidenceQuote) continue;
+
+        const duplicate = existing.some(item =>
+          item.type === 'claim' &&
+          String(item.metadata?.['sourceId'] || '') === sourceId &&
+          item.content === sentence
+        );
+        if (duplicate) continue;
+
+        const claimItem = await researchMemoryService.addMemoryItem(userId, workspaceId, {
+          userId,
+          topic,
+          type: 'claim',
+          content: sentence.slice(0, 20_000),
+          tags: ['orchestration', 'verified_claim'],
+          metadata: {
+            sourceId,
+            evidenceId: String(claim?.evidenceId || ''),
+            citationText: String(claim?.citationText || ''),
+            verified: true
+          }
+        });
+        existing.push(claimItem);
+
+        const evidenceDuplicate = existing.some(item =>
+          item.type === 'evidence' &&
+          String(item.metadata?.['sourceId'] || '') === sourceId &&
+          item.content === evidenceQuote
+        );
+        if (!evidenceDuplicate) {
+          const evidenceItem = await researchMemoryService.addMemoryItem(userId, workspaceId, {
+            userId,
+            topic,
+            type: 'evidence',
+            content: evidenceQuote.slice(0, 20_000),
+            tags: ['orchestration', 'verified_evidence'],
+            metadata: {
+              claimId: claimItem.id,
+              sourceId,
+              evidenceId: String(claim?.evidenceId || ''),
+              verified: true
+            }
+          });
+          existing.push(evidenceItem);
+        }
+      }
+    }
+  }
+
   public async runFullWorkspaceOrchestration(
     userId: string,
     workspaceId: string,
@@ -178,8 +273,39 @@ class ResearchProjectStateService {
     );
 
     ws.draftContent = orchestrationResult.finalThesisDraftKurdish || ws.draftContent;
+    await this.syncOrchestrationArtifacts(userId, workspaceId, topic, orchestrationResult);
+
+    try {
+      await researchDecisionLedgerService.add(userId, workspaceId, {
+        kind: 'source_selection',
+        decision: 'Orchestration sources were selected only after server-side verification.',
+        rationale: 'P7 memory now stores the verified source and evidence trail used by the P6 pipeline.',
+        evidenceIds: Array.isArray(orchestrationResult.groundedGeneration?.verifiedCitations)
+          ? orchestrationResult.groundedGeneration.verifiedCitations
+            .map((item: any) => String(item?.evidenceId || '')).filter(Boolean).slice(0, 100)
+          : [],
+        conflictingEvidence: [],
+        impact: 'Updates the traceable research record before validation and manuscript assembly.',
+        actor: 'ai_assistant'
+      });
+      await researchDecisionLedgerService.add(userId, workspaceId, {
+        kind: 'writing',
+        decision: 'The workspace draft was updated from the multi-agent academic pipeline.',
+        rationale: 'The generated draft is linked to the workspace version and evidence-grounded output.',
+        evidenceIds: [],
+        conflictingEvidence: [],
+        impact: 'Provides an explicit decision trace for P9 export validation.',
+        actor: 'ai_assistant'
+      });
+    } catch (error) {
+      console.warn('[ResearchDecisionLedger orchestration trace skipped]:', (error as Error)?.message || error);
+    }
+
+    const controlPlane = await researchControlPlaneService.snapshot(userId, workspaceId);
     const qaBlocked = orchestrationResult.qaGateResult?.exportBlocked === true;
-    ws.integrityScore = qaBlocked ? 0 : Math.max(0, Math.min(100, Number(orchestrationResult.qaGateResult?.overallQAScore) || 0));
+    ws.integrityScore = qaBlocked || controlPlane.gates.exportBlocked
+      ? 0
+      : Math.max(0, Math.min(100, Number(orchestrationResult.qaGateResult?.overallQAScore) || 0));
     ws.lastSavedAt = new Date().toISOString();
 
     await this.persistWorkspace(ws);
@@ -198,7 +324,8 @@ class ResearchProjectStateService {
 
     return {
       workspace: ws,
-      orchestration: orchestrationResult
+      orchestration: orchestrationResult,
+      controlPlane
     };
   }
 }
