@@ -82,7 +82,7 @@ export function evaluatePublicationDefenseReadiness(
     clean(input.methodology) ? 20 : 0,
     clean(input.conclusion) ? 15 : 0,
     input.verifiedCitationCount > 0 ? 15 : 0,
-    input.referencedCitationCount === input.verifiedCitationCount ? 15 : 0,
+    input.verifiedCitationCount > 0 && input.referencedCitationCount === input.verifiedCitationCount ? 15 : 0,
     input.chapterCount >= 2 ? 10 : 0
   ].reduce((sum, value) => sum + value, 0);
 
