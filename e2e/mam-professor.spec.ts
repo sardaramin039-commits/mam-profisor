@@ -250,4 +250,18 @@ test.describe('Mam Professor browser E2E', () => {
     );
     expect(response.status()).toBe(401);
   });
+
+  test('keeps multi-agent orchestration inaccessible without Firebase authentication', async ({ request, baseURL }) => {
+    const response = await request.post(
+      `${baseURL}/api/multi-agent/orchestrate`,
+      {
+        data: {
+          topic: 'زمانی کوردی',
+          discipline: 'زمانەوانی',
+          draftText: 'دەقی تاقیکردنەوە'
+        }
+      }
+    );
+    expect(response.status()).toBe(401);
+  });
 });
