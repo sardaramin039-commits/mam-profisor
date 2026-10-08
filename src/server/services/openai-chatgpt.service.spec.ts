@@ -3,6 +3,7 @@ import { OpenAiChatGptService } from './openai-chatgpt.service';
 
 const originalFetch = globalThis.fetch;
 const originalKey = process.env['OPENAI_API_KEY'];
+const originalReferenceFormatting = process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'];
 const originalDiscovery = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
 
 function jsonResponse(payload: unknown): Response {
@@ -16,6 +17,8 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   if (originalKey === undefined) delete process.env['OPENAI_API_KEY'];
   else process.env['OPENAI_API_KEY'] = originalKey;
+  if (originalReferenceFormatting === undefined) delete process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'];
+  else process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'] = originalReferenceFormatting;
   if (originalDiscovery === undefined) delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
   else process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = originalDiscovery;
 });
@@ -96,6 +99,26 @@ describe('OpenAiChatGptService reference integrity', () => {
     expect(result.sortedReferences).toEqual([]);
     expect(result.curatedBibliography).toBe('');
     expect(result.provider).toBe('No-Language-Model');
+  });
+
+  it('formats raw references for free without an OpenAI key', async () => {
+    delete process.env['OPENAI_API_KEY'];
+    delete process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'];
+    const service = new OpenAiChatGptService();
+
+    const result = await service.organizeAndFormatReferences({
+      topic: 'topic',
+      rawReferences: 'Social Learning; Albert Bandura; 1977; Prentice-Hall',
+      citationStyle: 'apa'
+    });
+
+    expect(result.provider).toBe('Free deterministic formatter');
+    expect(result.sortedReferences).toHaveLength(1);
+    expect(result.sortedReferences[0]?.title).toBe('Social Learning');
+    expect(result.sortedReferences[0]?.authors).toEqual(['Albert Bandura']);
+    expect(result.sortedReferences[0]?.year).toBe('1977');
+    expect(result.curatedBibliography).toContain('Social Learning');
+    expect(result.curatedBibliography).not.toContain('Invented');
   });
 
   it('uses ChatGPT web search as the source discovery engine when explicitly enabled', async () => {
