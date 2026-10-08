@@ -27,3 +27,7 @@ The implementation is split into:
 - `src/server/routes/manuscript-assembly.routes.ts`
 
 The manuscript fingerprint is a SHA-256 digest of the assembled sections, included verified citations, bibliography, project identity, and structural status. The fingerprint is an integrity identifier, not proof of academic correctness.
+## Integrated hardening
+P10 no longer trusts the client's verified citation flag. Before assembly, the server resolves each referenced citation against P7 memory and marks it verified only when a matching server-recorded evidence item exists with verified: true and the same sourceId.
+
+A structurally valid, gate-approved manuscript is persisted under the authenticated user's research manuscript workspace with its SHA-256 fingerprint and persistence timestamp. A persistence failure returns a fail-closed 503 instead of claiming a successful export.
