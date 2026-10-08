@@ -114,7 +114,13 @@ function mapIndexedAcademicPaper(record: AcademicPaper): any {
     title: record.title,
     authors: Array.isArray(record.authors) ? record.authors : [],
     year: record.publicationYear > 0 ? String(record.publicationYear) : 'n.d.',
-    sourceType: record.source,
+    sourceType: record.source === 'openalex'
+      ? 'OpenAlex'
+      : record.source === 'crossref'
+        ? 'Crossref'
+        : record.source === 'googlebooks'
+          ? 'OpenLibrary'
+          : 'PeerReviewedJournal',
     doi: record.doi,
     isbn: record.isbn,
     url: record.url || '',
