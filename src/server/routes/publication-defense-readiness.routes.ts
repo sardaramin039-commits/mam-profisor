@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { evaluatePublicationDefenseReadiness } from '../services/publication-defense-readiness.service';
 import { assembleManuscript } from '../services/manuscript-assembly.service';
+import { researchControlPlaneService } from '../services/research-control-plane.service';
+import { resolveServerVerifiedCitations } from '../services/publication-research-gate.service';
 import type { AuthRequest } from '../../middleware/auth';
 
 const id = z.string().trim().min(1).max(128);
@@ -38,7 +40,17 @@ export function createPublicationDefenseReadinessRouter(): Router {
       return;
     }
     try {
-      const manuscript = assembleManuscript({ projectId: workspaceId, ...parsed.data });
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      const citations = await resolveServerVerifiedCitations(
+        userId,
+        workspaceId,
+        parsed.data.citations
+      );
+      const manuscript = assembleManuscript({
+        projectId: workspaceId,
+        ...parsed.data,
+        citations
+      });
       const report = evaluatePublicationDefenseReadiness({
         title: manuscript.title,
         abstract: manuscript.sections.find(section => section.type === 'abstract')?.content,
@@ -50,11 +62,18 @@ export function createPublicationDefenseReadinessRouter(): Router {
         verifiedCitationCount: manuscript.integrity.verifiedCitationCount,
         bibliographyCount: manuscript.integrity.bibliographyCount,
         structuralStatus: manuscript.integrity.structuralStatus,
-        exportBlocked: manuscript.integrity.structuralStatus !== 'PASS',
+        exportBlocked: control.gates.exportBlocked || manuscript.integrity.structuralStatus !== 'PASS',
         topic: parsed.data.topic || manuscript.title
       });
-      const blocked = report.publicationStatus === 'BLOCKED';
-      res.status(blocked ? 409 : 200).json({ success: !blocked, report, manuscriptIntegrity: manuscript.integrity });
+      const blocked =
+        control.gates.exportBlocked ||
+        report.publicationStatus === 'BLOCKED';
+      res.status(blocked ? 409 : 200).json({
+        success: !blocked,
+        report,
+        controlPlane: control,
+        manuscriptIntegrity: manuscript.integrity
+      });
     } catch (error) {
       console.error('Publication defense readiness error:', error);
       res.status(500).json({ error: 'نەتوانرا ئاستی ئامادەبوونی بەرگری و بڵاوکردنەوە هەڵسەنگێنرێت.' });
