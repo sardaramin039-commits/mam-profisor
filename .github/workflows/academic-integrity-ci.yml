@@ -44,6 +44,9 @@ jobs:
       - name: P5 evidence intelligence contract
         run: node scripts/p5-evidence-intelligence-test.mjs
 
+      - name: P6 multi-agent orchestration contract
+        run: node scripts/p6-multi-agent-orchestration-test.mjs
+
       - name: File line limits
         run: npm run line-limit
 
