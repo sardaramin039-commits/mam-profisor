@@ -93,9 +93,10 @@ function normalizedContains(haystack: string, needle: unknown): boolean {
 }
 
 function isRawReferenceMatch(item: AcademicSourceItem, normalizedRaw: string): boolean {
+  const authors = Array.isArray(item.authors) ? item.authors : [];
   const fields = [
     item.title,
-    ...item.authors,
+    ...authors,
     item.year,
     item.doi,
     item.url,
