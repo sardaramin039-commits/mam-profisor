@@ -90,7 +90,7 @@
                   </div>
                   <p class="text-[9.5px] text-stone-700 mt-1 leading-relaxed">{{ task.details }}</p>
                   <div class="flex flex-wrap gap-1.5 mt-2">
-                    @for (next of ['IN_PROGRESS','DONE','WAIVED']; track next) {
+                    @for (next of taskStatuses; track next) {
                       <button type="button" class="px-2 py-1 rounded-md border border-stone-200 text-[9px] font-bold disabled:opacity-50" [disabled]="taskLoading() === task.id || task.status === next" (click)="updateTask(task, next)">
                         {{ next === 'IN_PROGRESS' ? 'لە کاردایە' : next === 'DONE' ? 'تەواو' : 'waive' }}
                       </button>
