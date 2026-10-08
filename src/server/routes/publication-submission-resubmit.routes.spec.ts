@@ -123,7 +123,9 @@ function buildTestServer(): Server {
     req.user = { uid: 'USER-1' };
     next();
   });
-  app.use('/api/publication-submission-lifecycle/WS-1/SUB-1', createPublicationSubmissionResubmitRouter());
+  const router = express.Router();
+  router.use('/api/publication-submission-lifecycle/:workspaceId/:submissionId', createPublicationSubmissionResubmitRouter());
+  app.use(router);
   return app.listen(0);
 }
 
