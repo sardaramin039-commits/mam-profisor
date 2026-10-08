@@ -229,6 +229,10 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
         string,
         Array<(typeof preparedContextChunks)[number]>
       >();
+      const eligibleByEvidenceId = new Map<
+        string,
+        (typeof preparedContextChunks)[number]
+      >();
 
       for (const chunk of preparedContextChunks) {
         const isEligible = citationEligibleChunks.some(
@@ -242,17 +246,21 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
         const existing = eligibleBySourceId.get(sourceId) || [];
         existing.push(chunk);
         eligibleBySourceId.set(sourceId, existing);
+        eligibleByEvidenceId.set(String(chunk.evidenceId), chunk);
       }
 
       const normalized = (value: string) => value.normalize('NFKC').toLocaleLowerCase().trim();
 
-      const hasGroundedEvidence = (sourceId: unknown, evidenceQuote: unknown): boolean => {
-        const chunks = eligibleBySourceId.get(String(sourceId || '')) || [];
+      const hasGroundedEvidence = (
+        sourceId: unknown,
+        evidenceId: unknown,
+        evidenceQuote: unknown
+      ): boolean => {
+        const source = String(sourceId || '');
+        const evidence = eligibleByEvidenceId.get(String(evidenceId || ''));
         const quote = String(evidenceQuote || '').trim();
-        if (!quote) return false;
-        return chunks.some(chunk =>
-          normalized(chunk.chunkText).includes(normalized(quote))
-        );
+        if (!source || !evidence || evidence.sourceId !== source || !quote) return false;
+        return normalized(evidence.chunkText).includes(normalized(quote));
       };
 
       let totalClaims = 0;
@@ -267,17 +275,14 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
           const grounded = Boolean(
             claim.sourceId &&
             claim.evidenceId &&
-            eligibleBySourceId.has(String(claim.sourceId)) &&
-            hasGroundedEvidence(claim.sourceId, claim.evidenceQuote)
+            eligibleByEvidenceId.has(String(claim.evidenceId)) &&
+            hasGroundedEvidence(claim.sourceId, claim.evidenceId, claim.evidenceQuote)
           );
 
           claim.citationEligible = grounded && claim.verificationStatus === 'verified';
 
           if (claim.citationEligible) {
-            const matchedChunks = eligibleBySourceId.get(String(claim.sourceId)) || [];
-            const matchedChunk = matchedChunks.find(chunk =>
-              hasGroundedEvidence(claim.sourceId, claim.evidenceQuote)
-            );
+            const matchedChunk = eligibleByEvidenceId.get(String(claim.evidenceId));
             if (
               claim.citationText &&
               matchedChunk &&
@@ -307,15 +312,16 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
       const verifiedCitations = rawVerifiedCitations.filter((citation: any) => {
         if (citation?.verified !== true) return false;
 
-        const chunks = eligibleBySourceId.get(String(citation?.sourceId || '')) || [];
-        const matchedChunk = chunks.find(chunk =>
-          hasGroundedEvidence(citation?.sourceId, citation?.evidenceQuote)
-        );
+        const matchedChunk = eligibleByEvidenceId.get(String(citation?.evidenceId || ''));
         if (!matchedChunk) return false;
 
         return (
           citationTextMatchesSource(citation?.inTextCitation, matchedChunk) &&
-          hasGroundedEvidence(citation?.sourceId, citation?.evidenceQuote)
+          hasGroundedEvidence(
+            citation?.sourceId,
+            citation?.evidenceId,
+            citation?.evidenceQuote
+          )
         );
       }).map((citation: any) => ({
         citationId: String(citation.citationId || ''),
