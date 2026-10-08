@@ -22,6 +22,8 @@ The canonical release commands use npm and `package-lock.json`; no Bun workflow 
 
 `npm run release:smoke`
 
+`npm run e2e` (Chromium browser E2E)
+
 `npm audit --omit=dev --audit-level=high`
 
 ## P13–P20 integrity chain
@@ -49,3 +51,8 @@ P13–P20 API ـەکان بە Firebase ID-token پارێزراون.
 Firestore بە default-deny دەستپێدەکات؛ P20 collection ـەکان لە client ڕاستەوخۆ writable نین و دەبێت لە backend guard ـکراو بەڕێوەببرێن.
 
 Production dependency audit بە CI gate کاردەکات؛ هیچ vulnerability ـی high/critical نابێت بە بێ هەڵسەنگاندنی ئاگادارانە بۆ release بگەیەنرێت.
+
+
+## Browser E2E coverage
+
+Playwright لە CI ـدا بە Chromium جێبەجێ دەکرێت و ئەم flow ـانە پشکنین دەکات: splash بۆ workspace، کردنەوەی publication workflow، دروستکردنی editorial decision لە UI، و 401 protection بۆ endpoint ـی پارێزراو. E2E ـەکان backend ـی publication بە mock route بەکاردهێنن بۆ ئەوەی test ـەکە بە database یان ئەکاونتی production پشت نەبەستێت.
