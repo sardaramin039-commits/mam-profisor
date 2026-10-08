@@ -1,13 +1,22 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
 import { listSubmissionVersions, verifySubmissionVersionChain } from '../services/publication-submission-version.service';
 import { lifecycleId } from './publication-submission-lifecycle.schemas';
 import type { AuthRequest } from '../../middleware/auth';
 
+function requireUser(req: AuthRequest, res: Response): string | null {
+  const userId = req.user?.uid;
+  if (!userId) {
+    res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
+    return null;
+  }
+  return userId;
+}
+
 export function createPublicationSubmissionVersionsRouter(): Router {
   const router = Router({ mergeParams: true });
 
-  router.get('/:workspaceId/:submissionId/versions', async (req: AuthRequest, res) => {
+  router.get('/versions', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
     const workspaceId = req.params['workspaceId'];
     const submissionId = req.params['submissionId'];
