@@ -1,8 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import {
   assessEvidenceVerification,
-  isCitationEligibleEvidence
+  isCitationEligibleEvidence,
+  SourceVerificationService
 } from './source-verification.service';
+
+describe('source verification author preservation', () => {
+  it('preserves multiple authors in the verification report', async () => {
+    const service = new SourceVerificationService();
+    const result = await service.verifySources([{
+      id: 'SRC-AUTHORS',
+      title: 'Author Preservation Study',
+      authors: ['First Author', 'Second Author'],
+      year: '2025'
+    }], () => ({}) as any);
+
+    expect(result.allReports[0]?.authors).toEqual(['First Author', 'Second Author']);
+    expect(result.allReports[0]?.author).toBe('First Author, Second Author');
+  });
+});
 
 describe('source evidence verification policy', () => {
   it('requires both claim and evidence text', () => {
