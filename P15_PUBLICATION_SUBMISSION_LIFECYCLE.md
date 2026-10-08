@@ -41,3 +41,7 @@ Implementation:
 - src/server/services/publication-submission-lifecycle.policy.spec.ts
 - src/server/services/publication-submission-lifecycle.service.ts
 - src/server/routes/publication-submission-lifecycle.routes.ts
+## Integrated hardening
+P15 creation and `mark-ready` now require the authenticated P9 research gate and rebuild P13/P14 inputs with server-verified P7 citations. `READY` remains impossible through the generic transition endpoint; the dedicated path can promote a draft only after the server-side integrity gate succeeds.
+
+The lifecycle remains a state ledger, not a real external journal submission API. `SUBMITTED` records an explicit user-provided submission event and does not claim that a publisher received the manuscript.
