@@ -4,6 +4,8 @@
 
 ## Automated gates
 
+CI trigger marker: validate current main code after the latest integrity fixes.
+
 The canonical release commands use npm and `package-lock.json`; no Bun workflow is required.
 
 `npm ci`
