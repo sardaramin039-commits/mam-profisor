@@ -17,3 +17,7 @@ P12 provides a protected, deterministic rehearsal workflow for thesis defense pr
 The endpoint requires authentication and accepts manuscript structure plus optional answers. It returns readiness, defense questions, per-question assessments and an aggregate answer summary.
 
 P12 is a rehearsal aid. It does not replace a real committee, external peer review, or institutional defense decision.
+## Integrated hardening
+P12 now rebuilds manuscript structure on the server and uses the authenticated P9 control-plane snapshot plus P7 server-verified citations. Client-provided citation counts and export status are no longer authoritative for the rehearsal decision.
+
+The rehearsal engine remains an assessment aid: answer scores describe coverage of required conceptual elements and do not measure the candidate's real-world defense performance.
