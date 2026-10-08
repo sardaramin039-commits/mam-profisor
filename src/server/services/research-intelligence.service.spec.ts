@@ -86,6 +86,34 @@ describe('research intelligence verification flow', () => {
       verificationPolicy: 'verified-only'
     });
 
+  it('uses free academic providers by default', async () => {
+    delete process.env['OPENAI_API_KEY'];
+    delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('semanticscholar.org')) {
+        return response({
+          data: [{
+            paperId: 'free-paper-1',
+            title: 'Free Academic Study',
+            authors: [{ name: 'Free Researcher' }],
+            year: 2024,
+            url: 'https://www.semanticscholar.org/paper/free-paper-1'
+          }]
+        });
+      }
+      if (url.includes('esearch.fcgi')) return response({ esearchresult: { idlist: [] } });
+      if (url.includes('doaj.org') || url.includes('openlibrary.org') || url.includes('archive.org') || url.includes('europeana.eu') || url.includes('loc.gov')) {
+        return response({});
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    const result = await researchIntelligenceService.discover('فێربوون', 'دەروونناسی');
+    expect(result.providers).toContain('SemanticScholar');
+    expect(result.sources[0]?.title).toBe('Free Academic Study');
+  });
+
     let verifiedInput: any[] = [];
     sourceVerificationService.verifySources = async (sources: any[]) => {
       verifiedInput = sources;
