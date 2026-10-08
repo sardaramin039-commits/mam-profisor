@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildPublicationSubmissionPackage } from './publication-submission.service';
+import type { PublicationSubmissionPolicy } from './publication-submission.service';
 import { verifyPublicationSubmissionIntegrity } from './publication-submission-integrity.service';
 import { assembleManuscript } from './manuscript-assembly.service';
 import {
@@ -16,10 +17,10 @@ function makeInputs() {
     chapters: [{ id: 'CH-1', title: 'Chapter one', order: 1, content: 'Evidence based content.' }],
     conclusion: 'Final conclusion.'
   });
-  const policy = {
+  const policy: PublicationSubmissionPolicy = {
     journalName: 'P19 Journal',
-    manuscriptType: 'article' as const,
-    requiredSections: ['abstract', 'methodology', 'chapter', 'conclusion'] as const
+    manuscriptType: 'article',
+    requiredSections: ['abstract', 'methodology', 'chapter', 'conclusion']
   };
   const pkg = buildPublicationSubmissionPackage({
     manuscript,
