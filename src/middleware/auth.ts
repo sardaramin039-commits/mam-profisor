@@ -39,6 +39,15 @@ export const requireAuth = async (
   }
 };
 
+export function requireEditorialRole(req: AuthRequest, res: Response): boolean {
+  const role = (req.user as (AuthRequest['user'] & { role?: string }) | undefined)?.role;
+  if (role === 'admin' || role === 'professor' || role === 'editor') return true;
+  res.status(403).json({
+    error: 'دەسەڵاتی editor نییە. تەنها admin، professor یان editor دەتوانێت بڕیاری editorial تۆمار بکات.'
+  });
+  return false;
+}
+
 export const optionalAuth = async (
   req: AuthRequest,
   res: Response,
