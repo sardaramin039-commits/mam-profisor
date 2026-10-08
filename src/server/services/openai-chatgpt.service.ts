@@ -400,6 +400,9 @@ export class OpenAiChatGptService {
           )
           .map(item => ({
             ...item,
+            citationAPA: formatValidatedReference(item, 'apa'),
+            citationHarvard: formatValidatedReference(item, 'harvard'),
+            citationMLA: formatValidatedReference(item, 'mla'),
             verificationStatus: 'retrieved-not-verified' as const
           }))
           .slice(0, 100)
