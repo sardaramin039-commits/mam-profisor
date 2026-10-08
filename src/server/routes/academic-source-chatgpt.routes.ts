@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { AuthRequest } from '../../middleware/auth';
+import type { AuthRequest } from '../../middleware/auth';
 import { z } from 'zod';
 import { openAiChatGptService } from '../services/openai-chatgpt.service';
 
@@ -22,7 +22,9 @@ export function createChatGptAcademicSourcesRouter(): Router {
   const router = Router();
 
   router.post('/discover-sources', async (req: AuthRequest, res: Response) => {
-    const openAiEnabled = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] === 'true';
+    const openAiEnabled =
+      process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] === 'true' &&
+      process.env['ALLOW_BILLABLE_AI'] === 'true';
     if (openAiEnabled && !req.user) {
       res.status(401).json({ error: 'ئەم مۆدەیە تەنها بۆ بەکارهێنەری authenticated ـە.' });
       return;
@@ -48,7 +50,9 @@ export function createChatGptAcademicSourcesRouter(): Router {
   });
 
   router.post('/organize-references', async (req: AuthRequest, res: Response) => {
-    const openAiEnabled = process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'] === 'true';
+    const openAiEnabled =
+      process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'] === 'true' &&
+      process.env['ALLOW_BILLABLE_AI'] === 'true';
     if (openAiEnabled && !req.user) {
       res.status(401).json({ error: 'ئەم مۆدەیە تەنها بۆ بەکارهێنەری authenticated ـە.' });
       return;
@@ -75,7 +79,9 @@ export function createChatGptAcademicSourcesRouter(): Router {
 
   router.get('/status', (_req: AuthRequest, res: Response) => {
     const key = process.env['OPENAI_API_KEY']?.trim() || '';
-    const openAiEnabled = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] === 'true';
+    const openAiEnabled =
+      process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] === 'true' &&
+      process.env['ALLOW_BILLABLE_AI'] === 'true';
     const isConfigured = Boolean(key.startsWith('sk-'));
     res.json({
       service: 'Academic Source Discovery',
