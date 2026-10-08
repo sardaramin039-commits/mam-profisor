@@ -134,6 +134,44 @@ function formatValidatedBibliography(items: AcademicSourceItem[], style: string)
     .join('\n');
 }
 
+function surnameOf(author: string): string {
+  const tokens = author.trim().split(/\s+/).filter(Boolean);
+  return tokens[tokens.length - 1] || author.trim();
+}
+
+function formatInTextCitation(item: AcademicSourceItem, style: string): string {
+  const authors = (Array.isArray(item.authors) ? item.authors : [])
+    .map(surnameOf)
+    .filter(Boolean);
+  const year = String(item.year ?? 'n.d.');
+  if (authors.length === 0) return '';
+  const first = authors[0];
+
+  if (style === 'mla') {
+    return authors.length > 1 ? `(${first} et al.)` : `(${first})`;
+  }
+
+  if (authors.length === 2) {
+    const joiner = style === 'apa' || style === 'chicago' ? ' & ' : ' and ';
+    return `(${first}${joiner}${authors[1]}, ${year})`;
+  }
+
+  return authors.length > 2
+    ? `(${first} et al., ${year})`
+    : `(${first}, ${year})`;
+}
+
+function formatValidatedCitationGuide(items: AcademicSourceItem[], style: string): string {
+  return items
+    .map(item => {
+      const citation = formatInTextCitation(item, style);
+      return citation ? `- ${item.title}: ${citation}` : '';
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+
 function mapRecord(record: AcademicPaper, query: string): AcademicSourceItem {
   return {
     id: record.id,
@@ -371,9 +409,7 @@ export class OpenAiChatGptService {
       citationStyle: style,
       sortedReferences,
       curatedBibliography: formatValidatedBibliography(sortedReferences, style),
-      inTextCitationGuide: typeof parsed.inTextCitationGuide === 'string'
-        ? parsed.inTextCitationGuide
-        : '',
+      inTextCitationGuide: formatValidatedCitationGuide(sortedReferences, style),
       methodologyNotes: [
         typeof parsed.methodologyNotes === 'string' ? parsed.methodologyNotes : '',
         'ئەم ئەنجامە formatting ـە؛ پشکنینی بوونی سەرچاوە و metadata دەبێت لە Source Verification ـدا جێبەجێ بکرێت.'
