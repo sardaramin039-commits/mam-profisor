@@ -37,3 +37,5 @@ server chain ـی version ـەکان، cycle، previous fingerprint، immutable 
 ## سنووری دڵنیایی
 
 P18 دڵنیایی لە consistency و version lineage ـی package دەدات. ئەمە بەڵگەی factual correctness ـی manuscript، قبوڵبوونی گۆڤار، یان پشتڕاستی portal ـی دەرەکی نییە.
+## Hardening
+Version verification ئێستا submission identity، duplicate version ID/cycle، sequence، kind/status consistency و fingerprint lineage دەپشکنێت. Route ـی version verification ناسنامەی submission ـی چاوەڕوانکراو بە verifier دەدات.
