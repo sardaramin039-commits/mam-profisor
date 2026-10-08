@@ -105,7 +105,9 @@ vi.mock('../services/publication-submission-manifest.service', () => ({
     errors: [],
     immutableHash: 'd'.repeat(64)
   }),
-  submissionPolicyFingerprint: vi.fn().mockReturnValue('policy-hash')
+  submissionPolicyFingerprint: vi.fn((value: { maxWords?: number }) =>
+    value.maxWords === undefined ? 'policy-hash' : 'changed-policy-hash'
+  )
 }));
 
 import { createPublicationSubmissionResubmitRouter } from './publication-submission-resubmit.routes';
