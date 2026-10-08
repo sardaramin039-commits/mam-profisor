@@ -39,6 +39,9 @@ function hasCitationEligibleSource(source: unknown): boolean {
   return item['citationEligible'] === true
     && item['identityStatus'] === 'verified'
     && item['evidenceStatus'] === 'verified'
+    && item['evidenceType'] === 'full-text'
+    && item['evidenceProvenance'] === 'server-verified-fulltext'
+    && Boolean(String(item['evidenceText'] ?? '').trim())
     && item['existenceVerified'] === true
     && item['rejectedAsFabricated'] !== true;
 }
