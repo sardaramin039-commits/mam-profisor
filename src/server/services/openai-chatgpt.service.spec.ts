@@ -179,6 +179,7 @@ describe('OpenAiChatGptService reference integrity', () => {
 
   it('builds the in-text citation guide only from validated references', async () => {
     process.env['OPENAI_API_KEY'] = 'test-key';
+    process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'] = 'true';
     const service = new OpenAiChatGptService();
 
     globalThis.fetch = (async () => jsonResponse({
