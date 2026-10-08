@@ -9,7 +9,7 @@ const workspaceId = 'WS-001';
 const ws = researchProjectStateService.getOrCreateWorkspace(userId, workspaceId, 'پڕۆژەی ئەکادیمی');
 assert.equal(ws.workspaceId, workspaceId);
 
-const updated = researchProjectStateService.updateWorkspaceContent(userId, workspaceId, 'دەقی نوێی بەشی یەکەم', 'بەشی یەکەم');
+const updated = await researchProjectStateService.updateWorkspaceContent(userId, workspaceId, 'دەقی نوێی بەشی یەکەم', 'بەشی یەکەم');
 assert.equal(updated.draftContent, 'دەقی نوێی بەشی یەکەم');
 assert.equal(updated.activeChapter, 'بەشی یەکەم');
 
