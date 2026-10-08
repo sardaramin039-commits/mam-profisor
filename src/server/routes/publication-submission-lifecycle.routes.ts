@@ -4,6 +4,7 @@ import { assembleManuscript } from '../services/manuscript-assembly.service';
 import { buildPublicationSubmissionPackage } from '../services/publication-submission.service';
 import { verifyPublicationSubmissionIntegrity } from '../services/publication-submission-integrity.service';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
+import { listSubmissionAuditEvents, verifySubmissionAuditChain } from '../services/publication-submission-audit.service';
 import type { SubmissionLifecycleStatus } from '../services/publication-submission-lifecycle.policy';
 import type { AuthRequest } from '../../middleware/auth';
 
@@ -219,6 +220,41 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Transition failed.';
       res.status(409).json({ success: false, error: message });
+    }
+  });
+
+  router.get('/:workspaceId/:submissionId/audit', async (req: AuthRequest, res) => {
+    const userId = requireUser(req, res);
+    const workspaceId = req.params['workspaceId'];
+    const submissionId = req.params['submissionId'];
+    if (!userId) return;
+    if (!id.safeParse(workspaceId).success || !id.safeParse(submissionId).success) {
+      res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
+      return;
+    }
+
+    try {
+      const submission = await publicationSubmissionLifecycleService.get(userId, submissionId);
+      if (!submission || submission.workspaceId !== workspaceId) {
+        res.status(404).json({ error: 'submission نەدۆزرایەوە.' });
+        return;
+      }
+
+      const events = await listSubmissionAuditEvents(userId, submissionId);
+      const report = verifySubmissionAuditChain(
+        events,
+        submission.currentStatus,
+        submission.version,
+        submission.auditHeadHash
+      );
+      res.status(report.status === 'INVALID' ? 409 : 200).json({
+        success: report.status !== 'INVALID',
+        audit: report,
+        events
+      });
+    } catch (error) {
+      console.error('Submission audit read error:', error);
+      res.status(500).json({ error: 'نەتوانرا audit ـی submission پشکنرێت.' });
     }
   });
 
