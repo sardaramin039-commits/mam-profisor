@@ -43,6 +43,9 @@ jobs:
       - name: Unit tests
         run: npm test -- --watch=false
 
+      - name: Node route contract tests
+        run: npm run test:server
+
       - name: Lint
         run: npm run lint
 
