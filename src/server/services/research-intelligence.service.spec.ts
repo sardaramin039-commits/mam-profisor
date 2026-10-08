@@ -16,64 +16,41 @@ function response(payload: unknown): Response {
 }
 
 describe('research intelligence discovery', () => {
-  it('uses OpenAlex and Crossref and deduplicates identical DOI records', async () => {
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
-      const url = String(input);
-
-      if (url.includes('api.openalex.org/works')) {
-        return response({
-          results: [{
-            id: 'https://openalex.org/W123',
-            doi: 'https://doi.org/10.1000/example',
-            title: 'Example Academic Study',
-            publication_year: 2025,
-            authorships: [{ author: { display_name: 'Example Author' } }],
-            primary_location: {
-              landing_page_url: 'https://example.org/paper',
-              source: { display_name: 'Example Journal' }
+  it('uses ChatGPT web search as the primary discovery source', async () => {
+    globalThis.fetch = (async () => response({
+      output: [{
+        type: 'web_search_call',
+        action: {
+          sources: [
+            {
+              title: 'ChatGPT Discovered Academic Study',
+              url: 'https://doi.org/10.1000/example'
             },
-            cited_by_count: 12,
-            abstract_inverted_index: {
-              Example: [0],
-              'academic': [1],
-              abstract: [2]
+            {
+              title: 'ChatGPT Discovered University Source',
+              url: 'https://example.edu/research'
             }
-          }]
-        });
-      }
-
-      if (url.includes('api.crossref.org/works')) {
-        return response({
-          message: {
-            items: [{
-              DOI: '10.1000/example',
-              title: ['Example Academic Study'],
-              author: [{ given: 'Example', family: 'Author' }],
-              publisher: 'Example Publisher',
-              published: { 'date-parts': [[2025]] },
-              URL: 'https://doi.org/10.1000/example',
-              'container-title': ['Example Journal'],
-              'is-referenced-by-count': 12,
-              abstract: '<jats:p>Example academic abstract evidence.</jats:p>'
-            }]
-          }
-        });
-      }
-
-      return response({ results: [], data: [], message: { items: [] }, response: { docs: [] }, items: [] });
-    }) as typeof fetch;
+          ]
+        }
+      }],
+      output_text: JSON.stringify({
+        thematicSummary: 'Academic source discovery summary',
+        suggestedKeywords: ['learning', 'education']
+      })
+    })) as typeof fetch;
 
     const result = await researchIntelligenceService.discover(
       'کاریگەریی فێربوون',
       'دەروونناسی'
     );
 
-    expect(result.providers).toContain('OpenAlex');
-    expect(result.providers).toContain('Crossref');
-    expect(result.sources.filter(source => source.doi === '10.1000/example')).toHaveLength(1);
-    expect(result.sources[0]?.title).toBe('Example Academic Study');
-    expect(result.sources[0]?.evidenceText).toBeTruthy();
-    expect(result.sources[0]?.evidenceType).toBe('abstract');
+    expect(result.providers).toContain('OpenAI Responses API web_search');
+    expect(result.sources).toHaveLength(2);
+    expect(result.sources[0]?.url).toBe('https://doi.org/10.1000/example');
+    expect(result.sources[0]?.title).toBe('ChatGPT Discovered Academic Study');
+    expect(result.sources[0]?.verificationStatus).toBe('retrieved-not-verified');
+    expect(result.sources[0]?.authors).toEqual([]);
+    expect(result.sources[0]?.year).toBe('n.d.');
   });
 });
 
