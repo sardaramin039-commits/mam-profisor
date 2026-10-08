@@ -141,6 +141,7 @@ export class ResearchIntelligenceService {
   async discover(topic: string, discipline: string) {
     const openAiEnabled =
       process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] === 'true' &&
+      process.env['ALLOW_BILLABLE_AI'] === 'true' &&
       Boolean(process.env['OPENAI_API_KEY']?.trim());
 
     if (openAiEnabled) {
