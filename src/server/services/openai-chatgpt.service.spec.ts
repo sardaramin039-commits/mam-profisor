@@ -1,0 +1,78 @@
+import { afterEach, describe, expect, it } from 'vitest';
+import { OpenAiChatGptService } from './openai-chatgpt.service';
+
+const originalFetch = globalThis.fetch;
+const originalKey = process.env['OPENAI_API_KEY'];
+
+function jsonResponse(payload: unknown): Response {
+  return new Response(JSON.stringify(payload), {
+    status: 200,
+    headers: { 'content-type': 'application/json' }
+  });
+}
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+  if (originalKey === undefined) delete process.env['OPENAI_API_KEY'];
+  else process.env['OPENAI_API_KEY'] = originalKey;
+});
+
+describe('OpenAiChatGptService reference integrity', () => {
+  it('rejects LLM reference metadata not present in raw input', async () => {
+    process.env['OPENAI_API_KEY'] = 'test-key';
+    const service = new OpenAiChatGptService();
+
+    globalThis.fetch = (async () => jsonResponse({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            sortedReferences: [
+              {
+                title: 'Real Study',
+                authors: ['Researcher'],
+                year: 2025,
+                journalOrPublisher: 'Example Journal',
+                sourceType: 'journal'
+              },
+              {
+                title: 'Fabricated Study',
+                authors: ['Invented Author'],
+                year: 2026,
+                journalOrPublisher: 'Invented Journal',
+                sourceType: 'journal',
+                doi: '10.9999/fake'
+              }
+            ],
+            curatedBibliography: 'Fabricated Study should never escape.',
+            inTextCitationGuide: '(Researcher, 2025)'
+          })
+        }
+      }]
+    })) as typeof fetch;
+
+    const result = await service.organizeAndFormatReferences({
+      topic: 'topic',
+      rawReferences: 'Real Study; Researcher; 2025; Example Journal',
+      citationStyle: 'apa'
+    });
+
+    expect(result.sortedReferences).toHaveLength(1);
+    expect(result.sortedReferences[0]?.title).toBe('Real Study');
+    expect(result.sortedReferences[0]?.verificationStatus).toBe('retrieved-not-verified');
+    expect(result.curatedBibliography).toContain('Real Study');
+    expect(result.curatedBibliography).not.toContain('Fabricated Study');
+    expect(result.curatedBibliography).not.toContain('10.9999/fake');
+  });
+
+  it('does not create references when raw input is empty', async () => {
+    const service = new OpenAiChatGptService();
+    const result = await service.organizeAndFormatReferences({
+      topic: 'topic',
+      rawReferences: ''
+    });
+
+    expect(result.sortedReferences).toEqual([]);
+    expect(result.curatedBibliography).toBe('');
+    expect(result.provider).toBe('No-Language-Model');
+  });
+});
