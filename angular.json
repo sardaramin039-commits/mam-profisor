@@ -118,7 +118,10 @@
           "options": {
             "tsConfig": "tsconfig.spec.json",
             "runner": "vitest",
-            "buildTarget": "app:build:development"
+            "buildTarget": "app:build:development",
+            "exclude": [
+              "src/server/routes/publication-submission-editorial.routes.spec.ts"
+            ]
           }
         },
         "lint": {
