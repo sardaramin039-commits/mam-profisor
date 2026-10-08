@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { assembleManuscript } from '../services/manuscript-assembly.service';
 import { buildPublicationSubmissionPackage } from '../services/publication-submission.service';
+import { researchControlPlaneService } from '../services/research-control-plane.service';
+import { resolveServerVerifiedCitations } from '../services/publication-research-gate.service';
 import type { AuthRequest } from '../../middleware/auth';
 
 const id = z.string().trim().min(1).max(128);
@@ -77,6 +79,12 @@ export function createPublicationSubmissionRouter(): Router {
       return;
     }
     try {
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      const citations = await resolveServerVerifiedCitations(
+        userId,
+        workspaceId,
+        parsed.data.citations
+      );
       const manuscript = assembleManuscript({
         projectId: workspaceId,
         title: parsed.data.title,
@@ -85,7 +93,7 @@ export function createPublicationSubmissionRouter(): Router {
         methodology: parsed.data.methodology,
         chapters: parsed.data.chapters,
         conclusion: parsed.data.conclusion,
-        citations: parsed.data.citations
+        citations
       });
       const result = buildPublicationSubmissionPackage({
         manuscript,
@@ -93,8 +101,21 @@ export function createPublicationSubmissionRouter(): Router {
         keywords: parsed.data.keywords,
         authors: parsed.data.authors
       });
+      const researchBlocked = control.gates.exportBlocked;
+      if (researchBlocked) {
+        res.status(409).json({
+          success: false,
+          exportBlocked: true,
+          controlPlane: control,
+          package: result
+        });
+        return;
+      }
+
       res.status(result.status === 'BLOCKED' ? 409 : 200).json({
         success: result.status !== 'BLOCKED',
+        exportBlocked: false,
+        controlPlane: control,
         package: result
       });
     } catch (error) {
