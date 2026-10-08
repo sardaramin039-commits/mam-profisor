@@ -96,6 +96,53 @@ class PublicationSubmissionLifecycleService {
     return record;
   }
 
+  async markReady(
+    userId: string,
+    submissionId: string,
+    verifiedFingerprint: string
+  ): Promise<SubmissionLifecycleRecord> {
+    if (!validFingerprint(verifiedFingerprint)) throw new Error('Verified submission fingerprint is invalid.');
+    const reference = this.ref(userId).doc(submissionId);
+
+    return adminDb.runTransaction(async transaction => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists) throw new Error('Submission lifecycle record was not found.');
+
+      const current = snapshot.data() as SubmissionLifecycleRecord;
+      if (current.currentStatus !== 'DRAFT') {
+        throw new Error('Only a DRAFT submission can be promoted to READY.');
+      }
+
+      const occurredAt = new Date().toISOString();
+      const eventSeed = JSON.stringify({
+        submissionId,
+        version: current.version + 1,
+        from: current.currentStatus,
+        to: 'READY',
+        verifiedFingerprint,
+        occurredAt
+      });
+      const event: SubmissionLifecycleEvent = {
+        id: 'SEV-' + sha256(eventSeed).slice(0, 32),
+        from: 'DRAFT',
+        to: 'READY',
+        note: 'P14 submission integrity gate passed.',
+        occurredAt
+      };
+      const updated: SubmissionLifecycleRecord = {
+        ...current,
+        submissionFingerprint: verifiedFingerprint,
+        currentStatus: 'READY',
+        version: current.version + 1,
+        events: [...current.events, event].slice(-100),
+        updatedAt: occurredAt
+      };
+
+      transaction.set(reference, updated);
+      return updated;
+    });
+  }
+
   async transition(
     userId: string,
     submissionId: string,
