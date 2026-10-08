@@ -1,5 +1,6 @@
 import { researchDecisionLedgerService } from './research-decision-ledger.service';
 import { researchMemoryService } from './research-memory.service';
+import { evaluateResearchControlGates } from './research-validation-policy';
 
 export interface ResearchControlPlane {
   projectId: string;
@@ -17,27 +18,6 @@ export interface ResearchControlPlane {
     decisionTraceable: boolean;
     reviewRequired: boolean;
     exportBlocked: boolean;
-  };
-}
-
-export function evaluateResearchControlGates(input: {
-  methodologyReady: boolean;
-  evidenceReady: boolean;
-  decisionTraceable: boolean;
-  reviewRequired: boolean;
-}): ResearchControlPlane['gates'] {
-  const exportBlocked =
-    !input.methodologyReady ||
-    !input.evidenceReady ||
-    !input.decisionTraceable ||
-    input.reviewRequired;
-
-  return {
-    methodologyReady: input.methodologyReady,
-    evidenceReady: input.evidenceReady,
-    decisionTraceable: input.decisionTraceable,
-    reviewRequired: input.reviewRequired,
-    exportBlocked
   };
 }
 
