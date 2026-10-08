@@ -28,6 +28,13 @@ describe('P16 immutable submission receipt', () => {
     expect(first.immutableHash).not.toBe(changed.immutableHash);
   });
 
+  it('binds the receipt hash to the submission version id', () => {
+    const first = buildSubmissionReceipt({ ...base, submissionVersionId: 'VER-1' });
+    const changed = buildSubmissionReceipt({ ...base, submissionVersionId: 'VER-2' });
+    expect(first.submissionVersionId).toBe('VER-1');
+    expect(first.immutableHash).not.toBe(changed.immutableHash);
+  });
+
   it('rejects a receipt without submission evidence', () => {
     expect(() => buildSubmissionReceipt({ ...base, note: '', externalReference: '' }))
       .toThrow('requires a note or external reference');
