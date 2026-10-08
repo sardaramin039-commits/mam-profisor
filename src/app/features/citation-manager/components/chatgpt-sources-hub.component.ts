@@ -22,20 +22,20 @@ import { ChatGptSourcesService, DiscoveredAcademicSource } from '../../../servic
               <h4 class="text-xs font-bold text-white">مۆدیوڵی زیرەکی دەستکردی ChatGPT بۆ سەرچاوە و بەیبلۆگرافی</h4>
               <span class="text-[9px] px-2 py-0.5 rounded-full font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                ACTIVE (GPT-4o-mini)
+                ACTIVE (GPT-5.5 + Web Search)
               </span>
               <span class="text-[9px] px-2 py-0.5 rounded-full font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center gap-1">
                 <mat-icon class="text-[10px]">verified</mat-icon>
-                ZERO-HALLUCINATION
+                VERIFICATION REQUIRED
               </span>
             </div>
-            <p class="text-[11px] text-slate-400">کلیل بەستراوەتەوە بە سێرڤەر بۆ دۆزینەوەی سەرچاوەی سەلمێنراو لە Scopus، PubMed، IEEE و بەرپەرچدانەوەی سەرچاوەی هەڵبەستراو</p>
+            <p class="text-[11px] text-slate-400">کلیل لە سێرڤەر پارێزراوە؛ ChatGPT بە Web Search سەرچاوەکان دەدۆزێتەوە و پاشان لە سیستەمی Verification ـدا پشکنین دەکرێن</p>
           </div>
         </div>
 
         <div class="flex items-center gap-1.5 bg-slate-950/60 px-3 py-1 rounded-xl border border-slate-800 text-[11px] font-mono text-slate-300">
           <mat-icon class="text-xs text-emerald-400">lock</mat-icon>
-          <span>Key: sk-proj-...Ex8A (پارێزراو)</span>
+          <span>OpenAI API Key (پارێزراو لە سێرڤەر)</span>
         </div>
       </div>
 
