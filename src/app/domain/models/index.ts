@@ -111,6 +111,8 @@ export interface AcademicSourceModel {
   pageNumber?: string | number;
   identityStatus?: 'verified' | 'unverified' | 'rejected';
   evidenceStatus?: 'verified' | 'unverified' | 'not_available';
+  evidenceType?: 'abstract' | 'snippet' | 'full-text';
+  evidenceProvenance?: 'server-verified-fulltext' | 'user-supplied-content' | 'unknown';
   citationEligible?: boolean;
   formattedCitation?: string;
   isVerified: boolean;
