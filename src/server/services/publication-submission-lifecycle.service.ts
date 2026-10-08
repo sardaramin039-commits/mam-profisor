@@ -1,12 +1,14 @@
 import { adminDb } from '../../lib/firebase-admin';
 import { sha256 } from './text-sha256.service';
 import {
-  SubmissionLifecycleEvent,
-  SubmissionLifecycleStatus,
   canTransition,
   normalizeExternalReference,
   normalizeTransitionNote,
   initialSubmissionStatus
+} from './publication-submission-lifecycle.policy';
+import type {
+  SubmissionLifecycleEvent,
+  SubmissionLifecycleStatus
 } from './publication-submission-lifecycle.policy';
 
 export interface CreateSubmissionLifecycleInput {
@@ -150,6 +152,9 @@ class PublicationSubmissionLifecycleService {
   ): Promise<SubmissionLifecycleRecord> {
     const note = normalizeTransitionNote(input.note);
     const externalReference = normalizeExternalReference(input.externalReference);
+    if (input.to === 'SUBMITTED' && !note && !externalReference) {
+      throw new Error('A submission note or external reference is required for SUBMITTED status.');
+    }
     const reference = this.ref(userId).doc(submissionId);
 
     return adminDb.runTransaction(async transaction => {
