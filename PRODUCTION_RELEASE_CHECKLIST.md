@@ -28,6 +28,10 @@ P13 submission package، P14 integrity، P15 lifecycle، P16 receipt، P17 audit
 
 P20 revision plan پێش resubmit verification دەکرێت و P18 لە transaction ـی خۆیدا ئەم gate ـە دووبارە پشکنێت.
 
+## Validation note
+
+The release workflow runs on pushes to `main` and pull requests targeting `main`.
+
 ## Runtime smoke invariants
 
 API docs دەبێت وەڵامی 200 بدات.
