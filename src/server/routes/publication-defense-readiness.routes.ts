@@ -15,8 +15,6 @@ const schema = z.object({
   chapters: z.array(chapter).min(1).max(100),
   conclusion: z.string().max(100_000).optional(),
   citations: z.array(citation).max(500).default([]),
-  overallQAScore: z.number().min(0).max(100).optional(),
-  criticalViolationsCount: z.number().int().min(0).max(1000).optional(),
   topic: z.string().trim().max(500).optional()
 }).strict();
 
@@ -53,8 +51,6 @@ export function createPublicationDefenseReadinessRouter(): Router {
         bibliographyCount: manuscript.integrity.bibliographyCount,
         structuralStatus: manuscript.integrity.structuralStatus,
         exportBlocked: manuscript.integrity.structuralStatus !== 'PASS',
-        overallQAScore: parsed.data.overallQAScore,
-        criticalViolationsCount: parsed.data.criticalViolationsCount,
         topic: parsed.data.topic || manuscript.title
       });
       const blocked = report.publicationStatus === 'BLOCKED';
