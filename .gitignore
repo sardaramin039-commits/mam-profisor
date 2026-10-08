@@ -48,3 +48,8 @@ Thumbs.db
 
 # TypeScript generated build metadata
 *.tsbuildinfo
+
+# Playwright browser E2E artifacts
+/playwright-report/
+/test-results/
+/blob-report/
