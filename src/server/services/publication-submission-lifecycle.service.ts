@@ -157,9 +157,6 @@ class PublicationSubmissionLifecycleService {
         updatedAt: occurredAt
       };
       transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
-      if (versionRecord) {
-        transaction.create(reference.collection('versions').doc(versionRecord.id), versionRecord);
-      }
       transaction.set(reference, updated);
       return updated;
     });
