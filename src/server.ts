@@ -25,6 +25,7 @@ import { createResearchProjectStateRouter } from './server/routes/research-proje
 import { createResearchDecisionLedgerRouter } from './server/routes/research-decision-ledger.routes';
 import { createResearchControlPlaneRouter } from './server/routes/research-control-plane.routes';
 import { createResearchVersionHistoryRouter } from './server/routes/research-version-history.routes';
+import { createManuscriptAssemblyRouter } from './server/routes/manuscript-assembly.routes';
 import { createPlagiarismRouter } from './server/routes/plagiarism.routes';
 import { getGeminiClient } from './server/services/gemini.service';
 import { rateLimiterMiddleware, authenticatedRateLimiterMiddleware } from './server/middleware/rate-limiter.middleware';
@@ -87,6 +88,7 @@ app.use('/api/research-memory', requireAuth, createResearchMemoryRouter(getGemin
 app.use('/api/research-decisions', requireAuth, createResearchDecisionLedgerRouter());
 app.use('/api/research-control', requireAuth, createResearchControlPlaneRouter());
 app.use('/api/research-versions', requireAuth, createResearchVersionHistoryRouter());
+app.use('/api/manuscript', requireAuth, createManuscriptAssemblyRouter());
 
 // Modular Services & Routers (Agents, Scholarly Search, Digital Library Catalog)
 app.use('/api/agents', agentsRouter);
