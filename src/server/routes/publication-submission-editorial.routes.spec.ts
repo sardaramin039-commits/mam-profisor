@@ -60,6 +60,10 @@ async function baseUrl(server: Server): Promise<string> {
   return `http://127.0.0.1:${address.port}`;
 }
 
+async function closeServer(server: Server): Promise<void> {
+  await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+}
+
 describe('P20 editorial API contract', () => {
   it('records an editorial decision through the authenticated route', async () => {
     const server = buildTestServer();
@@ -86,7 +90,7 @@ describe('P20 editorial API contract', () => {
       expect(body.success).toBe(true);
       expect(body.decision.resultingStatus).toBe('REVISION_REQUESTED');
     } finally {
-      server.close();
+      await closeServer(server);
     }
   });
 
@@ -103,7 +107,7 @@ describe('P20 editorial API contract', () => {
       );
       expect(response.status).toBe(400);
     } finally {
-      server.close();
+      await closeServer(server);
     }
   });
 
@@ -118,7 +122,7 @@ describe('P20 editorial API contract', () => {
       expect(body.gate.ready).toBe(false);
       expect(body.gate.reason).toContain('No structured revision plan');
     } finally {
-      server.close();
+      await closeServer(server);
     }
   });
 });
