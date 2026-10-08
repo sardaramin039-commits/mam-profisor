@@ -79,4 +79,24 @@ describe('P17 submission audit chain', () => {
     expect(report.status).toBe('INVALID');
     expect(report.errors.some(error => error.includes('hash mismatch'))).toBe(true);
   });
+
+  it('rejects an impossible lifecycle transition inside the audit chain', () => {
+    const first = event(1, null, 'DRAFT', '');
+    const second = event(2, 'DRAFT', 'READY', first.eventHash);
+    const invalid = {
+      ...event(3, 'READY', 'SUBMITTED', second.eventHash),
+      from: 'ACCEPTED' as const
+    };
+    const report = verifySubmissionAuditChain([first, second, invalid], 'SUBMITTED', 3);
+    expect(report.status).toBe('INVALID');
+    expect(report.errors.some(error => error.includes('Invalid lifecycle transition'))).toBe(true);
+  });
+
+  it('rejects duplicate audit versions', () => {
+    const first = event(1, null, 'DRAFT', '');
+    const duplicate = { ...event(2, 'DRAFT', 'READY', first.eventHash), version: 1 };
+    const report = verifySubmissionAuditChain([first, duplicate], 'READY', 2);
+    expect(report.status).toBe('INVALID');
+    expect(report.errors.some(error => error.includes('Duplicate audit version'))).toBe(true);
+  });
 });
