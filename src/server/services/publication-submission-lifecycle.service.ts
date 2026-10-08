@@ -294,6 +294,9 @@ class PublicationSubmissionLifecycleService {
       if (!snapshot.exists) throw new Error('Submission lifecycle record was not found.');
 
       const current = snapshot.data() as SubmissionLifecycleRecord;
+      if (!current.auditHeadHash) {
+        throw new Error('Submission predates P17 audit chain and cannot transition safely.');
+      }
       const decision = canTransition(current.currentStatus, input.to);
       if (!decision.allowed) throw new Error(decision.reason);
 
@@ -315,14 +318,26 @@ class PublicationSubmissionLifecycleService {
         ...(externalReference ? { externalReference } : {}),
         occurredAt
       };
+      const auditEvent = buildSubmissionAuditEvent({
+        submissionId: current.id,
+        version: current.version + 1,
+        from: current.currentStatus,
+        to: input.to,
+        note,
+        externalReference,
+        occurredAt,
+        previousHash: current.auditHeadHash
+      });
       const updated: SubmissionLifecycleRecord = {
         ...current,
         currentStatus: input.to,
         version: current.version + 1,
         events: [...current.events, event].slice(-100),
+        auditHeadHash: auditEvent.eventHash,
         updatedAt: occurredAt
       };
 
+      transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
       transaction.set(reference, updated);
       return updated;
     });
