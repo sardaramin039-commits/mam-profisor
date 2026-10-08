@@ -109,7 +109,8 @@ export function verifySubmissionAuditChain(
   events: SubmissionAuditEvent[],
   currentStatus: SubmissionLifecycleStatus,
   currentVersion: number,
-  expectedHeadHash = ''
+  expectedHeadHash = '',
+  expectedSubmissionId?: string
 ): SubmissionAuditReport {
   if (!events.length) {
     return { status: 'LEGACY_UNSEEDED', eventCount: 0, latestVersion: 0, latestHash: '', errors: ['No immutable audit events exist for this submission.'] };
@@ -125,6 +126,9 @@ export function verifySubmissionAuditChain(
     const expectedVersion = legacyAnchor ? ordered[0].version + index : index + 1;
     const error = verifyEvent(event, previousHash, expectedVersion);
     if (error) errors.push(error);
+    if (expectedSubmissionId && event.submissionId !== expectedSubmissionId) {
+      errors.push(`Audit submission binding mismatch at ${event.id}.`);
+    }
     if (seenIds.has(event.id)) errors.push(`Duplicate audit event id: ${event.id}.`);
     if (seenVersions.has(event.version)) errors.push(`Duplicate audit version: ${event.version}.`);
     seenIds.add(event.id);
