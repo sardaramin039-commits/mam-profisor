@@ -191,8 +191,12 @@ export class CitationIntelligenceService {
     style: CitationStyle,
     number: number
   ): string {
-    const author = authorNames[0] || '';
-    const withEtAl = authorNames.length >= 3 ? `${author} et al.` : author;
+    const citedAuthors = authorNames.map(name => {
+      const parts = name.split(/[\s,]+/).map(value => value.trim()).filter(Boolean);
+      return parts[parts.length - 1] || name;
+    });
+    const author = citedAuthors[0] || '';
+    const withEtAl = citedAuthors.length >= 3 ? `${author} et al.` : author;
     const twoAuthors = authorNames.slice(0, 2);
     const pair = twoAuthors.length === 2 ? twoAuthors.join(' and ') : author;
     const apaPair = twoAuthors.length === 2 ? twoAuthors.join(' & ') : author;
