@@ -75,4 +75,38 @@ describe('OpenAiChatGptService reference integrity', () => {
     expect(result.curatedBibliography).toBe('');
     expect(result.provider).toBe('No-Language-Model');
   });
+
+  it('builds the in-text citation guide only from validated references', async () => {
+    process.env['OPENAI_API_KEY'] = 'test-key';
+    const service = new OpenAiChatGptService();
+
+    globalThis.fetch = (async () => jsonResponse({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            sortedReferences: [{
+              title: 'Social Learning',
+              authors: ['Albert Bandura', 'Richard H. Walters'],
+              year: 1977,
+              journalOrPublisher: 'Prentice-Hall',
+              sourceType: 'book'
+            }],
+            inTextCitationGuide: '(Invented Author, 2099)'
+          })
+        }
+      }]
+    })) as typeof fetch;
+
+    const result = await service.organizeAndFormatReferences({
+      topic: 'social learning',
+      rawReferences: 'Social Learning; Albert Bandura; Richard H. Walters; 1977; Prentice-Hall',
+      citationStyle: 'apa'
+    });
+
+    expect(result.inTextCitationGuide).toBe(
+      '- Social Learning: (Bandura & Walters, 1977)'
+    );
+    expect(result.inTextCitationGuide).not.toContain('Invented Author');
+    expect(result.inTextCitationGuide).not.toContain('2099');
+  });
 });
