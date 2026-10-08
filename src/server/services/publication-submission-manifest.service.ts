@@ -129,7 +129,9 @@ export function verifySubmissionManifest(manifest: SubmissionManifest): Submissi
     keywordCount: manifest.keywordCount, referenceCount: manifest.referenceCount, capturedAt: manifest.capturedAt
   };
   const immutableHash = sha256(canonical(payload));
+  const expectedId = 'MAN-' + immutableHash.slice(0, 32);
   if (immutableHash !== manifest.immutableHash) errors.push('Manifest immutable hash mismatch.');
+  if (clean(manifest.id) !== expectedId) errors.push('Manifest id does not match its immutable hash.');
   return { status: errors.length ? 'INVALID' : 'VERIFIED', errors, immutableHash };
 }
 
