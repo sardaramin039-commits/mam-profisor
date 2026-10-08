@@ -95,6 +95,9 @@ scanSourceDirectory(join(root, 'src'));
 const lineCheck = spawnSync(process.execPath, [join(root, 'scripts/verify-file-line-limits.mjs')], { encoding: 'utf8' });
 if (lineCheck.status !== 0) errors.push('Source/template line-limit check failed.');
 
+const workflowCheck = spawnSync(process.execPath, [join(root, 'scripts/ci-workflow-contract-check.mjs')], { encoding: 'utf8' });
+if (workflowCheck.status !== 0) errors.push('CI workflow contract check failed.');
+
 if (errors.length) {
   for (const error of errors) console.error(`RELEASE CHECK: ${error}`);
   process.exit(1);
