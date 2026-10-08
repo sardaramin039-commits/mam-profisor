@@ -175,6 +175,46 @@ function mapFreeAcademicRecord(record: AcademicPaper): AcademicSourceItem {
   };
 }
 
+function buildDeterministicReferences(rawReferences: string): AcademicSourceItem[] {
+  const lines = rawReferences.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const records: Array<[string, string, string, string, string?]> = [];
+  for (const line of lines) {
+    const parts = line.split(';').map(part => part.trim()).filter(Boolean);
+    if (parts.length >= 4 && parts.length <= 5) {
+      records.push([parts[0], parts[1], parts[2], parts[3], parts[4]]);
+    } else {
+      records.push([line, '', 'n.d.', '', undefined]);
+    }
+  }
+  return records.map((record, index) => {
+    const [title, authorText, year, container, identifier] = record;
+    const doi = identifier?.match(/10\.\d{4,9}\/[^\s]+/i)?.[0];
+    const url = identifier && /^https?:\/\//i.test(identifier) ? identifier : undefined;
+    const authors = authorText
+      ? authorText.split(/\s*,\s*|\s+and\s+/i).map(author => author.trim()).filter(Boolean)
+      : [];
+    const item: AcademicSourceItem = {
+      id: `FREE-RAW-${index + 1}`,
+      title,
+      authors,
+      year,
+      journalOrPublisher: container,
+      doi,
+      url,
+      sourceType: 'report',
+      citationAPA: '',
+      citationHarvard: '',
+      citationMLA: '',
+      relevanceExplanation: 'ڕێکخستنەکە deterministic ـە و هیچ metadata ـی نوێی تێدا زیاد نەکراوە.',
+      verificationStatus: 'retrieved-not-verified'
+    };
+    item.citationAPA = formatValidatedReference(item, 'apa');
+    item.citationHarvard = formatValidatedReference(item, 'harvard');
+    item.citationMLA = formatValidatedReference(item, 'mla');
+    return item;
+  });
+}
+
 export class OpenAiChatGptService {
   public getApiKey(): string {
     const key = process.env['OPENAI_API_KEY']?.trim();
@@ -332,7 +372,21 @@ Return a concise summary and keywords, but the source list must come from web-se
       };
     }
 
-    const apiKey = this.getApiKey();
+    const apiKey = this.getOptionalApiKey();
+    if (process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'] !== 'true' || !apiKey) {
+      const sortedReferences = buildDeterministicReferences(rawReferences).slice(0, 100);
+      return {
+        success: true,
+        topic: request.topic,
+        citationStyle: style,
+        sortedReferences,
+        curatedBibliography: formatValidatedBibliography(sortedReferences, style),
+        inTextCitationGuide: formatValidatedCitationGuide(sortedReferences, style),
+        methodologyNotes: 'ئەم ئەنجامە بە formatter ـی deterministic دروستکراوە و هیچ metadata ـی نوێی لە خۆوە زیاد نەکراوە؛ verification جیاوازە.',
+        provider: 'Free deterministic formatter'
+      };
+    }
+
     const systemPrompt = `تۆ تەنها ئامرازێکی ڕێکخستنی سەرچاوەیت.
 یاسا:
 ١. تەنها ئەو سەرچاوانە ڕێکبخە کە لە rawReferences ـدا هەن.
