@@ -203,15 +203,19 @@ class PublicationSubmissionLifecycleService {
       }
 
       const occurredAt = new Date().toISOString();
+      const versionCount = Number.isInteger(current.versionCount) ? current.versionCount : 0;
+      if (versionCount > 0 && !current.currentVersionId) {
+        throw new Error('Submission version history is incomplete.');
+      }
       let versionRecord: SubmissionVersion | null = null;
-      if (current.versionCount === 0 || current.submissionFingerprint !== verifiedFingerprint) {
+      if (versionCount === 0 || current.submissionFingerprint !== verifiedFingerprint) {
         versionRecord = buildSubmissionVersion({
           submissionId: current.id,
-          cycle: current.versionCount + 1,
+          cycle: versionCount + 1,
           kind: 'READY',
           statusAtCapture: 'READY',
           packageFingerprint: verifiedFingerprint,
-          previousFingerprint: current.versionCount > 0 ? current.submissionFingerprint : undefined,
+          previousFingerprint: versionCount > 0 ? current.submissionFingerprint : undefined,
           note: 'P14 submission integrity gate passed.',
           capturedAt: occurredAt
         });
@@ -249,8 +253,8 @@ class PublicationSubmissionLifecycleService {
         auditHeadHash: auditEvent.eventHash,
         ...(versionRecord ? {
           currentVersionId: versionRecord.id,
-          versionCount: current.versionCount + 1
-        } : {}),
+          versionCount: versionCount + 1
+        } : { versionCount }),
         updatedAt: occurredAt
       };
 
@@ -288,6 +292,9 @@ class PublicationSubmissionLifecycleService {
       if (!current.auditHeadHash) {
         throw new Error('Submission predates P17 audit chain and cannot be submitted safely.');
       }
+      if (!current.currentVersionId || !Number.isInteger(current.versionCount) || current.versionCount < 1) {
+        throw new Error('P18 submission version snapshot is required before submission.');
+      }
       if (current.submissionFingerprint !== submissionFingerprint) {
         throw new Error('Submission fingerprint does not match the READY package.');
       }
@@ -300,6 +307,7 @@ class PublicationSubmissionLifecycleService {
         journalName: current.journalName,
         manuscriptType: current.manuscriptType,
         submissionFingerprint,
+        submissionVersionId: current.currentVersionId,
         note,
         externalReference,
         submittedAt
@@ -354,6 +362,9 @@ class PublicationSubmissionLifecycleService {
   ): Promise<SubmissionLifecycleRecord> {
     const note = normalizeTransitionNote(input.note);
     const externalReference = normalizeExternalReference(input.externalReference);
+    if (input.to === 'READY' || input.to === 'SUBMITTED' || input.to === 'RESUBMITTED') {
+      throw new Error('This lifecycle status requires a dedicated integrity-gated method.');
+    }
     if (input.to === 'SUBMITTED' && !note && !externalReference) {
       throw new Error('A submission note or external reference is required for SUBMITTED status.');
     }
