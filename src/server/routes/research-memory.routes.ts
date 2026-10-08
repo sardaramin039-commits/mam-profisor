@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { researchMemoryService } from '../services/research-memory.service';
+import type { ResearchMemoryItem } from '../services/research-memory.service';
 import { z } from 'zod';
 import type { AuthRequest } from '../../middleware/auth';
 
