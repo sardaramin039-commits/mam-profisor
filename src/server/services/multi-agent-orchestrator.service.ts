@@ -161,14 +161,31 @@ export class MultiAgentOrchestratorService {
 
     const finalText = humanProse.refinedText || languageAnalysis.refinedTextKurdish;
 
-    const graphSources = effectiveSources.map(source => {
-      const verified = verifiedByKey.get(sourceKey(source));
-      return {
-        ...source,
-        ...(verified || {}),
-        evidenceProvenance: 'server-verified-fulltext' as const
-      };
-    });
+    const graphSources = effectiveSources
+      .map(source => {
+        const verified = verifiedByKey.get(sourceKey(source));
+        if (!verified) return null;
+
+        const evidenceText = String(
+          source.content ??
+          source.fullText ??
+          source.text ??
+          source.chunkText ??
+          ''
+        ).trim();
+        if (!evidenceText) return null;
+
+        return {
+          ...source,
+          ...verified,
+          identityStatus: 'verified' as const,
+          evidenceStatus: verified.evidenceStatus,
+          evidenceType: 'full-text' as const,
+          evidenceProvenance: 'server-verified-fulltext' as const,
+          content: evidenceText
+        };
+      })
+      .filter((source): source is NonNullable<typeof source> => Boolean(source));
 
     const graph = await claimEvidenceGraphService.buildGraph(
       request.topic,
