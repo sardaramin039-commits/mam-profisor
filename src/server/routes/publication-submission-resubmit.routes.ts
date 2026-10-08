@@ -4,7 +4,7 @@ import { buildPublicationSubmissionPackage } from '../services/publication-submi
 import { verifyPublicationSubmissionIntegrity } from '../services/publication-submission-integrity.service';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
 import { publicationSubmissionEditorialDecisionService } from '../services/publication-submission-editorial-decision.service';
-import { getSubmissionManifest, submissionPolicyFingerprint, verifySubmissionManifest } from '../services/publication-submission-manifest.service';
+import { listSubmissionManifests, submissionPolicyFingerprint, verifySubmissionManifest } from '../services/publication-submission-manifest.service';
 import { lifecycleId, resubmitSchema } from './publication-submission-lifecycle.schemas';
 import type { AuthRequest } from '../../middleware/auth';
 
@@ -69,8 +69,7 @@ export function createPublicationSubmissionResubmitRouter(): Router {
         res.status(409).json({ success: false, error: 'Current submission version is required before resubmission.' });
         return;
       }
-      const manifests = await import('../services/publication-submission-manifest.service')
-        .then(module => module.listSubmissionManifests(userId, workspaceId, 100));
+      const manifests = await listSubmissionManifests(userId, workspaceId, 100);
       const lockedManifest = manifests.find(manifest => manifest.versionId === current.currentVersionId);
       if (!lockedManifest) {
         res.status(409).json({
