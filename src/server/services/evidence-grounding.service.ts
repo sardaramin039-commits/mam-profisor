@@ -148,11 +148,11 @@ export class EvidenceGroundingService {
       ).eligible
     );
 
-    if (contextChunks.length === 0) {
+    if (citationEligibleChunks.length === 0) {
       return this.createFallbackGroundedResult(topic, verifiedEvidenceChunks);
     }
 
-    const preparedContextChunks = contextChunks.map((chunk, index) => ({
+    const preparedContextChunks = citationEligibleChunks.map((chunk, index) => ({
       ...chunk,
       evidenceId: `EVI-${index + 1}`
     }));
