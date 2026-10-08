@@ -99,7 +99,7 @@ describe('OpenAiChatGptService reference integrity', () => {
               },
               {
                 title: 'Second Study Candidate',
-                url: 'https://example.org/second'
+                url: 'https://openalex.org/W123456'
               }
             ]
           }
@@ -131,7 +131,9 @@ describe('OpenAiChatGptService reference integrity', () => {
     expect(result.discoveredSources[0]?.url).toBe('https://example.org/study');
     expect(result.discoveredSources[0]?.title).toBe('Verified Study Candidate');
     expect(result.discoveredSources[0]?.verificationStatus).toBe('retrieved-not-verified');
-    expect(result.discoveredSources[1]?.url).toBe('https://example.org/second');
+    expect(result.discoveredSources[1]?.url).toBe('https://openalex.org/W123456');
+    expect(result.discoveredSources[0]?.doi).toBe('10.1000/example');
+    expect(result.discoveredSources[1]?.openAlexId).toBe('W123456');
     expect(result.discoveredSources[0]?.authors).toEqual([]);
     expect(result.discoveredSources[0]?.year).toBe('n.d.');
   });
