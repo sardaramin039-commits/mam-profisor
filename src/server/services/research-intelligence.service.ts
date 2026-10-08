@@ -4,6 +4,7 @@ import { sourceVerificationService } from './source-verification.service';
 import { linkClaimsToEvidence } from './research-evidence-linking';
 import { enrichSourcesWithFullText } from './full-text-evidence.service';
 import { openAiChatGptService } from './openai-chatgpt.service';
+import { academicSearchService, AcademicPaper } from '../../services/academic-search.service';
 import {
   fetchSemanticScholar,
   fetchPubMed,
@@ -107,6 +108,28 @@ function dedupeSources(sources: any[], limit = 24): any[] {
   return out;
 }
 
+function mapIndexedAcademicPaper(record: AcademicPaper): any {
+  return {
+    id: record.id,
+    title: record.title,
+    authors: Array.isArray(record.authors) ? record.authors : [],
+    year: record.publicationYear > 0 ? String(record.publicationYear) : 'n.d.',
+    sourceType: record.source,
+    doi: record.doi,
+    isbn: record.isbn,
+    url: record.url || '',
+    snippet: record.abstract || '',
+    peerReviewed: false,
+    ...(record.abstract
+      ? {
+          evidenceText: record.abstract,
+          evidenceType: 'abstract' as const,
+          evidenceUrl: record.url || undefined
+        }
+      : {})
+  };
+}
+
 async function discoverFreeAcademicSources(topic: string, discipline: string) {
   const query = [topic.trim(), discipline.trim()].filter(Boolean).join(' ');
   const results = await Promise.allSettled([
@@ -116,10 +139,20 @@ async function discoverFreeAcademicSources(topic: string, discipline: string) {
     fetchOpenLibrary(query),
     fetchInternetArchive(query),
     fetchEuropeana(query),
-    fetchLibraryOfCongress(query)
+    fetchLibraryOfCongress(query),
+    academicSearchService.searchAll(query, 12)
   ]);
   const sources = dedupeSources(
-    results.flatMap(result => result.status === 'fulfilled' ? result.value : []),
+    results.flatMap(result => {
+      if (result.status !== 'fulfilled') return [];
+      return Array.isArray(result.value)
+        ? result.value.map(value =>
+            value && typeof value === 'object' && 'publicationYear' in value
+              ? mapIndexedAcademicPaper(value as AcademicPaper)
+              : value
+          )
+        : [];
+    }),
     24
   );
   const providers = [...new Set(sources.map(source => String(source?.sourceType || '').trim()).filter(Boolean))];
