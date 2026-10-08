@@ -69,6 +69,9 @@ export function createChatGptAcademicSourcesRouter(): Router {
     res.json({
       service: 'Academic Source Discovery',
       mode: openAiEnabled && isConfigured ? 'ChatGPT Web Search' : 'Free academic indexes',
+      model: openAiEnabled && isConfigured
+        ? (process.env['OPENAI_RESEARCH_MODEL'] || 'gpt-4o-mini')
+        : 'free',
       isConfigured,
       hasKey: isConfigured,
       capabilities: [
