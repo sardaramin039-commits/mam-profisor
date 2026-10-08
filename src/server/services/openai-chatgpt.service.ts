@@ -167,6 +167,7 @@ function mapFreeAcademicRecord(record: AcademicPaper): AcademicSourceItem {
     doi: record.doi,
     url: record.url,
     sourceType: record.isbn ? 'book' : 'report',
+    credibilityScore: 0,
     citationAPA: '',
     citationHarvard: '',
     citationMLA: '',
