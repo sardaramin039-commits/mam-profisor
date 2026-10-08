@@ -180,7 +180,7 @@ class PublicationSubmissionLifecycleService {
         from: current.currentStatus,
         to: input.to,
         note,
-        externalReference,
+        ...(externalReference ? { externalReference } : {}),
         occurredAt
       };
       const updated: SubmissionLifecycleRecord = {
