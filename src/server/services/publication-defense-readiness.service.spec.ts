@@ -13,8 +13,6 @@ const base = {
   bibliographyCount: 2,
   structuralStatus: 'PASS' as const,
   exportBlocked: false,
-  overallQAScore: 90,
-  criticalViolationsCount: 0,
   topic: 'بابەتی توێژینەوە'
 };
 
@@ -49,5 +47,13 @@ describe('P11 publication and defense readiness', () => {
       conclusion: ''
     });
     expect(result.revisions.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('P11 readiness trust boundary', () => {
+  it('does not depend on client-supplied QA scores', () => {
+    const result = evaluatePublicationDefenseReadiness(base);
+    expect(result.publicationStatus).toBe('READY');
+    expect(result.defenseStatus).toBe('READY');
   });
 });
