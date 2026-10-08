@@ -125,6 +125,24 @@ export function createApiDocsRouter(): Router {
       <p class="text-slate-300 text-xs">P15 ـی کۆن بۆ P18؛ legacy version snapshot دروست دەکات بەبێ بانگەشەی verification ـی مێژووی کۆن.</p>
     </div>
 
+    <!-- API Route Card 12 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-emerald-700 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">POST</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-manifest/:workspaceId/capture</code>
+      </div>
+      <p class="text-slate-300 text-xs">P19 reproducible submission manifest؛ policy، package fingerprint، version و audit head لە snapshot ـێکی immutable کۆدەکاتەوە.</p>
+    </div>
+
+    <!-- API Route Card 13 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-lime-700 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">GET</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-manifest/:workspaceId/:manifestId</code>
+      </div>
+      <p class="text-slate-300 text-xs">verify ـکردنی immutable manifest و دۆزینەوەی tampering لە policy یان hash.</p>
+    </div>
+
     <div class="text-center text-slate-500 text-xs pt-6 border-t border-slate-800">
       Harvard Academic AI Platform &copy; 2026. All security & proxy headers configured.
     </div>
