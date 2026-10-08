@@ -4,6 +4,8 @@
 
 ## Automated gates
 
+CI validation is required for every main release candidate.
+
 The canonical release commands use npm and `package-lock.json`; no Bun workflow is required.
 
 `npm ci`
