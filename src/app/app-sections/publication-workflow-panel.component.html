@@ -1,0 +1,115 @@
+<section class="mam-secondary-tools mt-4 border border-stone-200 bg-white">
+  <div class="flex items-start justify-between gap-3 flex-wrap">
+    <div class="flex items-start gap-2">
+      <div class="p-2 rounded-xl bg-stone-900 text-amber-400"><mat-icon>rate_review</mat-icon></div>
+      <div>
+        <h3 class="text-sm font-bold text-stone-900">ناوەندی publication و پێداچوونەوە</h3>
+        <p class="text-[11px] text-stone-500 mt-0.5">P20: بڕیاری editorial، revision plan و gate ـی دووبارەناردن.</p>
+      </div>
+    </div>
+    <button type="button" class="px-3 py-1.5 rounded-lg bg-stone-900 text-white text-[11px] font-bold disabled:opacity-50" (click)="loadSubmissions()" [disabled]="loading() || !workspaceId()">
+      {{ loading() ? 'خەریکی بارکردن...' : 'نوێکردنەوە' }}
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+    <label class="block">
+      <span class="block text-[10px] font-bold text-stone-600 mb-1">Workspace ID</span>
+      <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="workspaceId()" (ngModelChange)="setWorkspace($event)" list="mam-workspaces" placeholder="ناسنامەی workspace" autocomplete="off">
+      <datalist id="mam-workspaces">
+        @for (item of host.historyList(); track item.id) {
+          <option [value]="item.id">{{ item.title }}</option>
+        }
+      </datalist>
+    </label>
+
+    <label class="block">
+      <span class="block text-[10px] font-bold text-stone-600 mb-1">Submission</span>
+      <select class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="submissionId()" (ngModelChange)="selectSubmission($event)">
+        <option value="">هەڵبژێرە...</option>
+        @for (item of submissions(); track item.id) {
+          <option [value]="item.id">{{ item.id }}، {{ statusLabel(item.currentStatus) }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] text-rose-800">{{ errorMessage() }}</div>
+  }
+
+  @if (submissionId() && submissions().length > 0) {
+    @let current = submissions().find(item => item.id === submissionId());
+    @if (current) {
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+        <div class="rounded-lg border border-stone-200 bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">دۆخ</span><strong class="text-[11px]">{{ statusLabel(current.currentStatus) }}</strong></div>
+        <div class="rounded-lg border border-stone-200 bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">Version</span><strong class="text-[11px] break-all">{{ current.currentVersionId || '—' }}</strong></div>
+        <div class="rounded-lg border border-stone-200 bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">ژمارەی Version</span><strong class="text-[11px]">{{ current.versionCount }}</strong></div>
+        <div class="rounded-lg border border-stone-200 bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">گۆڤار</span><strong class="text-[11px] truncate">{{ current.journalName }}</strong></div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-3">
+        <div class="rounded-xl border border-stone-200 p-3">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <h4 class="text-xs font-bold">مێژووی بڕیار</h4><span class="text-[9px] text-stone-500">{{ decisions().length }} بڕیار</span>
+          </div>
+          @if (decisions().length === 0) {
+            <p class="text-[10px] text-stone-500">هێشتا بڕیارێکی editorial تۆمار نەکراوە.</p>
+          } @else {
+            <div class="space-y-2 max-h-60 overflow-y-auto">
+              @for (decision of decisions(); track decision.id) {
+                <div class="rounded-lg border border-stone-100 bg-stone-50 p-2.5">
+                  <div class="flex items-center justify-between gap-2 flex-wrap"><strong class="text-[11px]">{{ decision.decisionType }}</strong><span class="text-[9px] text-stone-500">{{ decision.decidedAt | date:'yyyy-MM-dd HH:mm' }}</span></div>
+                  <p class="text-[10px] text-stone-700 mt-1">{{ decision.note }}</p>
+                  <small class="text-[9px] text-stone-500 break-all">{{ decision.submissionVersionId }}</small>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="rounded-xl border border-stone-200 p-3">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <h4 class="text-xs font-bold">Revision plan</h4>
+            @if (revisionGate()) {
+              <span class="text-[9px] font-bold px-2 py-1 rounded-full" [class.bg-emerald-100]="revisionGate()!.ready" [class.text-emerald-800]="revisionGate()!.ready" [class.bg-amber-100]="!revisionGate()!.ready" [class.text-amber-800]="!revisionGate()!.ready">
+                {{ revisionGate()!.ready ? 'ئامادەی resubmit' : 'هێشتا تەواو نییە' }}
+              </span>
+            }
+          </div>
+          @if (!revisionPlan()) {
+            <p class="text-[10px] text-stone-500">هیچ revision plan ـێک نییە.</p>
+          } @else {
+            <div class="text-[10px] text-stone-600 mb-2">جۆر: {{ revisionPlan()!.severity }}، دۆخ: {{ revisionPlan()!.status }}</div>
+            <div class="space-y-2 max-h-60 overflow-y-auto">
+              @for (task of revisionPlan()!.tasks; track task.id) {
+                <div class="rounded-lg border border-stone-100 bg-white p-2.5">
+                  <div class="flex items-start justify-between gap-2">
+                    <div><strong class="text-[10.5px]">{{ task.order }}. {{ task.title }}</strong><span class="block text-[9px] text-stone-500 mt-0.5">{{ task.scope }}، {{ task.required ? 'پێویستە' : 'ئارەزوومەندانە' }}</span></div>
+                    <span class="text-[8px] font-bold">{{ task.status }}</span>
+                  </div>
+                  <p class="text-[9.5px] text-stone-700 mt-1 leading-relaxed">{{ task.details }}</p>
+                  <div class="flex flex-wrap gap-1.5 mt-2">
+                    @for (next of ['IN_PROGRESS','DONE','WAIVED']; track next) {
+                      <button type="button" class="px-2 py-1 rounded-md border border-stone-200 text-[9px] font-bold disabled:opacity-50" [disabled]="taskLoading() === task.id || task.status === next" (click)="updateTask(task, next)">
+                        {{ next === 'IN_PROGRESS' ? 'لە کاردایە' : next === 'DONE' ? 'تەواو' : 'waive' }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+      @if (revisionGate()?.reason) {
+        <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] text-amber-900">{{ revisionGate()!.reason }}</div>
+      }
+    }
+  } @else {
+    <div class="mt-4 rounded-xl border border-dashed border-stone-300 p-5 text-center">
+      <mat-icon class="text-stone-400">inbox</mat-icon>
+      <p class="text-[10px] text-stone-500 mt-1">Workspace ـێک هەڵبژێرە بۆ پیشاندانی publication workflow.</p>
+    </div>
+  }
+</section>
