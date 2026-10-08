@@ -32,7 +32,10 @@ describe('OpenAiChatGptService reference integrity', () => {
                 authors: ['Researcher'],
                 year: 2025,
                 journalOrPublisher: 'Example Journal',
-                sourceType: 'journal'
+                sourceType: 'journal',
+                citationAPA: 'Fabricated APA citation',
+                citationHarvard: 'Fabricated Harvard citation',
+                citationMLA: 'Fabricated MLA citation'
               },
               {
                 title: 'Fabricated Study',
