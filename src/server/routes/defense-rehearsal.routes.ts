@@ -20,6 +20,15 @@ const answer = z.object({
   answer: z.string().max(20_000).default('')
 }).strict();
 
+const citation = z.object({
+  citationId: id,
+  sourceId: id,
+  inText: z.string().trim().max(500),
+  bibliography: z.string().trim().max(5000),
+  verified: z.boolean(),
+  evidenceId: id.optional()
+}).strict();
+
 const schema = z.object({
   topic: z.string().trim().min(2).max(500),
   title: z.string().trim().min(1).max(1000),
@@ -30,6 +39,7 @@ const schema = z.object({
   contribution: z.string().max(50_000).optional(),
   evidenceSummary: z.string().max(50_000).optional(),
   chapters: z.array(chapter).min(1).max(100),
+  citations: z.array(citation).max(500).default([]),
   referencedCitationCount: z.number().int().min(0).max(500),
   verifiedCitationCount: z.number().int().min(0).max(500),
   bibliographyCount: z.number().int().min(0).max(500),
