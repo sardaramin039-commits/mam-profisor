@@ -1,5 +1,6 @@
 import { adminDb } from '../../lib/firebase-admin';
 import { sha256 } from './text-sha256.service';
+import { buildSubmissionReceipt } from './publication-submission-receipt.service';
 import {
   canTransition,
   normalizeExternalReference,
@@ -28,6 +29,7 @@ export interface SubmissionLifecycleRecord {
   currentStatus: SubmissionLifecycleStatus;
   version: number;
   events: SubmissionLifecycleEvent[];
+  submissionReceiptId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -140,6 +142,77 @@ class PublicationSubmissionLifecycleService {
         updatedAt: occurredAt
       };
 
+      transaction.set(reference, updated);
+      return updated;
+    });
+  }
+
+  async submit(
+    userId: string,
+    submissionId: string,
+    submissionFingerprint: string,
+    input: { note?: string; externalReference?: string }
+  ): Promise<SubmissionLifecycleRecord> {
+    if (!validFingerprint(submissionFingerprint)) {
+      throw new Error('Submission fingerprint is invalid.');
+    }
+    const note = normalizeTransitionNote(input.note);
+    const externalReference = normalizeExternalReference(input.externalReference);
+    if (!note && !externalReference) {
+      throw new Error('A submission note or external reference is required.');
+    }
+    const reference = this.ref(userId).doc(submissionId);
+    const receiptCollection = reference.collection('receipts');
+
+    return adminDb.runTransaction(async transaction => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists) throw new Error('Submission lifecycle record was not found.');
+
+      const current = snapshot.data() as SubmissionLifecycleRecord;
+      if (current.currentStatus !== 'READY') {
+        throw new Error('Only a READY submission can be submitted.');
+      }
+      if (current.submissionFingerprint !== submissionFingerprint) {
+        throw new Error('Submission fingerprint does not match the READY package.');
+      }
+
+      const submittedAt = new Date().toISOString();
+      const receipt = buildSubmissionReceipt({
+        submissionId: current.id,
+        userId,
+        workspaceId: current.workspaceId,
+        journalName: current.journalName,
+        manuscriptType: current.manuscriptType,
+        submissionFingerprint,
+        note,
+        externalReference,
+        submittedAt
+      });
+      const event: SubmissionLifecycleEvent = {
+        id: 'SEV-' + sha256(JSON.stringify({
+          submissionId,
+          version: current.version + 1,
+          from: current.currentStatus,
+          to: 'SUBMITTED',
+          receiptId: receipt.id,
+          submittedAt
+        })).slice(0, 32),
+        from: 'READY',
+        to: 'SUBMITTED',
+        note: note || 'Submission recorded.',
+        ...(externalReference ? { externalReference } : {}),
+        occurredAt: submittedAt
+      };
+      const updated: SubmissionLifecycleRecord = {
+        ...current,
+        currentStatus: 'SUBMITTED',
+        submissionReceiptId: receipt.id,
+        version: current.version + 1,
+        events: [...current.events, event].slice(-100),
+        updatedAt: submittedAt
+      };
+
+      transaction.create(receiptCollection.doc(receipt.id), receipt);
       transaction.set(reference, updated);
       return updated;
     });
