@@ -5,11 +5,9 @@ import type { SubmissionReceipt } from './publication-submission-receipt.service
 import { canTransition } from './publication-submission-lifecycle.policy';
 import { publicationSubmissionLifecycleService } from './publication-submission-lifecycle.service';
 import type { SubmissionLifecycleRecord, SubmissionLifecycleStatus } from './publication-submission-lifecycle.service';
-
 export type EditorialDecisionType = 'MINOR_REVISION' | 'MAJOR_REVISION' | 'ACCEPT' | 'REJECT' | 'WITHDRAW';
 export type RevisionTaskStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'WAIVED';
 export type RevisionScope = 'MANUSCRIPT' | 'SECTION' | 'CITATION' | 'FORMATTING' | 'OTHER';
-
 export interface RevisionTask {
   id: string;
   order: number;
@@ -22,7 +20,6 @@ export interface RevisionTask {
   completionNote?: string;
   updatedAt: string;
 }
-
 export interface RevisionPlan {
   id: string;
   submissionId: string;
@@ -35,7 +32,6 @@ export interface RevisionPlan {
   updatedAt: string;
   planHash: string;
 }
-
 export interface EditorialDecision {
   id: string;
   submissionId: string;
@@ -52,7 +48,6 @@ export interface EditorialDecision {
   decidedAt: string;
   immutableHash: string;
 }
-
 export interface RecordEditorialDecisionInput {
   decisionType: EditorialDecisionType;
   note?: string;
@@ -65,48 +60,39 @@ export interface RecordEditorialDecisionInput {
     dueAt?: string;
   }>;
 }
-
 export interface RevisionGateReport {
   ready: boolean;
   plan: RevisionPlan | null;
   pendingRequiredTasks: RevisionTask[];
   reason?: string;
 }
-
 function clean(value: unknown): string {
   return String(value ?? '').trim();
 }
-
 function validId(value: string): boolean {
   return /^[A-Za-z0-9_-]{1,128}$/u.test(value);
 }
-
 function validHash(value: string): boolean {
   return /^[a-f0-9]{64}$/u.test(value);
 }
-
 function isRevision(type: EditorialDecisionType): boolean {
   return type === 'MINOR_REVISION' || type === 'MAJOR_REVISION';
 }
-
 function resultingStatus(type: EditorialDecisionType): SubmissionLifecycleStatus {
   if (type === 'MINOR_REVISION' || type === 'MAJOR_REVISION') return 'REVISION_REQUESTED';
   if (type === 'ACCEPT') return 'ACCEPTED';
   if (type === 'REJECT') return 'REJECTED';
   return 'WITHDRAWN';
 }
-
 function allowedDecisionStatus(status: SubmissionLifecycleStatus): boolean {
   return status === 'SUBMITTED' || status === 'UNDER_REVIEW' ||
     status === 'RESUBMITTED' || status === 'REVISION_REQUESTED';
 }
-
 function validIsoDate(value: string | undefined): boolean {
   if (!value) return true;
   const parsed = Date.parse(value);
   return Number.isFinite(parsed);
 }
-
 function taskPayload(task: RevisionTask): Record<string, unknown> {
   return {
     id: task.id,
@@ -121,7 +107,6 @@ function taskPayload(task: RevisionTask): Record<string, unknown> {
     updatedAt: task.updatedAt
   };
 }
-
 function planHash(plan: Omit<RevisionPlan, 'planHash'>): string {
   return sha256(JSON.stringify({
     id: plan.id,
@@ -135,7 +120,6 @@ function planHash(plan: Omit<RevisionPlan, 'planHash'>): string {
     updatedAt: plan.updatedAt
   }));
 }
-
 export function buildEditorialDecision(input: Omit<EditorialDecision, 'id' | 'immutableHash'>): EditorialDecision {
   if (!validId(clean(input.submissionId)) || !clean(input.userId) || !clean(input.workspaceId)) {
     throw new Error('Editorial decision identity is incomplete.');
@@ -184,7 +168,6 @@ export function buildEditorialDecision(input: Omit<EditorialDecision, 'id' | 'im
     immutableHash
   };
 }
-
 export function buildRevisionPlan(
   decisionId: string,
   submissionId: string,
@@ -230,7 +213,6 @@ export function buildRevisionPlan(
   };
   return { ...base, planHash: planHash(base) };
 }
-
 export function verifyRevisionPlan(plan: RevisionPlan): string[] {
   const errors: string[] = [];
   const base: Omit<RevisionPlan, 'planHash'> = {
@@ -251,31 +233,26 @@ export function verifyRevisionPlan(plan: RevisionPlan): string[] {
   if (computePlanStatus(plan.tasks) !== plan.status) errors.push('Revision plan status does not match its tasks.');
   return errors;
 }
-
 function computePlanStatus(tasks: RevisionTask[]): RevisionPlan['status'] {
   if (tasks.length > 0 && tasks.every(task => !task.required || task.status === 'DONE' || task.status === 'WAIVED')) {
     return 'COMPLETED';
   }
   return tasks.some(task => task.status !== 'OPEN') ? 'IN_PROGRESS' : 'OPEN';
 }
-
 function planReference(userId: string, submissionId: string) {
   return adminDb.collection('publication_submission_lifecycle').doc(userId)
     .collection('items').doc(submissionId).collection('revision-plans');
 }
-
 function decisionReference(userId: string, submissionId: string) {
   return adminDb.collection('publication_submission_lifecycle').doc(userId)
     .collection('items').doc(submissionId).collection('editorial-decisions');
 }
-
 async function latestRevisionPlan(userId: string, submissionId: string): Promise<RevisionPlan | null> {
   const snapshot = await planReference(userId, submissionId).limit(100).get();
   const plans = snapshot.docs.map(doc => doc.data() as RevisionPlan)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return plans[0] ?? null;
 }
-
 function assertDecisionPreconditions(
   current: SubmissionLifecycleRecord,
   input: RecordEditorialDecisionInput
@@ -295,7 +272,6 @@ function assertDecisionPreconditions(
     throw new Error('A revision decision must include at least one structured revision task.');
   }
 }
-
 async function loadDecisionReceipt(
   transaction: FirebaseFirestore.Transaction,
   userId: string,
@@ -308,7 +284,6 @@ async function loadDecisionReceipt(
   const snapshot = await transaction.get(reference);
   return snapshot.exists ? snapshot.data() as SubmissionReceipt : null;
 }
-
 class PublicationSubmissionEditorialDecisionService {
 function buildDecisionArtifacts(
   current: SubmissionLifecycleRecord,
@@ -325,77 +300,50 @@ function buildDecisionArtifacts(
   submission: SubmissionLifecycleRecord;
 } {
   const targetStatus = resultingStatus(input.decisionType);
+  const versionId = current.currentVersionId!;
+  const lifecycleVersion = current.version + 1;
   const decisionKey = JSON.stringify({
-    submissionId: current.id,
-    userId,
-    workspaceId,
-    lifecycleVersion: current.version + 1,
-    decisionType: input.decisionType,
-    resultingStatus: targetStatus,
-    submissionVersionId: current.currentVersionId
+    submissionId: current.id, userId, workspaceId, lifecycleVersion,
+    decisionType: input.decisionType, resultingStatus: targetStatus, submissionVersionId: versionId
   });
   const decisionId = 'DEC-' + sha256(decisionKey).slice(0, 32);
   const revisionPlan = isRevision(input.decisionType)
     ? buildRevisionPlan(
-      decisionId,
-      current.id,
-      current.currentVersionId!,
+      decisionId, current.id, versionId,
       input.decisionType === 'MAJOR_REVISION' ? 'MAJOR' : 'MINOR',
-      input.tasks,
-      now
+      input.tasks, now
     )
     : undefined;
   const note = clean(input.note) || 'Editorial decision recorded.';
   const decision = buildEditorialDecision({
-    submissionId: current.id,
-    userId,
-    workspaceId,
-    decisionType: input.decisionType,
-    resultingStatus: targetStatus,
-    submissionVersionId: current.currentVersionId!,
+    submissionId: current.id, userId, workspaceId,
+    decisionType: input.decisionType, resultingStatus: targetStatus,
+    submissionVersionId: versionId,
     ...(receipt ? { receiptId: receipt.id } : {}),
     ...(revisionPlan ? { revisionPlanId: revisionPlan.id } : {}),
     note,
     ...(input.externalReference ? { externalReference: clean(input.externalReference) } : {}),
-    lifecycleVersion: current.version + 1,
-    decidedAt: now
+    lifecycleVersion, decidedAt: now
   });
   const auditEvent = buildSubmissionAuditEvent({
-    submissionId: current.id,
-    version: current.version + 1,
-    from: current.currentStatus,
-    to: targetStatus,
+    submissionId: current.id, version: lifecycleVersion,
+    from: current.currentStatus, to: targetStatus,
     note: `Editorial decision: ${input.decisionType}. ${note}`,
-    externalReference: input.externalReference,
-    receiptId: receipt?.id,
-    occurredAt: now,
-    previousHash: current.auditHeadHash
+    externalReference: input.externalReference, receiptId: receipt?.id,
+    occurredAt: now, previousHash: current.auditHeadHash
   });
   const event: SubmissionLifecycleRecord['events'][number] = {
-    id: 'SEV-' + sha256(JSON.stringify({
-      submissionId: current.id,
-      lifecycleVersion: current.version + 1,
-      decisionId: decision.id,
-      occurredAt: now
-    })).slice(0, 32),
-    from: current.currentStatus,
-    to: targetStatus,
-    note: decision.note,
-    ...(input.externalReference ? { externalReference: clean(input.externalReference) } : {}),
-    occurredAt: now
+    id: 'SEV-' + sha256(JSON.stringify({ submissionId: current.id, lifecycleVersion, decisionId: decision.id, occurredAt: now })).slice(0, 32),
+    from: current.currentStatus, to: targetStatus, note: decision.note,
+    ...(input.externalReference ? { externalReference: clean(input.externalReference) } : {}), occurredAt: now
   };
   const events = Array.isArray(current.events) ? current.events : [];
   const submission: SubmissionLifecycleRecord = {
-    ...current,
-    currentStatus: targetStatus,
-    version: current.version + 1,
-    events: [...events, event].slice(-100),
-    auditHeadHash: auditEvent.eventHash,
-    updatedAt: now
+    ...current, currentStatus: targetStatus, version: lifecycleVersion,
+    events: [...events, event].slice(-100), auditHeadHash: auditEvent.eventHash, updatedAt: now
   };
   return { decision, ...(revisionPlan ? { revisionPlan } : {}), auditEvent, event, submission };
 }
-
   async record(
     userId: string,
     workspaceId: string,
@@ -405,14 +353,12 @@ function buildDecisionArtifacts(
     const reference = adminDb.collection('publication_submission_lifecycle').doc(userId)
       .collection('items').doc(submissionId);
     const now = new Date().toISOString();
-
     return adminDb.runTransaction(async transaction => {
       const snapshot = await transaction.get(reference);
       if (!snapshot.exists) throw new Error('Submission lifecycle record was not found.');
       const current = snapshot.data() as SubmissionLifecycleRecord;
       if (current.workspaceId !== workspaceId) throw new Error('Submission does not belong to this workspace.');
       assertDecisionPreconditions(current, input);
-
       const requiresReceipt = input.decisionType === 'ACCEPT' || input.decisionType === 'REJECT';
       const receipt = requiresReceipt
         ? await loadDecisionReceipt(transaction, userId, submissionId, current)
@@ -423,7 +369,6 @@ function buildDecisionArtifacts(
       if (receipt && current.currentStatus === 'SUBMITTED' && receipt.submissionVersionId !== current.currentVersionId) {
         throw new Error('The submission receipt is not bound to the current submitted version.');
       }
-
       const artifacts = buildDecisionArtifacts(current, userId, workspaceId, input, receipt, now);
       const decisions = decisionReference(userId, submissionId);
       const plans = planReference(userId, submissionId);
@@ -438,7 +383,6 @@ function buildDecisionArtifacts(
       };
     });
   }
-
   async listDecisions(userId: string, workspaceId: string, submissionId: string): Promise<EditorialDecision[]> {
     const current = await publicationSubmissionLifecycleService.get(userId, submissionId);
     if (!current || current.workspaceId !== workspaceId) throw new Error('Submission was not found.');
@@ -446,13 +390,11 @@ function buildDecisionArtifacts(
     return snapshot.docs.map(doc => doc.data() as EditorialDecision)
       .sort((a, b) => b.decidedAt.localeCompare(a.decidedAt));
   }
-
   async getRevisionPlan(userId: string, workspaceId: string, submissionId: string): Promise<RevisionPlan | null> {
     const current = await publicationSubmissionLifecycleService.get(userId, submissionId);
     if (!current || current.workspaceId !== workspaceId) throw new Error('Submission was not found.');
     return latestRevisionPlan(userId, submissionId);
   }
-
   async updateRevisionTask(
     userId: string,
     workspaceId: string,
@@ -468,7 +410,6 @@ function buildDecisionArtifacts(
     if (plan.tasks.every(task => task.status === 'DONE' || task.status === 'WAIVED') && status === 'OPEN') {
       throw new Error('A completed revision plan cannot reopen a task.');
     }
-
     return adminDb.runTransaction(async transaction => {
       const lifecycleSnapshot = await transaction.get(lifecycleReference);
       if (!lifecycleSnapshot.exists) throw new Error('Submission lifecycle record was not found.');
@@ -508,7 +449,6 @@ function buildDecisionArtifacts(
       return updated;
     });
   }
-
   async assertResubmissionGate(
     userId: string,
     workspaceId: string,
@@ -537,6 +477,5 @@ function buildDecisionArtifacts(
       : { ready: true, plan, pendingRequiredTasks: [] };
   }
 }
-
 export const publicationSubmissionEditorialDecisionService =
   new PublicationSubmissionEditorialDecisionService();
