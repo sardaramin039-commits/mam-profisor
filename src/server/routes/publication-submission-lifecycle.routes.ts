@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { assembleManuscript } from '../services/manuscript-assembly.service';
 import { buildPublicationSubmissionPackage } from '../services/publication-submission.service';
 import { verifyPublicationSubmissionIntegrity } from '../services/publication-submission-integrity.service';
+import { researchControlPlaneService } from '../services/research-control-plane.service';
+import { resolveServerVerifiedCitations } from '../services/publication-research-gate.service';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
 import { createPublicationSubmissionAuditRouter } from './publication-submission-audit.routes';
 import { createPublicationSubmissionResubmitRouter } from './publication-submission-resubmit.routes';
@@ -68,6 +70,22 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
     }
 
     try {
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      if (control.gates.exportBlocked) {
+        res.status(409).json({
+          success: false,
+          exportBlocked: true,
+          controlPlane: control,
+          error: 'P9 research validation ـەکە هێشتا ڕێگەی submission نادات.'
+        });
+        return;
+      }
+
+      const citations = await resolveServerVerifiedCitations(
+        userId,
+        workspaceId,
+        parsed.data.citations
+      );
       const manuscript = assembleManuscript({
         projectId: workspaceId,
         title: parsed.data.title,
@@ -76,7 +94,7 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
         methodology: parsed.data.methodology,
         chapters: parsed.data.chapters,
         conclusion: parsed.data.conclusion,
-        citations: parsed.data.citations
+        citations
       });
       const submission = buildPublicationSubmissionPackage({
         manuscript,
@@ -270,6 +288,22 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
         return;
       }
 
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      if (control.gates.exportBlocked) {
+        res.status(409).json({
+          success: false,
+          exportBlocked: true,
+          controlPlane: control,
+          error: 'P9 research validation ـەکە هێشتا ڕێگەی READY نادات.'
+        });
+        return;
+      }
+
+      const citations = await resolveServerVerifiedCitations(
+        userId,
+        workspaceId,
+        parsed.data.citations
+      );
       const manuscript = assembleManuscript({
         projectId: workspaceId,
         title: parsed.data.title,
@@ -278,7 +312,7 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
         methodology: parsed.data.methodology,
         chapters: parsed.data.chapters,
         conclusion: parsed.data.conclusion,
-        citations: parsed.data.citations
+        citations
       });
       const submission = buildPublicationSubmissionPackage({
         manuscript,
