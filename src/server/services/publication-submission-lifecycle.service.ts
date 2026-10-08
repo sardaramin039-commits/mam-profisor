@@ -129,6 +129,41 @@ class PublicationSubmissionLifecycleService {
     return record;
   }
 
+  async initializeLegacyAudit(
+    userId: string,
+    submissionId: string
+  ): Promise<SubmissionLifecycleRecord> {
+    const reference = this.ref(userId).doc(submissionId);
+    return adminDb.runTransaction(async transaction => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists) throw new Error('Submission lifecycle record was not found.');
+
+      const current = snapshot.data() as SubmissionLifecycleRecord;
+      if (current.auditHeadHash) return current;
+
+      const occurredAt = new Date().toISOString();
+      const auditEvent = buildSubmissionAuditEvent({
+        submissionId: current.id,
+        version: current.version,
+        from: null,
+        to: current.currentStatus,
+        note: 'P17 legacy audit anchor; prior lifecycle history is not verified.',
+        occurredAt,
+        previousHash: '',
+        legacyAnchor: true
+      });
+      const updated: SubmissionLifecycleRecord = {
+        ...current,
+        auditHeadHash: auditEvent.eventHash,
+        updatedAt: occurredAt
+      };
+
+      transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
+      transaction.set(reference, updated);
+      return updated;
+    });
+  }
+
   async markReady(
     userId: string,
     submissionId: string,
