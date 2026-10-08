@@ -89,7 +89,7 @@ app.use('/api', createAdvancedAcademicToolsRouter(getGeminiClient));
 app.use('/api/platform', createAcademicPlatformRouter(getGeminiClient));
 app.use('/api/writing', requireAuth, createEvidenceIntelligenceRouter(getGeminiClient));
 app.use('/api/rag', createRagRouter(getGeminiClient));
-app.use('/api/multi-agent', createMultiAgentRouter(getGeminiClient));
+app.use('/api/multi-agent', requireAuth, createMultiAgentRouter(getGeminiClient));
 
 // Protected State & Workspace Persistence Endpoints (Strict Authentication Guard)
 app.use('/api/workspace', requireAuth, createResearchProjectStateRouter(getGeminiClient));
