@@ -29,6 +29,7 @@ import { createManuscriptAssemblyRouter } from './server/routes/manuscript-assem
 import { createPublicationDefenseReadinessRouter } from './server/routes/publication-defense-readiness.routes';
 import { createPublicationSubmissionRouter } from './server/routes/publication-submission.routes';
 import { createPublicationSubmissionIntegrityRouter } from './server/routes/publication-submission-integrity.routes';
+import { createPublicationSubmissionLifecycleRouter } from './server/routes/publication-submission-lifecycle.routes';
 import { createDefenseRehearsalRouter } from './server/routes/defense-rehearsal.routes';
 import { createPlagiarismRouter } from './server/routes/plagiarism.routes';
 import { getGeminiClient } from './server/services/gemini.service';
@@ -96,6 +97,7 @@ app.use('/api/manuscript', requireAuth, createManuscriptAssemblyRouter());
 app.use('/api/publication-defense', requireAuth, createPublicationDefenseReadinessRouter());
 app.use('/api/publication-submission', requireAuth, createPublicationSubmissionRouter());
 app.use('/api/publication-submission-integrity', requireAuth, createPublicationSubmissionIntegrityRouter());
+app.use('/api/publication-submission-lifecycle', requireAuth, createPublicationSubmissionLifecycleRouter());
 app.use('/api/defense-rehearsal', requireAuth, createDefenseRehearsalRouter());
 
 // Modular Services & Routers (Agents, Scholarly Search, Digital Library Catalog)
