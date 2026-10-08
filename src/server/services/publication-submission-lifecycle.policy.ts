@@ -24,7 +24,7 @@ export interface SubmissionTransitionResult {
 }
 
 const transitions: Record<SubmissionLifecycleStatus, SubmissionLifecycleStatus[]> = {
-  DRAFT: ['READY', 'WITHDRAWN'],
+  DRAFT: ['WITHDRAWN'],
   READY: ['SUBMITTED', 'DRAFT', 'WITHDRAWN'],
   SUBMITTED: ['UNDER_REVIEW', 'REVISION_REQUESTED', 'ACCEPTED', 'REJECTED', 'WITHDRAWN'],
   UNDER_REVIEW: ['REVISION_REQUESTED', 'ACCEPTED', 'REJECTED', 'WITHDRAWN'],
