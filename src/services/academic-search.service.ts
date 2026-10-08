@@ -169,7 +169,9 @@ export class AcademicSearchService {
     const seenIdentifiers = new Set<string>();
     const seenFallbackKeys = new Set<string>();
     const deduplicated = combined.filter(item => {
-      const identifier = String(item.doi || item.isbn || '').toLocaleLowerCase().trim();
+      const doi = item.doi ? this.normalizeDoi(item.doi) : '';
+      const isbn = item.isbn ? this.normalizeIsbn(item.isbn) : '';
+      const identifier = doi ? `doi:${doi}` : isbn ? `isbn:${isbn}` : '';
       const authors = item.authors.map(author => author.toLocaleLowerCase().trim()).filter(Boolean).join('|');
       const fallbackKey = `${item.title.toLocaleLowerCase().trim()}::${item.publicationYear || 'n.d.'}::${authors}`;
 
@@ -201,6 +203,18 @@ export class AcademicSearchService {
       .join(' ');
   }
 
+
+  private normalizeDoi(value: string): string {
+    return String(value)
+      .trim()
+      .toLocaleLowerCase()
+      .replace(/^https?:\\/\\/(?:dx\\.)?doi\\.org\\//, '')
+      .replace(/^doi:\\s*/, '');
+  }
+
+  private normalizeIsbn(value: string): string {
+    return String(value).toLocaleLowerCase().replace(/[-\\s]/g, '');
+  }
 
   private stableId(value: string): string {
     let hash = 2166136261;
