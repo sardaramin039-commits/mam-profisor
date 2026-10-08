@@ -62,16 +62,22 @@ export function verifySubmissionReceipt(
     workspaceId?: string;
     submissionFingerprint?: string;
     submissionVersionId?: string;
+    userId?: string;
   }
 ): SubmissionReceiptVerification {
   const errors: string[] = [];
   const expectedHash = sha256(receiptCanonical(receipt));
+  const expectedId = 'REC-' + expectedHash.slice(0, 32);
   if (expectedHash !== receipt.immutableHash) {
     errors.push('Submission receipt immutable hash mismatch.');
+  }
+  if (expectedId !== clean(receipt.id)) {
+    errors.push('Submission receipt id does not match its immutable hash.');
   }
 
   const checks: Array<[string, string | undefined]> = [
     ['submissionId', expected?.submissionId],
+    ['userId', expected?.userId],
     ['workspaceId', expected?.workspaceId],
     ['submissionFingerprint', expected?.submissionFingerprint],
     ['submissionVersionId', expected?.submissionVersionId]
