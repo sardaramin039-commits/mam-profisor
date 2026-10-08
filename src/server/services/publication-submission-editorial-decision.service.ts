@@ -143,6 +143,9 @@ export function buildEditorialDecision(input: Omit<EditorialDecision, 'id' | 'im
   if (!validId(clean(input.submissionVersionId))) {
     throw new Error('Editorial decision version binding is invalid.');
   }
+  if (input.resultingStatus !== resultingStatus(input.decisionType)) {
+    throw new Error('Editorial decision result does not match the decision type.');
+  }
   if (!clean(input.note) && !clean(input.externalReference)) {
     throw new Error('Editorial decision requires a note or external reference.');
   }
@@ -182,7 +185,7 @@ export function buildEditorialDecision(input: Omit<EditorialDecision, 'id' | 'im
   };
 }
 
-function buildRevisionPlan(
+export function buildRevisionPlan(
   decisionId: string,
   submissionId: string,
   submissionVersionId: string,
