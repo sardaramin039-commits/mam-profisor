@@ -66,6 +66,10 @@ function validHash(value: string): boolean {
   return /^[a-f0-9]{64}$/u.test(value);
 }
 
+export function submissionPolicyFingerprint(policy: PublicationSubmissionPolicy): string {
+  return sha256(canonical(policy));
+}
+
 export function buildSubmissionManifest(input: SubmissionManifestInput): SubmissionManifest {
   const submissionId = clean(input.submissionId);
   const userId = clean(input.userId);
@@ -89,7 +93,7 @@ export function buildSubmissionManifest(input: SubmissionManifestInput): Submiss
     throw new Error('Only a READY integrity package can be frozen into a manifest.');
   }
 
-  const policyFingerprint = sha256(canonical(input.policy));
+  const policyFingerprint = submissionPolicyFingerprint(input.policy);
   const payload = {
     submissionId, userId, workspaceId, journalName, manuscriptType,
     policyFingerprint, packageFingerprint: input.package.fingerprint,
@@ -113,7 +117,7 @@ export function buildSubmissionManifest(input: SubmissionManifestInput): Submiss
 
 export function verifySubmissionManifest(manifest: SubmissionManifest): SubmissionManifestVerification {
   const errors: string[] = [];
-  const policyFingerprint = sha256(canonical(manifest.policy));
+  const policyFingerprint = submissionPolicyFingerprint(manifest.policy);
   if (policyFingerprint !== manifest.policyFingerprint) errors.push('Policy fingerprint mismatch.');
   const payload = {
     submissionId: manifest.submissionId, userId: manifest.userId, workspaceId: manifest.workspaceId,
