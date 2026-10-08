@@ -53,6 +53,15 @@ export function createApiDocsRouter(): Router {
       <p class="text-slate-300 text-xs">مۆتۆڕی گەڕانی زانستیی تەواوکار (Semantic Scholar / CrossRef / ArXiv / OpenAlex).</p>
     </div>
 
+    <!-- API Route Card 4 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-rose-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">POST</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-integrity/:workspaceId/integrity</code>
+      </div>
+      <p class="text-slate-300 text-xs">P14 پشکنینی کۆتاییی integrity بۆ manuscript و submission package؛ دۆخەکان READY / REVISE / BLOCKED.</p>
+    </div>
+
     <div class="text-center text-slate-500 text-xs pt-6 border-t border-slate-800">
       Harvard Academic AI Platform &copy; 2026. All security & proxy headers configured.
     </div>
