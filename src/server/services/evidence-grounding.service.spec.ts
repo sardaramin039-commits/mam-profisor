@@ -124,6 +124,8 @@ describe('EvidenceGroundingService chunk retention', () => {
           sourceTitle: 'Study',
           chunkText: 'evidence from first chunk',
           verificationStatus: 'verified',
+          author: 'Researcher',
+          year: '2025',
           evidenceType: 'full-text',
           provenance: 'server-verified-fulltext'
         },
@@ -132,6 +134,8 @@ describe('EvidenceGroundingService chunk retention', () => {
           sourceTitle: 'Study',
           chunkText: 'different evidence from second chunk',
           verificationStatus: 'verified',
+          author: 'Researcher',
+          year: '2025',
           evidenceType: 'full-text',
           provenance: 'server-verified-fulltext'
         }
