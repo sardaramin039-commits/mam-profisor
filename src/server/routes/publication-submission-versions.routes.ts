@@ -1,10 +1,8 @@
 import { Router } from 'express';
-import { z } from 'zod';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
 import { listSubmissionVersions, verifySubmissionVersionChain } from '../services/publication-submission-version.service';
+import { lifecycleId } from './publication-submission-lifecycle.schemas';
 import type { AuthRequest } from '../../middleware/auth';
-
-const id = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/u);
 
 export function createPublicationSubmissionVersionsRouter(): Router {
   const router = Router({ mergeParams: true });
@@ -14,7 +12,7 @@ export function createPublicationSubmissionVersionsRouter(): Router {
     const workspaceId = req.params['workspaceId'];
     const submissionId = req.params['submissionId'];
     if (!userId) return;
-    if (!id.safeParse(workspaceId).success || !id.safeParse(submissionId).success) {
+    if (!lifecycleId.safeParse(workspaceId).success || !lifecycleId.safeParse(submissionId).success) {
       res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
       return;
     }
