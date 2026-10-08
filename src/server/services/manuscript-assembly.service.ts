@@ -1,4 +1,5 @@
 import { sha256 } from './text-sha256.service';
+import { adminDb } from '../../lib/firebase-admin';
 
 export interface ManuscriptChapterInput {
   id: string;
@@ -60,6 +61,31 @@ function clean(value: unknown): string {
 
 function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
+}
+
+export async function persistAssembledManuscript(
+  userId: string,
+  manuscript: ManuscriptDocument
+): Promise<{ fingerprint: string; path: string }> {
+  if (manuscript.integrity.structuralStatus !== 'PASS') {
+    throw new Error('Cannot persist a manuscript that failed structural integrity.');
+  }
+
+  const path = `research_manuscripts/${userId}/workspaces/${manuscript.projectId}`;
+  await adminDb
+    .collection('research_manuscripts')
+    .doc(userId)
+    .collection('workspaces')
+    .doc(manuscript.projectId)
+    .set({
+      ...manuscript,
+      persistedAt: new Date().toISOString()
+    }, { merge: true });
+
+  return {
+    fingerprint: manuscript.integrity.fingerprint,
+    path
+  };
 }
 
 export function assembleManuscript(input: ManuscriptAssemblyInput): ManuscriptDocument {
