@@ -45,4 +45,19 @@ assert.ok(result.executionPipelineLog.length >= 8, 'Pipeline must log execution 
 assert.ok(result.qaGateResult, 'QA Gate result must be present');
 assert.ok(result.finalThesisDraftKurdish, 'Final thesis draft must be generated');
 
+const stepNames = result.executionPipelineLog.map(step => step.agentName);
+assert.ok(stepNames.includes('Source Verification Agent'), 'Source verification agent must run');
+assert.ok(stepNames.includes('Evidence-Grounded Writer Agent'), 'Evidence-grounded writer must run');
+assert.ok(stepNames.includes('Claim-Evidence Graph Agent'), 'Claim-evidence graph agent must run');
+assert.ok(stepNames.includes('Final Academic QA Gate'), 'Final QA gate must run');
+assert.ok(
+  result.claimEvidenceGraphIntegrity >= 0 &&
+  result.claimEvidenceGraphIntegrity <= 100,
+  'Graph integrity score must stay within 0-100'
+);
+assert.ok(
+  result.citationEligibleSourcesCount <= result.identityVerifiedSourcesCount,
+  'Citation-eligible sources cannot exceed identity-verified sources'
+);
+
 console.log('✅ P6 Multi-Agent Orchestration Contract Test PASSED SUCCESSFULLY!');
