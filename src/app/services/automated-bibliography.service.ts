@@ -201,8 +201,8 @@ export class AutomatedBibliographyService {
     const citationItem: CitationItem = {
       id: source.id,
       authors,
-      year: source.year || 2024,
-      title: source.title || 'سەرناوی بێ ناو',
+      year: source.year || '',
+      title: source.title || '',
       publisher: source.publisher,
       journal: srcAny.journal,
       url: srcAny.url,
