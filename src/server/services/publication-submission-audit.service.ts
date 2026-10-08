@@ -104,7 +104,8 @@ function verifyEvent(event: SubmissionAuditEvent, expectedPreviousHash: string, 
 export function verifySubmissionAuditChain(
   events: SubmissionAuditEvent[],
   currentStatus: SubmissionLifecycleStatus,
-  currentVersion: number
+  currentVersion: number,
+  expectedHeadHash = ''
 ): SubmissionAuditReport {
   if (!events.length) {
     return { status: 'LEGACY_UNSEEDED', eventCount: 0, latestVersion: 0, latestHash: '', errors: ['No immutable audit events exist for this submission.'] };
@@ -124,6 +125,9 @@ export function verifySubmissionAuditChain(
   });
   if (ordered.at(-1)?.to !== currentStatus) errors.push('Latest audit state does not match the lifecycle record.');
   if (ordered.at(-1)?.version !== currentVersion) errors.push('Latest audit version does not match the lifecycle record.');
+  if (expectedHeadHash && ordered.at(-1)?.eventHash !== expectedHeadHash) {
+    errors.push('Latest audit hash does not match the lifecycle audit head.');
+  }
   const legacyOnly = ordered.length === 1 && ordered[0].legacyAnchor === true;
   return {
     status: errors.length ? 'INVALID' : legacyOnly ? 'LEGACY_UNSEEDED' : 'VERIFIED',
