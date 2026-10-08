@@ -67,6 +67,29 @@ describe('research intelligence discovery', () => {
 });
 
 
+describe('research intelligence source deduplication', () => {
+  it('keeps same-title records when authors match but publication years differ', async () => {
+    process.env['OPENAI_API_KEY'] = '';
+    process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = 'false';
+    process.env['ALLOW_BILLABLE_AI'] = 'false';
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes('semanticscholar.org')) return response({});
+      return response({
+        data: [
+          { paperId: 'P-2023', title: 'Same Study', authors: [{ name: 'Researcher' }], year: 2023, abstract: 'Evidence one' },
+          { paperId: 'P-2024', title: 'Same Study', authors: [{ name: 'Researcher' }], year: 2024, abstract: 'Evidence two' }
+        ]
+      });
+    }) as typeof fetch;
+
+    const result = await researchIntelligenceService.discover('topic', 'discipline');
+
+    expect(result.sources).toHaveLength(2);
+    expect(result.sources.map(source => source.year)).toEqual(['2023', '2024']);
+  });
+});
+
 describe('research intelligence verification flow', () => {
   it('verifies discovered candidates when no source records are provided', async () => {
     const originalDiscover = researchIntelligenceService.discover;
