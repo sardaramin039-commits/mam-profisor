@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { sha256 } from './text-sha256.service';
 
 export interface ManuscriptChapterInput {
   id: string;
@@ -56,10 +56,6 @@ export interface ManuscriptDocument {
 
 function clean(value: unknown): string {
   return String(value ?? '').trim();
-}
-
-function sha256(value: string): string {
-  return createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
 function unique(values: string[]): string[] {
