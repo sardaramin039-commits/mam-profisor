@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildEditorialDecision
+  buildEditorialDecision,
+  buildRevisionPlan
 } from './publication-submission-editorial-decision.service';
 
 const version = 'a'.repeat(64);
@@ -47,5 +48,33 @@ describe('P20 editorial decision management', () => {
       ...base,
       note: ''
     })).toThrow(/note or external reference/i);
+  });
+  
+  it('rejects a mismatched decision result', () => {
+    expect(() => buildEditorialDecision({
+      ...base,
+      decisionType: 'REJECT',
+      resultingStatus: 'ACCEPTED'
+    })).toThrow(/does not match/i);
+  });
+
+  it('builds a structured revision plan bound to the current version', () => {
+    const plan = buildRevisionPlan(
+      'DEC-1',
+      'SUB-1',
+      'VER-1',
+      'MAJOR',
+      [{
+        title: 'Clarify methodology',
+        details: 'Add sampling and analysis details.',
+        scope: 'SECTION',
+        required: true
+      }],
+      '2026-10-08T16:00:00.000Z'
+    );
+    expect(plan.submissionVersionId).toBe('VER-1');
+    expect(plan.tasks).toHaveLength(1);
+    expect(plan.tasks[0].status).toBe('OPEN');
+    expect(plan.planHash).toMatch(/^[a-f0-9]{64}$/u);
   });
 });
