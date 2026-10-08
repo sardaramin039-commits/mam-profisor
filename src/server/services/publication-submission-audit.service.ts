@@ -17,7 +17,7 @@ export interface SubmissionAuditEvent {
   legacyAnchor?: boolean;
 }
 
-export type SubmissionAuditStatus = 'VERIFIED' | 'INVALID' | 'LEGACY_UNSEEDED';
+export type SubmissionAuditStatus = 'VERIFIED' | 'INVALID' | 'LEGACY_UNSEEDED' | 'LEGACY_RECONSTRUCTED';
 
 export interface SubmissionAuditReport {
   status: SubmissionAuditStatus;
@@ -98,6 +98,7 @@ function verifyEvent(event: SubmissionAuditEvent, expectedPreviousHash: string, 
     previousHash: event.previousHash,
     legacyAnchor: event.legacyAnchor
   });
+  if (expected.id !== event.id) return `Audit event id mismatch at ${event.id}.`;
   return expected.eventHash === event.eventHash ? null : `Audit event hash mismatch at ${event.id}.`;
 }
 
@@ -112,13 +113,15 @@ export function verifySubmissionAuditChain(
   }
   const ordered = [...events].sort((a, b) => a.version - b.version);
   const errors: string[] = [];
+  const legacyAnchor = ordered[0]?.legacyAnchor === true;
   let previousHash = '';
   let previousStatus: SubmissionLifecycleStatus | null = null;
   ordered.forEach((event, index) => {
-    const expectedVersion = index + 1;
+    const expectedVersion = legacyAnchor ? ordered[0].version + index : index + 1;
     const error = verifyEvent(event, previousHash, expectedVersion);
     if (error) errors.push(error);
     if (index === 0 && event.from !== null) errors.push('The first audit event must start from null.');
+    if (index === 0 && event.previousHash !== '') errors.push('The first audit event must have an empty previous hash.');
     if (index > 0 && event.from !== previousStatus) errors.push(`Audit state mismatch at version ${event.version}.`);
     previousHash = event.eventHash;
     previousStatus = event.to;
@@ -128,9 +131,8 @@ export function verifySubmissionAuditChain(
   if (expectedHeadHash && ordered.at(-1)?.eventHash !== expectedHeadHash) {
     errors.push('Latest audit hash does not match the lifecycle audit head.');
   }
-  const legacyOnly = ordered.length === 1 && ordered[0].legacyAnchor === true;
   return {
-    status: errors.length ? 'INVALID' : legacyOnly ? 'LEGACY_UNSEEDED' : 'VERIFIED',
+    status: errors.length ? 'INVALID' : legacyAnchor ? 'LEGACY_RECONSTRUCTED' : 'VERIFIED',
     eventCount: ordered.length,
     latestVersion: ordered.at(-1)?.version ?? 0,
     latestHash: ordered.at(-1)?.eventHash ?? '',
