@@ -8,7 +8,7 @@ export interface AcademicSourceItem {
   title: string;
   authors: string[];
   year: string;
-  sourceType: 'SemanticScholar' | 'PubMed' | 'OpenLibrary' | 'InternetArchive' | 'DOAJ' | 'WorldCat' | 'Europeana' | 'LibraryOfCongress' | 'OAIPMH' | 'PeerReviewedJournal' | 'OpenAlex' | 'Crossref';
+  sourceType: 'SemanticScholar' | 'PubMed' | 'OpenLibrary' | 'GoogleBooks' | 'InternetArchive' | 'DOAJ' | 'WorldCat' | 'Europeana' | 'LibraryOfCongress' | 'OAIPMH' | 'PeerReviewedJournal' | 'OpenAlex' | 'Crossref';
   url: string;
   snippet: string;
   citationCount?: number;
