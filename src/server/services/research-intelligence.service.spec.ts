@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { researchIntelligenceService } from './research-intelligence.service';
 import { sourceVerificationService } from './source-verification.service';
+import { academicSearchService } from '../../services/academic-search.service';
 
 const originalFetch = globalThis.fetch;
 const originalOpenAiKey = process.env['OPENAI_API_KEY'];
 const originalOpenAiDiscovery = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
 const originalBillable = process.env['ALLOW_BILLABLE_AI'];
+const originalAcademicSearch = academicSearchService.searchAll;
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
@@ -15,6 +17,7 @@ afterEach(() => {
   else process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = originalOpenAiDiscovery;
   if (originalBillable === undefined) delete process.env['ALLOW_BILLABLE_AI'];
   else process.env['ALLOW_BILLABLE_AI'] = originalBillable;
+  academicSearchService.searchAll = originalAcademicSearch;
 });
 
 function response(payload: unknown): Response {
@@ -67,6 +70,30 @@ describe('research intelligence discovery', () => {
 });
 
 
+describe('research intelligence free mode', () => {
+  it('uses free academic providers by default', async () => {
+    delete process.env['OPENAI_API_KEY'];
+    delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
+    delete process.env['ALLOW_BILLABLE_AI'];
+
+    academicSearchService.searchAll = async () => [{
+      id: 'free-paper-1',
+      title: 'Free Academic Study',
+      authors: ['Free Researcher'],
+      publicationYear: 2024,
+      source: 'openalex',
+      url: 'https://openalex.org/W1'
+    }];
+
+    const result = await researchIntelligenceService.discover('فێربوون', 'دەروونناسی');
+
+    expect(result.providers).toContain('Free academic indexes');
+    expect(result.sources).toHaveLength(1);
+    expect(result.sources[0]?.title).toBe('Free Academic Study');
+    expect(result.sources[0]?.verificationStatus).toBe('retrieved-not-verified');
+  });
+});
+
 describe('research intelligence verification flow', () => {
   it('verifies discovered candidates when no source records are provided', async () => {
     const originalDiscover = researchIntelligenceService.discover;
@@ -89,35 +116,6 @@ describe('research intelligence verification flow', () => {
       providers: ['OpenAlex'],
       verificationPolicy: 'verified-only'
     });
-
-  it('uses free academic providers by default', async () => {
-    delete process.env['OPENAI_API_KEY'];
-    delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
-    delete process.env['ALLOW_BILLABLE_AI'];
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('semanticscholar.org')) {
-        return response({
-          data: [{
-            paperId: 'free-paper-1',
-            title: 'Free Academic Study',
-            authors: [{ name: 'Free Researcher' }],
-            year: 2024,
-            url: 'https://www.semanticscholar.org/paper/free-paper-1'
-          }]
-        });
-      }
-      if (url.includes('esearch.fcgi')) return response({ esearchresult: { idlist: [] } });
-      if (url.includes('doaj.org') || url.includes('openlibrary.org') || url.includes('archive.org') || url.includes('europeana.eu') || url.includes('loc.gov')) {
-        return response({});
-      }
-      throw new Error(`Unexpected fetch: ${url}`);
-    }) as typeof fetch;
-
-    const result = await researchIntelligenceService.discover('فێربوون', 'دەروونناسی');
-    expect(result.providers).toContain('SemanticScholar');
-    expect(result.sources[0]?.title).toBe('Free Academic Study');
-  });
 
     let verifiedInput: any[] = [];
     sourceVerificationService.verifySources = async (sources: any[]) => {
