@@ -6,32 +6,13 @@ import { canTransition } from './publication-submission-lifecycle.policy';
 import { publicationSubmissionLifecycleService } from './publication-submission-lifecycle.service';
 import type { SubmissionLifecycleRecord, SubmissionLifecycleStatus } from './publication-submission-lifecycle.service';
 export type EditorialDecisionType = 'MINOR_REVISION' | 'MAJOR_REVISION' | 'ACCEPT' | 'REJECT' | 'WITHDRAW';
-export type RevisionTaskStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'WAIVED';
-export type RevisionScope = 'MANUSCRIPT' | 'SECTION' | 'CITATION' | 'FORMATTING' | 'OTHER';
-export interface RevisionTask {
-  id: string;
-  order: number;
-  title: string;
-  details: string;
-  scope: RevisionScope;
-  required: boolean;
-  status: RevisionTaskStatus;
-  dueAt?: string;
-  completionNote?: string;
-  updatedAt: string;
-}
-export interface RevisionPlan {
-  id: string;
-  submissionId: string;
-  decisionId: string;
-  submissionVersionId: string;
-  severity: 'MINOR' | 'MAJOR';
-  status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED';
-  tasks: RevisionTask[];
-  createdAt: string;
-  updatedAt: string;
-  planHash: string;
-}
+import {
+  computeRevisionPlanStatus,
+  requiredRevisionTasksComplete,
+  revisionPlanHash,
+  verifyRevisionPlan
+} from './publication-submission-revision.policy';
+import type { RevisionPlan, RevisionScope, RevisionTask, RevisionTaskStatus } from './publication-submission-revision.policy';
 export interface EditorialDecision {
   id: string;
   submissionId: string;
@@ -92,33 +73,6 @@ function validIsoDate(value: string | undefined): boolean {
   if (!value) return true;
   const parsed = Date.parse(value);
   return Number.isFinite(parsed);
-}
-function taskPayload(task: RevisionTask): Record<string, unknown> {
-  return {
-    id: task.id,
-    order: task.order,
-    title: task.title,
-    details: task.details,
-    scope: task.scope,
-    required: task.required,
-    status: task.status,
-    dueAt: task.dueAt || '',
-    completionNote: task.completionNote || '',
-    updatedAt: task.updatedAt
-  };
-}
-function planHash(plan: Omit<RevisionPlan, 'planHash'>): string {
-  return sha256(JSON.stringify({
-    id: plan.id,
-    submissionId: plan.submissionId,
-    decisionId: plan.decisionId,
-    submissionVersionId: plan.submissionVersionId,
-    severity: plan.severity,
-    status: plan.status,
-    tasks: plan.tasks.map(taskPayload),
-    createdAt: plan.createdAt,
-    updatedAt: plan.updatedAt
-  }));
 }
 export function buildEditorialDecision(input: Omit<EditorialDecision, 'id' | 'immutableHash'>): EditorialDecision {
   if (!validId(clean(input.submissionId)) || !clean(input.userId) || !clean(input.workspaceId)) {
