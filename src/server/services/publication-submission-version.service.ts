@@ -2,7 +2,7 @@ import { adminDb } from '../../lib/firebase-admin';
 import { sha256 } from './text-sha256.service';
 import type { SubmissionLifecycleStatus } from './publication-submission-lifecycle.policy';
 
-export type SubmissionVersionKind = 'READY' | 'RESUBMISSION';
+export type SubmissionVersionKind = 'READY' | 'RESUBMISSION' | 'LEGACY_READY';
 
 export interface SubmissionVersion {
   id: string;
@@ -31,7 +31,7 @@ export interface SubmissionVersionInput {
 }
 
 export interface SubmissionVersionReport {
-  status: 'VERIFIED' | 'INVALID' | 'EMPTY';
+  status: 'VERIFIED' | 'INVALID' | 'EMPTY' | 'LEGACY_RECONSTRUCTED';
   versionCount: number;
   latestCycle: number;
   latestFingerprint: string;
@@ -126,8 +126,9 @@ export function verifySubmissionVersionChain(versions: SubmissionVersion[]): Sub
     previousFingerprint = version.packageFingerprint;
   });
   const latest = ordered.at(-1)!;
+  const legacy = ordered[0]?.kind === 'LEGACY_READY';
   return {
-    status: errors.length ? 'INVALID' : 'VERIFIED',
+    status: errors.length ? 'INVALID' : legacy ? 'LEGACY_RECONSTRUCTED' : 'VERIFIED',
     versionCount: ordered.length,
     latestCycle: latest.cycle,
     latestFingerprint: latest.packageFingerprint,
