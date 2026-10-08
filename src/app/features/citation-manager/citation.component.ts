@@ -150,9 +150,15 @@ import { ChatGptSourcesHubComponent } from './components/chatgpt-sources-hub.com
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <h4 class="text-xs font-semibold text-slate-200">{{ source.title }}</h4>
-                    <span class="text-[9.5px] px-2 py-0.5 rounded font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                      🟢 VERIFIED
-                    </span>
+                    @if (source.citationEligible === true) {
+                      <span class="text-[9.5px] px-2 py-0.5 rounded font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        🟢 VERIFIED
+                      </span>
+                    } @else {
+                      <span class="text-[9.5px] px-2 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        🟡 REVIEW REQUIRED
+                      </span>
+                    }
                   </div>
                   <p class="text-[11px] text-slate-400">{{ source.author }} ({{ source.year }}) - {{ source.publisher }}</p>
                   <span class="inline-block bg-slate-900 text-indigo-300 px-2 py-0.5 rounded text-[10px] uppercase border border-slate-700 font-mono">
