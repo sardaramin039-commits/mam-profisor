@@ -16,8 +16,7 @@ import type {
   SubmissionItem,
   SubmissionManifestSummary,
   SubmissionVersion,
-  VersionReport,
-  SubmissionPolicy
+  VersionReport
 } from './publication-workflow-panel.models';
 
 @Component({
@@ -320,6 +319,10 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     }
     if (!this.resubmitTitle().trim() || !this.resubmitAbstract().trim()) {
       this.errorMessage.set('بۆ resubmission، ناونیشان و پوختە پێویستن.');
+      return;
+    }
+    if (manifest.referenceCount > 0) {
+      this.errorMessage.set('ئەم submission ـە citation هەیە؛ quick resubmit بۆ پاراستنی citation binding بەکارمەهێنە. package ـی P13/P14 دوبارە دروست بکە.');
       return;
     }
     const policy = manifest.policy;
