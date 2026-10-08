@@ -55,6 +55,8 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
           id: 'SRC-STRICT',
           title: 'Strict Study',
           verificationStatus: 'verified',
+          identityStatus: 'verified',
+          evidenceStatus: 'verified',
           evidenceType: 'full-text',
           evidenceProvenance: 'server-verified-fulltext',
           evidenceText: 'verified source evidence and more detail',
