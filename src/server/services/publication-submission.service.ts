@@ -92,6 +92,19 @@ export function buildPublicationSubmissionPackage(input: PublicationSubmissionIn
   const abstractWordCount = words(abstract);
   const referenceCount = manuscript.bibliography.length;
 
+  if (
+    policy.minKeywords !== undefined &&
+    policy.maxKeywords !== undefined &&
+    policy.minKeywords > policy.maxKeywords
+  ) {
+    checks.push({
+      rule: 'Keyword range',
+      status: 'BLOCKED',
+      details: 'کەمترین ژمارەی keyword لە زۆرترین ژمارە گەورەترە.',
+      action: 'policy ـی keyword range چاک بکە.'
+    });
+  }
+
   if (!journalName) checks.push({ rule: 'Journal identity', status: 'BLOCKED', details: 'ناوی گۆڤار نەدراوە.', action: 'ناوی ڕاستیی گۆڤار دابین بکە.' });
   if (manuscript.integrity.structuralStatus !== 'PASS') checks.push({ rule: 'Manuscript integrity', status: 'BLOCKED', details: 'بونیادی manuscript پاس نەکردووە.', action: 'هەڵەکانی manuscript integrity چارەسەر بکە.' });
   if (policy.requiredSections?.length) {
