@@ -145,4 +145,65 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
     expect(result.claims[0]?.verificationStatus).toBe('verified');
   });
 
+  it('fails closed when title-only evidence mapping is ambiguous', async () => {
+    const service = new ClaimEvidenceGraphService();
+    const ai = {
+      models: {
+        generateContent: async () => ({
+          text: JSON.stringify({
+            claims: [{
+              claimId: 'CLAIM-AMBIG',
+              text: 'Ambiguous claim',
+              sourceId: '',
+              evidenceId: 'EVI-AMBIG',
+              confidence: 99,
+              quote: 'shared evidence',
+              verificationStatus: 'verified',
+              citationId: 'CIT-AMBIG'
+            }],
+            evidences: [{
+              evidenceId: 'EVI-AMBIG',
+              text: 'shared evidence',
+              sourceTitle: 'Same Title'
+            }]
+          })
+        })
+      }
+    } as any;
+
+    const result = await service.buildGraph(
+      'topic',
+      'draft',
+      [
+        {
+          id: 'SRC-ONE',
+          title: 'Same Title',
+          verificationStatus: 'verified',
+          identityStatus: 'verified',
+          evidenceStatus: 'verified',
+          evidenceType: 'full-text',
+          evidenceProvenance: 'server-verified-fulltext',
+          evidenceText: 'shared evidence',
+          trustLevel: 'A'
+        },
+        {
+          id: 'SRC-TWO',
+          title: 'Same Title',
+          verificationStatus: 'verified',
+          identityStatus: 'verified',
+          evidenceStatus: 'verified',
+          evidenceType: 'full-text',
+          evidenceProvenance: 'server-verified-fulltext',
+          evidenceText: 'shared evidence',
+          trustLevel: 'A'
+        }
+      ],
+      () => ai
+    );
+
+    expect(result.claims[0]?.verificationStatus).toBe('unverified');
+    expect(result.claims[0]?.sourceId).toBe('');
+    expect(result.claims[0]?.syntheticCitationBlocked).toBe(true);
+  });
+
 });
