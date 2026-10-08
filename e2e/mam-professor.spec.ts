@@ -236,4 +236,18 @@ test.describe('Mam Professor browser E2E', () => {
     );
     expect(response.status()).toBe(401);
   });
+
+  test('keeps grounded generation inaccessible without Firebase authentication', async ({ request, baseURL }) => {
+    const response = await request.post(
+      `${baseURL}/api/writing/grounded_generate`,
+      {
+        data: {
+          topic: 'زمانی کوردی',
+          prompt: 'شیکارییەکی ئەکادیمی بنووسە',
+          evidenceChunks: []
+        }
+      }
+    );
+    expect(response.status()).toBe(401);
+  });
 });
