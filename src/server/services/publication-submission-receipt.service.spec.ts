@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildSubmissionReceipt } from './publication-submission-receipt.service';
+import {
+  buildSubmissionReceipt,
+  verifySubmissionReceipt
+} from './publication-submission-receipt.service';
 
 const base = {
   submissionId: 'SUB-1',
@@ -43,5 +46,30 @@ describe('P16 immutable submission receipt', () => {
   it('rejects malformed fingerprints', () => {
     expect(() => buildSubmissionReceipt({ ...base, submissionFingerprint: 'bad' }))
       .toThrow('fingerprint is invalid');
+  });
+
+  it('verifies an untampered receipt and its submission binding', () => {
+    const receipt = buildSubmissionReceipt({
+      ...base,
+      submissionVersionId: 'VER-1'
+    });
+    const result = verifySubmissionReceipt(receipt, {
+      submissionId: 'SUB-1',
+      workspaceId: 'WS-1',
+      submissionFingerprint: base.submissionFingerprint,
+      submissionVersionId: 'VER-1'
+    });
+    expect(result.status).toBe('VERIFIED');
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('rejects a tampered receipt hash', () => {
+    const receipt = buildSubmissionReceipt(base);
+    const result = verifySubmissionReceipt({
+      ...receipt,
+      note: 'tampered'
+    });
+    expect(result.status).toBe('INVALID');
+    expect(result.errors.some(error => error.includes('hash mismatch'))).toBe(true);
   });
 });
