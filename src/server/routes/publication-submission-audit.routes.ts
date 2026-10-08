@@ -38,7 +38,8 @@ export function createPublicationSubmissionAuditRouter(): Router {
         events,
         submission.currentStatus,
         submission.version,
-        submission.auditHeadHash
+        submission.auditHeadHash,
+        submission.id
       );
       res.status(report.status === 'INVALID' ? 409 : 200).json({
         success: report.status !== 'INVALID',
