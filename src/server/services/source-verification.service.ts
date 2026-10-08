@@ -27,6 +27,7 @@ export interface SourceVerificationReport {
   sourceId: string;
   sourceTitle: string;
   author: string;
+  authors?: string[];
   year?: string;
   publisher: string;
   doiOrIsbn?: string;
@@ -59,6 +60,7 @@ type InputSource = {
   sourceId?: string;
   title: string;
   author?: string;
+  authors?: string[];
   year?: string | number;
   doi?: string;
   isbn?: string;
@@ -90,6 +92,17 @@ function normalize(value: string): string {
 
 function titleTokens(value: string): Set<string> {
   return new Set(normalize(value).split(' ').filter(token => token.length > 2));
+}
+
+function sourceAuthorList(source: InputSource): string[] {
+  if (Array.isArray(source.authors)) {
+    return source.authors.map(author => String(author || '').trim()).filter(Boolean);
+  }
+  return source.author ? [source.author.trim()].filter(Boolean) : [];
+}
+
+function sourceAuthorString(source: InputSource): string {
+  return sourceAuthorList(source).join(', ');
 }
 
 function authorOverlap(inputAuthor: string | undefined, externalAuthors: string[]): number {
@@ -152,7 +165,8 @@ function buildBaseReport(
   return {
     sourceId,
     sourceTitle: source.title,
-    author: source.author || 'نادیار',
+    author: sourceAuthorString(source) || 'نادیار',
+    authors: sourceAuthorList(source),
     year: source.year ? String(source.year) : undefined,
     publisher: source.publisher || 'نادیار',
     doiOrIsbn: source.doi || source.isbn || source.issn || undefined,
@@ -187,7 +201,7 @@ type CrossrefCandidate = {
 async function searchCrossrefByMetadata(
   source: InputSource
 ): Promise<CrossrefCandidate | undefined> {
-  const query = [source.title, source.author, source.publisher]
+  const query = [source.title, sourceAuthorString(source), source.publisher]
     .filter(Boolean)
     .join(' ')
     .trim();
@@ -233,7 +247,8 @@ async function searchCrossrefByMetadata(
         .filter(Boolean);
 
       const score = titleSimilarity(source.title, title);
-      const authorScore = source.author ? authorOverlap(source.author, authors) : 1;
+      const authorText = sourceAuthorString(source);
+      const authorScore = authorText ? authorOverlap(authorText, authors) : 1;
       const sourceYear = Number(source.year);
       const itemYear = Number(
         item.published?.['date-parts']?.[0]?.[0] ??
@@ -341,9 +356,9 @@ export class SourceVerificationService {
       if (external) {
         const titleMatch = titleSimilarity(source.title, external.title) >= 0.72;
         const authorMatch =
-          !source.author || external.authors.length === 0
+          !sourceAuthorString(source) || external.authors.length === 0
             ? true
-            : authorOverlap(source.author, external.authors) >= 0.5;
+            : authorOverlap(sourceAuthorString(source), external.authors) >= 0.5;
         const inputYear = Number(source.year);
         const externalYear = Number(external.publishedYear);
         const yearMatch =
@@ -367,7 +382,7 @@ export class SourceVerificationService {
         }
 
         return buildBaseReport(
-          { ...source, title: external.title, author: external.authors.join(', ') || source.author, year: external.publishedYear, publisher: external.publisher || source.publisher, doi: external.doi },
+          { ...source, title: external.title, author: external.authors.join(', ') || sourceAuthorString(source), authors: external.authors.length ? external.authors : sourceAuthorList(source), year: external.publishedYear, publisher: external.publisher || source.publisher, doi: external.doi },
           sourceId,
           'verified',
           0,
@@ -381,13 +396,13 @@ export class SourceVerificationService {
       if (isbnExternal) {
         const titleMatch = titleSimilarity(source.title, isbnExternal.title) >= 0.65;
         const authorMatch =
-          !source.author || isbnExternal.authors.length === 0
+          !sourceAuthorString(source) || isbnExternal.authors.length === 0
             ? true
-            : authorOverlap(source.author, isbnExternal.authors) >= 0.5;
+            : authorOverlap(sourceAuthorString(source), isbnExternal.authors) >= 0.5;
         const matched = titleMatch && authorMatch;
 
         return buildBaseReport(
-          { ...source, title: isbnExternal.title, author: isbnExternal.authors.join(', ') || source.author, year: isbnExternal.publishDate || source.year, publisher: isbnExternal.publisher || source.publisher, isbn: isbnExternal.isbn },
+          { ...source, title: isbnExternal.title, author: isbnExternal.authors.join(', ') || sourceAuthorString(source), authors: isbnExternal.authors.length ? isbnExternal.authors : sourceAuthorList(source), year: isbnExternal.publishDate || source.year, publisher: isbnExternal.publisher || source.publisher, isbn: isbnExternal.isbn },
           sourceId,
           matched ? 'verified' : 'rejected',
           matched ? 0 : 0,
@@ -404,7 +419,7 @@ export class SourceVerificationService {
       const candidate = metadataResolved.get(index);
       if (candidate) {
         return buildBaseReport(
-          { ...source, title: candidate.title, author: candidate.authors.join(', ') || source.author, year: candidate.year || source.year, publisher: candidate.publisher || source.publisher, doi: candidate.doi || source.doi },
+          { ...source, title: candidate.title, author: candidate.authors.join(', ') || sourceAuthorString(source), authors: candidate.authors.length ? candidate.authors : sourceAuthorList(source), year: candidate.year || source.year, publisher: candidate.publisher || source.publisher, doi: candidate.doi || source.doi },
           sourceId,
           'verified',
           0,
