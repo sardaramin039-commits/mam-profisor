@@ -140,7 +140,7 @@ export function buildEditorialDecision(input: Omit<EditorialDecision, 'id' | 'im
   if (!validId(clean(input.submissionId)) || !clean(input.userId) || !clean(input.workspaceId)) {
     throw new Error('Editorial decision identity is incomplete.');
   }
-  if (!validHash(input.submissionVersionId)) {
+  if (!validId(clean(input.submissionVersionId))) {
     throw new Error('Editorial decision version binding is invalid.');
   }
   if (!clean(input.note) && !clean(input.externalReference)) {
@@ -184,7 +184,7 @@ function buildRevisionPlan(
   const normalized = tasks ?? [];
   if (!normalized.length) throw new Error('Revision decision requires at least one revision task.');
   if (normalized.length > 50) throw new Error('A revision plan cannot contain more than 50 tasks.');
-  const baseId = 'RVP-' + sha256(JSON.stringify({ decisionId, submissionVersionId })).slice(0, 32);
+  const baseId = 'RVP-' + sha256(JSON.stringify({ submissionId, submissionVersionId, decisionId })).slice(0, 32);
   const items: RevisionTask[] = normalized.map((task, index) => {
     const title = clean(task.title);
     const details = clean(task.details);
@@ -305,13 +305,13 @@ class PublicationSubmissionEditorialDecisionService {
         throw new Error('The submission receipt is not bound to the current submitted version.');
       }
 
-      const decisionIdSeed = JSON.stringify({
+      const decisionKey = JSON.stringify({
         submissionId,
         lifecycleVersion: current.version + 1,
         decisionType: input.decisionType,
         submissionVersionId: current.currentVersionId
       });
-      const decisionId = 'DEC-' + sha256(decisionIdSeed).slice(0, 32);
+      const decisionId = 'DEC-' + sha256(decisionKey).slice(0, 32);
       const revision = isRevision(input.decisionType)
         ? buildRevisionPlan(
           decisionId,
