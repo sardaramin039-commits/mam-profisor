@@ -32,13 +32,25 @@ function buildBlockers(input: ResearchValidationInput): string[] {
   if (!input.decisionTraceable) blockers.push('Research decisions are not traceable.');
   if (input.reviewRequired) blockers.push('Evidence coverage requires academic review.');
 
-  if ((input.sourcesCount ?? 0) === 0) blockers.push('No research source is linked to the project.');
-  if ((input.claimsCount ?? 0) > 0 && (input.evidenceCount ?? 0) === 0) {
+  if (input.sourcesCount !== undefined && input.sourcesCount === 0) {
+    blockers.push('No research source is linked to the project.');
+  }
+  if (
+    input.claimsCount !== undefined &&
+    input.evidenceCount !== undefined &&
+    input.claimsCount > 0 &&
+    input.evidenceCount === 0
+  ) {
     blockers.push('Claims exist without any recorded evidence.');
   }
 
   const coverage = clampCoverage(input.evidenceCoverage);
-  if ((input.claimsCount ?? 0) > 0 && coverage < 80) {
+  if (
+    input.claimsCount !== undefined &&
+    input.evidenceCoverage !== undefined &&
+    input.claimsCount > 0 &&
+    coverage < 80
+  ) {
     blockers.push('Evidence coverage is below the 80% release threshold.');
   }
 
