@@ -149,8 +149,7 @@ function buildBaseReport(
   metadataAccuracy: number,
   details: string,
   rejectedAsFabricated = false,
-  rejectionReasonKurdish?: string,
-  overrides: Partial<SourceVerificationReport> = {}
+  rejectionReasonKurdish?: string
 ): SourceVerificationReport {
   const evidence = assessEvidenceVerification(source);
   const citationEligible =
@@ -185,8 +184,7 @@ function buildBaseReport(
     peerReviewed: false,
     rejectedAsFabricated,
     rejectionReasonKurdish,
-    kurdishVerificationDetails: details,
-    ...overrides
+    kurdishVerificationDetails: details
   };
 }
 
