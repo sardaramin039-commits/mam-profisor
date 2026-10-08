@@ -35,7 +35,7 @@ export async function initializeLegacySubmissionVersion(
     if (!snapshot.exists) throw new Error('Submission lifecycle record was not found.');
 
     const current = snapshot.data() as LegacyLifecycleRecord;
-    const currentVersionCount = Number.isInteger(current.versionCount) ? current.versionCount : 0;
+    const currentVersionCount = Number.isInteger(current.versionCount) ? (current.versionCount as number) : 0;
     if (current.currentVersionId && currentVersionCount > 0) {
       return current;
     }
