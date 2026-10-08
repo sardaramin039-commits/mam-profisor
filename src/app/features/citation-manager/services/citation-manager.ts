@@ -36,6 +36,8 @@ export class CitationManagerService {
       pageNumber: source.pageNumber,
       identityStatus: source.identityStatus,
       evidenceStatus: source.evidenceStatus,
+      evidenceType: source.evidenceType,
+      evidenceProvenance: source.evidenceProvenance,
       citationEligible: source.citationEligible ?? false,
       isVerified: source.isVerified ?? false,
       createdAt: { seconds: Math.floor(Date.now() / 1000) }
