@@ -174,6 +174,9 @@ class PublicationSubmissionLifecycleService {
       };
 
       transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
+      if (versionRecord) {
+        transaction.create(reference.collection('versions').doc(versionRecord.id), versionRecord);
+      }
       transaction.set(reference, updated);
       return updated;
     });
@@ -200,6 +203,19 @@ class PublicationSubmissionLifecycleService {
       }
 
       const occurredAt = new Date().toISOString();
+      let versionRecord: SubmissionVersion | null = null;
+      if (current.versionCount === 0 || current.submissionFingerprint !== verifiedFingerprint) {
+        versionRecord = buildSubmissionVersion({
+          submissionId: current.id,
+          cycle: current.versionCount + 1,
+          kind: 'READY',
+          statusAtCapture: 'READY',
+          packageFingerprint: verifiedFingerprint,
+          previousFingerprint: current.versionCount > 0 ? current.submissionFingerprint : undefined,
+          note: 'P14 submission integrity gate passed.',
+          capturedAt: occurredAt
+        });
+      }
       const eventSeed = JSON.stringify({
         submissionId,
         version: current.version + 1,
@@ -231,6 +247,10 @@ class PublicationSubmissionLifecycleService {
         version: current.version + 1,
         events: [...current.events, event].slice(-100),
         auditHeadHash: auditEvent.eventHash,
+        ...(versionRecord ? {
+          currentVersionId: versionRecord.id,
+          versionCount: current.versionCount + 1
+        } : {}),
         updatedAt: occurredAt
       };
 
