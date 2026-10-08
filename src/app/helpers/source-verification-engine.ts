@@ -1,14 +1,10 @@
 export type VerificationStatus = 'VERIFIED' | 'PARTIALLY_VERIFIED' | 'UNVERIFIED';
 export type IdentityVerificationStatus = 'verified' | 'unverified';
 export type EvidenceVerificationStatus = 'verified' | 'unverified' | 'not_available';
-
 export type SourceTierLevel = 'Tier 1' | 'Tier 2' | 'Tier 3';
-
 export type ContentKind = 'SOURCE-BASED' | 'SYNTHESIS' | 'AI-INFERENCE';
-
 export type EvidenceType = 'abstract' | 'snippet' | 'full-text';
 export type EvidenceProvenance = 'server-verified-fulltext' | 'user-supplied-content' | 'unknown';
-
 export interface SourceIdentifiers {
   doi?: string;
   isbn?: string;
@@ -18,7 +14,6 @@ export interface SourceIdentifiers {
   semanticScholarId?: string;
   url?: string;
 }
-
 export interface VerifiedCitationRecord {
   id: string;
   claimText?: string;
@@ -39,15 +34,12 @@ export interface VerifiedCitationRecord {
   citationEligible: boolean;
   verificationNotes?: string;
   auditDate: string;
-
   tier: SourceTierLevel;
   tierName: string;
   reliabilityScore: number;
-
   canonicalSource: boolean;
   duplicateOf: string | null;
   mirrorsCount: number;
-
   workflowStepsCompleted: {
     searched: boolean;
     retrieved: boolean;
@@ -56,7 +48,6 @@ export interface VerifiedCitationRecord {
     cited: boolean;
   };
 }
-
 export interface EvidenceLinkedClaim {
   claimId: string;
   claimText: string;
@@ -75,7 +66,6 @@ export interface EvidenceLinkedClaim {
     secondary: string;
   };
 }
-
 export interface ResearchGateAuditResult {
   passed: boolean;
   score: number;
@@ -87,7 +77,6 @@ export interface ResearchGateAuditResult {
   canonicalSourceCount: number;
   verifiedSourceCount: number;
 }
-
 export interface VerificationAuditReport {
   verifiedCount: number;
   partiallyVerifiedCount: number;
