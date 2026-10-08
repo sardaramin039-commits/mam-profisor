@@ -44,8 +44,8 @@ if (packageJson) {
     if (!pkg.scripts?.typecheck) failures.push('package.json is missing typecheck script.');
     if (!pkg.scripts?.lint) failures.push('package.json is missing lint script.');
     if (!pkg.scripts?.line-limit) failures.push('package.json is missing line-limit script.');
-    if (!pkg.scripts?.release:check) failures.push('package.json is missing release:check script.');
-    if (!pkg.scripts?.release:smoke) failures.push('package.json is missing release:smoke script.');
+    if (!pkg.scripts?.['release:check']) failures.push('package.json is missing release:check script.');
+    if (!pkg.scripts?.['release:smoke']) failures.push('package.json is missing release:smoke script.');
   } catch {
     failures.push('package.json is not valid JSON.');
   }
