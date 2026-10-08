@@ -227,10 +227,6 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
       const paragraphs: GroundedParagraph[] = Array.isArray(parsed.paragraphs) ? parsed.paragraphs : [];
       const evidenceGaps = Array.isArray(parsed.evidenceGaps) ? parsed.evidenceGaps : [];
 
-      const eligibleBySourceId = new Map<
-        string,
-        Array<(typeof preparedContextChunks)[number]>
-      >();
       const eligibleByEvidenceId = new Map<
         string,
         (typeof preparedContextChunks)[number]
@@ -244,10 +240,6 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
         );
         if (!isEligible) continue;
 
-        const sourceId = String(chunk.sourceId);
-        const existing = eligibleBySourceId.get(sourceId) || [];
-        existing.push(chunk);
-        eligibleBySourceId.set(sourceId, existing);
         eligibleByEvidenceId.set(String(chunk.evidenceId), chunk);
       }
 
