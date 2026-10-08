@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
 import { listSubmissionVersions, verifySubmissionVersionChain } from '../services/publication-submission-version.service';
+import { initializeLegacySubmissionVersion } from '../services/publication-submission-version-migration.service';
 import { lifecycleId } from './publication-submission-lifecycle.schemas';
 import type { AuthRequest } from '../../middleware/auth';
 
@@ -44,10 +45,11 @@ export function createPublicationSubmissionVersionsRouter(): Router {
       if (submission.versionCount > 0 && submission.submissionFingerprint !== report.latestFingerprint) {
         errors.push('Lifecycle submission fingerprint does not match the latest version.');
       }
+      const chainVerified = report.status === 'VERIFIED' || report.status === 'LEGACY_RECONSTRUCTED';
       const verified = errors.length === 0 && (
         submission.versionCount === 0
           ? report.status === 'EMPTY'
-          : report.status === 'VERIFIED'
+          : chainVerified
       );
       res.status(verified ? 200 : 409).json({
         success: verified,
@@ -60,5 +62,36 @@ export function createPublicationSubmissionVersionsRouter(): Router {
       res.status(500).json({ error: 'نەتوانرا مێژووی version ـەکانی submission بخوێندرێتەوە.' });
     }
   });
+  router.post('/initialize', async (req: AuthRequest, res) => {
+    const userId = requireUser(req, res);
+    const workspaceId = req.params['workspaceId'];
+    const submissionId = req.params['submissionId'];
+    if (!userId) return;
+    if (!lifecycleId.safeParse(workspaceId).success || !lifecycleId.safeParse(submissionId).success) {
+      res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
+      return;
+    }
+
+    try {
+      const current = await publicationSubmissionLifecycleService.get(userId, submissionId);
+      if (!current || current.workspaceId !== workspaceId) {
+        res.status(404).json({ error: 'submission نەدۆزرایەوە.' });
+        return;
+      }
+      const submission = await initializeLegacySubmissionVersion(userId, submissionId);
+      const items = await listSubmissionVersions(userId, submissionId);
+      const report = verifySubmissionVersionChain(items);
+      res.status(201).json({
+        success: report.status !== 'INVALID',
+        submission,
+        versions: report,
+        items
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Version migration failed.';
+      res.status(409).json({ success: false, error: message });
+    }
+  });
+
   return router;
 }
