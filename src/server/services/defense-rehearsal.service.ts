@@ -44,9 +44,26 @@ function normalize(value: string): string {
   return value.normalize('NFKC').toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').replace(/\s+/g, ' ').trim();
 }
 
+const TERM_ALIASES: Record<string, string[]> = {
+  'methodology': ['methodology', 'میتۆدۆلۆژیا', 'مێتۆد', 'ڕێبازی توێژینەوە'],
+  'validation': ['validation', 'پشتڕاستکردنەوە', 'سەلماندن'],
+  'evidence': ['evidence', 'بەڵگە', 'بەڵگەنامە'],
+  'verification': ['verification', 'پشتڕاستکردن', 'دڵنیابوونەوە'],
+  'confidence': ['confidence', 'دڵنیایی', 'متمانە'],
+  'سنوور': ['سنوور', 'سنووری', 'سنوورداری'],
+  'سنوورداری': ['سنوورداری', 'سنوور'],
+  'بەشداری': ['بەشداری', 'contribution'],
+  'ئەدەبیات': ['ئەدەبیات', 'literature'],
+  'block': ['block', 'blockکردن', 'بلۆک'],
+  'داتا': ['داتا', 'زانیاری', 'data'],
+  'بەش': ['بەش', 'chapter'],
+};
+
 function includesAny(text: string, terms: string[]): boolean {
   const normalized = normalize(text);
-  return terms.some(term => normalized.includes(normalize(term)));
+  return terms.some(term =>
+    [term, ...(TERM_ALIASES[term] || [])].some(alias => normalized.includes(normalize(alias)))
+  );
 }
 
 function scoreAnswer(answer: string, requiredElements: string[]): DefenseAnswerAssessment {
