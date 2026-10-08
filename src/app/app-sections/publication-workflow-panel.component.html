@@ -207,6 +207,98 @@
         <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] text-amber-900">{{ revisionGate()!.reason }}</div>
       }
 
+      @if (revisionGate()?.ready && !lockedManifest()) {
+        <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-[10px] text-rose-900">
+          <strong class="block text-[11px]">Resubmission بلۆک کراوە</strong>
+          <span class="block mt-1">P19 manifest ـی version ـی پێشوو نەدۆزرایەوە یان policy ـەکەی قفل نەکراوە؛ بۆ پاراستنی integrity، resubmit بە policy ـی نوێ ناکرێت.</span>
+        </div>
+      }
+
+      @if (canResubmit()) {
+        <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <div class="flex items-start justify-between gap-2 flex-wrap">
+            <div>
+              <h4 class="text-xs font-bold text-emerald-950">Resubmission ـی Version ـی نوێ</h4>
+              <p class="text-[10px] text-emerald-800 mt-0.5">P19 policy قفل کراوە و P18 gate ئامادەیە. ناوەڕۆکی نوێ پێش ناردن دوبارە P14 پشکنرێت.</p>
+            </div>
+            <span class="text-[9px] font-bold rounded-full bg-white border border-emerald-200 px-2 py-1">P18 ✓، P19 ✓</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+            <label class="block">
+              <span class="block text-[10px] font-bold text-stone-600 mb-1">ناونیشانی manuscript</span>
+              <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="resubmitTitle()" (ngModelChange)="updateResubmitSignal('title', $event)" maxlength="1000" [disabled]="resubmitLoading()">
+            </label>
+            <label class="block">
+              <span class="block text-[10px] font-bold text-stone-600 mb-1">Keywords، بە comma جیا بکە</span>
+              <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="resubmitKeywords()" (ngModelChange)="updateResubmitSignal('keywords', $event)" placeholder="توێژینەوە، زمان، ئەدەبیات" [disabled]="resubmitLoading()">
+            </label>
+          </div>
+
+          <label class="block mt-2">
+            <span class="block text-[10px] font-bold text-stone-600 mb-1">پوختە <span class="font-normal text-rose-600">پێویستە</span></span>
+            <textarea class="w-full min-h-24 rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs leading-relaxed" [ngModel]="resubmitAbstract()" (ngModelChange)="updateResubmitSignal('abstract', $event)" maxlength="100000" placeholder="پوختەی نوێی manuscript..." [disabled]="resubmitLoading()"></textarea>
+          </label>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">پرسیاری توێژینەوە، هەبوو</span>
+              <textarea class="w-full min-h-16 rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitResearchQuestion()" (ngModelChange)="updateResubmitSignal('researchQuestion', $event)" [disabled]="resubmitLoading()"></textarea>
+            </label>
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">میتۆدۆلۆجیا، policy پێویستی بکات</span>
+              <textarea class="w-full min-h-16 rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitMethodology()" (ngModelChange)="updateResubmitSignal('methodology', $event)" [disabled]="resubmitLoading()"></textarea>
+            </label>
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">ئەنجام، هەبوو</span>
+              <textarea class="w-full min-h-16 rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitConclusion()" (ngModelChange)="updateResubmitSignal('conclusion', $event)" [disabled]="resubmitLoading()"></textarea>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">ناوی نووسەر، ئەگەر policy پێویستی بکات</span>
+              <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitAuthorName()" (ngModelChange)="updateResubmitSignal('authorName', $event)" maxlength="500" [disabled]="resubmitLoading()">
+            </label>
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">Affiliation</span>
+              <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitAuthorAffiliation()" (ngModelChange)="updateResubmitSignal('authorAffiliation', $event)" maxlength="500" [disabled]="resubmitLoading()">
+            </label>
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">Email</span>
+              <input type="email" class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitAuthorEmail()" (ngModelChange)="updateResubmitSignal('authorEmail', $event)" maxlength="320" [disabled]="resubmitLoading()">
+            </label>
+          </div>
+
+          <label class="block mt-2">
+            <span class="block text-[10px] font-bold text-stone-600 mb-1">Note ـی resubmission</span>
+            <textarea class="w-full min-h-16 rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="resubmitNote()" (ngModelChange)="updateResubmitSignal('note', $event)" maxlength="5000" placeholder="چی گۆڕدراوە لە version ـی نوێدا؟" [disabled]="resubmitLoading()"></textarea>
+          </label>
+
+          @if (lockedManifest()!.policy.requiredSections?.length || lockedManifest()!.policy.maxWords || lockedManifest()!.policy.maxAbstractWords || lockedManifest()!.policy.minKeywords) {
+            <div class="mt-2 rounded-lg border border-emerald-200 bg-white p-2 text-[9px] text-stone-600">
+              <strong class="text-stone-800">Policy ـی قفلکراو:</strong>
+              گۆڤار: {{ lockedManifest()!.journalName }}، جۆر: {{ lockedManifest()!.manuscriptType }}
+              @if (lockedManifest()!.policy.requiredSections?.length) {
+                <span>، بەشە پێویستەکان: {{ lockedManifest()!.policy.requiredSections!.join('، ') }}</span>
+              }
+              @if (lockedManifest()!.policy.minKeywords !== undefined) {
+                <span>، کەمترین keyword: {{ lockedManifest()!.policy.minKeywords }}</span>
+              }
+              @if (lockedManifest()!.policy.maxWords !== undefined) {
+                <span>، سەقفی وشە: {{ lockedManifest()!.policy.maxWords }}</span>
+              }
+            </div>
+          }
+
+          <div class="flex justify-end mt-3">
+            <button type="button" class="px-4 py-1.5 rounded-lg bg-emerald-700 text-white text-[10px] font-bold disabled:opacity-50" (click)="submitResubmission()" [disabled]="resubmitLoading()">
+              {{ resubmitLoading() ? 'خەریکی resubmit...' : 'ناردنی Version ـی نوێ' }}
+            </button>
+          </div>
+        </div>
+      }
+
       <div class="mt-4 rounded-xl border border-stone-200 p-3">
         <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
           <div>
