@@ -77,4 +77,14 @@ describe('P20 editorial decision management', () => {
     expect(plan.tasks[0].status).toBe('OPEN');
     expect(plan.planHash).toMatch(/^[a-f0-9]{64}$/u);
   });
+
+  it('binds ACCEPT and REJECT decisions to explicit receipt evidence', () => {
+    const withReceipt = buildEditorialDecision({
+      ...base,
+      receiptId: 'REC-1'
+    });
+    const withoutReceipt = buildEditorialDecision(base);
+    expect(withReceipt.receiptId).toBe('REC-1');
+    expect(withReceipt.immutableHash).not.toBe(withoutReceipt.immutableHash);
+  });
 });
