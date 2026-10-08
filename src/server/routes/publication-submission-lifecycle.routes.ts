@@ -254,7 +254,18 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
         res.status(404).json({ error: 'receipt ـی ناردن نەدۆزرایەوە.' });
         return;
       }
-      res.json({ success: true, receipt });
+
+      const verification = verifySubmissionReceipt(receipt, {
+        submissionId: submission.id,
+        workspaceId,
+        submissionFingerprint: submission.submissionFingerprint,
+        submissionVersionId: submission.currentVersionId
+      });
+      res.status(verification.status === 'VERIFIED' ? 200 : 409).json({
+        success: verification.status === 'VERIFIED',
+        receipt,
+        verification
+      });
     } catch (error) {
       console.error('Submission receipt read error:', error);
       res.status(500).json({ error: 'نەتوانرا receipt ـی ناردن بخوێندرێتەوە.' });
