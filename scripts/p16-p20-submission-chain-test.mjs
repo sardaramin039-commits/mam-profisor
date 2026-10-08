@@ -52,11 +52,18 @@ const receipt = buildSubmissionReceipt({
 assert.equal(
   verifySubmissionReceipt(receipt, {
     submissionId: 'SUB-CHAIN',
+    userId: 'USER-CHAIN',
     workspaceId: 'WS-CHAIN',
     submissionFingerprint: fingerprint,
     submissionVersionId: version.id
   }).status,
   'VERIFIED'
+);
+assert.equal(
+  verifySubmissionReceipt(
+    { ...receipt, id: 'REC-forged' }
+  ).status,
+  'INVALID'
 );
 
 const audit1 = buildSubmissionAuditEvent({
@@ -85,6 +92,11 @@ assert.equal(
     2,
     audit2.eventHash
   ).status,
+  'VERIFIED'
+);
+
+assert.equal(
+  verifySubmissionAuditChain([audit2, audit1], 'SUBMITTED', 2, audit2.eventHash, 'SUB-CHAIN').status,
   'VERIFIED'
 );
 
