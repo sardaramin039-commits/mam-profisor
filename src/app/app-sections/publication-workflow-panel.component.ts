@@ -70,6 +70,7 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
   readonly loading = signal(false);
   readonly taskLoading = signal<string | null>(null);
   readonly errorMessage = signal('');
+  readonly taskStatuses = ['IN_PROGRESS', 'DONE', 'WAIVED'] as const;
 
   override ngOnInit(): void {
     this.workspaceId.set(this.host.historyList()[0]?.id || '');
