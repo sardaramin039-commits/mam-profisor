@@ -9,6 +9,70 @@ afterEach(() => {
 });
 
 describe('EvidenceGroundingService chunk retention', () => {
+  it('rejects an LLM citation marker that does not match source author and year', async () => {
+    claimEvidenceGraphService.buildGraph = async () => ({
+      claims: [],
+      evidences: [],
+      syntheticCitationsBlockedCount: 0,
+      graphIntegrityScore: 100,
+      kurdishSummary: 'test'
+    });
+
+    const ai = {
+      models: {
+        generateContent: async () => ({
+          text: JSON.stringify({
+            paragraphs: [{
+              paragraphIndex: 1,
+              text: 'A grounded sentence.',
+              claims: [{
+                claimId: 'CLM-2',
+                sentenceText: 'A grounded sentence.',
+                sourceId: 'SRC-1',
+                evidenceId: 'EVI-1',
+                verificationStatus: 'verified',
+                citationEligible: true,
+                citationText: '(Invented, 2099)',
+                evidenceQuote: 'verified source evidence',
+                confidence: 95,
+                gapDetected: false
+              }]
+            }],
+            verifiedCitations: [{
+              citationId: 'CIT-2',
+              sourceId: 'SRC-1',
+              inTextCitation: '(Invented, 2099)',
+              evidenceQuote: 'verified source evidence',
+              verified: true
+            }],
+            evidenceGaps: [],
+            kurdishSummary: 'test'
+          })
+        })
+      }
+    } as any;
+
+    const result = await evidenceGroundingService.generateGroundedContent(
+      'topic',
+      'write from evidence',
+      [{
+        sourceId: 'SRC-1',
+        sourceTitle: 'Study',
+        chunkText: 'verified source evidence',
+        verificationStatus: 'verified',
+        author: 'Researcher',
+        year: '2025',
+        evidenceType: 'full-text',
+        provenance: 'server-verified-fulltext'
+      }],
+      () => ai
+    );
+
+    expect(result.integrityMetrics.verifiedClaims).toBe(1);
+    expect(result.verifiedCitations).toHaveLength(0);
+    expect(result.paragraphs[0]?.claims[0]?.citationText).toBeUndefined();
+  });
+
   it('keeps evidence from any eligible chunk of the same source', async () => {
     claimEvidenceGraphService.buildGraph = async () => ({
       claims: [],
