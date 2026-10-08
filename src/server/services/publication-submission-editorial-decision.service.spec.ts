@@ -3,6 +3,7 @@ import {
   buildEditorialDecision,
   buildRevisionPlan
 } from './publication-submission-editorial-decision.service';
+import { verifyRevisionPlan } from './publication-submission-revision.policy';
 
 const version = 'a'.repeat(64);
 
@@ -76,6 +77,36 @@ describe('P20 editorial decision management', () => {
     expect(plan.tasks).toHaveLength(1);
     expect(plan.tasks[0].status).toBe('OPEN');
     expect(plan.planHash).toMatch(/^[a-f0-9]{64}$/u);
+    expect(verifyRevisionPlan(plan)).toHaveLength(0);
+  });
+
+  it('detects duplicated revision task identifiers', () => {
+    const plan = buildRevisionPlan(
+      'DEC-2',
+      'SUB-2',
+      'VER-2',
+      'MINOR',
+      [
+        {
+          title: 'Fix one',
+          details: 'Correct the first issue.',
+          scope: 'SECTION',
+          required: true
+        },
+        {
+          title: 'Fix two',
+          details: 'Correct the second issue.',
+          scope: 'SECTION',
+          required: false
+        }
+      ],
+      '2026-10-08T16:00:00.000Z'
+    );
+    const tampered = {
+      ...plan,
+      tasks: [plan.tasks[0], { ...plan.tasks[1], id: plan.tasks[0].id }],
+    };
+    expect(verifyRevisionPlan(tampered).some(error => error.includes('Duplicate revision task id'))).toBe(true);
   });
 
   it('binds ACCEPT and REJECT decisions to explicit receipt evidence', () => {
