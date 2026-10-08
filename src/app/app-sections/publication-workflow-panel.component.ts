@@ -199,7 +199,7 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     this.loading.set(true);
     try {
       const base = `/api/publication-submission-editorial/${encodeURIComponent(this.workspaceId())}/${encodeURIComponent(this.submissionId())}`;
-      const [decisions, revision, versionHistory] = await Promise.all([
+      const [decisions, revision, versionHistory, manifests] = await Promise.all([
         firstValueFrom(this.workflowHttp.get<{ decisions: EditorialDecision[] }>(`${base}/decisions`)),
         firstValueFrom(this.workflowHttp.get<{ plan: RevisionPlan | null; gate: RevisionGate }>(`${base}/revision`)),
         firstValueFrom(this.workflowHttp.get<{ versions: VersionReport; items: SubmissionVersion[] }>(`${base}/versions`)),
@@ -212,7 +212,7 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
       this.revisionGate.set(revision.gate);
       this.versionReport.set(versionHistory.versions || null);
       this.versions.set(versionHistory.items || []);
-      const manifestList = (versionHistory as unknown as { manifests?: SubmissionManifestSummary[] }).manifests || [];
+      const manifestList = manifests.manifests || [];
       const currentVersionId = this.currentSubmission()?.currentVersionId || '';
       const locked = manifestList.find(manifest => manifest.versionId === currentVersionId) || null;
       this.lockedManifest.set(locked);
