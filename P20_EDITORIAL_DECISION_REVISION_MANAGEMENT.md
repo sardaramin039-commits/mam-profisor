@@ -53,3 +53,5 @@ PATCH ـی revision task هێشتا بۆ خاوەنی submission ـی authentica
 ## UI
 
 app-publication-workflow-panel ئێستا توانای هەیە جۆری بڕیار، note، external reference و revision task ـە structured ـەکان دروست بکات، پاشان submissions و decision history و revision gate نوێ بکاتەوە. ئەگەر user ـەکە role ـی editorial نەبێت، API بە 403 وەڵام دەدات.
+## Hardening
+P20 بۆ ACCEPT/REJECT receipt ـی P16 بە hash و current version verification دەکات. Revision plan ـیش count، task ID، task order، task content، required flag، plan hash و computed status دەپشکنێت. ئەمە ڕێگری لە plan ـێکی دەستکاریکراو یان inconsistent دەکات.
