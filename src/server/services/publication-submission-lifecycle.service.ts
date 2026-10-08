@@ -215,6 +215,9 @@ class PublicationSubmissionLifecycleService {
       if (current.currentStatus !== 'READY') {
         throw new Error('Only a READY submission can be submitted.');
       }
+      if (!current.auditHeadHash) {
+        throw new Error('Submission predates P17 audit chain and cannot be submitted safely.');
+      }
       if (current.submissionFingerprint !== submissionFingerprint) {
         throw new Error('Submission fingerprint does not match the READY package.');
       }
@@ -246,16 +249,29 @@ class PublicationSubmissionLifecycleService {
         ...(externalReference ? { externalReference } : {}),
         occurredAt: submittedAt
       };
+      const auditEvent = buildSubmissionAuditEvent({
+        submissionId: current.id,
+        version: current.version + 1,
+        from: current.currentStatus,
+        to: 'SUBMITTED',
+        note: note || 'Submission recorded.',
+        externalReference,
+        receiptId: receipt.id,
+        occurredAt: submittedAt,
+        previousHash: current.auditHeadHash
+      });
       const updated: SubmissionLifecycleRecord = {
         ...current,
         currentStatus: 'SUBMITTED',
         submissionReceiptId: receipt.id,
         version: current.version + 1,
         events: [...current.events, event].slice(-100),
+        auditHeadHash: auditEvent.eventHash,
         updatedAt: submittedAt
       };
 
       transaction.create(receiptCollection.doc(receipt.id), receipt);
+      transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
       transaction.set(reference, updated);
       return updated;
     });
