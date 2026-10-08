@@ -84,4 +84,65 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
     expect(abstractClaim?.syntheticCitationBlocked).toBe(true);
     expect(result.syntheticCitationsBlockedCount).toBe(1);
   });
+  it('uses explicit sourceId when titles are identical', async () => {
+    const service = new ClaimEvidenceGraphService();
+    const ai = {
+      models: {
+        generateContent: async () => ({
+          text: JSON.stringify({
+            claims: [{
+              claimId: 'CLAIM-ID',
+              text: 'Second-source claim',
+              sourceId: 'SRC-TWO',
+              evidenceId: 'EVI-TWO',
+              confidence: 91,
+              quote: 'evidence from source two',
+              verificationStatus: 'verified',
+              citationId: 'CIT-TWO'
+            }],
+            evidences: [{
+              evidenceId: 'EVI-TWO',
+              text: 'evidence from source two',
+              sourceId: 'SRC-TWO',
+              sourceTitle: 'Same Title'
+            }]
+          })
+        })
+      }
+    } as any;
+
+    const result = await service.buildGraph(
+      'topic',
+      'draft',
+      [
+        {
+          id: 'SRC-ONE',
+          title: 'Same Title',
+          verificationStatus: 'verified',
+          identityStatus: 'verified',
+          evidenceStatus: 'verified',
+          evidenceType: 'full-text',
+          evidenceProvenance: 'server-verified-fulltext',
+          evidenceText: 'evidence from source one',
+          trustLevel: 'A'
+        },
+        {
+          id: 'SRC-TWO',
+          title: 'Same Title',
+          verificationStatus: 'verified',
+          identityStatus: 'verified',
+          evidenceStatus: 'verified',
+          evidenceType: 'full-text',
+          evidenceProvenance: 'server-verified-fulltext',
+          evidenceText: 'evidence from source two',
+          trustLevel: 'A'
+        }
+      ],
+      () => ai
+    );
+
+    expect(result.claims[0]?.sourceId).toBe('SRC-TWO');
+    expect(result.claims[0]?.verificationStatus).toBe('verified');
+  });
+
 });
