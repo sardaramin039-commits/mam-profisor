@@ -314,14 +314,25 @@ export class SourceVerificationEngine {
           source.workflowStepsCompleted.verified === true;
 
         if (sourceFullyVerified && !existing.citationEligible) {
+          existing.title = source.title;
+          existing.author = source.author;
+          existing.publicationYear = source.publicationYear;
+          existing.publisherOrJournal = source.publisherOrJournal;
+          existing.identifiers = { ...source.identifiers };
+          existing.doiOrUrl = source.doiOrUrl;
+          existing.pageNumber = source.pageNumber;
+          existing.exactEvidenceSnippet = source.exactEvidenceSnippet;
+          existing.sourceUrl = source.sourceUrl;
           existing.verificationStatus = 'VERIFIED';
           existing.identityStatus = 'verified';
           existing.evidenceStatus = 'verified';
           existing.citationEligible = true;
           existing.verificationNotes = source.verificationNotes;
-          existing.workflowStepsCompleted.verified = true;
-          existing.workflowStepsCompleted.cited = true;
-          existing.pageNumber = source.pageNumber;
+          existing.auditDate = source.auditDate;
+          existing.tier = source.tier;
+          existing.tierName = source.tierName;
+          existing.reliabilityScore = source.reliabilityScore;
+          existing.workflowStepsCompleted = { ...source.workflowStepsCompleted };
         }
         existing.reliabilityScore = Math.max(existing.reliabilityScore, source.reliabilityScore);
       } else {
