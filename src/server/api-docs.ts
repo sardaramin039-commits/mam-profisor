@@ -143,6 +143,39 @@ export function createApiDocsRouter(): Router {
       <p class="text-slate-300 text-xs">verify ـکردنی immutable manifest و دۆزینەوەی tampering لە policy یان hash.</p>
     </div>
 
+    <!-- P20 Editorial Decision & Revision Management -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-red-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">POST</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-editorial/:workspaceId/:submissionId/decision</code>
+      </div>
+      <p class="text-slate-300 text-xs">P20 بڕیاری editorial بە submission version و P17 audit chain دەبەستێت؛ MINOR_REVISION / MAJOR_REVISION / ACCEPT / REJECT / WITHDRAW.</p>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-emerald-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">GET</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-editorial/:workspaceId/:submissionId/decisions</code>
+      </div>
+      <p class="text-slate-300 text-xs">مێژووی بڕیارە editorial ـە hash-bound ـەکان و version ـی پەیوەست.</p>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-teal-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">GET</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-editorial/:workspaceId/:submissionId/revision</code>
+      </div>
+      <p class="text-slate-300 text-xs">revision plan، دۆخی task ـەکان، و resubmission gate پیشان دەدات.</p>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-orange-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">PATCH</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-editorial/:workspaceId/:submissionId/revision/:taskId</code>
+      </div>
+      <p class="text-slate-300 text-xs">دۆخی revision task دەگۆڕێت بۆ OPEN / IN_PROGRESS / DONE / WAIVED؛ WAIVED پێویستی بە completion note هەیە.</p>
+    </div>
+
     <div class="text-center text-slate-500 text-xs pt-6 border-t border-slate-800">
       Harvard Academic AI Platform &copy; 2026. All security & proxy headers configured.
     </div>
