@@ -342,7 +342,13 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
       await claimEvidenceGraphService.buildGraph(
         topic,
         paragraphs.map(paragraph => paragraph.text).join('\\n\\n'),
-        citationEligibleChunks,
+        citationEligibleChunks.map(chunk => ({
+          ...chunk,
+          identityStatus: 'verified' as const,
+          evidenceStatus: 'verified' as const,
+          evidenceProvenance: chunk.provenance || 'unknown',
+          content: chunk.chunkText
+        })),
         getGeminiClient
       );
 
