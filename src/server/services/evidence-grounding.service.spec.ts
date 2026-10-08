@@ -182,4 +182,75 @@ describe('EvidenceGroundingService chunk retention', () => {
     expect(result.verifiedCitations).toHaveLength(1);
     expect(result.verifiedCitations[0]?.sourceId).toBe('SRC-1');
   });
+  it('blocks evidence-id spoofing across chunks of the same source', async () => {
+    claimEvidenceGraphService.buildGraph = async () => ({
+      claims: [],
+      evidences: [],
+      syntheticCitationsBlockedCount: 0,
+      graphIntegrityScore: 100,
+      kurdishSummary: 'test'
+    });
+
+    const ai = {
+      models: {
+        generateContent: async () => ({
+          text: JSON.stringify({
+            paragraphs: [{
+              paragraphIndex: 1,
+              text: 'A grounded sentence.',
+              claims: [{
+                claimId: 'CLM-SPOOF',
+                sentenceText: 'A grounded sentence.',
+                sourceId: 'SRC-1',
+                evidenceId: 'EVI-1',
+                verificationStatus: 'verified',
+                citationEligible: true,
+                citationText: '(Researcher, 2025)',
+                evidenceQuote: 'evidence from second chunk',
+                confidence: 95,
+                gapDetected: false
+              }]
+            }],
+            verifiedCitations: [],
+            evidenceGaps: [],
+            kurdishSummary: 'test'
+          })
+        })
+      }
+    } as any;
+
+    const result = await evidenceGroundingService.generateGroundedContent(
+      'topic',
+      'write from evidence',
+      [
+        {
+          sourceId: 'SRC-1',
+          sourceTitle: 'Study',
+          chunkText: 'evidence from first chunk',
+          verificationStatus: 'verified',
+          author: 'Researcher',
+          year: '2025',
+          evidenceType: 'full-text',
+          provenance: 'server-verified-fulltext'
+        },
+        {
+          sourceId: 'SRC-1',
+          sourceTitle: 'Study',
+          chunkText: 'evidence from second chunk',
+          verificationStatus: 'verified',
+          author: 'Researcher',
+          year: '2025',
+          evidenceType: 'full-text',
+          provenance: 'server-verified-fulltext'
+        }
+      ],
+      () => ai
+    );
+
+    expect(result.paragraphs[0]?.claims[0]?.citationEligible).toBe(false);
+    expect(result.paragraphs[0]?.claims[0]?.verificationStatus).toBe('partially_verified');
+    expect(result.paragraphs[0]?.claims[0]?.citationText).toBeUndefined();
+  });
+
+
 });
