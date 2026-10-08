@@ -103,6 +103,13 @@
       </details>
 
       <details class="mam-secondary-tools">
+        <summary><mat-icon>rate_review</mat-icon><span>publication و پێداچوونەوە</span><small>بڕیاری editor، revision و ئامادەبوون بۆ دووبارەناردن</small></summary>
+        <div class="mam-secondary-grid">
+          <app-publication-workflow-panel [host]="host"></app-publication-workflow-panel>
+        </div>
+      </details>
+
+      <details class="mam-secondary-tools">
         <summary><mat-icon>tune</mat-icon><span>ئامرازە یارمەتیدەرەکان</span><small>گەڕان، وشەنامە و هاوکاری ئەکادیمی</small></summary>
         <div class="mam-secondary-grid">
           <app-global-search [host]="host"></app-global-search>
