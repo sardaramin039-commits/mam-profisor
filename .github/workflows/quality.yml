@@ -46,6 +46,9 @@ jobs:
       - name: Node route contract tests
         run: npm run test:server
 
+      - name: Integrated P11-P15 publication chain
+        run: node scripts/p11-p15-publication-chain-test.mjs
+
       - name: Lint
         run: npm run lint
 
