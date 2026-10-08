@@ -167,17 +167,20 @@ export class AcademicSearchService {
       .map(item => ({ ...item, title: item.title.trim() }));
 
     const seenIdentifiers = new Set<string>();
-    const seenTitleYears = new Set<string>();
+    const seenFallbackKeys = new Set<string>();
     const deduplicated = combined.filter(item => {
       const identifier = String(item.doi || item.isbn || '').toLocaleLowerCase().trim();
-      const titleYear = `${item.title.toLocaleLowerCase().trim()}::${item.publicationYear || 'n.d.'}`;
+      const authors = item.authors.map(author => author.toLocaleLowerCase().trim()).filter(Boolean).join('|');
+      const fallbackKey = `${item.title.toLocaleLowerCase().trim()}::${item.publicationYear || 'n.d.'}::${authors}`;
 
-      if ((identifier && seenIdentifiers.has(identifier)) || seenTitleYears.has(titleYear)) {
-        return false;
+      if (identifier) {
+        if (seenIdentifiers.has(identifier)) return false;
+        seenIdentifiers.add(identifier);
+        return true;
       }
 
-      if (identifier) seenIdentifiers.add(identifier);
-      seenTitleYears.add(titleYear);
+      if (seenFallbackKeys.has(fallbackKey)) return false;
+      seenFallbackKeys.add(fallbackKey);
       return true;
     });
 
