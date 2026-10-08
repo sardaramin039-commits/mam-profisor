@@ -60,6 +60,7 @@ const mockGeminiClient = () => ({
                 verificationStatus: 'verified',
                 citationEligible: true,
                 citationText: '(سەعید، ٢٠٢٣)',
+                evidenceQuote: 'دەقی بەڵگەی سەلمێنراو ناو سەرچاوەکە',
                 confidence: 96,
                 gapDetected: false
               },
@@ -129,6 +130,8 @@ const result = await groundingService.generateGroundedContent(
 assert.ok(result.paragraphs.length > 0, 'Must produce grounded paragraphs');
 assert.ok(result.integrityMetrics, 'Integrity metrics must be present');
 assert.equal(result.integrityMetrics.blockedSyntheticCitations, 1, 'Unverified claim citation MUST be blocked');
+assert.equal(result.integrityMetrics.verifiedClaims, 1, 'Grounded source-bound claim MUST remain verified');
+assert.equal(result.integrityMetrics.citationEligibleClaims, 1, 'Grounded source-bound claim MUST be citation-eligible');
 assert.equal(result.evidenceGaps.length, 1, 'Evidence gap for unverified claim MUST be flagged');
 
 console.log('✅ Grounded Content Generation assertions passed.');
