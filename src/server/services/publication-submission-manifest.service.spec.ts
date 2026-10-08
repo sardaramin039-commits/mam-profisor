@@ -27,7 +27,7 @@ function makeInputs() {
     keywords: ['research', 'kurdish']
   });
   const integrity = verifyPublicationSubmissionIntegrity({ package: pkg });
-  return { manuscript, policy, pkg, integrity };
+  return { policy, pkg, integrity };
 }
 
 describe('P19 reproducible submission manifest', () => {
