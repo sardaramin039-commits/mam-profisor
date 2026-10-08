@@ -179,7 +179,7 @@ class ResearchProjectStateService {
       );
       if (duplicate) continue;
 
-      const item = await researchMemoryService.addMemoryItem(userId, workspaceId, {
+      await researchMemoryService.addMemoryItem(userId, workspaceId, {
         userId,
         topic,
         type: 'source',
@@ -192,7 +192,6 @@ class ResearchProjectStateService {
           evidenceId: String(citation?.evidenceId || '')
         }
       });
-      existing.push(item);
     }
 
     const paragraphs = Array.isArray(grounded?.paragraphs) ? grounded.paragraphs : [];
@@ -225,7 +224,6 @@ class ResearchProjectStateService {
             verified: true
           }
         });
-        existing.push(claimItem);
 
         const evidenceDuplicate = existing.some(item =>
           item.type === 'evidence' &&
@@ -233,7 +231,7 @@ class ResearchProjectStateService {
           item.content === evidenceQuote
         );
         if (!evidenceDuplicate) {
-          const evidenceItem = await researchMemoryService.addMemoryItem(userId, workspaceId, {
+          await researchMemoryService.addMemoryItem(userId, workspaceId, {
             userId,
             topic,
             type: 'evidence',
@@ -246,7 +244,6 @@ class ResearchProjectStateService {
               verified: true
             }
           });
-          existing.push(evidenceItem);
         }
       }
     }
