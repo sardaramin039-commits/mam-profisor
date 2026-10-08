@@ -1,6 +1,7 @@
 import { adminDb } from '../../lib/firebase-admin';
 import { sha256 } from './text-sha256.service';
 import { buildSubmissionReceipt } from './publication-submission-receipt.service';
+import type { SubmissionReceipt } from './publication-submission-receipt.service';
 import {
   canTransition,
   normalizeExternalReference,
@@ -56,6 +57,16 @@ class PublicationSubmissionLifecycleService {
   async get(userId: string, submissionId: string): Promise<SubmissionLifecycleRecord | null> {
     const snapshot = await this.ref(userId).doc(submissionId).get();
     return snapshot.exists ? snapshot.data() as SubmissionLifecycleRecord : null;
+  }
+
+  async getReceipt(
+    userId: string,
+    submissionId: string,
+    receiptId: string
+  ): Promise<SubmissionReceipt | null> {
+    const reference = this.ref(userId).doc(submissionId).collection('receipts').doc(receiptId);
+    const snapshot = await reference.get();
+    return snapshot.exists ? snapshot.data() as SubmissionReceipt : null;
   }
 
   async list(userId: string, workspaceId: string, limit = 50): Promise<SubmissionLifecycleRecord[]> {
