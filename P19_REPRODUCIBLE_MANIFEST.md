@@ -23,3 +23,5 @@ Manifest تەنها بۆ package ـێکی READY دروست دەکرێت. P9 rese
 
 ## Scope
 P19 reproducibility ـی package ـی ناوخۆی ئەپەکە دەسەلمێنێت؛ دڵنیایی لە policy ـی live ـی publisher یان قبوڵبوونی journal نییە.
+## Hardening
+Manifest verification ئێستا policy fingerprint، immutable hash و manifest ID ـی مشتقکراو لە hash دەپشکنێت. Capture پێش دروستکردن P9، P7، P14، P17 و P18 state ـەکان پشکنێت و current version/fingerprint لەگەڵ latest stored version هاوتا دەکات.
