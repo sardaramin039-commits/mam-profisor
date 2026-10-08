@@ -60,6 +60,14 @@ function isPlaceholder(value: string): boolean {
 
 function hasStrictEvidenceBinding(source: any, claim: any): boolean {
   const evidenceQuote = clean(claim?.evidenceQuote);
+  const claimEvidenceId = clean(claim?.evidenceId);
+  const sourceEvidenceId = clean(source?.evidenceId);
+
+  if (claimEvidenceId || sourceEvidenceId) {
+    if (!claimEvidenceId || !sourceEvidenceId || claimEvidenceId !== sourceEvidenceId) {
+      return false;
+    }
+  }
   const sourceEvidence = clean(
     source?.evidenceText ??
     source?.fullText ??
