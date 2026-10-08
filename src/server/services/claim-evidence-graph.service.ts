@@ -135,7 +135,8 @@ export class ClaimEvidenceGraphService {
       const safeSources = (Array.isArray(sources) ? sources : []).filter(source => {
         const provenance = source?.evidenceProvenance || source?.provenance;
         const strictEvidence =
-          source?.verificationStatus === 'verified' &&
+          (source?.verificationStatus === 'verified' || source?.identityStatus === 'verified') &&
+          source?.evidenceStatus === 'verified' &&
           source?.evidenceType === 'full-text' &&
           provenance === 'server-verified-fulltext';
 
