@@ -9,6 +9,39 @@ afterEach(() => {
 });
 
 describe('EvidenceGroundingService chunk retention', () => {
+  it('falls back without calling the LLM when only non-eligible evidence exists', async () => {
+    let aiCallCount = 0;
+    const ai = {
+      models: {
+        generateContent: async () => {
+          aiCallCount++;
+          return { text: '{}' };
+        }
+      }
+    } as any;
+
+    const result = await evidenceGroundingService.generateGroundedContent(
+      'topic',
+      'write from evidence',
+      [{
+        sourceId: 'SRC-ABSTRACT',
+        sourceTitle: 'Abstract Only',
+        chunkText: 'abstract evidence for the topic',
+        verificationStatus: 'verified',
+        author: 'Researcher',
+        year: '2025',
+        evidenceType: 'abstract',
+        provenance: 'unknown'
+      }],
+      () => ai
+    );
+
+    expect(aiCallCount).toBe(0);
+    expect(result.verifiedCitations).toEqual([]);
+    expect(result.integrityMetrics.citationEligibleClaims).toBe(0);
+    expect(result.integrityMetrics.eligibilityGateStatus).toBe('FAIL');
+  });
+
   it('rejects an LLM citation marker that does not match source author and year', async () => {
     claimEvidenceGraphService.buildGraph = async () => ({
       claims: [],
