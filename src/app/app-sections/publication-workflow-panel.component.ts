@@ -165,7 +165,6 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
   }
 
   private clearEvidence(): void {
-    this.submissions.set([]);
     this.decisions.set([]);
     this.revisionPlan.set(null);
     this.revisionGate.set(null);
