@@ -212,7 +212,6 @@ async function loadDecisionReceipt(
   const snapshot = await transaction.get(reference);
   return snapshot.exists ? snapshot.data() as SubmissionReceipt : null;
 }
-class PublicationSubmissionEditorialDecisionService {
 function buildDecisionArtifacts(
   current: SubmissionLifecycleRecord,
   userId: string,
@@ -272,6 +271,7 @@ function buildDecisionArtifacts(
   };
   return { decision, ...(revisionPlan ? { revisionPlan } : {}), auditEvent, event, submission };
 }
+class PublicationSubmissionEditorialDecisionService {
   async record(
     userId: string,
     workspaceId: string,
