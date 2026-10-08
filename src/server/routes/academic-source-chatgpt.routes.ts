@@ -1,4 +1,5 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
+import { AuthRequest } from '../../middleware/auth';
 import { z } from 'zod';
 import { openAiChatGptService } from '../services/openai-chatgpt.service';
 
@@ -20,7 +21,12 @@ const organizeReferencesSchema = z.object({
 export function createChatGptAcademicSourcesRouter(): Router {
   const router = Router();
 
-  router.post('/discover-sources', async (req: Request, res: Response) => {
+  router.post('/discover-sources', async (req: AuthRequest, res: Response) => {
+    const openAiEnabled = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] === 'true';
+    if (openAiEnabled && !req.user) {
+      res.status(401).json({ error: 'ئەم مۆدەیە تەنها بۆ بەکارهێنەری authenticated ـە.' });
+      return;
+    }
     const parsed = discoverSourcesSchema.safeParse(req.body ?? {});
     if (!parsed.success) {
       res.status(400).json({
@@ -41,7 +47,12 @@ export function createChatGptAcademicSourcesRouter(): Router {
     }
   });
 
-  router.post('/organize-references', async (req: Request, res: Response) => {
+  router.post('/organize-references', async (req: AuthRequest, res: Response) => {
+    const openAiEnabled = process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'] === 'true';
+    if (openAiEnabled && !req.user) {
+      res.status(401).json({ error: 'ئەم مۆدەیە تەنها بۆ بەکارهێنەری authenticated ـە.' });
+      return;
+    }
     const parsed = organizeReferencesSchema.safeParse(req.body ?? {});
     if (!parsed.success) {
       res.status(400).json({
@@ -62,7 +73,7 @@ export function createChatGptAcademicSourcesRouter(): Router {
     }
   });
 
-  router.get('/status', (_req: Request, res: Response) => {
+  router.get('/status', (_req: AuthRequest, res: Response) => {
     const key = process.env['OPENAI_API_KEY']?.trim() || '';
     const openAiEnabled = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] === 'true';
     const isConfigured = Boolean(key.startsWith('sk-'));
