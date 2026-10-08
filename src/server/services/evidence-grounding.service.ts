@@ -31,6 +31,7 @@ export interface GroundedGenerationResult {
   verifiedCitations: Array<{
     citationId: string;
     sourceId: string;
+    evidenceId: string;
     inTextCitation: string;
     evidenceQuote: string;
     verified: boolean;
@@ -327,6 +328,7 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
       }).map((citation: any) => ({
         citationId: String(citation.citationId || ''),
         sourceId: String(citation.sourceId || ''),
+        evidenceId: String(citation.evidenceId || ''),
         inTextCitation: String(citation.inTextCitation || ''),
         evidenceQuote: String(citation.evidenceQuote || ''),
         verified: true
