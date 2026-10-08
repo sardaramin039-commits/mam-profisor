@@ -58,6 +58,10 @@ function isPlaceholder(value: string): boolean {
   ]).has(normalized);
 }
 
+function evidenceKey(sourceId: string, evidenceId: string): string {
+  return `${sourceId}::${evidenceId}`;
+}
+
 function hasStrictEvidenceBinding(source: any, claim: any): boolean {
   const evidenceQuote = clean(claim?.evidenceQuote);
   const claimEvidenceId = clean(claim?.evidenceId);
@@ -103,10 +107,27 @@ export class CitationIntelligenceService {
   ): CitationIntelligenceResult {
     const sources = Array.isArray(verifiedSources) ? verifiedSources : [];
     const sourceById = new Map<string, any>();
+    const sourceIdCounts = new Map<string, number>();
+    const sourceByEvidenceId = new Map<string, any>();
 
     for (const source of sources) {
       const id = clean(source?.id ?? source?.sourceId ?? source?.doiOrIsbn ?? source?.doi);
-      if (id) sourceById.set(id, source);
+      const evidenceId = clean(source?.evidenceId);
+      if (!id) continue;
+
+      sourceIdCounts.set(id, (sourceIdCounts.get(id) || 0) + 1);
+      if (evidenceId) {
+        sourceByEvidenceId.set(evidenceKey(id, evidenceId), source);
+      }
+    }
+
+    for (const [id, count] of sourceIdCounts) {
+      if (count === 1) {
+        const source = sources.find(item =>
+          clean(item?.id ?? item?.sourceId ?? item?.doiOrIsbn ?? item?.doi) === id
+        );
+        if (source) sourceById.set(id, source);
+      }
     }
 
     const citations: CitationRecord[] = [];
@@ -118,7 +139,10 @@ export class CitationIntelligenceService {
     for (const paragraph of Array.isArray(paragraphs) ? paragraphs : []) {
       for (const claim of Array.isArray(paragraph?.claims) ? paragraph.claims : []) {
         const sourceId = clean(claim?.sourceId);
-        const source = sourceById.get(sourceId);
+        const evidenceId = clean(claim?.evidenceId);
+        const source = evidenceId
+          ? sourceByEvidenceId.get(evidenceKey(sourceId, evidenceId))
+          : sourceById.get(sourceId);
 
         const sourceAndClaimVerified =
           source &&
