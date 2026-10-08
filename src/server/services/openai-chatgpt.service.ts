@@ -87,6 +87,26 @@ function citationMla(record: AcademicPaper): string {
   return `${firstAuthor(record)}. "${record.title}." ${yearFor(record)}.${record.doi ? ` DOI: ${record.doi}.` : ''}`;
 }
 
+function normalizedContains(haystack: string, needle: unknown): boolean {
+  const value = String(needle ?? '').trim();
+  return !value || haystack.includes(value.toLocaleLowerCase().normalize('NFKC'));
+}
+
+function isRawReferenceMatch(item: AcademicSourceItem, normalizedRaw: string): boolean {
+  const fields = [
+    item.title,
+    ...item.authors,
+    item.year,
+    item.doi,
+    item.url,
+    item.journalOrPublisher
+  ];
+
+  return fields
+    .filter(value => String(value ?? '').trim())
+    .every(value => normalizedContains(normalizedRaw, value));
+}
+
 function mapRecord(record: AcademicPaper, query: string): AcademicSourceItem {
   return {
     id: record.id,
@@ -308,11 +328,13 @@ export class OpenAiChatGptService {
               item &&
               typeof item === 'object' &&
               typeof item.title === 'string' &&
-              normalizedRaw.includes(
-                item.title.toLocaleLowerCase().normalize('NFKC').slice(0, 120)
-              )
+              isRawReferenceMatch(item, normalizedRaw)
             )
           )
+          .map(item => ({
+            ...item,
+            verificationStatus: 'retrieved-not-verified' as const
+          }))
           .slice(0, 100)
       : [];
 
