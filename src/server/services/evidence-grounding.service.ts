@@ -51,6 +51,34 @@ export interface GroundedGenerationResult {
   kurdishSummary: string;
 }
 
+function citationTextMatchesSource(
+  citationText: unknown,
+  source: { author?: string; year?: string }
+): boolean {
+  const citation = String(citationText || '')
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+  const year = String(source.year || '')
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .trim();
+  const authorTokens = String(source.author || '')
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .split(' ')
+    .filter(token => token.length > 2);
+
+  return Boolean(
+    citation &&
+    year &&
+    citation.includes(year) &&
+    authorTokens.some(token => citation.includes(token))
+  );
+}
+
 export class EvidenceGroundingService {
   /**
    * Citation Eligibility Gate
@@ -246,6 +274,17 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
           claim.citationEligible = grounded && claim.verificationStatus === 'verified';
 
           if (claim.citationEligible) {
+            const matchedChunks = eligibleBySourceId.get(String(claim.sourceId)) || [];
+            const matchedChunk = matchedChunks.find(chunk =>
+              hasGroundedEvidence(claim.sourceId, claim.evidenceQuote)
+            );
+            if (
+              claim.citationText &&
+              matchedChunk &&
+              !citationTextMatchesSource(claim.citationText, matchedChunk)
+            ) {
+              claim.citationText = undefined;
+            }
             verifiedClaims++;
             eligibleClaims++;
           } else {
@@ -265,11 +304,18 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
       const rawVerifiedCitations = Array.isArray(parsed.verifiedCitations)
         ? parsed.verifiedCitations
         : [];
-      const verifiedCitations = rawVerifiedCitations.filter((citation: any) =>
-        citation?.verified === true &&
-        eligibleBySourceId.has(String(citation?.sourceId || '')) &&
-        hasGroundedEvidence(citation?.sourceId, citation?.evidenceQuote)
-      ).map((citation: any) => ({
+      const verifiedCitations = rawVerifiedCitations.filter((citation: any) => {
+        const chunks = eligibleBySourceId.get(String(citation?.sourceId || '')) || [];
+        const matchedChunk = chunks.find(chunk =>
+          hasGroundedEvidence(citation?.sourceId, citation?.evidenceQuote)
+        );
+        return (
+          citation?.verified === true &&
+          Boolean(matchedChunk) &&
+          citationTextMatchesSource(citation?.inTextCitation, matchedChunk) &&
+          hasGroundedEvidence(citation?.sourceId, citation?.evidenceQuote)
+        );
+      }).map((citation: any) => ({
         citationId: String(citation.citationId || ''),
         sourceId: String(citation.sourceId || ''),
         inTextCitation: String(citation.inTextCitation || ''),
