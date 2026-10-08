@@ -9,6 +9,7 @@ export interface ResearchControlPlane {
     sources: number;
     claims: number;
     evidence: number;
+    verifiedEvidence: number;
     decisions: number;
     evidenceCoverage: number;
   };
@@ -18,6 +19,8 @@ export interface ResearchControlPlane {
     decisionTraceable: boolean;
     reviewRequired: boolean;
     exportBlocked: boolean;
+    readyForManuscript: boolean;
+    blockers: string[];
   };
 }
 
@@ -25,19 +28,39 @@ class ResearchControlPlaneService {
   async snapshot(userId: string, projectId: string): Promise<ResearchControlPlane> {
     const memory = await researchMemoryService.hydrateProjectState(userId, projectId);
     const decisions = await researchDecisionLedgerService.list(userId, projectId);
-    const evidence = memory.memoryItems.filter(item => item.type === 'evidence').length;
-    const methodologyReady = memory.memoryItems.some(item => item.tags.includes('methodology'));
-    const evidenceReady = memory.sourcesCount > 0 && evidence > 0;
+    const evidenceItems = memory.memoryItems.filter(item => item.type === 'evidence');
+    const verifiedEvidence = evidenceItems.filter(
+      item => item.metadata?.['verified'] === true
+    ).length;
+    const methodologyReady = memory.memoryItems.some(
+      item => item.tags.includes('methodology') && item.content.trim().length > 0
+    );
+    const evidenceReady =
+      memory.sourcesCount > 0 &&
+      verifiedEvidence > 0 &&
+      memory.evidenceCoverage >= (memory.claimsCount > 0 ? 80 : 0);
     const decisionTraceable = decisions.length > 0;
     const reviewRequired = memory.claimsCount > 0 && memory.evidenceCoverage < 80;
     const gates = evaluateResearchControlGates({
       methodologyReady,
       evidenceReady,
       decisionTraceable,
-      reviewRequired
+      reviewRequired,
+      sourcesCount: memory.sourcesCount,
+      claimsCount: memory.claimsCount,
+      evidenceCount: evidenceItems.length,
+      decisionCount: decisions.length,
+      evidenceCoverage: memory.evidenceCoverage
     });
+
     const stage = gates.exportBlocked
-      ? (memory.claimsCount > 0 ? 'review' : memory.sourcesCount > 0 ? 'evidence' : 'research')
+      ? !methodologyReady
+        ? 'research'
+        : !evidenceReady
+          ? 'evidence'
+          : reviewRequired
+            ? 'review'
+            : 'writing'
       : 'export';
 
     return {
@@ -46,7 +69,8 @@ class ResearchControlPlaneService {
       metrics: {
         sources: memory.sourcesCount,
         claims: memory.claimsCount,
-        evidence,
+        evidence: evidenceItems.length,
+        verifiedEvidence,
         decisions: decisions.length,
         evidenceCoverage: Math.max(0, Math.min(100, memory.evidenceCoverage))
       },
