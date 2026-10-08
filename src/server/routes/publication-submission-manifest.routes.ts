@@ -170,17 +170,18 @@ export function createPublicationSubmissionManifestRouter(): Router {
         ...(lifecycle.versionCount !== versions.length
           ? ['Lifecycle version count does not match stored versions.']
           : []),
-        ...(lifecycle.currentVersionId !== versionReport.latestFingerprint && false
-          ? ['Lifecycle current version check failed.']
+        ...(lifecycle.currentVersionId !== versions.at(-1)?.id
+          ? ['Lifecycle current version id does not match the latest stored version.']
+          : []),
+        ...(lifecycle.submissionFingerprint !== versionReport.latestFingerprint
+          ? ['Lifecycle fingerprint does not match the latest stored version.']
           : [])
       ];
 
       if (
         audit.status !== 'VERIFIED' ||
         versionReport.status !== 'VERIFIED' ||
-        versionConsistencyErrors.length > 0 ||
-        lifecycle.currentVersionId !== versions.at(-1)?.id ||
-        lifecycle.submissionFingerprint !== versionReport.latestFingerprint
+        versionConsistencyErrors.length > 0
       ) {
         res.status(409).json({
           success: false,
