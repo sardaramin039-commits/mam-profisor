@@ -206,6 +206,64 @@
       @if (revisionGate()?.reason) {
         <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] text-amber-900">{{ revisionGate()!.reason }}</div>
       }
+
+      <div class="mt-4 rounded-xl border border-stone-200 p-3">
+        <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
+          <div>
+            <h4 class="text-xs font-bold">مێژووی Version</h4>
+            <p class="text-[9px] text-stone-500 mt-0.5">P18/P19: زنجیرەی version و fingerprint و دۆخی integrity.</p>
+          </div>
+          @if (versionReport()) {
+            <span class="text-[9px] font-bold rounded-full px-2 py-1"
+              [class.bg-emerald-100]="versionReport()!.status === 'VERIFIED'"
+              [class.text-emerald-800]="versionReport()!.status === 'VERIFIED'"
+              [class.bg-rose-100]="versionReport()!.status === 'INVALID'"
+              [class.text-rose-800]="versionReport()!.status === 'INVALID'"
+              [class.bg-stone-100]="versionReport()!.status === 'EMPTY' || versionReport()!.status === 'LEGACY_RECONSTRUCTED'"
+              [class.text-stone-700]="versionReport()!.status === 'EMPTY' || versionReport()!.status === 'LEGACY_RECONSTRUCTED'">
+              {{ versionStatusLabel(versionReport()!.status) }}
+            </span>
+          }
+        </div>
+
+        @if (!versionReport() || versionReport()!.status === 'EMPTY') {
+          <p class="text-[10px] text-stone-500">هێشتا Version ـی تۆمارکراو نییە.</p>
+        } @else {
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+            <div class="rounded-lg bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">ژمارە</span><strong class="text-[10px]">{{ versionReport()!.versionCount }}</strong></div>
+            <div class="rounded-lg bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">کۆتا cycle</span><strong class="text-[10px]">{{ versionReport()!.latestCycle }}</strong></div>
+            <div class="rounded-lg bg-stone-50 p-2 col-span-2"><span class="block text-[9px] text-stone-500">کۆتا fingerprint</span><strong class="block text-[9px] break-all">{{ versionReport()!.latestFingerprint }}</strong></div>
+          </div>
+          @if (versionReport()!.errors.length > 0) {
+            <div class="mb-2 rounded-lg border border-rose-200 bg-rose-50 p-2 text-[9px] text-rose-800">
+              @for (error of versionReport()!.errors; track error) {
+                <div>{{ error }}</div>
+              }
+            </div>
+          }
+          <div class="space-y-1.5 max-h-56 overflow-y-auto">
+            @for (version of versions(); track version.id) {
+              <div class="rounded-lg border border-stone-100 bg-stone-50 p-2.5">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <strong class="text-[10px]">V{{ version.cycle }}، {{ versionKindLabel(version.kind) }}</strong>
+                  <span class="text-[9px] text-stone-500">{{ version.capturedAt | date:'yyyy-MM-dd HH:mm' }}</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-[9px]">
+                  <span>دۆخ: {{ statusLabel(version.statusAtCapture) }}</span>
+                  <span class="break-all">ID: {{ version.id }}</span>
+                  <span class="break-all">SHA: {{ version.packageFingerprint }}</span>
+                  @if (version.previousFingerprint) {
+                    <span class="break-all">Previous: {{ version.previousFingerprint }}</span>
+                  }
+                </div>
+                @if (version.note) {
+                  <p class="text-[9px] text-stone-600 mt-1">{{ version.note }}</p>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
     }
   } @else {
     <div class="mt-4 rounded-xl border border-dashed border-stone-300 p-5 text-center">
