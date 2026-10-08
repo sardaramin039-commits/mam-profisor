@@ -231,6 +231,27 @@ export function buildRevisionPlan(
   return { ...base, planHash: planHash(base) };
 }
 
+export function verifyRevisionPlan(plan: RevisionPlan): string[] {
+  const errors: string[] = [];
+  const base: Omit<RevisionPlan, 'planHash'> = {
+    id: plan.id,
+    submissionId: plan.submissionId,
+    decisionId: plan.decisionId,
+    submissionVersionId: plan.submissionVersionId,
+    severity: plan.severity,
+    status: plan.status,
+    tasks: plan.tasks,
+    createdAt: plan.createdAt,
+    updatedAt: plan.updatedAt
+  };
+  if (!validId(plan.id) || !validId(plan.submissionId) || !validId(plan.decisionId) || !validId(plan.submissionVersionId)) {
+    errors.push('Revision plan identity is invalid.');
+  }
+  if (planHash(base) !== plan.planHash) errors.push('Revision plan hash mismatch.');
+  if (computePlanStatus(plan.tasks) !== plan.status) errors.push('Revision plan status does not match its tasks.');
+  return errors;
+}
+
 function computePlanStatus(tasks: RevisionTask[]): RevisionPlan['status'] {
   if (tasks.length > 0 && tasks.every(task => !task.required || task.status === 'DONE' || task.status === 'WAIVED')) {
     return 'COMPLETED';
@@ -435,18 +456,22 @@ class PublicationSubmissionEditorialDecisionService {
       const planSnapshot = await transaction.get(planReferenceValue);
       if (!planSnapshot.exists) throw new Error('Revision plan was not found.');
       const stored = planSnapshot.data() as RevisionPlan;
+      const integrityErrors = verifyRevisionPlan(stored);
+      if (integrityErrors.length) throw new Error('Revision plan integrity check failed.');
       const taskIndex = stored.tasks.findIndex(task => task.id === taskId);
       if (taskIndex < 0) throw new Error('Revision task was not found.');
       if (status === 'WAIVED' && !clean(completionNote)) {
         throw new Error('A waived revision task requires a completion note.');
       }
       const updatedAt = new Date().toISOString();
-      const updatedTasks = stored.tasks.map((task, index) => index === taskIndex ? {
-        ...task,
-        status,
-        ...(clean(completionNote) ? { completionNote: clean(completionNote) } : { completionNote: undefined }),
-        updatedAt
-      } : task);
+      const updatedTasks = stored.tasks.map((task, index) => {
+        if (index !== taskIndex) return task;
+        const updatedTask: RevisionTask = { ...task, status, updatedAt };
+        const note = clean(completionNote);
+        if (note) updatedTask.completionNote = note;
+        else delete updatedTask.completionNote;
+        return updatedTask;
+      });
       const base: Omit<RevisionPlan, 'planHash'> = {
         ...stored,
         tasks: updatedTasks,
@@ -474,6 +499,10 @@ class PublicationSubmissionEditorialDecisionService {
     const plan = await latestRevisionPlan(userId, submissionId);
     if (!plan) {
       return { ready: false, plan: null, pendingRequiredTasks: [], reason: 'No structured revision plan exists.' };
+    }
+    const integrityErrors = verifyRevisionPlan(plan);
+    if (integrityErrors.length) {
+      return { ready: false, plan, pendingRequiredTasks: [], reason: 'Revision plan integrity verification failed.' };
     }
     const pendingRequiredTasks = plan.tasks.filter(task =>
       task.required && task.status !== 'DONE' && task.status !== 'WAIVED'
