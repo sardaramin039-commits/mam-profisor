@@ -1,5 +1,8 @@
 import { adminDb } from '../../lib/firebase-admin';
 import { sha256 } from './text-sha256.service';
+import {
+  canTransition
+} from './publication-submission-lifecycle.policy';
 import type { SubmissionLifecycleStatus } from './publication-submission-lifecycle.policy';
 
 export interface SubmissionAuditEvent {
@@ -113,6 +116,8 @@ export function verifySubmissionAuditChain(
   }
   const ordered = [...events].sort((a, b) => a.version - b.version);
   const errors: string[] = [];
+  const seenIds = new Set<string>();
+  const seenVersions = new Set<number>();
   const legacyAnchor = ordered[0]?.legacyAnchor === true;
   let previousHash = '';
   let previousStatus: SubmissionLifecycleStatus | null = null;
@@ -120,9 +125,17 @@ export function verifySubmissionAuditChain(
     const expectedVersion = legacyAnchor ? ordered[0].version + index : index + 1;
     const error = verifyEvent(event, previousHash, expectedVersion);
     if (error) errors.push(error);
+    if (seenIds.has(event.id)) errors.push(`Duplicate audit event id: ${event.id}.`);
+    if (seenVersions.has(event.version)) errors.push(`Duplicate audit version: ${event.version}.`);
+    seenIds.add(event.id);
+    seenVersions.add(event.version);
     if (index === 0 && event.from !== null) errors.push('The first audit event must start from null.');
     if (index === 0 && event.previousHash !== '') errors.push('The first audit event must have an empty previous hash.');
+    if (!legacyAnchor && index === 0 && event.version !== 1) errors.push('The first non-legacy audit event must be version 1.');
     if (index > 0 && event.from !== previousStatus) errors.push(`Audit state mismatch at version ${event.version}.`);
+    if (index > 0 && event.from && !canTransition(event.from, event.to).allowed) {
+      errors.push(`Invalid lifecycle transition at audit version ${event.version}.`);
+    }
     previousHash = event.eventHash;
     previousStatus = event.to;
   });
