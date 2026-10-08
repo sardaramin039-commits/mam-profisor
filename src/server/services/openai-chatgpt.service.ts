@@ -11,6 +11,7 @@ export interface AcademicSourceItem {
   year: number | string;
   journalOrPublisher: string;
   doi?: string;
+  openAlexId?: string;
   url?: string;
   sourceType: 'journal' | 'book' | 'conference' | 'thesis' | 'report';
   citationAPA: string;
@@ -240,6 +241,7 @@ Return a concise summary and keywords, but the source list must come from web-se
           year: 'n.d.',
           journalOrPublisher: 'OpenAI Web Search',
           doi,
+          openAlexId,
           url,
           sourceType: 'report',
           citationAPA: '',
