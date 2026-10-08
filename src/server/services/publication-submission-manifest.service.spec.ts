@@ -101,4 +101,41 @@ describe('P19 reproducible submission manifest', () => {
       capturedAt: '2026-10-08T16:00:00.000Z'
     })).toThrow('integrity hash is invalid');
   });
+
+  it('rejects a tampered manifest hash after capture', () => {
+    const { policy, pkg, integrity } = makeInputs();
+    const manifest = buildSubmissionManifest({
+      submissionId: 'SUB-19',
+      userId: 'USER-19',
+      workspaceId: 'WS-19',
+      policy,
+      package: pkg,
+      integrity,
+      versionId: 'VER-19',
+      auditHeadHash: 'a'.repeat(64),
+      capturedAt: '2026-10-08T16:00:00.000Z'
+    });
+    const tampered = { ...manifest, wordCount: manifest.wordCount + 1 };
+    const verification = verifySubmissionManifest(tampered);
+    expect(verification.status).toBe('INVALID');
+    expect(verification.errors.some(error => error.includes('immutable hash'))).toBe(true);
+  });
+
+  it('binds the manifest identity to the captured version and audit head', () => {
+    const { policy, pkg, integrity } = makeInputs();
+    const manifest = buildSubmissionManifest({
+      submissionId: 'SUB-19',
+      userId: 'USER-19',
+      workspaceId: 'WS-19',
+      policy,
+      package: pkg,
+      integrity,
+      versionId: 'VER-19',
+      auditHeadHash: 'a'.repeat(64),
+      capturedAt: '2026-10-08T16:00:00.000Z'
+    });
+    expect(manifest.versionId).toBe('VER-19');
+    expect(manifest.auditHeadHash).toBe('a'.repeat(64));
+    expect(manifest.immutableHash).toHaveLength(64);
+  });
 });
