@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { researchMemoryService } from '../services/research-memory.service';
 import { z } from 'zod';
@@ -90,7 +90,45 @@ export function createResearchMemoryRouter(
     }
   });
 
-  router.post('/:projectId/summarize', async (req: AuthRequest, res) => {
+  router.get('/:projectId/search', async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.uid;
+      if (!userId) {
+        res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
+        return;
+      }
+
+      const projectId = parseProjectId(req.params['projectId']);
+      if (!projectId) {
+        res.status(400).json({ error: 'ناسنامەی پڕۆژە نادروستە.' });
+        return;
+      }
+
+      const query = String(req.query['q'] ?? '').trim();
+      const rawTypes = String(req.query['type'] ?? '')
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean);
+      const allowedTypes: Array<ResearchMemoryItem['type']> = [
+        'note', 'claim', 'evidence', 'source', 'summary', 'draft_chapter'
+      ];
+      const types = rawTypes.filter(
+        (value): value is ResearchMemoryItem['type'] => allowedTypes.includes(value as ResearchMemoryItem['type'])
+      );
+      if (query.length < 1 || query.length > 500) {
+        res.status(400).json({ error: 'گەڕان دەبێت لە نێوان ١ تا ٥٠٠ پیت بێت.' });
+        return;
+      }
+
+      const items = await researchMemoryService.searchMemory(userId, projectId, query, types);
+      res.json({ items, count: items.length });
+    } catch (err: unknown) {
+      console.error('Research Memory Search Error:', err);
+      res.status(500).json({ error: 'کێشەیەک لە گەڕانی یادگەی توێژینەوەکەدا ڕووی دا.' });
+    }
+  });
+
+  router.post('/:projectId/summarize', async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.user?.uid;
       if (!userId) {
