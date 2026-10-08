@@ -161,10 +161,19 @@ export function buildEditorialDecision(input: Omit<EditorialDecision, 'id' | 'im
     lifecycleVersion: input.lifecycleVersion,
     decidedAt: input.decidedAt
   });
+  const stableKey = JSON.stringify({
+    submissionId: input.submissionId,
+    userId: input.userId,
+    workspaceId: input.workspaceId,
+    decisionType: input.decisionType,
+    resultingStatus: input.resultingStatus,
+    submissionVersionId: input.submissionVersionId,
+    lifecycleVersion: input.lifecycleVersion
+  });
   const immutableHash = sha256(canonical);
   return {
     ...input,
-    id: 'DEC-' + immutableHash.slice(0, 32),
+    id: 'DEC-' + sha256(stableKey).slice(0, 32),
     note: clean(input.note),
     ...(input.receiptId ? { receiptId: clean(input.receiptId) } : {}),
     ...(input.revisionPlanId ? { revisionPlanId: clean(input.revisionPlanId) } : {}),
