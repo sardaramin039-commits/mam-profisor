@@ -17,6 +17,7 @@ function response(payload: unknown): Response {
 
 describe('research intelligence discovery', () => {
   it('uses ChatGPT web search as the primary discovery source', async () => {
+    process.env['OPENAI_API_KEY'] = 'test-key';
     globalThis.fetch = (async () => response({
       output: [{
         type: 'web_search_call',
