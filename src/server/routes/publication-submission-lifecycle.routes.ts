@@ -257,6 +257,7 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
 
       const verification = verifySubmissionReceipt(receipt, {
         submissionId: submission.id,
+        userId,
         workspaceId,
         submissionFingerprint: submission.submissionFingerprint,
         submissionVersionId: submission.currentVersionId
