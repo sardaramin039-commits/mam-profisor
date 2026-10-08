@@ -44,3 +44,12 @@ P20 هیچ بانگەشەیەک لەسەر یاسای live ـی گۆڤار نا�
 `PATCH /api/publication-submission-editorial/:workspaceId/:submissionId/revision/:taskId`
 
 هەموو endpoint ـەکان بە `requireAuth` پارێزراون.
+## Authorization
+
+هەموو API ـەکان بە requireAuth پارێزراون. بەڵام write ـی بڕیاری editorial (POST /api/publication-submission-editorial/:workspaceId/:submissionId/decision) جیاوازە و تەنها بۆ Firebase custom claim ـی role بە یەکێک لەم نرخانە ڕێگەپێدراوە: admin، professor، editor. ئەمە ڕێگری دەکات لەوەی خاوەنی submission بە تەنیا خۆی بتوانێت بڕیاری قبول، ڕەتکردنەوە یان revision تۆمار بکات.
+
+PATCH ـی revision task هێشتا بۆ خاوەنی submission ـی authenticated بەستراوە، چونکە ئەو کارە بەشێکە لە جێبەجێکردنی revision ـی خۆی.
+
+## UI
+
+app-publication-workflow-panel ئێستا توانای هەیە جۆری بڕیار، note، external reference و revision task ـە structured ـەکان دروست بکات، پاشان submissions و decision history و revision gate نوێ بکاتەوە. ئەگەر user ـەکە role ـی editorial نەبێت، API بە 403 وەڵام دەدات.
