@@ -2,48 +2,52 @@ import express, { type Request, type Response } from 'express';
 import { createServer, type Server } from 'node:http';
 import { describe, expect, it, vi } from 'vitest';
 
-const policy = { journalName: 'Journal of Kurdish Studies', manuscriptType: 'article' as const };
-const manifest = {
-  id: 'MAN-1',
-  versionId: 'VER-1',
-  policy,
-  journalName: policy.journalName,
-  manuscriptType: policy.manuscriptType,
-  policyFingerprint: 'policy-hash'
-};
-const manuscript = {
-  projectId: 'WS-1',
-  title: 'Revised study',
-  sections: [{ type: 'abstract', title: 'Abstract', content: 'A revised abstract.', order: 1 }],
-  citations: [],
-  bibliography: [],
-  integrity: {
-    structuralStatus: 'PASS',
-    errors: [],
-    warnings: [],
-    chapterCount: 1,
-    citationCount: 0,
-    verifiedCitationCount: 0,
-    referencedCitationCount: 0,
-    bibliographyCount: 0,
-    fingerprint: 'a'.repeat(64)
-  }
-};
-const submissionPackage = {
-  journalName: policy.journalName,
-  manuscriptType: policy.manuscriptType,
-  status: 'READY',
-  checks: [],
-  wordCount: 3,
-  abstractWordCount: 3,
-  keywordCount: 0,
-  referenceCount: 0,
-  mainManuscript: manuscript,
-  titlePage: { title: manuscript.title, authors: [] },
-  coverLetterTemplate: null,
-  blindedReview: false,
-  fingerprint: 'b'.repeat(64)
-};
+const { policy, manifest, manuscript, submissionPackage } = vi.hoisted(() => {
+  const policy = { journalName: 'Journal of Kurdish Studies', manuscriptType: 'article' as const };
+  const manuscript = {
+    projectId: 'WS-1',
+    title: 'Revised study',
+    sections: [{ type: 'abstract', title: 'Abstract', content: 'A revised abstract.', order: 1 }],
+    citations: [],
+    bibliography: [],
+    integrity: {
+      structuralStatus: 'PASS' as const,
+      errors: [],
+      warnings: [],
+      chapterCount: 1,
+      citationCount: 0,
+      verifiedCitationCount: 0,
+      referencedCitationCount: 0,
+      bibliographyCount: 0,
+      fingerprint: 'a'.repeat(64)
+    }
+  };
+  const submissionPackage = {
+    journalName: policy.journalName,
+    manuscriptType: policy.manuscriptType,
+    status: 'READY' as const,
+    checks: [],
+    wordCount: 3,
+    abstractWordCount: 3,
+    keywordCount: 0,
+    referenceCount: 0,
+    mainManuscript: manuscript,
+    titlePage: { title: manuscript.title, authors: [] },
+    coverLetterTemplate: null,
+    blindedReview: false,
+    fingerprint: 'b'.repeat(64)
+  };
+  const manifest = {
+    id: 'MAN-1',
+    versionId: 'VER-1',
+    policy,
+    journalName: policy.journalName,
+    manuscriptType: policy.manuscriptType,
+    policyFingerprint: 'policy-hash',
+    referenceCount: 0
+  };
+  return { policy, manifest, manuscript, submissionPackage };
+});
 
 vi.mock('../services/manuscript-assembly.service', () => ({
   assembleManuscript: vi.fn().mockReturnValue(manuscript)
