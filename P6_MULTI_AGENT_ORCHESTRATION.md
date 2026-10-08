@@ -34,3 +34,24 @@
   "draftText": "پێشەکی توێژینەوە..."
 }
 ```
+
+
+## Production hardening — Phase 6
+
+P6 ـی ئێستا لە production flow ـدا بە شێوەیەکی پارێزراو جێبەجێ کراوە:
+
+- `POST /api/multi-agent/orchestrate` بە Firebase `requireAuth` پارێزراوە.
+- Source Verification پێش Evidence-Grounded Writer جێبەجێ دەکرێت.
+- Claim-Evidence Graph تەنها source ـە citation-eligible ـەکان و evidence ـی `full-text` + `server-verified-fulltext` وەردەگرێت.
+- source ـی unverified نابێت بە provenance ـی server-verified خۆی بنووسرێت.
+- P6 contract test pipeline roles، integrity score و source-count invariants دەپشکنێت.
+- Browser E2E بێ authentication بۆ Multi-Agent endpoint چاوەڕێی `401` دەکات.
+- P6 contract test لە Academic Integrity CI ـدا mandatory ـە.
+
+### P6 integrity invariant
+
+**No authenticated request → no orchestration.**
+
+**No citation-eligible evidence → no verified claim/citation.**
+
+**No successful QA Gate → final export must remain blocked according to the QA result.**
