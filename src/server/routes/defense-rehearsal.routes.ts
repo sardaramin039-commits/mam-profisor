@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { defenseRehearsalService } from '../services/defense-rehearsal.service';
+import { assembleManuscript } from '../services/manuscript-assembly.service';
+import { researchControlPlaneService } from '../services/research-control-plane.service';
+import { resolveServerVerifiedCitations } from '../services/publication-research-gate.service';
 import type { AuthRequest } from '../../middleware/auth';
 
 const id = z.string().trim().min(1).max(128);
@@ -55,21 +58,39 @@ export function createDefenseRehearsalRouter(): Router {
       return;
     }
     try {
-      const session = defenseRehearsalService.prepare({
-        topic: parsed.data.topic,
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      const citations = await resolveServerVerifiedCitations(
+        userId,
+        workspaceId,
+        parsed.data.citations ?? []
+      );
+      const manuscript = assembleManuscript({
+        projectId: workspaceId,
         title: parsed.data.title,
         researchQuestion: parsed.data.researchQuestion,
         methodology: parsed.data.methodology,
         conclusion: parsed.data.conclusion,
+        chapters: parsed.data.chapters,
+        citations
+      });
+      const session = defenseRehearsalService.prepare({
+        topic: parsed.data.topic,
+        title: manuscript.title,
+        researchQuestion: manuscript.sections.find(section => section.type === 'research-question')?.content,
+        methodology: manuscript.sections.find(section => section.type === 'methodology')?.content,
+        conclusion: manuscript.sections.find(section => section.type === 'conclusion')?.content,
         limitations: parsed.data.limitations,
         contribution: parsed.data.contribution,
         evidenceSummary: parsed.data.evidenceSummary,
-        chapterTitles: parsed.data.chapters.sort((a, b) => a.order - b.order).map(item => item.title),
-        referencedCitationCount: parsed.data.referencedCitationCount,
-        verifiedCitationCount: parsed.data.verifiedCitationCount,
-        bibliographyCount: parsed.data.bibliographyCount,
-        structuralStatus: parsed.data.structuralStatus,
-        exportBlocked: parsed.data.exportBlocked
+        chapterTitles: manuscript.sections
+          .filter(section => section.type === 'chapter')
+          .sort((a, b) => a.order - b.order)
+          .map(item => item.title),
+        referencedCitationCount: manuscript.integrity.referencedCitationCount,
+        verifiedCitationCount: manuscript.integrity.verifiedCitationCount,
+        bibliographyCount: manuscript.integrity.bibliographyCount,
+        structuralStatus: manuscript.integrity.structuralStatus,
+        exportBlocked: control.gates.exportBlocked || manuscript.integrity.structuralStatus !== 'PASS'
       });
 
       const questionMap = new Map(session.questions.map(question => [question.id, question]));
@@ -78,10 +99,14 @@ export function createDefenseRehearsalRouter(): Router {
         .filter(Boolean);
       const scores = assessments.map(item => item!.score);
       const averageScore = scores.length ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length) : 0;
-      const blocked = session.readiness.defenseStatus === 'BLOCKED' || session.readiness.publicationStatus === 'BLOCKED';
+      const blocked =
+        control.gates.exportBlocked ||
+        session.readiness.defenseStatus === 'BLOCKED' ||
+        session.readiness.publicationStatus === 'BLOCKED';
 
       res.status(blocked ? 409 : 200).json({
         success: !blocked,
+        controlPlane: control,
         readiness: session.readiness,
         questions: session.questions,
         assessments,
