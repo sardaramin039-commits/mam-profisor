@@ -165,7 +165,7 @@ export function createPublicationSubmissionManifestRouter(): Router {
         lifecycle.auditHeadHash
       );
       const versions = await listSubmissionVersions(userId, lifecycle.id);
-      const versionReport = verifySubmissionVersionChain(versions);
+      const versionReport = verifySubmissionVersionChain(versions, lifecycle.id);
       const versionConsistencyErrors = [
         ...(lifecycle.versionCount !== versions.length
           ? ['Lifecycle version count does not match stored versions.']
