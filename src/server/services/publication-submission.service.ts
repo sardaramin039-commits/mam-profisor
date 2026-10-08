@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { sha256 } from './text-sha256.service';
 import type { ManuscriptDocument } from './manuscript-assembly.service';
 
 export type SubmissionStatus = 'READY' | 'REVISE' | 'BLOCKED';
@@ -65,10 +65,6 @@ function words(value: string): number {
 
 function unique(values: string[]): string[] {
   return [...new Set(values.map(clean).filter(Boolean))];
-}
-
-function sha256(value: string): string {
-  return createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
 function makeCoverLetter(journalName: string, title: string, language: 'ku' | 'en' = 'en'): string {
