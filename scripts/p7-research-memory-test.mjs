@@ -9,7 +9,7 @@ const projectId = 'PROJ-001';
 const projectState = researchMemoryService.getOrCreateProjectState(userId, projectId, 'تێزی دکتۆرا', 'زمانەوانی');
 assert.equal(projectState.title, 'تێزی دکتۆرا');
 
-const item1 = researchMemoryService.addMemoryItem(userId, projectId, {
+const item1 = await researchMemoryService.addMemoryItem(userId, projectId, {
   userId,
   topic: 'سۆرانی',
   type: 'claim',
@@ -20,7 +20,18 @@ const item1 = researchMemoryService.addMemoryItem(userId, projectId, {
 assert.ok(item1.id.startsWith('MEM-'));
 assert.equal(projectState.claimsCount, 1);
 
+const evidence = await researchMemoryService.addMemoryItem(userId, projectId, {
+  userId,
+  topic: 'سۆرانی',
+  type: 'evidence',
+  content: 'بەڵگەی سەلمێنراو بۆ claim.',
+  tags: ['verified_evidence'],
+  metadata: { claimId: item1.id, verified: true, evidenceId: 'EVI-TEST-1' }
+});
+assert.ok(evidence.id.startsWith('MEM-'));
+
 const updatedState = researchMemoryService.getProjectMemory(userId, projectId);
-assert.equal(updatedState.memoryItems.length, 1);
+assert.equal(updatedState.memoryItems.length, 2);
+assert.equal(updatedState.evidenceCoverage, 100);
 
 console.log('✅ P7 Research Memory Contract Test PASSED SUCCESSFULLY!');
