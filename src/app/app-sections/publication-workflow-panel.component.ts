@@ -91,6 +91,7 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     title: '', details: '', scope: 'MANUSCRIPT', required: true, dueAt: ''
   });
   readonly decisionLoading = signal(false);
+  readonly editorialWriteBlocked = signal(false);
 
   override ngOnInit(): void {
     this.workspaceId.set(this.host.historyList()[0]?.id || '');
@@ -278,6 +279,7 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
       await this.loadSubmissions();
       this.host.toastService.showSuccess('بڕیاری editorial تۆمارکرا', 'دۆخی publication بە سەرکەوتوویی نوێکرایەوە.');
     } catch (error) {
+      if ((error as { status?: number }).status === 403) this.editorialWriteBlocked.set(true);
       this.handleError(error, 'نەتوانرا بڕیاری editorial تۆمار بکرێت.');
     } finally {
       this.decisionLoading.set(false);
