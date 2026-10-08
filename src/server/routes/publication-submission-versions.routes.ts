@@ -34,7 +34,7 @@ export function createPublicationSubmissionVersionsRouter(): Router {
         return;
       }
       const versions = await listSubmissionVersions(userId, submissionId);
-      const report = verifySubmissionVersionChain(versions);
+      const report = verifySubmissionVersionChain(versions, submission.id);
       const errors = [...report.errors];
       if (submission.versionCount !== versions.length) {
         errors.push('Lifecycle version count does not match stored versions.');
