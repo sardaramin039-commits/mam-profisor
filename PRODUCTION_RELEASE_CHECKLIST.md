@@ -29,6 +29,8 @@ The canonical release commands use npm and `package-lock.json`; no Bun workflow 
 
 `npm audit --omit=dev --audit-level=high`
 
+`CI Runner Diagnostic` (manual `workflow_dispatch` when GitHub Actions jobs fail before steps appear)
+
 ## P13–P20 integrity chain
 
 P13 submission package، P14 integrity، P15 lifecycle، P16 receipt، P17 audit chain، P18 versioning/resubmission، P19 reproducible manifest و P20 editorial/revision management دەبێت بە یەک submission version زنجیرە بکرێن.
