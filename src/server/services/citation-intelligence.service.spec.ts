@@ -121,6 +121,25 @@ describe('citation intelligence strict evidence gate', () => {
     expect(result.blockedCitationCount).toBe(0);
   });
 
+  it('blocks a citation when evidenceId points to a different chunk', () => {
+    const result = service.build(
+      [{
+        claims: [{
+          citationId: 'CIT-CROSS-CHUNK',
+          sourceId: 'SRC-1',
+          evidenceId: 'EVI-2',
+          citationEligible: true,
+          verificationStatus: 'verified',
+          evidenceQuote: 'Observed evidence supports the stated claim'
+        }]
+      }],
+      [{ ...source, evidenceId: 'EVI-1' }]
+    );
+
+    expect(result.citations).toHaveLength(0);
+    expect(result.blockedCitationCount).toBe(1);
+  });
+
   it('blocks a citation when the supplied quote is not actually present in the evidence', () => {
     const result = service.build(
       [{
