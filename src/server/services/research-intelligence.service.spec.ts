@@ -5,6 +5,7 @@ import { sourceVerificationService } from './source-verification.service';
 const originalFetch = globalThis.fetch;
 const originalOpenAiKey = process.env['OPENAI_API_KEY'];
 const originalOpenAiDiscovery = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
+const originalBillable = process.env['ALLOW_BILLABLE_AI'];
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
@@ -12,6 +13,8 @@ afterEach(() => {
   else process.env['OPENAI_API_KEY'] = originalOpenAiKey;
   if (originalOpenAiDiscovery === undefined) delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
   else process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = originalOpenAiDiscovery;
+  if (originalBillable === undefined) delete process.env['ALLOW_BILLABLE_AI'];
+  else process.env['ALLOW_BILLABLE_AI'] = originalBillable;
 });
 
 function response(payload: unknown): Response {
@@ -25,6 +28,7 @@ describe('research intelligence discovery', () => {
   it('uses ChatGPT web search as the primary discovery source when explicitly enabled', async () => {
     process.env['OPENAI_API_KEY'] = 'test-key';
     process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = 'true';
+    process.env['ALLOW_BILLABLE_AI'] = 'true';
     globalThis.fetch = (async () => response({
       output: [{
         type: 'web_search_call',
@@ -89,6 +93,7 @@ describe('research intelligence verification flow', () => {
   it('uses free academic providers by default', async () => {
     delete process.env['OPENAI_API_KEY'];
     delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
+    delete process.env['ALLOW_BILLABLE_AI'];
     globalThis.fetch = (async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('semanticscholar.org')) {
