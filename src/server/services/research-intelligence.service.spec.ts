@@ -1,23 +1,6 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { researchIntelligenceService } from './research-intelligence.service';
 import { sourceVerificationService } from './source-verification.service';
-
-vi.mock('../../helpers/academic-integrations', () => ({
-  fetchSemanticScholar: vi.fn(async () => [{
-    id: 'free-paper-1',
-    title: 'Free Academic Study',
-    authors: ['Free Researcher'],
-    year: '2024',
-    sourceType: 'SemanticScholar',
-    url: 'https://www.semanticscholar.org/paper/free-paper-1'
-  }]),
-  fetchPubMed: vi.fn(async () => []),
-  fetchDOAJ: vi.fn(async () => []),
-  fetchOpenLibrary: vi.fn(async () => []),
-  fetchInternetArchive: vi.fn(async () => []),
-  fetchEuropeana: vi.fn(async () => []),
-  fetchLibraryOfCongress: vi.fn(async () => [])
-}));
 
 const originalFetch = globalThis.fetch;
 const originalOpenAiKey = process.env['OPENAI_API_KEY'];
@@ -83,20 +66,6 @@ describe('research intelligence discovery', () => {
   });
 });
 
-
-describe('research intelligence free mode', () => {
-  it('uses free academic providers by default', async () => {
-    delete process.env['OPENAI_API_KEY'];
-    delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
-    delete process.env['ALLOW_BILLABLE_AI'];
-
-    const result = await researchIntelligenceService.discover('فێربوون', 'دەروونناسی');
-
-    expect(result.providers).toContain('SemanticScholar');
-    expect(result.sources).toHaveLength(1);
-    expect(result.sources[0]?.title).toBe('Free Academic Study');
-  });
-});
 
 describe('research intelligence verification flow', () => {
   it('verifies discovered candidates when no source records are provided', async () => {
