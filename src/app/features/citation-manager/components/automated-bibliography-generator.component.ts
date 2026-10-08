@@ -74,7 +74,7 @@ import { AppNotificationsService } from '../../../core/app.notifications';
         </div>
 
         <div class="flex items-center justify-end gap-2">
-          @if (scanResult()) {
+          @if (scanResult()?.items?.length) {
             <button
               type="button"
               (click)="insertBibliographyToThesis()"
@@ -218,7 +218,9 @@ export class AutomatedBibliographyGeneratorComponent {
 
   insertBibliographyToThesis(): void {
     const res = this.scanResult();
-    if (!res) return;
+    if (!res || res.items.length === 0 || !res.formattedBibliographyText.trim()) {
+      return;
+    }
 
     const chapters = this.editorService.chapters();
     const outcome = this.autoBibService.appendBibliographyToDocument(
