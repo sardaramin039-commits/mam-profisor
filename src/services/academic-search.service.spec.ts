@@ -77,6 +77,39 @@ describe('AcademicSearchService', () => {
     ]);
   });
 
+  it('treats DOI URLs and bare DOIs as the same identifier', async () => {
+    const get = vi.spyOn(axios, 'get');
+    get
+      .mockResolvedValueOnce({
+        data: {
+          results: [{
+            id: 'https://openalex.org/W1',
+            display_name: 'Same study',
+            doi: 'https://doi.org/10.1234/example',
+            publication_year: 2024
+          }]
+        }
+      } as never)
+      .mockResolvedValueOnce({
+        data: {
+          message: {
+            items: [{
+              DOI: '10.1234/example',
+              title: ['Same study'],
+              published: { 'date-parts': [[2024]] }
+            }]
+          }
+        }
+      } as never)
+      .mockResolvedValueOnce({
+        data: { items: [] }
+      } as never);
+
+    const results = await service.searchAll('same study', 6);
+    expect(results).toHaveLength(1);
+    expect(results[0].doi).toBe('https://doi.org/10.1234/example');
+  });
+
   it('keeps same-title records distinct when authors differ and identifiers are absent', async () => {
     const get = vi.spyOn(axios, 'get');
     get
