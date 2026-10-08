@@ -43,3 +43,13 @@ describe('P12 defense rehearsal engine', () => {
     expect(result.score).toBe(0);
   });
 });
+
+  it('recognizes Kurdish terminology aliases in answers', () => {
+    const session = defenseRehearsalService.prepare(base);
+    const methodology = session.questions.find(item => item.category === 'methodology')!;
+    const result = defenseRehearsalService.assess(
+      methodology,
+      'میتۆد و پشتڕاستکردنەوەی داتاکان لەگەڵ پرسیاری توێژینەوە گونجاون.'
+    );
+    expect(result.coveredElements.length).toBeGreaterThan(0);
+  });
