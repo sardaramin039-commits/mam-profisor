@@ -3,6 +3,7 @@ import { OpenAiChatGptService } from './openai-chatgpt.service';
 
 const originalFetch = globalThis.fetch;
 const originalKey = process.env['OPENAI_API_KEY'];
+const originalDiscovery = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
 
 function jsonResponse(payload: unknown): Response {
   return new Response(JSON.stringify(payload), {
@@ -15,9 +16,23 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   if (originalKey === undefined) delete process.env['OPENAI_API_KEY'];
   else process.env['OPENAI_API_KEY'] = originalKey;
+  if (originalDiscovery === undefined) delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
+  else process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = originalDiscovery;
 });
 
 describe('OpenAiChatGptService reference integrity', () => {
+  it('uses free academic indexes by default without an OpenAI key', async () => {
+    delete process.env['OPENAI_API_KEY'];
+    delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
+    const service = new OpenAiChatGptService();
+    const result = await service.discoverAcademicSources({
+      query: 'social learning theory',
+      discipline: 'education',
+      limit: 3
+    });
+    expect(result.provider).toBe('Free academic indexes');
+  });
+
   it('rejects LLM reference metadata not present in raw input', async () => {
     process.env['OPENAI_API_KEY'] = 'test-key';
     const service = new OpenAiChatGptService();
@@ -83,8 +98,9 @@ describe('OpenAiChatGptService reference integrity', () => {
     expect(result.provider).toBe('No-Language-Model');
   });
 
-  it('uses ChatGPT web search as the source discovery engine', async () => {
+  it('uses ChatGPT web search as the source discovery engine when explicitly enabled', async () => {
     process.env['OPENAI_API_KEY'] = 'test-key';
+    process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = 'true';
     const service = new OpenAiChatGptService();
 
     globalThis.fetch = (async () => jsonResponse({
@@ -95,7 +111,7 @@ describe('OpenAiChatGptService reference integrity', () => {
             sources: [
               {
                 title: 'Verified Study Candidate',
-                url: 'https://example.org/study'
+                url: 'https://doi.org/10.1000/example'
               },
               {
                 title: 'Second Study Candidate',
@@ -128,7 +144,7 @@ describe('OpenAiChatGptService reference integrity', () => {
 
     expect(result.provider).toBe('OpenAI Responses API web_search');
     expect(result.discoveredSources).toHaveLength(2);
-    expect(result.discoveredSources[0]?.url).toBe('https://example.org/study');
+    expect(result.discoveredSources[0]?.url).toBe('https://doi.org/10.1000/example');
     expect(result.discoveredSources[0]?.title).toBe('Verified Study Candidate');
     expect(result.discoveredSources[0]?.verificationStatus).toBe('retrieved-not-verified');
     expect(result.discoveredSources[1]?.url).toBe('https://openalex.org/W123456');
