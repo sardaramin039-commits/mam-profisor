@@ -310,6 +310,92 @@ async function loadDecisionReceipt(
 }
 
 class PublicationSubmissionEditorialDecisionService {
+function buildDecisionArtifacts(
+  current: SubmissionLifecycleRecord,
+  userId: string,
+  workspaceId: string,
+  input: RecordEditorialDecisionInput,
+  receipt: SubmissionReceipt | null,
+  now: string
+): {
+  decision: EditorialDecision;
+  revisionPlan?: RevisionPlan;
+  auditEvent: ReturnType<typeof buildSubmissionAuditEvent>;
+  event: SubmissionLifecycleRecord['events'][number];
+  submission: SubmissionLifecycleRecord;
+} {
+  const targetStatus = resultingStatus(input.decisionType);
+  const decisionKey = JSON.stringify({
+    submissionId: current.id,
+    userId,
+    workspaceId,
+    lifecycleVersion: current.version + 1,
+    decisionType: input.decisionType,
+    resultingStatus: targetStatus,
+    submissionVersionId: current.currentVersionId
+  });
+  const decisionId = 'DEC-' + sha256(decisionKey).slice(0, 32);
+  const revisionPlan = isRevision(input.decisionType)
+    ? buildRevisionPlan(
+      decisionId,
+      current.id,
+      current.currentVersionId!,
+      input.decisionType === 'MAJOR_REVISION' ? 'MAJOR' : 'MINOR',
+      input.tasks,
+      now
+    )
+    : undefined;
+  const note = clean(input.note) || 'Editorial decision recorded.';
+  const decision = buildEditorialDecision({
+    submissionId: current.id,
+    userId,
+    workspaceId,
+    decisionType: input.decisionType,
+    resultingStatus: targetStatus,
+    submissionVersionId: current.currentVersionId!,
+    ...(receipt ? { receiptId: receipt.id } : {}),
+    ...(revisionPlan ? { revisionPlanId: revisionPlan.id } : {}),
+    note,
+    ...(input.externalReference ? { externalReference: clean(input.externalReference) } : {}),
+    lifecycleVersion: current.version + 1,
+    decidedAt: now
+  });
+  const auditEvent = buildSubmissionAuditEvent({
+    submissionId: current.id,
+    version: current.version + 1,
+    from: current.currentStatus,
+    to: targetStatus,
+    note: `Editorial decision: ${input.decisionType}. ${note}`,
+    externalReference: input.externalReference,
+    receiptId: receipt?.id,
+    occurredAt: now,
+    previousHash: current.auditHeadHash
+  });
+  const event: SubmissionLifecycleRecord['events'][number] = {
+    id: 'SEV-' + sha256(JSON.stringify({
+      submissionId: current.id,
+      lifecycleVersion: current.version + 1,
+      decisionId: decision.id,
+      occurredAt: now
+    })).slice(0, 32),
+    from: current.currentStatus,
+    to: targetStatus,
+    note: decision.note,
+    ...(input.externalReference ? { externalReference: clean(input.externalReference) } : {}),
+    occurredAt: now
+  };
+  const events = Array.isArray(current.events) ? current.events : [];
+  const submission: SubmissionLifecycleRecord = {
+    ...current,
+    currentStatus: targetStatus,
+    version: current.version + 1,
+    events: [...events, event].slice(-100),
+    auditHeadHash: auditEvent.eventHash,
+    updatedAt: now
+  };
+  return { decision, ...(revisionPlan ? { revisionPlan } : {}), auditEvent, event, submission };
+}
+
   async record(
     userId: string,
     workspaceId: string,
@@ -327,90 +413,29 @@ class PublicationSubmissionEditorialDecisionService {
       if (current.workspaceId !== workspaceId) throw new Error('Submission does not belong to this workspace.');
       assertDecisionPreconditions(current, input);
 
-      const targetStatus = resultingStatus(input.decisionType);
-      const receipt = input.decisionType === 'ACCEPT' || input.decisionType === 'REJECT'
+      const requiresReceipt = input.decisionType === 'ACCEPT' || input.decisionType === 'REJECT';
+      const receipt = requiresReceipt
         ? await loadDecisionReceipt(transaction, userId, submissionId, current)
         : null;
-      if ((input.decisionType === 'ACCEPT' || input.decisionType === 'REJECT') && !receipt) {
+      if (requiresReceipt && !receipt) {
         throw new Error('Accepted or rejected submissions require a recorded submission receipt.');
       }
       if (receipt && current.currentStatus === 'SUBMITTED' && receipt.submissionVersionId !== current.currentVersionId) {
         throw new Error('The submission receipt is not bound to the current submitted version.');
       }
 
-      const decisionKey = JSON.stringify({
-        submissionId: current.id,
-        userId,
-        workspaceId,
-        lifecycleVersion: current.version + 1,
-        decisionType: input.decisionType,
-        resultingStatus: targetStatus,
-        submissionVersionId: current.currentVersionId
-      });
-      const decisionId = 'DEC-' + sha256(decisionKey).slice(0, 32);
-      const revision = isRevision(input.decisionType)
-        ? buildRevisionPlan(
-          decisionId,
-          current.id,
-          current.currentVersionId,
-          input.decisionType === 'MAJOR_REVISION' ? 'MAJOR' : 'MINOR',
-          input.tasks,
-          now
-        )
-        : undefined;
-      const decision = buildEditorialDecision({
-        submissionId: current.id,
-        userId,
-        workspaceId,
-        decisionType: input.decisionType,
-        resultingStatus: targetStatus,
-        submissionVersionId: current.currentVersionId,
-        ...(receipt ? { receiptId: receipt.id } : {}),
-        ...(revision ? { revisionPlanId: revision.id } : {}),
-        note: clean(input.note) || 'Editorial decision recorded.',
-        ...(input.externalReference ? { externalReference: clean(input.externalReference) } : {}),
-        lifecycleVersion: current.version + 1,
-        decidedAt: now
-      });
-      const auditEvent = buildSubmissionAuditEvent({
-        submissionId: current.id,
-        version: current.version + 1,
-        from: current.currentStatus,
-        to: targetStatus,
-        note: `Editorial decision: ${input.decisionType}. ${clean(input.note) || 'Decision recorded.'}`,
-        externalReference: input.externalReference,
-        receiptId: receipt?.id,
-        occurredAt: now,
-        previousHash: current.auditHeadHash
-      });
-      const event = {
-        id: 'SEV-' + sha256(JSON.stringify({
-          submissionId: current.id,
-          lifecycleVersion: current.version + 1,
-          decisionId: decision.id,
-          occurredAt: now
-        })).slice(0, 32),
-        from: current.currentStatus,
-        to: targetStatus,
-        note: decision.note,
-        ...(input.externalReference ? { externalReference: clean(input.externalReference) } : {}),
-        occurredAt: now
+      const artifacts = buildDecisionArtifacts(current, userId, workspaceId, input, receipt, now);
+      const decisions = decisionReference(userId, submissionId);
+      const plans = planReference(userId, submissionId);
+      transaction.create(decisions.doc(artifacts.decision.id), artifacts.decision);
+      if (artifacts.revisionPlan) transaction.create(plans.doc(artifacts.revisionPlan.id), artifacts.revisionPlan);
+      transaction.create(reference.collection('audit').doc(artifacts.auditEvent.id), artifacts.auditEvent);
+      transaction.set(reference, artifacts.submission);
+      return {
+        decision: artifacts.decision,
+        submission: artifacts.submission,
+        ...(artifacts.revisionPlan ? { revisionPlan: artifacts.revisionPlan } : {})
       };
-      const events = Array.isArray(current.events) ? current.events : [];
-      const submission: SubmissionLifecycleRecord = {
-        ...current,
-        currentStatus: targetStatus,
-        version: current.version + 1,
-        events: [...events, event].slice(-100),
-        auditHeadHash: auditEvent.eventHash,
-        updatedAt: now
-      };
-
-      transaction.create(decisionReference(userId, submissionId).doc(decision.id), decision);
-      if (revision) transaction.create(planReference(userId, submissionId).doc(revision.id), revision);
-      transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
-      transaction.set(reference, submission);
-      return { decision, submission, ...(revision ? { revisionPlan: revision } : {}) };
     });
   }
 
