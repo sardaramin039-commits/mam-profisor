@@ -1,0 +1,42 @@
+name: Phase 4 Release Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase-4-release-verification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-verification:
+    name: Release contract verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.2
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run release verification
+        env:
+          GITHUB_COMMIT_MESSAGE: ${{ github.event.head_commit.message || github.event.pull_request.title || '' }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: node scripts/phase-4-release-verification.mjs
