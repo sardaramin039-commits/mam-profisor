@@ -3,6 +3,7 @@ import { assembleManuscript } from '../services/manuscript-assembly.service';
 import { buildPublicationSubmissionPackage } from '../services/publication-submission.service';
 import { verifyPublicationSubmissionIntegrity } from '../services/publication-submission-integrity.service';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
+import { publicationSubmissionEditorialDecisionService } from '../services/publication-submission-editorial-decision.service';
 import { lifecycleId, resubmitSchema } from './publication-submission-lifecycle.schemas';
 import type { AuthRequest } from '../../middleware/auth';
 
@@ -59,6 +60,21 @@ export function createPublicationSubmissionResubmitRouter(): Router {
       if (current.currentStatus !== 'REVISION_REQUESTED') {
         res.status(409).json({
           error: 'تەنها submission ـێکی REVISION_REQUESTED دەتوانرێت resubmit بکرێت.'
+        });
+        return;
+      }
+
+      const revisionGate = await publicationSubmissionEditorialDecisionService.assertResubmissionGate(
+        userId,
+        workspaceId,
+        submissionId
+      );
+      if (!revisionGate.ready) {
+        res.status(409).json({
+          success: false,
+          error: revisionGate.reason ?? 'پلانەکانی revision هێشتا تەواو نەکراون.',
+          revisionPlan: revisionGate.plan,
+          pendingRequiredTasks: revisionGate.pendingRequiredTasks
         });
         return;
       }
