@@ -311,8 +311,7 @@ export class SourceVerificationEngine {
           source.evidenceStatus === 'verified' &&
           source.workflowStepsCompleted.retrieved === true &&
           source.workflowStepsCompleted.read === true &&
-          source.workflowStepsCompleted.verified === true &&
-          source.rejectedAsFabricated !== true;
+          source.workflowStepsCompleted.verified === true;
 
         if (sourceFullyVerified && !existing.citationEligible) {
           existing.verificationStatus = 'VERIFIED';
