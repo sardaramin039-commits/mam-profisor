@@ -1,5 +1,6 @@
 import { adminDb } from '../../lib/firebase-admin';
-import { buildSubmissionVersion, SubmissionVersion } from './publication-submission-version.service';
+import { buildSubmissionVersion } from './publication-submission-version.service';
+import type { SubmissionVersion } from './publication-submission-version.service';
 
 interface LegacyLifecycleRecord {
   id: string;
