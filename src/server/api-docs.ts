@@ -71,6 +71,15 @@ export function createApiDocsRouter(): Router {
       <p class="text-slate-300 text-xs">P15 lifecycle ـی submission؛ تەنها transition ـە یاسادارەکان وەردەگرێت و READY بە ڕێگای P14 ـەوە پارێزراوە.</p>
     </div>
 
+    <!-- API Route Card 6 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-amber-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">GET</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-lifecycle/:workspaceId/:submissionId/receipt</code>
+      </div>
+      <p class="text-slate-300 text-xs">P16 immutable submission receipt؛ fingerprint و کاتی ناردن و بەڵگەی ناردن بە یەک hash ـی پارێزراو پەیوەستە.</p>
+    </div>
+
     <div class="text-center text-slate-500 text-xs pt-6 border-t border-slate-800">
       Harvard Academic AI Platform &copy; 2026. All security & proxy headers configured.
     </div>
