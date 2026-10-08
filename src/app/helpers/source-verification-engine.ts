@@ -6,6 +6,9 @@ export type SourceTierLevel = 'Tier 1' | 'Tier 2' | 'Tier 3';
 
 export type ContentKind = 'SOURCE-BASED' | 'SYNTHESIS' | 'AI-INFERENCE';
 
+export type EvidenceType = 'abstract' | 'snippet' | 'full-text';
+export type EvidenceProvenance = 'server-verified-fulltext' | 'user-supplied-content' | 'unknown';
+
 export interface SourceIdentifiers {
   doi?: string;
   isbn?: string;
@@ -31,6 +34,8 @@ export interface VerifiedCitationRecord {
   verificationStatus: VerificationStatus;
   identityStatus: IdentityVerificationStatus;
   evidenceStatus: EvidenceVerificationStatus;
+  evidenceType: EvidenceType;
+  evidenceProvenance: EvidenceProvenance;
   citationEligible: boolean;
   verificationNotes?: string;
   auditDate: string;
@@ -105,6 +110,18 @@ function deterministicId(prefix: string, value: string): string {
     hash = Math.imul(hash, 16777619);
   }
   return `${prefix}-${(hash >>> 0).toString(36)}`;
+}
+
+function hasStrictCitationEvidence(source: VerifiedCitationRecord): boolean {
+  return (
+    source.verificationStatus === 'VERIFIED' &&
+    source.identityStatus === 'verified' &&
+    source.evidenceStatus === 'verified' &&
+    source.evidenceType === 'full-text' &&
+    source.evidenceProvenance === 'server-verified-fulltext' &&
+    source.citationEligible === true &&
+    Boolean(source.exactEvidenceSnippet.trim())
+  );
 }
 
 function hasAuthoritativeIdentifier(source: { identifiers?: SourceIdentifiers; doiOrUrl?: string }): boolean {
@@ -273,7 +290,12 @@ export class SourceVerificationEngine {
       verificationStatus: status,
       identityStatus,
       evidenceStatus,
-      citationEligible: identityStatus === 'verified' && evidenceStatus === 'verified',
+      evidenceType: candidateSource.serverVerifiedFullText === true ? 'full-text' : (snippet ? 'snippet' : 'abstract'),
+      evidenceProvenance: candidateSource.serverVerifiedFullText === true ? 'server-verified-fulltext' : 'unknown',
+      citationEligible:
+        identityStatus === 'verified' &&
+        evidenceStatus === 'verified' &&
+        candidateSource.serverVerifiedFullText === true,
       verificationNotes: notes,
       auditDate: new Date().toISOString(),
       tier: tierInfo.tier,
@@ -309,6 +331,10 @@ export class SourceVerificationEngine {
           source.verificationStatus === 'VERIFIED' &&
           source.identityStatus === 'verified' &&
           source.evidenceStatus === 'verified' &&
+          source.evidenceType === 'full-text' &&
+          source.evidenceProvenance === 'server-verified-fulltext' &&
+          source.citationEligible === true &&
+          source.exactEvidenceSnippet.trim().length > 0 &&
           source.workflowStepsCompleted.retrieved === true &&
           source.workflowStepsCompleted.read === true &&
           source.workflowStepsCompleted.verified === true;
@@ -353,7 +379,7 @@ export class SourceVerificationEngine {
     kind: ContentKind
   ): EvidenceLinkedClaim {
     const claimId = deterministicId('CLAIM', `${source.id}::${claimText}::${kind}`);
-    const verified = source.citationEligible === true;
+    const verified = hasStrictCitationEvidence(source);
 
     let primaryBadge = '[Source-Based]';
     let secondaryBadge = verified ? '[Evidence Verified]' : '[Evidence Not Verified]';
@@ -391,8 +417,8 @@ export class SourceVerificationEngine {
     claims: EvidenceLinkedClaim[]
   ): ResearchGateAuditResult {
     const deduplicated = this.deduplicateSources(sources);
-    const verifiedSources = deduplicated.filter(source => source.citationEligible === true);
-    const unverifiedSources = deduplicated.filter(source => source.citationEligible !== true);
+    const verifiedSources = deduplicated.filter(source => hasStrictCitationEvidence(source));
+    const unverifiedSources = deduplicated.filter(source => !hasStrictCitationEvidence(source));
 
     const missingClaims: string[] = [];
     const missingEvidence: string[] = [];
