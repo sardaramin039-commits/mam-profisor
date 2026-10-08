@@ -99,7 +99,9 @@ function dedupeSources(sources: any[], limit = 24): any[] {
     const title = normalize(source?.title);
     const author = normalize(Array.isArray(source?.authors) ? source.authors.join(' ') : source?.author);
     const doi = normalize(source?.doi);
-    const key = doi || [title, author].filter(Boolean).join('|');
+    const isbn = normalize(source?.isbn);
+    const year = normalize(source?.year);
+    const key = doi || isbn || [title, author, year].filter(Boolean).join('|');
     if (!key || seen.has(key)) continue;
     seen.add(key);
     out.push(source);
