@@ -33,6 +33,8 @@ Plan ـەکە hash ـی هەیە و لەگەڵ decisionId و submissionVersionId
 
 P20 هیچ بانگەشەیەک لەسەر یاسای live ـی گۆڤار ناکات؛ policy و بڕیاری editorial دەبێت لەلایەن بەکارهێنەر یان سیستەمی publisher دابین بکرێت.
 
+پێوانەی integrity ـی P20: هەر decision و revision plan دەبێت بە current submission version و audit chain ـی هەنووکەیی ببەسترێت.
+
 ## API
 
 `POST /api/publication-submission-editorial/:workspaceId/:submissionId/decision`
