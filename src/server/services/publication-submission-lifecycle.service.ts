@@ -355,6 +355,96 @@ class PublicationSubmissionLifecycleService {
     });
   }
 
+  async resubmit(
+    userId: string,
+    submissionId: string,
+    newFingerprint: string,
+    input: { note?: string; externalReference?: string }
+  ): Promise<SubmissionLifecycleRecord> {
+    if (!validFingerprint(newFingerprint)) {
+      throw new Error('Resubmission fingerprint is invalid.');
+    }
+    const note = normalizeTransitionNote(input.note);
+    const externalReference = normalizeExternalReference(input.externalReference);
+    if (!note && !externalReference) {
+      throw new Error('A resubmission note or external reference is required.');
+    }
+    const reference = this.ref(userId).doc(submissionId);
+
+    return adminDb.runTransaction(async transaction => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists) throw new Error('Submission lifecycle record was not found.');
+
+      const current = snapshot.data() as SubmissionLifecycleRecord;
+      if (current.currentStatus !== 'REVISION_REQUESTED') {
+        throw new Error('Only a REVISION_REQUESTED submission can be resubmitted.');
+      }
+      if (!current.auditHeadHash) {
+        throw new Error('Submission predates P17 audit chain and cannot be resubmitted safely.');
+      }
+      if (!current.currentVersionId || !Number.isInteger(current.versionCount) || current.versionCount < 1) {
+        throw new Error('P18 version history is required before resubmission.');
+      }
+      if (current.submissionFingerprint === newFingerprint) {
+        throw new Error('Resubmission must use a new package fingerprint.');
+      }
+
+      const occurredAt = new Date().toISOString();
+      const versionRecord = buildSubmissionVersion({
+        submissionId: current.id,
+        cycle: current.versionCount + 1,
+        kind: 'RESUBMISSION',
+        statusAtCapture: 'RESUBMITTED',
+        packageFingerprint: newFingerprint,
+        previousFingerprint: current.submissionFingerprint,
+        note: note || 'Resubmission recorded.',
+        externalReference,
+        capturedAt: occurredAt
+      });
+      const auditEvent = buildSubmissionAuditEvent({
+        submissionId: current.id,
+        version: current.version + 1,
+        from: current.currentStatus,
+        to: 'RESUBMITTED',
+        note: note || 'Resubmission recorded.',
+        externalReference,
+        occurredAt,
+        previousHash: current.auditHeadHash
+      });
+      const event: SubmissionLifecycleEvent = {
+        id: 'SEV-' + sha256(JSON.stringify({
+          submissionId,
+          version: current.version + 1,
+          from: current.currentStatus,
+          to: 'RESUBMITTED',
+          versionId: versionRecord.id,
+          occurredAt
+        })).slice(0, 32),
+        from: 'REVISION_REQUESTED',
+        to: 'RESUBMITTED',
+        note: note || 'Resubmission recorded.',
+        ...(externalReference ? { externalReference } : {}),
+        occurredAt
+      };
+      const updated: SubmissionLifecycleRecord = {
+        ...current,
+        submissionFingerprint: newFingerprint,
+        currentStatus: 'RESUBMITTED',
+        currentVersionId: versionRecord.id,
+        versionCount: current.versionCount + 1,
+        version: current.version + 1,
+        events: [...current.events, event].slice(-100),
+        auditHeadHash: auditEvent.eventHash,
+        updatedAt: occurredAt
+      };
+
+      transaction.create(reference.collection('versions').doc(versionRecord.id), versionRecord);
+      transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
+      transaction.set(reference, updated);
+      return updated;
+    });
+  }
+
   async transition(
     userId: string,
     submissionId: string,
