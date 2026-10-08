@@ -91,6 +91,21 @@ export async function listSubmissionVersions(userId: string, submissionId: strin
 
 function verifyVersion(version: SubmissionVersion, expectedCycle: number, previousFingerprint = ''): string[] {
   const errors: string[] = [];
+  if (!['READY', 'RESUBMISSION', 'LEGACY_READY'].includes(version.kind)) {
+    errors.push(`Unknown version kind at ${version.id}.`);
+  }
+  if (expectedCycle === 1 && version.kind !== 'READY' && version.kind !== 'LEGACY_READY') {
+    errors.push(`First version kind is invalid at ${version.id}.`);
+  }
+  if (expectedCycle > 1 && version.kind !== 'RESUBMISSION') {
+    errors.push(`Non-initial version kind is invalid at ${version.id}.`);
+  }
+  if (expectedCycle === 1 && version.statusAtCapture !== 'READY') {
+    errors.push(`Initial version status is invalid at ${version.id}.`);
+  }
+  if (expectedCycle > 1 && version.statusAtCapture !== 'RESUBMITTED') {
+    errors.push(`Resubmission version status is invalid at ${version.id}.`);
+  }
   if (version.cycle !== expectedCycle) errors.push(`Version cycle mismatch at ${version.id}.`);
   if (version.previousFingerprint !== (previousFingerprint || undefined)) {
     errors.push(`Version fingerprint chain break at ${version.id}.`);
@@ -120,8 +135,14 @@ export function verifySubmissionVersionChain(versions: SubmissionVersion[]): Sub
   if (!versions.length) return { status: 'EMPTY', versionCount: 0, latestCycle: 0, latestFingerprint: '', errors: [] };
   const ordered = [...versions].sort((a, b) => a.cycle - b.cycle);
   const errors: string[] = [];
+  const seenIds = new Set<string>();
+  const seenCycles = new Set<number>();
   let previousFingerprint = '';
   ordered.forEach((version, index) => {
+    if (seenIds.has(version.id)) errors.push(`Duplicate version id: ${version.id}.`);
+    if (seenCycles.has(version.cycle)) errors.push(`Duplicate version cycle: ${version.cycle}.`);
+    seenIds.add(version.id);
+    seenCycles.add(version.cycle);
     errors.push(...verifyVersion(version, index + 1, previousFingerprint));
     previousFingerprint = version.packageFingerprint;
   });
