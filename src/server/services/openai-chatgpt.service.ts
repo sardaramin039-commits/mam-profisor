@@ -56,6 +56,16 @@ export interface DiscoverSourcesResponse {
   provider: string;
 }
 
+function doiFromUrl(url: string): string | undefined {
+  const match = url.match(/(?:doi\.org\/|doi:\s*)(10\.\d{4,9}\/[^\s?#]+)$/i);
+  return match?.[1]?.replace(/[.)],;]+$/, '').trim();
+}
+
+function openAlexIdFromUrl(url: string): string | undefined {
+  const match = url.match(/openalex\.org\/(W\d+)/i);
+  return match?.[1];
+}
+
 function normalizedContains(haystack: string, needle: unknown): boolean {
   const value = String(needle ?? '').trim();
   return !value || haystack.includes(value.toLocaleLowerCase().normalize('NFKC'));
@@ -221,12 +231,15 @@ Return a concise summary and keywords, but the source list must come from web-se
         const url = String(source.url || '').trim();
         if (!/^https?:\/\//i.test(url) || seen.has(url)) continue;
         seen.add(url);
+        const doi = doiFromUrl(url);
+        const openAlexId = openAlexIdFromUrl(url);
         discoveredSources.push({
           id: `OPENAI-WEB-${discoveredSources.length + 1}`,
           title: String(source.title || url).trim(),
           authors: [],
           year: 'n.d.',
           journalOrPublisher: 'OpenAI Web Search',
+          doi,
           url,
           sourceType: 'report',
           citationAPA: '',
