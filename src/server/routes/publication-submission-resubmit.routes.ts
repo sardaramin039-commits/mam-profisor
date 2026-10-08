@@ -118,7 +118,8 @@ export function createPublicationSubmissionResubmitRouter(): Router {
         submission.fingerprint,
         {
           note: parsed.data.note,
-          externalReference: parsed.data.externalReference
+          externalReference: parsed.data.externalReference,
+          revisionPlanId: revisionGate.plan!.id
         }
       );
       res.json({ success: true, submission: record, integrity, package: submission });
