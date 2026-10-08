@@ -394,8 +394,8 @@ function buildDecisionArtifacts(
       return { ready: false, plan: null, pendingRequiredTasks: [], reason: 'No structured revision plan exists.' };
     }
     const integrityErrors = verifyRevisionPlan(plan);
-    if (integrityErrors.length) {
-      return { ready: false, plan, pendingRequiredTasks: [], reason: 'Revision plan integrity verification failed.' };
+    if (integrityErrors.length || plan.submissionVersionId !== current.currentVersionId) {
+      return { ready: false, plan, pendingRequiredTasks: [], reason: 'Revision plan integrity or version binding verification failed.' };
     }
     const pendingRequiredTasks = plan.tasks.filter(task =>
       task.required && task.status !== 'DONE' && task.status !== 'WAIVED'
