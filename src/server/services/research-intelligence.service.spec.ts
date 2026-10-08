@@ -3,9 +3,12 @@ import { researchIntelligenceService } from './research-intelligence.service';
 import { sourceVerificationService } from './source-verification.service';
 
 const originalFetch = globalThis.fetch;
+const originalOpenAiKey = process.env['OPENAI_API_KEY'];
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  if (originalOpenAiKey === undefined) delete process.env['OPENAI_API_KEY'];
+  else process.env['OPENAI_API_KEY'] = originalOpenAiKey;
 });
 
 function response(payload: unknown): Response {
