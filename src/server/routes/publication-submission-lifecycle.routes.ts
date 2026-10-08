@@ -223,6 +223,36 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
     }
   });
 
+  router.post('/:workspaceId/:submissionId/initialize-audit', async (req: AuthRequest, res) => {
+    const userId = requireUser(req, res);
+    const workspaceId = req.params['workspaceId'];
+    const submissionId = req.params['submissionId'];
+    if (!userId) return;
+    if (!id.safeParse(workspaceId).success || !id.safeParse(submissionId).success) {
+      res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
+      return;
+    }
+
+    try {
+      const current = await publicationSubmissionLifecycleService.get(userId, submissionId);
+      if (!current || current.workspaceId !== workspaceId) {
+        res.status(404).json({ error: 'submission نەدۆزرایەوە.' });
+        return;
+      }
+      const submission = await publicationSubmissionLifecycleService.initializeLegacyAudit(userId, submissionId);
+      res.json({
+        success: true,
+        submission,
+        message: current.auditHeadHash
+          ? 'submission ـەکە پێشتر audit chain ـی هەبوو.'
+          : 'legacy audit anchor دروست کرا؛ مێژووی پێش P17 بە تەواوی verified نییە.'
+      });
+    } catch (error) {
+      console.error('Legacy submission audit initialization error:', error);
+      res.status(500).json({ error: 'نەتوانرا legacy audit anchor دروست بکرێت.' });
+    }
+  });
+
   router.get('/:workspaceId/:submissionId/audit', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
     const workspaceId = req.params['workspaceId'];
