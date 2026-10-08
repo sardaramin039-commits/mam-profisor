@@ -173,7 +173,7 @@ export class ClaimEvidenceGraphService {
             ''
           ).trim();
 
-          if (rawSourceId && candidateId && rawSourceId === candidateId) return true;
+          if (rawSourceId) return Boolean(candidateId && rawSourceId === candidateId);
           return (
             titlesMatch(candidate.title, raw.sourceTitle) ||
             (normalizeDoi(candidate.doiOrIsbn) &&
@@ -214,7 +214,7 @@ export class ClaimEvidenceGraphService {
                 ''
               ).trim();
 
-              if (evidence.sourceId && candidateId === evidence.sourceId) return true;
+              if (evidence.sourceId) return candidateId === evidence.sourceId;
               return (
                 titlesMatch(candidate.title, evidence.sourceTitle) ||
                 normalizeDoi(candidate.doiOrIsbn) === normalizeDoi(evidence.doiOrIsbn)
