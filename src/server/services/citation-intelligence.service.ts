@@ -32,10 +32,11 @@ function normalizeEvidence(value: unknown): string {
 }
 
 function authorsValue(source: any): string {
-  if (typeof source?.author === 'string') return clean(source.author);
   if (Array.isArray(source?.authors)) {
-    return source.authors.map((value: unknown) => clean(value)).filter(Boolean).join(', ');
+    const authors = source.authors.map((value: unknown) => clean(value)).filter(Boolean).join(', ');
+    if (authors) return authors;
   }
+  if (typeof source?.author === 'string') return clean(source.author);
   return '';
 }
 
