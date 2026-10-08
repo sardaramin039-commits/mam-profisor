@@ -49,6 +49,9 @@ jobs:
       - name: Integrated P11-P15 publication chain
         run: node scripts/p11-p15-publication-chain-test.mjs
 
+      - name: Integrated P16-P20 submission chain
+        run: node scripts/p16-p20-submission-chain-test.mjs
+
       - name: Lint
         run: npm run lint
 
