@@ -63,11 +63,12 @@ export function createChatGptAcademicSourcesRouter(): Router {
   });
 
   router.get('/status', (_req: Request, res: Response) => {
-    const key = openAiChatGptService.getApiKey();
-    const isConfigured = Boolean(key && key.startsWith('sk-'));
-
+    const key = process.env['OPENAI_API_KEY']?.trim() || '';
+    const openAiEnabled = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] === 'true';
+    const isConfigured = Boolean(key.startsWith('sk-'));
     res.json({
-      service: 'ChatGPT Academic Source Assistant',
+      service: 'Academic Source Discovery',
+      mode: openAiEnabled && isConfigured ? 'ChatGPT Web Search' : 'Free academic indexes',
       isConfigured,
       hasKey: isConfigured,
       capabilities: [
