@@ -3,8 +3,7 @@ import { sha256 } from './text-sha256.service';
 import { buildSubmissionReceipt } from './publication-submission-receipt.service';
 import { buildSubmissionAuditEvent } from './publication-submission-audit.service';
 import { buildSubmissionVersion } from './publication-submission-version.service';
-import { requiredRevisionTasksComplete, verifyRevisionPlan } from './publication-submission-revision.policy';
-import type { RevisionPlan } from './publication-submission-revision.policy';
+import { requiredRevisionTasksComplete, verifyRevisionPlan } from './publication-submission-revision.policy'; import type { RevisionPlan } from './publication-submission-revision.policy';
 import type { SubmissionVersion } from './publication-submission-version.service';
 import type { SubmissionReceipt } from './publication-submission-receipt.service';
 import {
@@ -332,14 +331,12 @@ class PublicationSubmissionLifecycleService {
         auditHeadHash: auditEvent.eventHash,
         updatedAt: submittedAt
       };
-
       transaction.create(receiptCollection.doc(receipt.id), receipt);
       transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
       transaction.set(reference, updated);
       return updated;
     });
   }
-
   async resubmit(
     userId: string,
     submissionId: string,
@@ -355,11 +352,9 @@ class PublicationSubmissionLifecycleService {
       throw new Error('A resubmission note or external reference is required.');
     }
     const reference = this.ref(userId).doc(submissionId);
-
     return adminDb.runTransaction(async transaction => {
       const snapshot = await transaction.get(reference);
       if (!snapshot.exists) throw new Error('Submission lifecycle record was not found.');
-
       const current = snapshot.data() as SubmissionLifecycleRecord;
       if (current.currentStatus !== 'REVISION_REQUESTED') {
         throw new Error('Only a REVISION_REQUESTED submission can be resubmitted.');
@@ -385,7 +380,6 @@ class PublicationSubmissionLifecycleService {
       if (current.submissionFingerprint === newFingerprint) {
         throw new Error('Resubmission must use a new package fingerprint.');
       }
-
       const occurredAt = new Date().toISOString();
       const versionRecord = buildSubmissionVersion({
         submissionId: current.id,
@@ -434,14 +428,12 @@ class PublicationSubmissionLifecycleService {
         auditHeadHash: auditEvent.eventHash,
         updatedAt: occurredAt
       };
-
       transaction.create(reference.collection('versions').doc(versionRecord.id), versionRecord);
       transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
       transaction.set(reference, updated);
       return updated;
     });
   }
-
   async transition(
     userId: string,
     submissionId: string,
@@ -453,18 +445,15 @@ class PublicationSubmissionLifecycleService {
       throw new Error('This lifecycle status requires a dedicated integrity-gated method.');
     }
     const reference = this.ref(userId).doc(submissionId);
-
     return adminDb.runTransaction(async transaction => {
       const snapshot = await transaction.get(reference);
       if (!snapshot.exists) throw new Error('Submission lifecycle record was not found.');
-
       const current = snapshot.data() as SubmissionLifecycleRecord;
       if (!current.auditHeadHash) {
         throw new Error('Submission predates P17 audit chain and cannot transition safely.');
       }
       const decision = canTransition(current.currentStatus, input.to);
       if (!decision.allowed) throw new Error(decision.reason);
-
       const occurredAt = new Date().toISOString();
       const eventSeed = JSON.stringify({
         submissionId,
@@ -501,12 +490,10 @@ class PublicationSubmissionLifecycleService {
         auditHeadHash: auditEvent.eventHash,
         updatedAt: occurredAt
       };
-
       transaction.create(reference.collection('audit').doc(auditEvent.id), auditEvent);
       transaction.set(reference, updated);
       return updated;
     });
   }
 }
-
 export const publicationSubmissionLifecycleService = new PublicationSubmissionLifecycleService();
