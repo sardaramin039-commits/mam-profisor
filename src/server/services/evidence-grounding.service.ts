@@ -197,19 +197,34 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
       const paragraphs: GroundedParagraph[] = Array.isArray(parsed.paragraphs) ? parsed.paragraphs : [];
       const evidenceGaps = Array.isArray(parsed.evidenceGaps) ? parsed.evidenceGaps : [];
 
-      const eligibleBySourceId = new Map(
-        preparedContextChunks
-          .filter(chunk => citationEligibleChunks.some(eligible => eligible.sourceId === chunk.sourceId && eligible.sourceTitle === chunk.sourceTitle))
-          .map(chunk => [String(chunk.sourceId), chunk])
-      );
+      const eligibleBySourceId = new Map<
+        string,
+        Array<(typeof preparedContextChunks)[number]>
+      >();
+
+      for (const chunk of preparedContextChunks) {
+        const isEligible = citationEligibleChunks.some(
+          eligible =>
+            eligible.sourceId === chunk.sourceId &&
+            eligible.sourceTitle === chunk.sourceTitle
+        );
+        if (!isEligible) continue;
+
+        const sourceId = String(chunk.sourceId);
+        const existing = eligibleBySourceId.get(sourceId) || [];
+        existing.push(chunk);
+        eligibleBySourceId.set(sourceId, existing);
+      }
 
       const normalized = (value: string) => value.normalize('NFKC').toLocaleLowerCase().trim();
 
       const hasGroundedEvidence = (sourceId: unknown, evidenceQuote: unknown): boolean => {
-        const chunk = eligibleBySourceId.get(String(sourceId || ''));
+        const chunks = eligibleBySourceId.get(String(sourceId || '')) || [];
         const quote = String(evidenceQuote || '').trim();
-        if (!chunk || !quote) return false;
-        return normalized(chunk.chunkText).includes(normalized(quote));
+        if (!quote) return false;
+        return chunks.some(chunk =>
+          normalized(chunk.chunkText).includes(normalized(quote))
+        );
       };
 
       let totalClaims = 0;
