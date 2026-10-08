@@ -131,7 +131,10 @@ function verifyVersion(version: SubmissionVersion, expectedCycle: number, previo
   return errors;
 }
 
-export function verifySubmissionVersionChain(versions: SubmissionVersion[]): SubmissionVersionReport {
+export function verifySubmissionVersionChain(
+  versions: SubmissionVersion[],
+  expectedSubmissionId?: string
+): SubmissionVersionReport {
   if (!versions.length) return { status: 'EMPTY', versionCount: 0, latestCycle: 0, latestFingerprint: '', errors: [] };
   const ordered = [...versions].sort((a, b) => a.cycle - b.cycle);
   const errors: string[] = [];
@@ -141,6 +144,9 @@ export function verifySubmissionVersionChain(versions: SubmissionVersion[]): Sub
   ordered.forEach((version, index) => {
     if (seenIds.has(version.id)) errors.push(`Duplicate version id: ${version.id}.`);
     if (seenCycles.has(version.cycle)) errors.push(`Duplicate version cycle: ${version.cycle}.`);
+    if (expectedSubmissionId && version.submissionId !== expectedSubmissionId) {
+      errors.push(`Version submission binding mismatch at ${version.id}.`);
+    }
     seenIds.add(version.id);
     seenCycles.add(version.cycle);
     errors.push(...verifyVersion(version, index + 1, previousFingerprint));
