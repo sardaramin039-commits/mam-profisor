@@ -98,6 +98,33 @@ export function createApiDocsRouter(): Router {
       <p class="text-slate-300 text-xs">بۆ submission ـە کۆنەکان legacy audit anchor دادەنێت؛ مێژووی پێش P17 بە VERIFIED ناژمێرێت.</p>
     </div>
 
+    <!-- API Route Card 9 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-violet-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">POST</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-lifecycle/:workspaceId/:submissionId/resubmit</code>
+      </div>
+      <p class="text-slate-300 text-xs">P18 دووبارەناردنی integrity-gated؛ package ـی نوێ دەبێت P14 پاس بکات و fingerprint ـی جیاواز هەبێت.</p>
+    </div>
+
+    <!-- API Route Card 10 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-fuchsia-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">GET</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-lifecycle/:workspaceId/:submissionId/versions</code>
+      </div>
+      <p class="text-slate-300 text-xs">مێژووی version ـەکانی package و verification ـی chain ـی fingerprint.</p>
+    </div>
+
+    <!-- API Route Card 11 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-teal-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">POST</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-lifecycle/:workspaceId/:submissionId/versions/initialize</code>
+      </div>
+      <p class="text-slate-300 text-xs">P15 ـی کۆن بۆ P18؛ legacy version snapshot دروست دەکات بەبێ بانگەشەی verification ـی مێژووی کۆن.</p>
+    </div>
+
     <div class="text-center text-slate-500 text-xs pt-6 border-t border-slate-800">
       Harvard Academic AI Platform &copy; 2026. All security & proxy headers configured.
     </div>
