@@ -132,12 +132,31 @@ export class ClaimEvidenceGraphService {
       const rawClaims: any[] = Array.isArray(parsed.claims) ? parsed.claims : [];
       const rawEvidences: any[] = Array.isArray(parsed.evidences) ? parsed.evidences : [];
 
-      const safeSources = (Array.isArray(sources) ? sources : []).filter(
-        source => (source?.existenceVerified === true || source?.verificationStatus === 'verified') &&
+      const safeSources = (Array.isArray(sources) ? sources : []).filter(source => {
+        const provenance = source?.evidenceProvenance || source?.provenance;
+        const strictEvidence =
+          source?.verificationStatus === 'verified' &&
+          source?.evidenceType === 'full-text' &&
+          provenance === 'server-verified-fulltext';
+
+        const sourceText = String(
+          source?.content ??
+          source?.fullText ??
+          source?.text ??
+          source?.rawText ??
+          source?.chunkText ??
+          source?.evidenceText ??
+          ''
+        ).trim();
+
+        return (
+          strictEvidence &&
+          Boolean(sourceText) &&
           source?.rejectedAsFabricated !== true &&
           source?.trustLevel !== 'F' &&
           source?.trustLevel !== 'D'
-      );
+        );
+      });
 
       const evidenceMap = new Map<string, EvidenceNode>();
       for (const raw of rawEvidences) {
