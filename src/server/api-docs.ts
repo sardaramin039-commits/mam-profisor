@@ -80,6 +80,24 @@ export function createApiDocsRouter(): Router {
       <p class="text-slate-300 text-xs">P16 immutable submission receipt؛ fingerprint و کاتی ناردن و بەڵگەی ناردن بە یەک hash ـی پارێزراو پەیوەستە.</p>
     </div>
 
+    <!-- API Route Card 7 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-indigo-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">GET</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-lifecycle/:workspaceId/:submissionId/audit</code>
+      </div>
+      <p class="text-slate-300 text-xs">P17 immutable audit-chain verification؛ version، state، previousHash و auditHeadHash دەپشکنێت.</p>
+    </div>
+
+    <!-- API Route Card 8 -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-sky-600 text-white font-mono text-xs font-bold px-2.5 py-1 rounded-md">POST</span>
+        <code class="text-amber-300 font-mono text-sm">/api/publication-submission-lifecycle/:workspaceId/:submissionId/initialize-audit</code>
+      </div>
+      <p class="text-slate-300 text-xs">بۆ submission ـە کۆنەکان legacy audit anchor دادەنێت؛ مێژووی پێش P17 بە VERIFIED ناژمێرێت.</p>
+    </div>
+
     <div class="text-center text-slate-500 text-xs pt-6 border-t border-slate-800">
       Harvard Academic AI Platform &copy; 2026. All security & proxy headers configured.
     </div>
