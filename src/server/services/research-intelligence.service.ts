@@ -1,14 +1,4 @@
 import { GoogleGenAI } from '@google/genai';
-import {
-  fetchSemanticScholar,
-  fetchPubMed,
-  fetchDOAJ,
-  fetchOpenLibrary,
-  fetchInternetArchive,
-  fetchLibraryOfCongress,
-  fetchEuropeana
-} from '../../helpers/academic-integrations';
-import { fetchOpenAlex, fetchCrossref } from '../../helpers/academic-discovery-providers';
 import { robustParseJson } from '../utils/json-repair';
 import { sourceVerificationService } from './source-verification.service';
 import { linkClaimsToEvidence } from './research-evidence-linking';
