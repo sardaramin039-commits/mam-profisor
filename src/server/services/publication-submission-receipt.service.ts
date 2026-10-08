@@ -34,6 +34,61 @@ function clean(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function receiptCanonical(receipt: SubmissionReceipt): string {
+  return JSON.stringify({
+    submissionId: clean(receipt.submissionId),
+    userId: clean(receipt.userId),
+    workspaceId: clean(receipt.workspaceId),
+    journalName: clean(receipt.journalName),
+    manuscriptType: clean(receipt.manuscriptType) || 'article',
+    submissionFingerprint: clean(receipt.submissionFingerprint),
+    submissionVersionId: clean(receipt.submissionVersionId),
+    note: clean(receipt.note),
+    externalReference: clean(receipt.externalReference),
+    submittedAt: clean(receipt.submittedAt)
+  });
+}
+
+export interface SubmissionReceiptVerification {
+  status: 'VERIFIED' | 'INVALID';
+  expectedHash: string;
+  errors: string[];
+}
+
+export function verifySubmissionReceipt(
+  receipt: SubmissionReceipt,
+  expected?: {
+    submissionId?: string;
+    workspaceId?: string;
+    submissionFingerprint?: string;
+    submissionVersionId?: string;
+  }
+): SubmissionReceiptVerification {
+  const errors: string[] = [];
+  const expectedHash = sha256(receiptCanonical(receipt));
+  if (expectedHash !== receipt.immutableHash) {
+    errors.push('Submission receipt immutable hash mismatch.');
+  }
+
+  const checks: Array<[string, string | undefined]> = [
+    ['submissionId', expected?.submissionId],
+    ['workspaceId', expected?.workspaceId],
+    ['submissionFingerprint', expected?.submissionFingerprint],
+    ['submissionVersionId', expected?.submissionVersionId]
+  ];
+  for (const [field, value] of checks) {
+    if (value !== undefined && clean(receipt[field as keyof SubmissionReceipt]) !== clean(value)) {
+      errors.push(`Submission receipt ${field} binding mismatch.`);
+    }
+  }
+
+  return {
+    status: errors.length ? 'INVALID' : 'VERIFIED',
+    expectedHash,
+    errors
+  };
+}
+
 export function buildSubmissionReceipt(input: SubmissionReceiptInput): SubmissionReceipt {
   const submissionId = clean(input.submissionId);
   const userId = clean(input.userId);
