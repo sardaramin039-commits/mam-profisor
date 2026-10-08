@@ -155,6 +155,24 @@ function formatValidatedCitationGuide(items: AcademicSourceItem[], style: string
 
 
 
+function mapFreeAcademicRecord(record: AcademicPaper): AcademicSourceItem {
+  return {
+    id: record.id,
+    title: record.title,
+    authors: Array.isArray(record.authors) ? record.authors : [],
+    year: record.publicationYear > 0 ? record.publicationYear : 'n.d.',
+    journalOrPublisher: record.source || 'Academic index',
+    doi: record.doi,
+    url: record.url,
+    sourceType: record.isbn ? 'book' : 'journal',
+    citationAPA: '',
+    citationHarvard: '',
+    citationMLA: '',
+    relevanceExplanation: 'سەرچاوەکە لە بنکەدراوە ئەکادیمییە خۆڕاییەکان وەرگیراوە؛ پێویستی بە verification ـی زیاتر هەیە.',
+    verificationStatus: 'retrieved-not-verified'
+  };
+}
+
 export class OpenAiChatGptService {
   public getApiKey(): string {
     const key = process.env['OPENAI_API_KEY']?.trim();
@@ -182,7 +200,23 @@ export class OpenAiChatGptService {
   ): Promise<DiscoverSourcesResponse> {
     const limit = Math.min(Math.max(request.limit || 8, 1), 15);
     const query = [request.query.trim(), request.discipline?.trim()].filter(Boolean).join(' ');
-    const apiKey = this.getApiKey();
+    const apiKey = this.getOptionalApiKey();
+
+    if (process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] !== 'true' || !apiKey) {
+      const records = await academicSearchService.searchAll(query, limit);
+      const sources = records.map(mapFreeAcademicRecord);
+      return {
+        success: true,
+        query: request.query,
+        discoveredSources: sources,
+        thematicSummary: sources.length
+          ? 'سەرچاوەکان بە شێوەی خۆڕایی لە بنکەدراوە ئەکادیمییەکان وەرگیراون؛ هەر یەکەیان پێویستی بە verification ـی جیاواز هەیە.'
+          : 'هیچ سەرچاوەیەکی ڕاستەقینە لە بنکەدراوە خۆڕاییەکاندا نەدۆزرایەوە؛ هیچ سەرچاوەیەکی خەیاڵی دروست نەکرا.',
+        suggestedKeywords: [],
+        provider: sources.length ? 'Free academic indexes' : 'Free academic indexes'
+      };
+    }
+
     const input = `Find ${limit} high-quality academic sources for this research query.
 Query: ${query}
 Prefer peer-reviewed papers, scholarly books, university repositories, government/scientific institutions, and recognized academic indexes.
@@ -196,7 +230,7 @@ Return a concise summary and keywords, but the source list must come from web-se
         Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: process.env['OPENAI_RESEARCH_MODEL'] || 'gpt-6-astra',
+        model: process.env['OPENAI_RESEARCH_MODEL'] || 'gpt-4o-mini',
         reasoning: { effort: 'low' },
         tools: [{
           type: 'web_search',
