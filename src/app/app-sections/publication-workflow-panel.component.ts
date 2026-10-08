@@ -60,7 +60,7 @@ interface RevisionGate {
   templateUrl: './publication-workflow-panel.component.html'
 })
 export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase {
-  private readonly http = inject(HttpClient);
+  private readonly workflowHttp = inject(HttpClient);
   readonly submissions = signal<SubmissionItem[]>([]);
   readonly decisions = signal<EditorialDecision[]>([]);
   readonly revisionPlan = signal<RevisionPlan | null>(null);
@@ -96,7 +96,7 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     this.errorMessage.set('');
     this.loading.set(true);
     try {
-      const response = await firstValueFrom(this.http.get<{ submissions: SubmissionItem[] }>(
+      const response = await firstValueFrom(this.workflowHttp.get<{ submissions: SubmissionItem[] }>(
         `/api/publication-submission-lifecycle/${encodeURIComponent(this.workspaceId())}`
       ));
       const items = response.submissions || [];
@@ -142,7 +142,7 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
         ? { status, completionNote: 'لە لایەن بەکارهێنەرەوە waiver تۆمارکرا.' }
         : { status };
       const response = await firstValueFrom(
-        this.http.patch<{ plan: RevisionPlan }>(`${base}/revision/${encodeURIComponent(task.id)}`, body)
+        this.workflowHttp.patch<{ plan: RevisionPlan }>(`${base}/revision/${encodeURIComponent(task.id)}`, body)
       );
       this.revisionPlan.set(response.plan);
       await this.loadSubmissionEvidence();
