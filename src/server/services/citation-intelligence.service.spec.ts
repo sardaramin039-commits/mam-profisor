@@ -140,6 +140,28 @@ describe('citation intelligence strict evidence gate', () => {
     expect(result.blockedCitationCount).toBe(1);
   });
 
+  it('resolves the exact evidence chunk when one source has multiple chunks', () => {
+    const result = service.build(
+      [{
+        claims: [{
+          citationId: 'CIT-EXACT-CHUNK',
+          sourceId: 'SRC-1',
+          evidenceId: 'EVI-1',
+          citationEligible: true,
+          verificationStatus: 'verified',
+          evidenceQuote: 'Observed evidence supports the stated claim'
+        }]
+      }],
+      [
+        { ...source, evidenceId: 'EVI-1' },
+        { ...source, evidenceId: 'EVI-2', evidenceText: 'A different verified chunk.' }
+      ]
+    );
+
+    expect(result.citations).toHaveLength(1);
+    expect(result.blockedCitationCount).toBe(0);
+  });
+
   it('blocks a citation when the supplied quote is not actually present in the evidence', () => {
     const result = service.build(
       [{
