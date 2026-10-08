@@ -4,6 +4,8 @@
  * summarize or format records already supplied to it.
  */
 
+import { academicSearchService, AcademicPaper } from '../../services/academic-search.service';
+
 export interface AcademicSourceItem {
   id?: string;
   title: string;
