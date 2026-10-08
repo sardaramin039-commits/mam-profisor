@@ -39,7 +39,7 @@ describe('P20 editorial decision management', () => {
   it('rejects decisions without a version binding', () => {
     expect(() => buildEditorialDecision({
       ...base,
-      submissionVersionId: 'invalid'
+      submissionVersionId: ''
     })).toThrow(/version binding/i);
   });
 
