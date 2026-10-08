@@ -4,6 +4,8 @@
 
 ## Automated gates
 
+Final validation marker: run the complete npm, integrity, test, build, security and smoke gates.
+
 The canonical release commands use npm and `package-lock.json`; no Bun workflow is required.
 
 `npm ci`
