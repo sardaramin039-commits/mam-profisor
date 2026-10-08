@@ -66,6 +66,21 @@ export function verifyRevisionPlan(plan: RevisionPlan): string[] {
       !/^[A-Za-z0-9_-]{1,128}$/u.test(plan.submissionVersionId)) {
     errors.push('Revision plan identity is invalid.');
   }
+  if (!plan.tasks.length || plan.tasks.length > 50) {
+    errors.push('Revision plan task count is invalid.');
+  }
+  const seenTaskIds = new Set<string>();
+  plan.tasks.forEach((task, index) => {
+    if (seenTaskIds.has(task.id)) errors.push(`Duplicate revision task id: ${task.id}.`);
+    seenTaskIds.add(task.id);
+    if (task.order !== index + 1) errors.push(`Revision task order is invalid at ${task.id}.`);
+    if (!task.title.trim() || !task.details.trim()) {
+      errors.push(`Revision task content is incomplete at ${task.id}.`);
+    }
+    if (task.required !== true && task.required !== false) {
+      errors.push(`Revision task required flag is invalid at ${task.id}.`);
+    }
+  });
   if (revisionPlanHash(base) !== plan.planHash) errors.push('Revision plan hash mismatch.');
   if (computeRevisionPlanStatus(plan.tasks) !== plan.status) {
     errors.push('Revision plan status does not match its tasks.');
