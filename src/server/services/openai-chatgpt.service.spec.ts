@@ -5,6 +5,7 @@ const originalFetch = globalThis.fetch;
 const originalKey = process.env['OPENAI_API_KEY'];
 const originalReferenceFormatting = process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'];
 const originalDiscovery = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
+const originalBillable = process.env['ALLOW_BILLABLE_AI'];
 
 function jsonResponse(payload: unknown): Response {
   return new Response(JSON.stringify(payload), {
@@ -21,12 +22,15 @@ afterEach(() => {
   else process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'] = originalReferenceFormatting;
   if (originalDiscovery === undefined) delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
   else process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = originalDiscovery;
+  if (originalBillable === undefined) delete process.env['ALLOW_BILLABLE_AI'];
+  else process.env['ALLOW_BILLABLE_AI'] = originalBillable;
 });
 
 describe('OpenAiChatGptService reference integrity', () => {
   it('uses free academic indexes by default without an OpenAI key', async () => {
     delete process.env['OPENAI_API_KEY'];
     delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
+    delete process.env['ALLOW_BILLABLE_AI'];
     const service = new OpenAiChatGptService();
     const result = await service.discoverAcademicSources({
       query: 'social learning theory',
@@ -104,6 +108,7 @@ describe('OpenAiChatGptService reference integrity', () => {
   it('formats raw references for free without an OpenAI key', async () => {
     delete process.env['OPENAI_API_KEY'];
     delete process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'];
+    delete process.env['ALLOW_BILLABLE_AI'];
     const service = new OpenAiChatGptService();
 
     const result = await service.organizeAndFormatReferences({
@@ -124,6 +129,7 @@ describe('OpenAiChatGptService reference integrity', () => {
   it('uses ChatGPT web search as the source discovery engine when explicitly enabled', async () => {
     process.env['OPENAI_API_KEY'] = 'test-key';
     process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = 'true';
+    process.env['ALLOW_BILLABLE_AI'] = 'true';
     const service = new OpenAiChatGptService();
 
     globalThis.fetch = (async () => jsonResponse({
@@ -180,6 +186,7 @@ describe('OpenAiChatGptService reference integrity', () => {
   it('builds the in-text citation guide only from validated references', async () => {
     process.env['OPENAI_API_KEY'] = 'test-key';
     process.env['ENABLE_OPENAI_REFERENCE_FORMATTING'] = 'true';
+    process.env['ALLOW_BILLABLE_AI'] = 'true';
     const service = new OpenAiChatGptService();
 
     globalThis.fetch = (async () => jsonResponse({
