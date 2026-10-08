@@ -3,8 +3,9 @@ import { sha256 } from './text-sha256.service';
 import { buildSubmissionAuditEvent } from './publication-submission-audit.service';
 import type { SubmissionReceipt } from './publication-submission-receipt.service';
 import { canTransition } from './publication-submission-lifecycle.policy';
+import type { SubmissionLifecycleStatus } from './publication-submission-lifecycle.policy';
 import { publicationSubmissionLifecycleService } from './publication-submission-lifecycle.service';
-import type { SubmissionLifecycleRecord, SubmissionLifecycleStatus } from './publication-submission-lifecycle.service';
+import type { SubmissionLifecycleRecord } from './publication-submission-lifecycle.service';
 export type EditorialDecisionType = 'MINOR_REVISION' | 'MAJOR_REVISION' | 'ACCEPT' | 'REJECT' | 'WITHDRAW';
 import {
   computeRevisionPlanStatus,
