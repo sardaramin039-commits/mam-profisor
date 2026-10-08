@@ -41,6 +41,9 @@ jobs:
       - name: Anti-hallucination audit
         run: npm run integrity:audit
 
+      - name: P5 evidence intelligence contract
+        run: node scripts/p5-evidence-intelligence-test.mjs
+
       - name: File line limits
         run: npm run line-limit
 
