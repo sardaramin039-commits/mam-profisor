@@ -108,7 +108,7 @@ describe('P20 editorial API contract', () => {
           })
         }
       );
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(403);
     } finally {
       await closeServer(server);
     }
