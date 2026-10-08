@@ -271,7 +271,10 @@ export class ApiBibliographySearchComponent {
       url: item.url,
       doi: item.doi,
       isbn: item.isbn,
-      isVerified: true
+      isVerified: false,
+      citationEligible: false,
+      identityStatus: 'unverified',
+      evidenceStatus: 'not_available'
     };
 
     const current = this.storeService.sources();
@@ -302,17 +305,16 @@ export class ApiBibliographySearchComponent {
         rawItems.forEach((it: any, idx: number) => {
           const authors =
             it.author && Array.isArray(it.author)
-              ? it.author.map((a: any) => `${a.family || ''}, ${a.given || ''}`.trim()).join('؛ ')
-              : 'نووسەری ئەکادیمی';
+              ? it.author.map((a: any) => [a.family, a.given].filter(Boolean).join(', ').trim()).filter(Boolean).join('؛ ')
+              : '';
 
-          const title = (it.title && it.title[0]) || 'ناونیشانی توێژینەوەکە';
+          const title = (it.title && it.title[0] && String(it.title[0]).trim()) || '';
           const year =
             (it['published-print'] && it['published-print']['date-parts']?.[0]?.[0]) ||
             (it['published-online'] && it['published-online']['date-parts']?.[0]?.[0]) ||
-            (it.created && it.created['date-parts']?.[0]?.[0]) ||
-            2025;
+            (it.created && it.created['date-parts']?.[0]?.[0]);
 
-          const publisher = it.publisher || (it['container-title'] && it['container-title'][0]) || 'ژورنالی زانستی';
+          const publisher = it.publisher || (it['container-title'] && it['container-title'][0]) || '';
           const journal = (it['container-title'] && it['container-title'][0]) || '';
           const doi = it.DOI || '';
           const link = it.URL || (doi ? `https://doi.org/${doi}` : '');
@@ -339,8 +341,7 @@ export class ApiBibliographySearchComponent {
         this.isSearching.set(false);
       })
       .catch(() => {
-        // Robust fallback mock search results for offline resilience
-        this.searchResults.set(this.getFallbackMetadata());
+        this.searchResults.set([]);
         this.isSearching.set(false);
       });
   }
@@ -359,11 +360,12 @@ export class ApiBibliographySearchComponent {
 
         rawItems.forEach((it: any, idx: number) => {
           const info = it.volumeInfo || {};
-          const authors = info.authors ? info.authors.join('؛ ') : 'نووسەری ئەکادیمی';
-          const title = info.title || 'ناونیشانی کتێب';
-          const publishedDate = info.publishedDate || '2024';
-          const year = parseInt(publishedDate.substring(0, 4), 10) || 2024;
-          const publisher = info.publisher || 'چاپخانەی زانکۆ';
+          const authors = Array.isArray(info.authors) ? info.authors.filter(Boolean).join('؛ ') : '';
+          const title = String(info.title || '').trim();
+          const publishedDate = String(info.publishedDate || '').trim();
+          const parsedYear = parseInt(publishedDate.substring(0, 4), 10);
+          const year = Number.isFinite(parsedYear) && parsedYear > 0 ? parsedYear : 0;
+          const publisher = String(info.publisher || '').trim();
           const isbn = info.industryIdentifiers?.[0]?.identifier || '';
 
           const meta: ExternalAcademicMetadata = {
@@ -387,16 +389,16 @@ export class ApiBibliographySearchComponent {
         this.isSearching.set(false);
       })
       .catch(() => {
-        this.searchResults.set(this.getFallbackMetadata());
+        this.searchResults.set([]);
         this.isSearching.set(false);
       });
   }
 
   private buildKurdishAPA(meta: ExternalAcademicMetadata): string {
     const author = meta.author || 'نووسەری دیارینەکراو';
-    const year = meta.year || 2026;
+    const year = meta.year > 0 ? String(meta.year) : 'بێ ساڵ';
     const title = meta.title;
-    const publisher = meta.publisher || 'دەزگای زانستی';
+    const publisher = meta.publisher;
     const doiPart = meta.doi ? ` https://doi.org/${meta.doi}` : meta.url ? ` ${meta.url}` : '';
 
     if (meta.sourceType === 'journal' && meta.journal) {
@@ -408,41 +410,11 @@ export class ApiBibliographySearchComponent {
   private buildKurdishChicago(meta: ExternalAcademicMetadata): string {
     const author = meta.author || 'نووسەر';
     const title = meta.title;
-    const publisher = meta.publisher || 'دەزگای زانستی';
-    const year = meta.year || 2026;
+    const publisher = meta.publisher || '';
+    const year = meta.year > 0 ? String(meta.year) : 'بێ ساڵ';
     const doiPart = meta.doi ? ` https://doi.org/${meta.doi}` : '';
 
     return `${author}. "${title}." ${publisher} (${year}).${doiPart}`;
   }
 
-  private getFallbackMetadata(): ExternalAcademicMetadata[] {
-    const m1: ExternalAcademicMetadata = {
-      id: 'fb_1',
-      sourceApi: 'crossref',
-      title: 'Methodological Foundations in Modern Kurdish Studies',
-      author: 'ئەمین، سەردار؛ و کەریم، مەسعود',
-      year: 2025,
-      publisher: 'Journal of Academic Kurdish Research',
-      journal: 'Journal of Academic Kurdish Research',
-      doi: '10.1038/s41586-020-2649-2',
-      sourceType: 'journal'
-    };
-    m1.formattedKurdishAPA = this.buildKurdishAPA(m1);
-    m1.formattedKurdishChicago = this.buildKurdishChicago(m1);
-
-    const m2: ExternalAcademicMetadata = {
-      id: 'fb_2',
-      sourceApi: 'google_books',
-      title: 'Epistemology and Discourse Analysis in Modern Linguistics',
-      author: 'Smith, Arthur & Johnson, Robert',
-      year: 2024,
-      publisher: 'Oxford University Press',
-      isbn: '978-0198520008',
-      sourceType: 'book'
-    };
-    m2.formattedKurdishAPA = this.buildKurdishAPA(m2);
-    m2.formattedKurdishChicago = this.buildKurdishChicago(m2);
-
-    return [m1, m2];
-  }
 }
