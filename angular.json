@@ -120,8 +120,7 @@
             "runner": "vitest",
             "buildTarget": "app:build:development",
             "exclude": [
-              "src/server/routes/publication-submission-editorial.routes.spec.ts",
-              "src/server/routes/publication-submission-resubmit.routes.spec.ts"
+              "src/server/routes/publication-submission-editorial.routes.spec.ts"
             ]
           }
         },
