@@ -4,6 +4,7 @@ import { assembleManuscript } from '../services/manuscript-assembly.service';
 import { buildPublicationSubmissionPackage } from '../services/publication-submission.service';
 import { verifyPublicationSubmissionIntegrity } from '../services/publication-submission-integrity.service';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
+import { listSubmissionVersions, verifySubmissionVersionChain } from '../services/publication-submission-version.service';
 import { listSubmissionAuditEvents, verifySubmissionAuditChain } from '../services/publication-submission-audit.service';
 import type { SubmissionLifecycleStatus } from '../services/publication-submission-lifecycle.policy';
 import type { AuthRequest } from '../../middleware/auth';
@@ -56,6 +57,11 @@ const packageSchema = z.object({
   authors: z.array(author).max(100).default([]),
   policy
 }).strict();
+const resubmitSchema = packageSchema.extend({
+  note: z.string().trim().max(5000).optional(),
+  externalReference: z.string().trim().max(500).optional()
+}).strict();
+
 const transitionSchema = z.object({
   submissionId: id,
   to: z.enum([
@@ -186,6 +192,14 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
         return;
       }
 
+      if (parsed.data.to === 'RESUBMITTED') {
+        res.status(400).json({
+          error: 'RESUBMITTED تەنها لە endpoint ـی تایبەت و دوای P14 دەتوانرێت بێت.',
+          action: 'endpoint ـی /resubmit بەکاربهێنە.'
+        });
+        return;
+      }
+
       if (parsed.data.to === 'SUBMITTED') {
         if (!parsed.data.submissionFingerprint) {
           res.status(400).json({
@@ -288,6 +302,51 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
     }
   });
 
+  router.get('/:workspaceId/:submissionId/versions', async (req: AuthRequest, res) => {
+    const userId = requireUser(req, res);
+    const workspaceId = req.params['workspaceId'];
+    const submissionId = req.params['submissionId'];
+    if (!userId) return;
+    if (!id.safeParse(workspaceId).success || !id.safeParse(submissionId).success) {
+      res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
+      return;
+    }
+
+    try {
+      const submission = await publicationSubmissionLifecycleService.get(userId, submissionId);
+      if (!submission || submission.workspaceId !== workspaceId) {
+        res.status(404).json({ error: 'submission نەدۆزرایەوە.' });
+        return;
+      }
+      const versions = await listSubmissionVersions(userId, submissionId);
+      const report = verifySubmissionVersionChain(versions);
+      const errors = [...report.errors];
+      if (submission.versionCount !== versions.length) {
+        errors.push('Lifecycle version count does not match stored versions.');
+      }
+      if (submission.versionCount > 0 && submission.currentVersionId !== versions.at(-1)?.id) {
+        errors.push('Lifecycle currentVersionId does not match the latest version.');
+      }
+      if (submission.versionCount > 0 && submission.submissionFingerprint !== report.latestFingerprint) {
+        errors.push('Lifecycle submission fingerprint does not match the latest version.');
+      }
+      const verified = errors.length === 0 && (
+        submission.versionCount === 0
+          ? report.status === 'EMPTY'
+          : report.status === 'VERIFIED'
+      );
+      res.status(verified ? 200 : 409).json({
+        success: verified,
+        versions: report,
+        consistencyErrors: errors,
+        items: versions
+      });
+    } catch (error) {
+      console.error('Submission version history read error:', error);
+      res.status(500).json({ error: 'نەتوانرا مێژووی version ـەکانی submission بخوێندرێتەوە.' });
+    }
+  });
+
   router.get('/:workspaceId/:submissionId/receipt', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
     const workspaceId = req.params['workspaceId'];
@@ -320,6 +379,86 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
     } catch (error) {
       console.error('Submission receipt read error:', error);
       res.status(500).json({ error: 'نەتوانرا receipt ـی ناردن بخوێندرێتەوە.' });
+    }
+  });
+
+  router.post('/:workspaceId/:submissionId/resubmit', async (req: AuthRequest, res) => {
+    const userId = requireUser(req, res);
+    const workspaceId = req.params['workspaceId'];
+    const submissionId = req.params['submissionId'];
+    if (!userId) return;
+    if (!id.safeParse(workspaceId).success || !id.safeParse(submissionId).success) {
+      res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
+      return;
+    }
+
+    const parsed = resubmitSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: 'داتای resubmission نادروستە.', issues: parsed.error.issues });
+      return;
+    }
+    const { minKeywords, maxKeywords } = parsed.data.policy;
+    if (minKeywords !== undefined && maxKeywords !== undefined && minKeywords > maxKeywords) {
+      res.status(400).json({ error: 'کەمترین ژمارەی keyword نابێت لە زۆرترین ژمارە گەورەتر بێت.' });
+      return;
+    }
+
+    try {
+      const current = await publicationSubmissionLifecycleService.get(userId, submissionId);
+      if (!current || current.workspaceId !== workspaceId) {
+        res.status(404).json({ error: 'submission نەدۆزرایەوە.' });
+        return;
+      }
+      if (current.currentStatus !== 'REVISION_REQUESTED') {
+        res.status(409).json({
+          error: 'تەنها submission ـێکی REVISION_REQUESTED دەتوانرێت resubmit بکرێت.'
+        });
+        return;
+      }
+
+      const manuscript = assembleManuscript({
+        projectId: workspaceId,
+        title: parsed.data.title,
+        abstract: parsed.data.abstract,
+        researchQuestion: parsed.data.researchQuestion,
+        methodology: parsed.data.methodology,
+        chapters: parsed.data.chapters,
+        conclusion: parsed.data.conclusion,
+        citations: parsed.data.citations
+      });
+      const submission = buildPublicationSubmissionPackage({
+        manuscript,
+        policy: parsed.data.policy,
+        keywords: parsed.data.keywords,
+        authors: parsed.data.authors
+      });
+      const integrity = verifyPublicationSubmissionIntegrity({ package: submission });
+
+      if (!integrity.readyToSubmit) {
+        res.status(409).json({ success: false, integrity, package: submission });
+        return;
+      }
+      if (submission.journalName !== current.journalName || submission.manuscriptType !== current.manuscriptType) {
+        res.status(409).json({
+          success: false,
+          error: 'journal یان جۆری manuscript لە submission ـی هەنووکەیی جیاوازە. submission ـی نوێ دروست بکە.'
+        });
+        return;
+      }
+
+      const record = await publicationSubmissionLifecycleService.resubmit(
+        userId,
+        submissionId,
+        submission.fingerprint,
+        {
+          note: parsed.data.note,
+          externalReference: parsed.data.externalReference
+        }
+      );
+      res.json({ success: true, submission: record, integrity, package: submission });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Resubmission failed.';
+      res.status(409).json({ success: false, error: message });
     }
   });
 
