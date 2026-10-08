@@ -305,7 +305,16 @@ export class SourceVerificationEngine {
       const existing = canonicalMap.get(fingerprint);
       if (existing) {
         existing.mirrorsCount += 1;
-        if (source.citationEligible && !existing.citationEligible) {
+        const sourceFullyVerified =
+          source.verificationStatus === 'VERIFIED' &&
+          source.identityStatus === 'verified' &&
+          source.evidenceStatus === 'verified' &&
+          source.workflowStepsCompleted.retrieved === true &&
+          source.workflowStepsCompleted.read === true &&
+          source.workflowStepsCompleted.verified === true &&
+          source.rejectedAsFabricated !== true;
+
+        if (sourceFullyVerified && !existing.citationEligible) {
           existing.verificationStatus = 'VERIFIED';
           existing.identityStatus = 'verified';
           existing.evidenceStatus = 'verified';
