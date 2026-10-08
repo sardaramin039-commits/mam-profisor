@@ -165,33 +165,7 @@ export function buildRevisionPlan(
     createdAt,
     updatedAt: createdAt
   };
-  return { ...base, planHash: planHash(base) };
-}
-export function verifyRevisionPlan(plan: RevisionPlan): string[] {
-  const errors: string[] = [];
-  const base: Omit<RevisionPlan, 'planHash'> = {
-    id: plan.id,
-    submissionId: plan.submissionId,
-    decisionId: plan.decisionId,
-    submissionVersionId: plan.submissionVersionId,
-    severity: plan.severity,
-    status: plan.status,
-    tasks: plan.tasks,
-    createdAt: plan.createdAt,
-    updatedAt: plan.updatedAt
-  };
-  if (!validId(plan.id) || !validId(plan.submissionId) || !validId(plan.decisionId) || !validId(plan.submissionVersionId)) {
-    errors.push('Revision plan identity is invalid.');
-  }
-  if (planHash(base) !== plan.planHash) errors.push('Revision plan hash mismatch.');
-  if (computePlanStatus(plan.tasks) !== plan.status) errors.push('Revision plan status does not match its tasks.');
-  return errors;
-}
-function computePlanStatus(tasks: RevisionTask[]): RevisionPlan['status'] {
-  if (tasks.length > 0 && tasks.every(task => !task.required || task.status === 'DONE' || task.status === 'WAIVED')) {
-    return 'COMPLETED';
-  }
-  return tasks.some(task => task.status !== 'OPEN') ? 'IN_PROGRESS' : 'OPEN';
+  return { ...base, planHash: revisionPlanHash(base) };
 }
 function planReference(userId: string, submissionId: string) {
   return adminDb.collection('publication_submission_lifecycle').doc(userId)
@@ -395,10 +369,10 @@ function buildDecisionArtifacts(
       const base: Omit<RevisionPlan, 'planHash'> = {
         ...stored,
         tasks: updatedTasks,
-        status: computePlanStatus(updatedTasks),
+        status: computeRevisionPlanStatus(updatedTasks),
         updatedAt
       };
-      const updated: RevisionPlan = { ...base, planHash: planHash(base) };
+      const updated: RevisionPlan = { ...base, planHash: revisionPlanHash(base) };
       transaction.set(planReferenceValue, updated);
       return updated;
     });
