@@ -114,6 +114,23 @@ describe('P20 editorial API contract', () => {
     }
   });
 
+  it('blocks revision task waivers for authenticated non-editorial users', async () => {
+    const server = buildTestServer('author');
+    try {
+      const response = await fetch(
+        `${await baseUrl(server)}/api/publication-submission-editorial/WS-1/SUB-1/revision/RVT-1`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'WAIVED', completionNote: 'Not required.' })
+        }
+      );
+      expect(response.status).toBe(403);
+    } finally {
+      await closeServer(server);
+    }
+  });
+
   it('rejects malformed decision payloads before reaching the service', async () => {
     const server = buildTestServer();
     try {
