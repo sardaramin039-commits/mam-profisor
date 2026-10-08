@@ -4,11 +4,14 @@ import { sourceVerificationService } from './source-verification.service';
 
 const originalFetch = globalThis.fetch;
 const originalOpenAiKey = process.env['OPENAI_API_KEY'];
+const originalOpenAiDiscovery = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
   if (originalOpenAiKey === undefined) delete process.env['OPENAI_API_KEY'];
   else process.env['OPENAI_API_KEY'] = originalOpenAiKey;
+  if (originalOpenAiDiscovery === undefined) delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
+  else process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = originalOpenAiDiscovery;
 });
 
 function response(payload: unknown): Response {
@@ -19,8 +22,9 @@ function response(payload: unknown): Response {
 }
 
 describe('research intelligence discovery', () => {
-  it('uses ChatGPT web search as the primary discovery source', async () => {
+  it('uses ChatGPT web search as the primary discovery source when explicitly enabled', async () => {
     process.env['OPENAI_API_KEY'] = 'test-key';
+    process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = 'true';
     globalThis.fetch = (async () => response({
       output: [{
         type: 'web_search_call',
