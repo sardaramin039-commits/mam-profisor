@@ -118,6 +118,7 @@ async function handleRevisionTaskUpdate(req: AuthRequest, res: Response): Promis
     res.status(400).json({ error: 'داتای نوێکردنەوەی revision نادروستە.', issues: parsed.error.issues });
     return;
   }
+  if (parsed.data.status === 'WAIVED' && !requireEditorialRole(req, res)) return;
   try {
     const plan = await publicationSubmissionEditorialDecisionService.updateRevisionTask(
       userId, workspaceId, submissionId, taskId,
