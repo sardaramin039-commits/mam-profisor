@@ -137,6 +137,7 @@ describe('EvidenceGroundingService chunk retention', () => {
             verifiedCitations: [{
               citationId: 'CIT-1',
               sourceId: 'SRC-1',
+              evidenceId: 'EVI-1',
               inTextCitation: '(Researcher, 2025)',
               evidenceQuote: 'evidence from first chunk',
               verified: true
