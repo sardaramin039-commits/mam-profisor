@@ -57,6 +57,18 @@ class PublicationSubmissionLifecycleService {
     const snapshot = await this.ref(userId).doc(submissionId).get();
     return snapshot.exists ? snapshot.data() as SubmissionLifecycleRecord : null;
   }
+  async getByWorkspaceAndFingerprint(
+    userId: string,
+    workspaceId: string,
+    submissionFingerprint: string
+  ): Promise<SubmissionLifecycleRecord | null> {
+    const snapshot = await this.ref(userId).limit(100).get();
+    const matches = snapshot.docs
+      .map(doc => doc.data() as SubmissionLifecycleRecord)
+      .filter(item => item.workspaceId === workspaceId && item.submissionFingerprint === submissionFingerprint)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return matches[0] ?? null;
+  }
   async getReceipt(
     userId: string,
     submissionId: string,
