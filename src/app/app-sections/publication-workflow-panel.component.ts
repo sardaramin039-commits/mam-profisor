@@ -62,6 +62,28 @@ interface RevisionGate {
   pendingRequiredTasks: RevisionTask[];
 }
 
+interface SubmissionVersion {
+  id: string;
+  submissionId: string;
+  cycle: number;
+  kind: 'READY' | 'RESUBMISSION' | 'LEGACY_READY';
+  statusAtCapture: string;
+  packageFingerprint: string;
+  previousFingerprint?: string;
+  note: string;
+  externalReference?: string;
+  capturedAt: string;
+  immutableHash: string;
+}
+
+interface VersionReport {
+  status: 'VERIFIED' | 'INVALID' | 'EMPTY' | 'LEGACY_RECONSTRUCTED';
+  versionCount: number;
+  latestCycle: number;
+  latestFingerprint: string;
+  errors: string[];
+}
+
 @Component({
   selector: 'app-publication-workflow-panel',
   standalone: true,
@@ -75,6 +97,8 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
   readonly decisions = signal<EditorialDecision[]>([]);
   readonly revisionPlan = signal<RevisionPlan | null>(null);
   readonly revisionGate = signal<RevisionGate | null>(null);
+  readonly versions = signal<SubmissionVersion[]>([]);
+  readonly versionReport = signal<VersionReport | null>(null);
   readonly workspaceId = signal('');
   readonly submissionId = signal('');
   readonly loading = signal(false);
@@ -139,13 +163,16 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     this.loading.set(true);
     try {
       const base = `/api/publication-submission-editorial/${encodeURIComponent(this.workspaceId())}/${encodeURIComponent(this.submissionId())}`;
-      const [decisions, revision] = await Promise.all([
+      const [decisions, revision, versionHistory] = await Promise.all([
         firstValueFrom(this.workflowHttp.get<{ decisions: EditorialDecision[] }>(`${base}/decisions`)),
-        firstValueFrom(this.workflowHttp.get<{ plan: RevisionPlan | null; gate: RevisionGate }>(`${base}/revision`))
+        firstValueFrom(this.workflowHttp.get<{ plan: RevisionPlan | null; gate: RevisionGate }>(`${base}/revision`)),
+        firstValueFrom(this.workflowHttp.get<{ versions: VersionReport; items: SubmissionVersion[] }>(`${base}/versions`))
       ]);
       this.decisions.set(decisions.decisions || []);
       this.revisionPlan.set(revision.plan);
       this.revisionGate.set(revision.gate);
+      this.versionReport.set(versionHistory.versions || null);
+      this.versions.set(versionHistory.items || []);
     } catch (error) {
       this.handleError(error, 'نەتوانرا زانیاریی submission و revision بخوێندرێتەوە.');
     } finally {
@@ -286,6 +313,25 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     }
   }
 
+  versionKindLabel(kind: SubmissionVersion['kind']): string {
+    const labels: Record<SubmissionVersion['kind'], string> = {
+      READY: 'ئامادەی ناردن',
+      RESUBMISSION: 'دووبارەناردن',
+      LEGACY_READY: 'مێژوویی'
+    };
+    return labels[kind];
+  }
+
+  versionStatusLabel(status: VersionReport['status']): string {
+    const labels: Record<VersionReport['status'], string> = {
+      VERIFIED: 'پشتڕاستکراو',
+      INVALID: 'ناڕاست/تێکچوو',
+      EMPTY: 'بەتاڵ',
+      LEGACY_RECONSTRUCTED: 'مێژوویی ـ reconstructed'
+    };
+    return labels[status];
+  }
+
   statusLabel(status: string): string {
     const labels: Record<string, string> = {
       DRAFT: 'ڕەشنووس', READY: 'ئامادە', SUBMITTED: 'نێردراو',
@@ -300,6 +346,8 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     this.decisions.set([]);
     this.revisionPlan.set(null);
     this.revisionGate.set(null);
+    this.versions.set([]);
+    this.versionReport.set(null);
     this.errorMessage.set('');
   }
 
