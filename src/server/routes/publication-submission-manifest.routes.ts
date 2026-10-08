@@ -3,6 +3,8 @@ import { assembleManuscript } from '../services/manuscript-assembly.service';
 import { buildPublicationSubmissionPackage } from '../services/publication-submission.service';
 import { verifyPublicationSubmissionIntegrity } from '../services/publication-submission-integrity.service';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
+import { researchControlPlaneService } from '../services/research-control-plane.service';
+import { resolveServerVerifiedCitations } from '../services/publication-research-gate.service';
 import { listSubmissionAuditEvents, verifySubmissionAuditChain } from '../services/publication-submission-audit.service';
 import { listSubmissionVersions, verifySubmissionVersionChain } from '../services/publication-submission-version.service';
 import {
@@ -96,6 +98,22 @@ export function createPublicationSubmissionManifestRouter(): Router {
     }
 
     try {
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      if (control.gates.exportBlocked) {
+        res.status(409).json({
+          success: false,
+          exportBlocked: true,
+          controlPlane: control,
+          error: 'P9 research validation ـەکە هێشتا ڕێگەی manifest نادات.'
+        });
+        return;
+      }
+
+      const citations = await resolveServerVerifiedCitations(
+        userId,
+        workspaceId,
+        parsed.data.citations
+      );
       const manuscript = assembleManuscript({
         projectId: workspaceId,
         title: parsed.data.title,
@@ -104,7 +122,7 @@ export function createPublicationSubmissionManifestRouter(): Router {
         methodology: parsed.data.methodology,
         chapters: parsed.data.chapters,
         conclusion: parsed.data.conclusion,
-        citations: parsed.data.citations
+        citations
       });
       const submission = buildPublicationSubmissionPackage({
         manuscript,
@@ -148,13 +166,28 @@ export function createPublicationSubmissionManifestRouter(): Router {
       );
       const versions = await listSubmissionVersions(userId, lifecycle.id);
       const versionReport = verifySubmissionVersionChain(versions);
+      const versionConsistencyErrors = [
+        ...(lifecycle.versionCount !== versions.length
+          ? ['Lifecycle version count does not match stored versions.']
+          : []),
+        ...(lifecycle.currentVersionId !== versionReport.latestFingerprint && false
+          ? ['Lifecycle current version check failed.']
+          : [])
+      ];
 
-      if (audit.status !== 'VERIFIED' || versionReport.status !== 'VERIFIED') {
+      if (
+        audit.status !== 'VERIFIED' ||
+        versionReport.status !== 'VERIFIED' ||
+        versionConsistencyErrors.length > 0 ||
+        lifecycle.currentVersionId !== versions.at(-1)?.id ||
+        lifecycle.submissionFingerprint !== versionReport.latestFingerprint
+      ) {
         res.status(409).json({
           success: false,
           error: 'audit یان version chain پێش manifest تەواو verified نییە.',
           audit,
-          versions: versionReport
+          versions: versionReport,
+          consistencyErrors: versionConsistencyErrors
         });
         return;
       }
