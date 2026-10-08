@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { APP_VIEW_IMPORTS } from './app-view-imports';
 import { AppTemplateSectionBase } from './app-template-section-base';
 import { AppCognitiveCopilotSectionComponent } from './app-sections/cognitive-copilot-section';
+import { AppPublicationWorkflowPanelComponent } from './app-sections/publication-workflow-panel.component';
 const VIEW_IMPORTS = [...APP_VIEW_IMPORTS];
 
 @Component({selector:'app-workspace-header',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/workspace-header.component.html'})
@@ -58,7 +59,7 @@ export class AppAcademicToolsFaqComponent extends AppTemplateSectionBase {}
 @Component({selector:'app-academic-tools',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,AppAcademicToolsCitationComponent,AppAcademicToolsGlossaryComponent,AppAcademicToolsFaqComponent],templateUrl:'./app-sections/academic-tools.component.html'})
 export class AppAcademicToolsComponent extends AppTemplateSectionBase {}
 
-@Component({selector:'app-workspace-main',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,AppWorkspaceAnalyticsComponent,AppWindowOneComponent,AppWindowTwoComponent,AppGlobalSearchComponent,AppAcademicToolsComponent],templateUrl:'./app-sections/workspace-main.component.html'})
+@Component({selector:'app-workspace-main',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,AppWorkspaceAnalyticsComponent,AppWindowOneComponent,AppWindowTwoComponent,AppGlobalSearchComponent,AppAcademicToolsComponent,AppPublicationWorkflowPanelComponent],templateUrl:'./app-sections/workspace-main.component.html'})
 export class AppWorkspaceMainComponent extends AppTemplateSectionBase {}
 
 @Component({selector:'app-workspace-bottom-bar',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/workspace-bottom-bar.component.html'})
