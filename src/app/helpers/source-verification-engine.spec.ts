@@ -69,4 +69,22 @@ describe('SourceVerificationEngine local verification', () => {
     expect(canonical.sourceUrl).toBe('https://example.org/full-text');
     expect(canonical.workflowStepsCompleted.verified).toBe(true);
   });
+
+  it('does not report a tampered VERIFIED status as an audited verified source', () => {
+    const local = SourceVerificationEngine.processWorkflow(
+      'The claim is supported by this exact evidence.',
+      candidate
+    );
+    const tampered = {
+      ...local,
+      verificationStatus: 'VERIFIED' as const,
+      citationEligible: true
+    };
+
+    const report = SourceVerificationEngine.generateAuditReport([tampered]);
+
+    expect(report.verifiedCount).toBe(0);
+    expect(report.unverifiedCount).toBe(1);
+    expect(report.verifiedSources).toEqual([]);
+  });
 });
