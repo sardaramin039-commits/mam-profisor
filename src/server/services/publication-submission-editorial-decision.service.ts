@@ -1,6 +1,9 @@
 import { adminDb } from '../../lib/firebase-admin';
 import { sha256 } from './text-sha256.service';
 import { buildSubmissionAuditEvent } from './publication-submission-audit.service';
+import {
+  verifySubmissionReceipt
+} from './publication-submission-receipt.service';
 import type { SubmissionReceipt } from './publication-submission-receipt.service';
 import { canTransition } from './publication-submission-lifecycle.policy';
 import type { SubmissionLifecycleStatus } from './publication-submission-lifecycle.policy';
@@ -295,8 +298,19 @@ class PublicationSubmissionEditorialDecisionService {
       if (requiresReceipt && !receipt) {
         throw new Error('Accepted or rejected submissions require a recorded submission receipt.');
       }
-      if (receipt && current.currentStatus === 'SUBMITTED' && receipt.submissionVersionId !== current.currentVersionId) {
-        throw new Error('The submission receipt is not bound to the current submitted version.');
+      if (receipt) {
+        const receiptVerification = verifySubmissionReceipt(receipt, {
+          submissionId: current.id,
+          workspaceId,
+          submissionFingerprint: current.submissionFingerprint,
+          ...(current.currentVersionId ? { submissionVersionId: current.currentVersionId } : {})
+        });
+        if (receiptVerification.status !== 'VERIFIED') {
+          throw new Error(
+            'Submission receipt integrity verification failed: ' +
+            receiptVerification.errors.join(' ')
+          );
+        }
       }
       const artifacts = buildDecisionArtifacts(current, userId, workspaceId, input, receipt, now);
       const decisions = decisionReference(userId, submissionId);
