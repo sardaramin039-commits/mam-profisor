@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { lifecycleId } from './publication-submission-lifecycle.schemas';
 import { publicationSubmissionEditorialDecisionService } from '../services/publication-submission-editorial-decision.service';
+import { requireEditorialRole } from '../../middleware/auth';
 import type { AuthRequest } from '../../middleware/auth';
 
 const decisionSchema = z.object({
@@ -40,6 +41,7 @@ async function handleDecision(req: AuthRequest, res: Response): Promise<void> {
   const workspaceId = req.params['workspaceId'];
   const submissionId = req.params['submissionId'];
   if (!userId) return;
+  if (!requireEditorialRole(req, res)) return;
   if (!validParams(workspaceId, submissionId)) {
     res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
     return;
