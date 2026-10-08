@@ -119,7 +119,7 @@ function mapIndexedAcademicPaper(record: AcademicPaper): any {
       : record.source === 'crossref'
         ? 'Crossref'
         : record.source === 'googlebooks'
-          ? 'OpenLibrary'
+          ? 'GoogleBooks'
           : 'PeerReviewedJournal',
     doi: record.doi,
     isbn: record.isbn,
