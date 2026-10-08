@@ -3,8 +3,26 @@ name: Mam Professor Quality Gate
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'e2e/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'angular.json'
+      - 'tsconfig*.json'
+      - '.github/workflows/**'
   pull_request:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'e2e/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'angular.json'
+      - 'tsconfig*.json'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 concurrency:
@@ -56,6 +74,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Production dependency security audit
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Production build
         run: npm run build
 
@@ -78,23 +99,3 @@ jobs:
 
       - name: Production runtime smoke
         run: npm run release:smoke
-
-  security:
-    name: Production dependency security audit
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.22.2
-          cache: npm
-
-      - name: Install locked dependencies
-        run: npm ci
-
-      - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
