@@ -151,6 +151,7 @@ test.describe('Mam Professor browser E2E', () => {
     await expect(page.getByRole('heading', { name: /توێژینەوەکەت/ })).toBeVisible();
     await page.getByRole('button', { name: 'دەستپێکردنی پڕۆژە' }).click();
     await expect(page.getByRole('heading', { name: 'ناوەندی نووسینی زانستی' })).toBeVisible();
+    await expect(page.locator('#scholarly-workspace')).toHaveAttribute('dir', 'rtl');
   });
 
   test('completes the editorial decision interaction in the browser', async ({ page }) => {
