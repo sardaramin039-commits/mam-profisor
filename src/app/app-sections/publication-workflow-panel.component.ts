@@ -119,8 +119,8 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     try {
       const base = `/api/publication-submission-editorial/${encodeURIComponent(this.workspaceId())}/${encodeURIComponent(this.submissionId())}`;
       const [decisions, revision] = await Promise.all([
-        firstValueFrom(this.http.get<{ decisions: EditorialDecision[] }>(`${base}/decisions`)),
-        firstValueFrom(this.http.get<{ plan: RevisionPlan | null; gate: RevisionGate }>(`${base}/revision`))
+        firstValueFrom(this.workflowHttp.get<{ decisions: EditorialDecision[] }>(`${base}/decisions`)),
+        firstValueFrom(this.workflowHttp.get<{ plan: RevisionPlan | null; gate: RevisionGate }>(`${base}/revision`))
       ]);
       this.decisions.set(decisions.decisions || []);
       this.revisionPlan.set(revision.plan);
@@ -152,6 +152,10 @@ export class AppPublicationWorkflowPanelComponent extends AppTemplateSectionBase
     } finally {
       this.taskLoading.set(null);
     }
+  }
+
+  currentSubmission(): SubmissionItem | null {
+    return this.submissions().find(item => item.id === this.submissionId()) ?? null;
   }
 
   statusLabel(status: string): string {
