@@ -1,4 +1,5 @@
 import { adminDb } from '../../lib/firebase-admin';
+import { submissionMemoryStore } from './publication-submission-memory-store';
 import { sha256 } from './text-sha256.service';
 import type { PublicationSubmissionPolicy, PublicationSubmissionPackage } from './publication-submission.service';
 import type { SubmissionIntegrityReport } from './publication-submission-integrity.service';
@@ -140,20 +141,36 @@ function ref(userId: string, workspaceId: string) {
 }
 
 export async function saveSubmissionManifest(manifest: SubmissionManifest): Promise<void> {
-  const reference = adminDb.collection('publication_submission_manifests').doc(manifest.userId)
-    .collection('items').doc(manifest.id);
-  await reference.create(manifest);
+  submissionMemoryStore.saveManifest(manifest);
+  try {
+    const reference = adminDb.collection('publication_submission_manifests').doc(manifest.userId)
+      .collection('items').doc(manifest.id);
+    await reference.create(manifest);
+  } catch { /* offline fallback */ }
 }
 
 export async function listSubmissionManifests(userId: string, workspaceId: string, limit = 50): Promise<SubmissionManifest[]> {
-  const snapshot = await ref(userId, workspaceId).limit(100).get();
-  return snapshot.docs.map(doc => doc.data() as SubmissionManifest)
-    .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
-    .slice(0, Math.min(Math.max(limit, 1), 100));
+  try {
+    const snapshot = await ref(userId, workspaceId).limit(100).get();
+    const items = snapshot.docs.map(doc => doc.data() as SubmissionManifest)
+      .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
+      .slice(0, Math.min(Math.max(limit, 1), 100));
+    for (const item of items) submissionMemoryStore.saveManifest(item);
+    return items;
+  } catch {
+    return submissionMemoryStore.listManifests(userId, workspaceId, limit) as unknown as SubmissionManifest[];
+  }
 }
 
 export async function getSubmissionManifest(userId: string, manifestId: string): Promise<SubmissionManifest | null> {
-  const snapshot = await adminDb.collection('publication_submission_manifests').doc(userId)
-    .collection('items').doc(manifestId).get();
-  return snapshot.exists ? snapshot.data() as SubmissionManifest : null;
+  try {
+    const snapshot = await adminDb.collection('publication_submission_manifests').doc(userId)
+      .collection('items').doc(manifestId).get();
+    if (snapshot.exists) {
+      const item = snapshot.data() as SubmissionManifest;
+      submissionMemoryStore.saveManifest(item);
+      return item;
+    }
+  } catch { /* offline fallback */ }
+  return (submissionMemoryStore.getManifest(userId, manifestId) as unknown as SubmissionManifest) ?? null;
 }

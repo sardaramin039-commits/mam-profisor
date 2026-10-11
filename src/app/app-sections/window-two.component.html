@@ -88,10 +88,14 @@
 } @else {
   <app-window-two-diagnostics [host]="host"></app-window-two-diagnostics>
 }
+          </div>
+
           <!-- Footer status diagnostic bar -->
-          <div class="p-4 bg-[#F8F6F2] border-t border-[#E5E1DA] flex items-center justify-between text-[11px] font-sans">
+          <div class="p-4 bg-[#F8F6F2] border-t border-[#E5E1DA] flex items-center justify-between text-[11px] font-sans shrink-0">
             <span>دۆخی بەدواداچوونی گشتی بەشەکان: 
               <strong class="font-bold">
                 @if (chapters().length === 0) { ڕێک نەخراوە } @else if (isWritingProgress() || isHumanizingProgress()) { لە وێنەکێشاندایە... } @else { ئامادە نووسین }
               </strong>
             </span>
+          </div>
+        </section>

@@ -109,6 +109,34 @@
         </div>
       </details>
 
+      <details class="mam-secondary-tools" open>
+        <summary><mat-icon>menu_book</mat-icon><span>ئامادەکاریی چاپی ڕاستەوخۆ و بەرگری (Camera-Ready & Defense)</span><small>لاپەڕەی پێشەکی، زانیاریی سپاردن (ISBN)، سێشنی بەرگری (P11/P12)، و پاشکۆکان</small></summary>
+        <div class="mam-secondary-grid">
+          <app-camera-ready-publishing-panel [host]="host"></app-camera-ready-publishing-panel>
+        </div>
+      </details>
+
+      <details class="mam-secondary-tools">
+        <summary><mat-icon>stars</mat-icon><span>کەماڵی ئەکادیمی و پێوەرە نێودەوڵەتییەکان (Scopus / WoS Standards)</span><small>پوختەی دووزمانەی IMRAD، ماتریسی ڕۆڵی نووسەران (CRediT)، بەڵێننامەی ئەسڵییەت و ئامار</small></summary>
+        <div class="mam-secondary-grid">
+          <app-academic-perfection-panel [host]="host"></app-academic-perfection-panel>
+        </div>
+      </details>
+
+      <details class="mam-secondary-tools">
+        <summary><mat-icon>calculate</mat-icon><span>١. ژمێرەری قەبارەی نموونەی توێژینەوە (Sample Size Calculator)</span><small>هاوکێشەی یامانی و کۆکران، ئاستی متمانە و داڕشتنی ڕستەی فەرمیی میتۆدۆلۆژیا</small></summary>
+        <div class="mam-secondary-grid">
+          <app-sample-size-calculator [activeChapter]="activeChapter()"></app-sample-size-calculator>
+        </div>
+      </details>
+
+      <details class="mam-secondary-tools" open>
+        <summary><mat-icon>dashboard_customize</mat-icon><span>ناوەندی ٥٠ ئامرازی بنەڕەتیی ئەکادیمی (مام پڕۆفیسۆر)</span><small>دەنگنووسی، زاراوەسازی، سەرچاوەی DOI، ڕێسای ژێدەرەکان و پێکهاتەی ٥ بەش</small></summary>
+        <div class="mam-secondary-grid">
+          <app-fifty-academic-tools-suite [activeChapter]="activeChapter()"></app-fifty-academic-tools-suite>
+        </div>
+      </details>
+
       <details class="mam-secondary-tools">
         <summary><mat-icon>tune</mat-icon><span>ئامرازە یارمەتیدەرەکان</span><small>گەڕان، وشەنامە و هاوکاری ئەکادیمی</small></summary>
         <div class="mam-secondary-grid">

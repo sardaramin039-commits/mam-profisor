@@ -22,8 +22,13 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
   router.post('/analyze_academic_rigor', validateRequest(academicRigorSchema), async (req, res) => {
     try {
       const { title, content, discipline, theoreticalFramework, academicStyle } = req.body;
-      if (!content || typeof content !== 'string') {
-        res.status(400).json({ error: 'ناوەڕۆکی بەش پێویستە بۆ هەڵسەنگاندن' });
+      if (!content || typeof content !== 'string' || !content.trim()) {
+        res.json({
+          academicScore: null,
+          clarityScore: null,
+          methodologyScore: null,
+          critiqueSummary: 'ناوەڕۆکی بەش داخڵ نەکراوە؛ تکایە دەق بنووسە بۆ هەڵسەنگاندن.'
+        });
         return;
       }
 

@@ -76,6 +76,8 @@ export function createEvidenceIntelligenceRouter(
         .filter(chunk => verifiedIds.has(chunk.sourceId))
         .map(chunk => ({
           ...chunk,
+          pageNumber: chunk.pageNumber != null ? String(chunk.pageNumber) : undefined,
+          year: chunk.year != null ? String(chunk.year) : undefined,
           verificationStatus: 'verified' as const
         }));
 

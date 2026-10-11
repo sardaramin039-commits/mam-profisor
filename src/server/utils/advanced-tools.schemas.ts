@@ -40,7 +40,7 @@ export const vivaSchema = z.object({
 
 export const textOnlySchema = z.object({
   body: z.object({
-    text: text(250_000)
+    text: z.string().max(250_000).default('')
   }).passthrough()
 });
 

@@ -87,14 +87,10 @@ export function getGeminiClient(): GoogleGenAI {
           if (currentParams['config'] && typeof currentParams['config'] === 'object') {
             const cleanedConfig = { ...(currentParams['config'] as Record<string, unknown>) };
             if (!cleanedConfig['maxOutputTokens']) {
-              cleanedConfig['maxOutputTokens'] = 32000;
+              cleanedConfig['maxOutputTokens'] = 8192;
             }
             if (!cleanedConfig['thinkingConfig'] && (targetModel.startsWith('gemini-3.8') || targetModel.startsWith('gemini-3.1'))) {
-              const promptStr = typeof typedParams['contents'] === 'string'
-                ? (typedParams['contents'] as string)
-                : JSON.stringify(typedParams['contents'] || '');
-              const isDeepWriting = promptStr.length > 2500 || promptStr.includes('تێز') || promptStr.includes('chapter');
-              cleanedConfig['thinkingConfig'] = { thinkingBudget: isDeepWriting ? 16000 : 4096 };
+              cleanedConfig['thinkingConfig'] = { thinkingBudget: 1024 };
             }
             if (!targetModel.startsWith('gemini-3.8') && !targetModel.startsWith('gemini-3.1')) {
               delete cleanedConfig['thinkingConfig'];
@@ -135,9 +131,9 @@ export function getGeminiClient(): GoogleGenAI {
                 
                 console.warn(`[GEMINI ATTEMPT FAIL] SDK call failed for key index ${activeIndex} with model ${targetModel} (Attempt ${retry + 1}/3). Error: ${errMsg}.`);
                 
-                if (isTransient && retry < 2) {
-                  const sleepTime = 1000 * (retry + 1) + Math.round(Math.random() * 1000);
-                  console.warn(`[GEMINI RETRY] Transient error detected (e.g., high demand 503). Sleeping for ${sleepTime}ms before retry...`);
+                if (isTransient && retry < 1) {
+                  const sleepTime = 500;
+                  console.warn(`[GEMINI RETRY] Transient error detected. Quick retry in ${sleepTime}ms...`);
                   await delay(sleepTime);
                 } else {
                   break;

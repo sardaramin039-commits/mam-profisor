@@ -1,0 +1,383 @@
+<section class="mt-4 border-2 border-stone-800 bg-white rounded-2xl shadow-sm overflow-hidden font-serif" dir="rtl">
+  <!-- Header Banner -->
+  <div class="p-4 bg-stone-900 text-amber-50 flex items-center justify-between flex-wrap gap-3 border-b-2 border-stone-800">
+    <div class="flex items-center gap-3">
+      <div class="p-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
+        <mat-icon class="!text-xl">stars</mat-icon>
+      </div>
+      <div>
+        <h3 class="text-sm font-extrabold text-white flex items-center gap-2">
+          <span>کەماڵی ئەکادیمی و پێوەرە نێودەوڵەتییەکان (International Academic Accreditation)</span>
+          <span class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-400 text-stone-950 font-sans font-bold">SCOPUS / WoS TIER</span>
+        </h3>
+        <p class="text-[11px] text-stone-300 mt-0.5">
+          پوختەی چوارچێوەداری IMRAD، ماتریسی ڕۆڵی نووسەران بە ستانداردی CRediT، بەڵێننامەی ئەسڵییەت، و سەقامگیریی ئاماری.
+        </p>
+      </div>
+    </div>
+
+    <!-- Navigation Subtabs -->
+    <div class="flex items-center gap-1 bg-stone-800/80 p-1 rounded-xl border border-stone-700 text-xs">
+      <button
+        type="button"
+        (click)="activeTab.set('imrad')"
+        class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+        [class.bg-amber-400]="activeTab() === 'imrad'"
+        [class.text-stone-950]="activeTab() === 'imrad'"
+        [class.font-bold]="activeTab() === 'imrad'"
+        [class.text-stone-300]="activeTab() !== 'imrad'">
+        <mat-icon class="!text-xs">translate</mat-icon>
+        <span>پوختەی دووزمانەی IMRAD</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="activeTab.set('credit')"
+        class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+        [class.bg-amber-400]="activeTab() === 'credit'"
+        [class.text-stone-950]="activeTab() === 'credit'"
+        [class.font-bold]="activeTab() === 'credit'"
+        [class.text-stone-300]="activeTab() !== 'credit'">
+        <mat-icon class="!text-xs">groups</mat-icon>
+        <span>ماتریسی ڕۆڵی نووسەران (CRediT)</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="activeTab.set('authenticity')"
+        class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+        [class.bg-amber-400]="activeTab() === 'authenticity'"
+        [class.text-stone-950]="activeTab() === 'authenticity'"
+        [class.font-bold]="activeTab() === 'authenticity'"
+        [class.text-stone-300]="activeTab() !== 'authenticity'">
+        <mat-icon class="!text-xs">verified_user</mat-icon>
+        <span>بەڵێننامەی دەستپاکی</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="activeTab.set('statistics')"
+        class="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+        [class.bg-amber-400]="activeTab() === 'statistics'"
+        [class.text-stone-950]="activeTab() === 'statistics'"
+        [class.font-bold]="activeTab() === 'statistics'"
+        [class.text-stone-300]="activeTab() !== 'statistics'">
+        <mat-icon class="!text-xs">analytics</mat-icon>
+        <span>سەقامگیریی ئاماری</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content Container -->
+  <div class="p-5 bg-stone-50/50">
+
+    <!-- TAB 1: IMRAD ABSTRACT -->
+    @if (activeTab() === 'imrad') {
+      <div class="space-y-4">
+        <div class="flex items-center justify-between pb-2 border-b border-stone-200">
+          <div>
+            <h4 class="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+              <mat-icon class="text-amber-700 !text-sm">auto_stories</mat-icon>
+              پوختەی چوارچێوەدار بە فۆرماتی نێودەوڵەتیی IMRAD (Background, Methods, Results, Conclusion)
+            </h4>
+            <p class="text-[11px] text-stone-600">پێوەرە جیهانییەکانی بڵاوکردنەوە مەرجیانە پوختە بە شێوازی چوارچێوەداری دووزمانە دابڕێژرێت.</p>
+          </div>
+          <button
+            type="button"
+            (click)="saveAll()"
+            class="px-3.5 py-1.5 bg-stone-900 hover:bg-black text-white text-xs font-bold rounded-lg flex items-center gap-1 shadow cursor-pointer">
+            <mat-icon class="!text-xs">save</mat-icon>
+            <span>{{ isSaved() ? 'پاشەکەوت کرا ✓' : 'پاشەکەوتکردن' }}</span>
+          </button>
+        </div>
+
+        <!-- Kurdish / English Side-by-side or stacked grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Kurdish section -->
+          <div class="p-3.5 bg-white border border-stone-200 rounded-xl space-y-2.5">
+            <strong class="text-xs font-bold text-stone-900 block border-b pb-1 text-amber-900">بەشی کوردی (Kurdish Section)</strong>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">پاشخان و پێشینە (Background):</span>
+              <textarea rows="2" class="w-full p-2 border border-stone-300 rounded text-xs bg-stone-50 focus:bg-white" [value]="imrad().backgroundKurdish" (input)="updateImradField('backgroundKurdish', $any($event.target).value)"></textarea>
+            </label>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">میتۆد و ڕێگە (Methods):</span>
+              <textarea rows="2" class="w-full p-2 border border-stone-300 rounded text-xs bg-stone-50 focus:bg-white" [value]="imrad().methodsKurdish" (input)="updateImradField('methodsKurdish', $any($event.target).value)"></textarea>
+            </label>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">ئەنجامە سەرەکییەکان (Results):</span>
+              <textarea rows="2" class="w-full p-2 border border-stone-300 rounded text-xs bg-stone-50 focus:bg-white" [value]="imrad().resultsKurdish" (input)="updateImradField('resultsKurdish', $any($event.target).value)"></textarea>
+            </label>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">دەرئەنجام و ڕاسپاردە (Conclusion):</span>
+              <textarea rows="2" class="w-full p-2 border border-stone-300 rounded text-xs bg-stone-50 focus:bg-white" [value]="imrad().conclusionKurdish" (input)="updateImradField('conclusionKurdish', $any($event.target).value)"></textarea>
+            </label>
+            <div class="pt-1">
+              <span class="text-[10px] font-bold text-stone-700 block mb-1">کلیلەوشە کوردییەکان:</span>
+              <div class="flex flex-wrap gap-1 mb-1.5">
+                @for (k of imrad().keywordsKurdish; track $index) {
+                  <span class="text-[10px] bg-stone-100 text-stone-800 px-2 py-0.5 rounded border border-stone-200 flex items-center gap-1">
+                    {{ k }}
+                    <button type="button" (click)="removeKeywordKurdish($index)" class="text-rose-600 hover:text-rose-900 cursor-pointer">×</button>
+                  </span>
+                }
+              </div>
+              <div class="flex gap-1.5">
+                <input type="text" class="flex-1 p-1.5 border border-stone-300 rounded text-xs bg-white" [value]="newKeywordKurdish()" (input)="newKeywordKurdish.set($any($event.target).value)" placeholder="کلیلەوشەی نوێ...">
+                <button type="button" (click)="addKeywordKurdish()" class="px-2.5 py-1 bg-stone-900 text-white rounded text-xs font-bold cursor-pointer">زیادکردن</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- English section -->
+          <div class="p-3.5 bg-white border border-stone-200 rounded-xl space-y-2.5" dir="ltr">
+            <strong class="text-xs font-bold text-stone-900 block border-b pb-1 text-blue-900">English Section (IMRAD)</strong>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">Background:</span>
+              <textarea rows="2" class="w-full p-2 border border-stone-300 rounded text-xs bg-stone-50 focus:bg-white" [value]="imrad().backgroundEnglish" (input)="updateImradField('backgroundEnglish', $any($event.target).value)"></textarea>
+            </label>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">Methods:</span>
+              <textarea rows="2" class="w-full p-2 border border-stone-300 rounded text-xs bg-stone-50 focus:bg-white" [value]="imrad().methodsEnglish" (input)="updateImradField('methodsEnglish', $any($event.target).value)"></textarea>
+            </label>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">Results:</span>
+              <textarea rows="2" class="w-full p-2 border border-stone-300 rounded text-xs bg-stone-50 focus:bg-white" [value]="imrad().resultsEnglish" (input)="updateImradField('resultsEnglish', $any($event.target).value)"></textarea>
+            </label>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">Conclusion:</span>
+              <textarea rows="2" class="w-full p-2 border border-stone-300 rounded text-xs bg-stone-50 focus:bg-white" [value]="imrad().conclusionEnglish" (input)="updateImradField('conclusionEnglish', $any($event.target).value)"></textarea>
+            </label>
+            <div class="pt-1">
+              <span class="text-[10px] font-bold text-stone-700 block mb-1">Keywords:</span>
+              <div class="flex flex-wrap gap-1 mb-1.5">
+                @for (k of imrad().keywordsEnglish; track $index) {
+                  <span class="text-[10px] bg-stone-100 text-stone-800 px-2 py-0.5 rounded border border-stone-200 flex items-center gap-1">
+                    {{ k }}
+                    <button type="button" (click)="removeKeywordEnglish($index)" class="text-rose-600 hover:text-rose-900 cursor-pointer">×</button>
+                  </span>
+                }
+              </div>
+              <div class="flex gap-1.5">
+                <input type="text" class="flex-1 p-1.5 border border-stone-300 rounded text-xs bg-white" [value]="newKeywordEnglish()" (input)="newKeywordEnglish.set($any($event.target).value)" placeholder="New keyword...">
+                <button type="button" (click)="addKeywordEnglish()" class="px-2.5 py-1 bg-stone-900 text-white rounded text-xs font-bold cursor-pointer">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Document -->
+        <div class="p-3 bg-white border border-stone-300 rounded-xl space-y-2">
+          <div class="flex items-center justify-between">
+            <strong class="text-xs text-stone-900 flex items-center gap-1">
+              <mat-icon class="!text-xs">preview</mat-icon>
+              ڕووانینی فەرمیی پوختەی دووزمانە
+            </strong>
+            <button type="button" (click)="copyText(imradPreview())" class="px-2.5 py-1 text-xs bg-stone-100 hover:bg-stone-200 rounded text-stone-800 border border-stone-300 cursor-pointer">
+              لەبەرگرتنەوە
+            </button>
+          </div>
+          <pre class="p-3 bg-stone-50 border border-stone-200 rounded text-[11px] font-mono whitespace-pre-wrap leading-relaxed max-h-56 overflow-y-auto">{{ imradPreview() }}</pre>
+        </div>
+      </div>
+    }
+
+    <!-- TAB 2: CREDIT ROLES -->
+    @if (activeTab() === 'credit') {
+      <div class="space-y-4">
+        <div class="flex items-center justify-between pb-2 border-b border-stone-200">
+          <div>
+            <h4 class="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+              <mat-icon class="text-amber-700 !text-sm">badge</mat-icon>
+              ماتریسی ستانداردی نێودەوڵەتیی بەشداریی نووسەران (CRediT Taxonomy)
+            </h4>
+            <p class="text-[11px] text-stone-600">پێوەرە جیهانییەکانی Elsevier, Springer و Wiley داوای دیاریکردنی وردی ڕۆڵی هەریەک لە نووسەران دەکەن.</p>
+          </div>
+          <button type="button" (click)="saveAll()" class="px-3.5 py-1.5 bg-stone-900 hover:bg-black text-white text-xs font-bold rounded-lg flex items-center gap-1 cursor-pointer">
+            <mat-icon class="!text-xs">save</mat-icon>
+            <span>پاشەکەوتکردن</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+          @for (role of creditRoles(); track role.roleId) {
+            <div class="p-3 bg-white border rounded-lg space-y-2" [class.border-amber-400]="role.selected" [class.border-stone-200]="!role.selected">
+              <div class="flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" [checked]="role.selected" (change)="toggleCreditRole(role.roleId)" class="w-4 h-4 text-amber-600 rounded">
+                  <span class="text-xs font-bold text-stone-900">{{ role.roleNameKurdish }}</span>
+                </label>
+                <span class="text-[10px] font-mono text-stone-500">{{ role.roleNameEnglish }}</span>
+              </div>
+              @if (role.selected) {
+                <input
+                  type="text"
+                  class="w-full p-1.5 border border-stone-300 rounded text-xs bg-stone-50 focus:bg-white"
+                  [value]="role.assignedAuthor"
+                  (input)="updateCreditAuthor(role.roleId, $any($event.target).value)"
+                  placeholder="ناوی نووسەری بەرپرسیار لەم ئەرکە...">
+              }
+            </div>
+          }
+        </div>
+
+        <div class="p-3 bg-white border border-stone-300 rounded-xl space-y-2">
+          <div class="flex items-center justify-between">
+            <strong class="text-xs text-stone-900">ڕاگەیاندنی فەرمیی CRediT Statement:</strong>
+            <button type="button" (click)="copyText(creditPreview())" class="px-2.5 py-1 text-xs bg-stone-100 hover:bg-stone-200 rounded text-stone-800 border border-stone-300 cursor-pointer">
+              لەبەرگرتنەوە
+            </button>
+          </div>
+          <pre class="p-3 bg-stone-50 border border-stone-200 rounded text-[11px] font-mono whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">{{ creditPreview() }}</pre>
+        </div>
+      </div>
+    }
+
+    <!-- TAB 3: AUTHENTICITY DECLARATION -->
+    @if (activeTab() === 'authenticity') {
+      <div class="space-y-4">
+        <div class="pb-2 border-b border-stone-200">
+          <h4 class="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+            <mat-icon class="text-amber-700 !text-sm">verified</mat-icon>
+            بەڵێننامەی ئەمانەتی زانستی و ڕەسەنایەتی (Declaration of Originality & Authorship)
+          </h4>
+          <p class="text-[11px] text-stone-600">بەڵگەنامەی فەرمیی پابەندبوون بە دەستپاکی، مافی دانەر و نەبوونی ململانێی بەرژەوەندی.</p>
+        </div>
+
+        <div class="p-4 bg-white border border-stone-200 rounded-xl space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">ناوی بەڵێندەر (نووسەر):</span>
+              <input type="text" class="w-full p-2 border border-stone-300 rounded text-xs bg-white" [value]="declaration().authorName" (input)="updateDeclarationField('authorName', $any($event.target).value)" placeholder="ناوی سیانیی توێژەر">
+            </label>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">دامەزراوە یان زانکۆ:</span>
+              <input type="text" class="w-full p-2 border border-stone-300 rounded text-xs bg-white" [value]="declaration().affiliation" (input)="updateDeclarationField('affiliation', $any($event.target).value)">
+            </label>
+          </div>
+
+          <div class="p-3.5 bg-amber-50/60 border border-amber-200 rounded-lg space-y-2 text-xs leading-relaxed text-stone-900">
+            <strong class="block text-amber-950 font-bold">دەقی بەڵێننامەی ئەمانەت:</strong>
+            <p>
+              «من وەک نووسەری ئەم کارە زانستییە، بەڵێن دەدەم کە سەرجەم دەق، داتا و شیکارییەکانی ئەم توێژینەوەیە بەرهەمی ڕەسەنی خۆمن و بە هیچ شێوەیەک دەستکاری، ساختەکاری یان کۆپیکردنی بێ سەرچاوەی تێدا نەکراوە. هەروەها هەموو بیرۆکە و بەڵگە وەرگیراوەکان لە ڕێگەی ژێدەری ستانداردەوە ئاماژەیان پێکراوە.»
+            </p>
+            <div class="flex items-center gap-2 pt-1">
+              <input type="checkbox" id="acceptDecl" [checked]="declaration().statementAccepted" (change)="updateDeclarationField('statementAccepted', $any($event.target).checked)" class="w-4 h-4 text-amber-600 rounded">
+              <label for="acceptDecl" class="font-bold text-stone-900 cursor-pointer">بەڵێننامەکە بە تەواوی قبووڵ دەکەم و لێی بەرپرسیارم.</label>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">ڕاگەیاندنی ململانێی بەرژەوەندی (Conflict of Interest):</span>
+              <input type="text" class="w-full p-2 border border-stone-300 rounded text-xs bg-white" [value]="declaration().conflictDetails" (input)="updateDeclarationField('conflictDetails', $any($event.target).value)">
+            </label>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">سەرچاوەی پاڵپشتیی دارایی (Funding Statement):</span>
+              <input type="text" class="w-full p-2 border border-stone-300 rounded text-xs bg-white" [value]="declaration().fundingStatement" (input)="updateDeclarationField('fundingStatement', $any($event.target).value)">
+            </label>
+          </div>
+
+          <div class="pt-2 flex items-center justify-between border-t border-stone-200">
+            <span class="text-[10px] font-mono text-stone-500">مۆری ئەلیکترۆنیی ڕەسەنایەتی: {{ declaration().verificationHash }}</span>
+            <button type="button" (click)="saveAll()" class="px-4 py-1.5 bg-stone-900 hover:bg-black text-white text-xs font-bold rounded cursor-pointer">
+              پاشەکەوتکردنی بەڵێننامە
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- TAB 4: STATISTICAL RIGOR -->
+    @if (activeTab() === 'statistics') {
+      <div class="space-y-4">
+        <div class="pb-2 border-b border-stone-200">
+          <h4 class="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+            <mat-icon class="text-amber-700 !text-sm">insights</mat-icon>
+            پرۆتۆکۆلی سەقامگیریی ئاماری و پێوانەکردن (Statistical Rigor & Measurement Reliability)
+          </h4>
+          <p class="text-[11px] text-stone-600">ڕێنمایی بۆ دڵنیابوون لە بڕواپێکراویی ئامرازی کۆکردنەوەی داتا (Validity & Reliability Protocol).</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Variables & Design -->
+          <div class="p-3.5 bg-white border border-stone-200 rounded-xl space-y-3">
+            <strong class="text-xs font-bold text-stone-900 block border-b pb-1">گۆڕاوەکان و دیزاین</strong>
+            <label class="block space-y-1">
+              <span class="text-[10px] font-bold text-stone-700">دیزاینی ئاماریی توێژینەوە:</span>
+              <select class="w-full p-2 border border-stone-300 rounded text-xs bg-white" [value]="statisticalPlan().researchDesign" (change)="updateStatField('researchDesign', $any($event.target).value)">
+                <option value="correlational">هاوپەیوەندی (Correlational)</option>
+                <option value="experimental">تاقیگەیی تەواو (Experimental)</option>
+                <option value="quasi_experimental">نیمچەتاقیگەیی (Quasi-experimental)</option>
+                <option value="comparative">بەراوردکاری (Comparative)</option>
+                <option value="descriptive">وەسفی ئاماری (Descriptive)</option>
+              </select>
+            </label>
+
+            <!-- Independent Vars -->
+            <div class="space-y-1">
+              <span class="text-[10px] font-bold text-stone-700 block">گۆڕاوە سەربەخۆکان (Independent Variables):</span>
+              @for (v of statisticalPlan().independentVariables; track $index) {
+                <div class="flex items-center justify-between p-1.5 bg-stone-50 border border-stone-200 rounded text-xs">
+                  <span>{{ v }}</span>
+                  <button type="button" (click)="removeIndepVar($index)" class="text-rose-600 cursor-pointer">×</button>
+                </div>
+              }
+              <div class="flex gap-1.5 pt-1">
+                <input type="text" class="flex-1 p-1.5 border border-stone-300 rounded text-xs bg-white" [value]="newIndepVar()" (input)="newIndepVar.set($any($event.target).value)" placeholder="گۆڕاوی نوێ...">
+                <button type="button" (click)="addIndepVar()" class="px-2.5 py-1 bg-stone-900 text-white rounded text-xs font-bold cursor-pointer">زیادکردن</button>
+              </div>
+            </div>
+
+            <!-- Dependent Vars -->
+            <div class="space-y-1 pt-1">
+              <span class="text-[10px] font-bold text-stone-700 block">گۆڕاوە سەرپێچەکان (Dependent Variables):</span>
+              @for (v of statisticalPlan().dependentVariables; track $index) {
+                <div class="flex items-center justify-between p-1.5 bg-stone-50 border border-stone-200 rounded text-xs">
+                  <span>{{ v }}</span>
+                  <button type="button" (click)="removeDepVar($index)" class="text-rose-600 cursor-pointer">×</button>
+                </div>
+              }
+              <div class="flex gap-1.5 pt-1">
+                <input type="text" class="flex-1 p-1.5 border border-stone-300 rounded text-xs bg-white" [value]="newDepVar()" (input)="newDepVar.set($any($event.target).value)" placeholder="گۆڕاوی نوێ...">
+                <button type="button" (click)="addDepVar()" class="px-2.5 py-1 bg-stone-900 text-white rounded text-xs font-bold cursor-pointer">زیادکردن</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reliability & Recommended Tests -->
+          <div class="p-3.5 bg-white border border-stone-200 rounded-xl space-y-3">
+            <strong class="text-xs font-bold text-stone-900 block border-b pb-1">پێوەرەکانی بڕواپێکراوی و سەقامگیری</strong>
+            <div class="p-3 bg-stone-50 rounded border border-stone-200 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-stone-700">شێوازی پێوانەی سەقامگیری:</span>
+                <span class="text-xs font-mono font-bold text-amber-900">Cronbach's Alpha (α)</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-stone-700">ئاستی بەستراوەیی پەسەندکراو:</span>
+                <span class="text-xs font-mono font-bold text-emerald-800">α ≥ {{ statisticalPlan().targetAlphaScore }}</span>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <span class="text-[10px] font-bold text-stone-700 block">پشکنینە ئامارییە پێشنیارکراوەکان بۆ ئەم دیزاینە:</span>
+              @for (t of statisticalPlan().recommendedTests; track t) {
+                <div class="p-2 bg-stone-50 border border-stone-200 rounded text-xs flex items-center gap-2">
+                  <mat-icon class="!text-xs text-amber-700">check_circle</mat-icon>
+                  <span class="text-stone-850">{{ t }}</span>
+                </div>
+              }
+            </div>
+
+            <div class="pt-2 text-right">
+              <button type="button" (click)="saveAll()" class="px-4 py-1.5 bg-stone-900 hover:bg-black text-white text-xs font-bold rounded cursor-pointer">
+                پاشەکەوتکردنی پرۆتۆکۆل
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+  </div>
+</section>

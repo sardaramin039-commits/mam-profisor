@@ -20,6 +20,7 @@ import { AppTemplateBridgeService } from './services/app-template-bridge.service
 import { FormalityToneConfig } from './features/editor/components/formality-tone-control.component';
 import { TextLineageNode } from './features/editor/components/text-lineage-connector.component';
 import { AppNotificationsService } from './core/app.notifications';
+import { BottomDockActionsService } from './services/bottom-dock-actions.service';
 import { DigitalLibraryService } from './services/digital-library.service';
 import { AcademicStoreService } from './services/academic-store.service';
 import { ApplicationStartupService } from './core/startup';
@@ -47,6 +48,7 @@ export abstract class AppControllerBase implements OnInit {
   public dashboardState = inject(AppDashboardStateService);
   public bridge = inject(AppTemplateBridgeService);
   public toastService = inject(AppNotificationsService);
+  public bottomDockActions = inject(BottomDockActionsService);
 
   copilotInputText = this.bridge.copilotInputText; copilotExtraInfo = this.bridge.copilotExtraInfo;
   isCopilotRunning = this.bridge.isCopilotRunning; copilotError = this.bridge.copilotError;
@@ -196,8 +198,10 @@ export abstract class AppControllerBase implements OnInit {
   academicDarkMode = signal<boolean>(false);
   chapters = signal<ChapterItem[]>([]);
   activeReview = signal<StructureReviewResult | null>(null);
+  isReviewingStructure = signal<boolean>(false);
   isWritingProgress = signal<boolean>(false);
   isHumanizingProgress = signal<boolean>(false);
+  isExportingWord = signal<boolean>(false);
   isSingleWritingProgress = signal<number | null>(null);
   viewedChapter = signal<ChapterItem | null>(null);
 

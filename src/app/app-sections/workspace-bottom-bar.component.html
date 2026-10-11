@@ -15,37 +15,47 @@
           <!-- Bottom bar operations row -->
           <div class="mam-dock-actions">
             <!-- 1. پشکنینی وردی بەش -->
-            <button (click)="reviewStructure()" class="mam-dock-btn">
-              <mat-icon class="!text-sm !w-4 !h-4">insights</mat-icon>
-              <span>پشکنینی بەش</span>
+            <button (click)="reviewStructure()" [disabled]="isReviewingStructure()" class="mam-dock-btn" title="پشکنینی پێکهاتە و زاراوەسازیی بەشەکە">
+              @if (isReviewingStructure()) {
+                <span class="w-3.5 h-3.5 border-2 border-stone-400 border-t-amber-400 rounded-full animate-spin"></span>
+                <span class="text-amber-400 font-bold">خەریکی پشکنینە...</span>
+              } @else {
+                <mat-icon class="!text-sm !w-4 !h-4">insights</mat-icon>
+                <span>پشکنینی بەش</span>
+              }
             </button>
 
             <!-- 2. نووسینی یارمەتیدەری AI -->
-            <button (click)="autoWrite()" [disabled]="isWritingProgress() || isHumanizingProgress()" class="mam-dock-btn mam-dock-primary">
+            <button (click)="autoWrite()" [disabled]="isWritingProgress() || isHumanizingProgress() || isReviewingStructure()" class="mam-dock-btn mam-dock-primary" title="نووسینی ناوەڕۆکی بەشەکە بە ژیریی دەستکرد">
               @if (isWritingProgress()) {
-                <span class="w-4 h-0.5 bg-white border border-white-300 rounded-full animate-spin"></span>
+                <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                 <span>AI خەریکی نووسینە...</span>
               } @else {
-                <mat-icon class="!text-sm !w-4 !h-4 ">flash_on</mat-icon>
+                <mat-icon class="!text-sm !w-4 !h-4">flash_on</mat-icon>
                 <span>نووسینی AI</span>
               }
             </button>
 
             <!-- 3. پەرەپێدانی ئەکادیمی -->
-            <button (click)="autoHumanize()" [disabled]="isWritingProgress() || isHumanizingProgress() || !chapters().length || !chapters()[0].content" class="mam-dock-btn mam-dock-review">
+            <button (click)="autoHumanize()" [disabled]="isWritingProgress() || isHumanizingProgress() || isReviewingStructure() || !chapters().length || !chapters()[0].content" class="mam-dock-btn mam-dock-review" title="بەرزکردنەوەی ئاستی زاراوە و ڕستەسازیی دەق">
               @if (isHumanizingProgress()) {
-                <span class="w-4 h-0.5 bg-white border border-white-300 rounded-full animate-spin"></span>
+                <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                 <span>خەریکی پەرەپێدانە...</span>
               } @else {
-                <mat-icon class="!text-sm !w-4 !h-4 ">psychology</mat-icon>
+                <mat-icon class="!text-sm !w-4 !h-4">psychology</mat-icon>
                 <span>پەرەپێدانی دەق</span>
               }
             </button>
 
             <!-- 4. هەناردەی Word -->
-            <button (click)="saveAll()" [disabled]="!chapters().length || !chapters()[0].content" class="mam-dock-btn mam-dock-save">
-              <mat-icon class="!text-sm !w-4 !h-4">cloud_download</mat-icon>
-              <span>هەناردەی Word</span>
+            <button (click)="saveAll()" [disabled]="isExportingWord() || !chapters().length || !chapters()[0].content" class="mam-dock-btn mam-dock-save" title="داگرتنی هەموو بەشەکان لە فایلی Word (.docx)">
+              @if (isExportingWord()) {
+                <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                <span>خەریکی هەناردەیە...</span>
+              } @else {
+                <mat-icon class="!text-sm !w-4 !h-4">cloud_download</mat-icon>
+                <span>هەناردەی Word</span>
+              }
             </button>
           </div>
 

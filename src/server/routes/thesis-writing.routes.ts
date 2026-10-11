@@ -326,8 +326,8 @@ ${comparisonPrompt}
 }`;
 
       const targetWordsNum = Number(targetWordsPerChapter) || (targetPages ? Number(targetPages) * 350 : 0) || 1500;
-      const adaptiveThinkingBudget = Math.min(16000, Math.max(4096, Math.round(targetWordsNum * 6)));
-      const adaptiveOutputTokens = Math.min(32000, Math.max(8192, Math.round(targetWordsNum * 8)));
+      const adaptiveThinkingBudget = Number(thinkingTokens) > 0 ? Number(thinkingTokens) : Math.min(16000, Math.max(4096, Math.round(targetWordsNum * 6)));
+      const adaptiveOutputTokens = Number(writingTokens) > 0 ? Number(writingTokens) : Math.min(32000, Math.max(8192, Math.round(targetWordsNum * 8)));
 
       const config: {
         systemInstruction?: string;

@@ -1,4 +1,5 @@
 import { adminDb } from '../../lib/firebase-admin';
+import { submissionMemoryStore } from './publication-submission-memory-store';
 import { sha256 } from './text-sha256.service';
 import { buildSubmissionReceipt } from './publication-submission-receipt.service';
 import { buildSubmissionAuditEvent } from './publication-submission-audit.service';
@@ -16,34 +17,14 @@ import type {
   SubmissionLifecycleEvent,
   SubmissionLifecycleStatus
 } from './publication-submission-lifecycle.policy';
-export interface CreateSubmissionLifecycleInput {
-  journalName: string;
-  manuscriptType: string;
-  submissionFingerprint: string;
-  readyToSubmit: boolean;
-}
+export interface CreateSubmissionLifecycleInput { journalName: string; manuscriptType: string; submissionFingerprint: string; readyToSubmit: boolean; }
 export interface SubmissionLifecycleRecord {
-  id: string;
-  userId: string;
-  workspaceId: string;
-  journalName: string;
-  manuscriptType: string;
-  submissionFingerprint: string;
-  currentStatus: SubmissionLifecycleStatus;
-  version: number;
-  events: SubmissionLifecycleEvent[];
-  submissionReceiptId?: string;
-  auditHeadHash: string;
-  currentVersionId?: string;
-  versionCount: number;
-  createdAt: string;
-  updatedAt: string;
+  id: string; userId: string; workspaceId: string; journalName: string; manuscriptType: string;
+  submissionFingerprint: string; currentStatus: SubmissionLifecycleStatus; version: number;
+  events: SubmissionLifecycleEvent[]; submissionReceiptId?: string; auditHeadHash: string;
+  currentVersionId?: string; versionCount: number; createdAt: string; updatedAt: string;
 }
-export interface SubmissionTransitionInput {
-  to: SubmissionLifecycleStatus;
-  note?: string;
-  externalReference?: string;
-}
+export interface SubmissionTransitionInput { to: SubmissionLifecycleStatus; note?: string; externalReference?: string; }
 function clean(value: unknown): string {
   return String(value ?? '').trim();
 }
@@ -55,37 +36,48 @@ class PublicationSubmissionLifecycleService {
     return adminDb.collection('publication_submission_lifecycle').doc(userId).collection('items');
   }
   async get(userId: string, submissionId: string): Promise<SubmissionLifecycleRecord | null> {
-    const snapshot = await this.ref(userId).doc(submissionId).get();
-    return snapshot.exists ? snapshot.data() as SubmissionLifecycleRecord : null;
+    try {
+      const snap = await this.ref(userId).doc(submissionId).get();
+      if (snap.exists) {
+        const item = snap.data() as SubmissionLifecycleRecord;
+        submissionMemoryStore.saveRecord(item);
+        return item;
+      }
+    } catch { /* fallback */ }
+    return submissionMemoryStore.getRecord(userId, submissionId);
   }
-  async getByWorkspaceAndFingerprint(
-    userId: string,
-    workspaceId: string,
-    submissionFingerprint: string
-  ): Promise<SubmissionLifecycleRecord | null> {
-    const snapshot = await this.ref(userId).limit(100).get();
-    const matches = snapshot.docs
-      .map(doc => doc.data() as SubmissionLifecycleRecord)
-      .filter(item => item.workspaceId === workspaceId && item.submissionFingerprint === submissionFingerprint)
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    return matches[0] ?? null;
+  async getByWorkspaceAndFingerprint(userId: string, workspaceId: string, fp: string): Promise<SubmissionLifecycleRecord | null> {
+    try {
+      const snap = await this.ref(userId).limit(100).get();
+      const m = snap.docs.map(d => d.data() as SubmissionLifecycleRecord)
+        .filter(i => i.workspaceId === workspaceId && i.submissionFingerprint === fp)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      if (m[0]) { submissionMemoryStore.saveRecord(m[0]); return m[0]; }
+    } catch { /* fallback */ }
+    return submissionMemoryStore.listRecords(userId, workspaceId).find(i => i.submissionFingerprint === fp) ?? null;
   }
-  async getReceipt(
-    userId: string,
-    submissionId: string,
-    receiptId: string
-  ): Promise<SubmissionReceipt | null> {
-    const reference = this.ref(userId).doc(submissionId).collection('receipts').doc(receiptId);
-    const snapshot = await reference.get();
-    return snapshot.exists ? snapshot.data() as SubmissionReceipt : null;
+  async getReceipt(userId: string, submissionId: string, receiptId: string): Promise<SubmissionReceipt | null> {
+    try {
+      const snap = await this.ref(userId).doc(submissionId).collection('receipts').doc(receiptId).get();
+      if (snap.exists) {
+        const rc = snap.data() as SubmissionReceipt;
+        submissionMemoryStore.saveReceipt(userId, submissionId, rc);
+        return rc;
+      }
+    } catch { /* fallback */ }
+    return submissionMemoryStore.getReceipt(userId, submissionId, receiptId);
   }
   async list(userId: string, workspaceId: string, limit = 50): Promise<SubmissionLifecycleRecord[]> {
-    const snapshot = await this.ref(userId).limit(100).get();
-    return snapshot.docs
-      .map(doc => doc.data() as SubmissionLifecycleRecord)
-      .filter(item => item.workspaceId === workspaceId)
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-      .slice(0, Math.min(Math.max(limit, 1), 100));
+    try {
+      const snap = await this.ref(userId).limit(100).get();
+      const items = snap.docs.map(d => d.data() as SubmissionLifecycleRecord)
+        .filter(i => i.workspaceId === workspaceId)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .slice(0, Math.min(Math.max(limit, 1), 100));
+      for (const item of items) submissionMemoryStore.saveRecord(item);
+      return items;
+    } catch { /* fallback */ }
+    return submissionMemoryStore.listRecords(userId, workspaceId, limit);
   }
   async create(
     userId: string,

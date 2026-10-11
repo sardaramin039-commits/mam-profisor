@@ -3,6 +3,12 @@ import { APP_VIEW_IMPORTS } from './app-view-imports';
 import { AppTemplateSectionBase } from './app-template-section-base';
 import { AppCognitiveCopilotSectionComponent } from './app-sections/cognitive-copilot-section';
 import { AppPublicationWorkflowPanelComponent } from './app-sections/publication-workflow-panel.component';
+import { AppCameraReadyPublishingPanelComponent } from './features/camera-ready-publishing/components/camera-ready-panel.component';
+import { AppPreWritingPanelComponent } from './features/pre-writing-blueprint/components/pre-writing-panel.component';
+import { AppAcademicPerfectionPanelComponent } from './features/academic-perfection/components/academic-perfection-panel.component';
+import { ChapterWordFrequencyPanelComponent } from './app-sections/chapter-word-frequency-panel.component';
+import { SampleSizeCalculatorComponent } from './features/academic-methodology/components/sample-size-calculator.component';
+import { FiftyAcademicToolsSuiteComponent } from './features/academic-suite/fifty-academic-tools-suite.component';
 const VIEW_IMPORTS = [...APP_VIEW_IMPORTS];
 
 @Component({selector:'app-workspace-header',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/workspace-header.component.html'})
@@ -29,7 +35,7 @@ export class AppWindowOneCompareComponent extends AppTemplateSectionBase {}
 @Component({selector:'app-window-one-rules',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/window-one-rules.component.html'})
 export class AppWindowOneRulesComponent extends AppTemplateSectionBase {}
 
-@Component({selector:'app-window-one',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,AppWindowOneConfigComponent,AppWindowOneCustomComponent,AppWindowOneStructureComponent,AppWindowOneCompareComponent,AppWindowOneRulesComponent],templateUrl:'./app-sections/window-one.component.html'})
+@Component({selector:'app-window-one',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,AppWindowOneConfigComponent,AppPreWritingPanelComponent,AppWindowOneCustomComponent,AppWindowOneStructureComponent,AppWindowOneCompareComponent,AppWindowOneRulesComponent],templateUrl:'./app-sections/window-one.component.html'})
 export class AppWindowOneComponent extends AppTemplateSectionBase {}
 
 @Component({selector:'app-window-two-editor',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/window-two-editor.component.html'})
@@ -59,7 +65,7 @@ export class AppAcademicToolsFaqComponent extends AppTemplateSectionBase {}
 @Component({selector:'app-academic-tools',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,AppAcademicToolsCitationComponent,AppAcademicToolsGlossaryComponent,AppAcademicToolsFaqComponent],templateUrl:'./app-sections/academic-tools.component.html'})
 export class AppAcademicToolsComponent extends AppTemplateSectionBase {}
 
-@Component({selector:'app-workspace-main',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,AppWorkspaceAnalyticsComponent,AppWindowOneComponent,AppWindowTwoComponent,AppGlobalSearchComponent,AppAcademicToolsComponent,AppPublicationWorkflowPanelComponent],templateUrl:'./app-sections/workspace-main.component.html'})
+@Component({selector:'app-workspace-main',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,AppWorkspaceAnalyticsComponent,AppWindowOneComponent,AppWindowTwoComponent,AppGlobalSearchComponent,AppAcademicToolsComponent,AppPublicationWorkflowPanelComponent,AppCameraReadyPublishingPanelComponent,AppAcademicPerfectionPanelComponent,SampleSizeCalculatorComponent,FiftyAcademicToolsSuiteComponent],templateUrl:'./app-sections/workspace-main.component.html'})
 export class AppWorkspaceMainComponent extends AppTemplateSectionBase {}
 
 @Component({selector:'app-workspace-bottom-bar',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/workspace-bottom-bar.component.html'})
@@ -68,7 +74,7 @@ export class AppWorkspaceBottomBarComponent extends AppTemplateSectionBase {}
 @Component({selector:'app-viewed-chapter-compare',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/viewed-chapter-compare.component.html'})
 export class AppViewedChapterCompareComponent extends AppTemplateSectionBase {}
 
-@Component({selector:'app-viewed-chapter-editor-security',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/viewed-chapter-editor-security.component.html'})
+@Component({selector:'app-viewed-chapter-editor-security',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,ChapterWordFrequencyPanelComponent],templateUrl:'./app-sections/viewed-chapter-editor-security.component.html'})
 export class AppViewedChapterEditorSecurityComponent extends AppTemplateSectionBase {}
 
 @Component({selector:'app-viewed-chapter-integrity',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/viewed-chapter-integrity.component.html'})

@@ -36,7 +36,9 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
       previousChapterContent: '',
       academicStyle: 'apa7',
       role: 'student',
-      dialect: 'sorani'
+      dialect: 'sorani',
+      thinkingTokens: Number(this.refineForm?.get('thinkingTokens')?.value) || 2048,
+      writingTokens: Number(this.refineForm?.get('writingTokens')?.value) || 8192
     }).subscribe({
       next: result => {
         const content = String(result?.content || '').trim();
@@ -166,9 +168,9 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
             this.isTitleSummaryGenerating.set(false);
           },
           error: error => {
-            console.error('Abstract generation error:', error);
-            this.titleSummaryError.set('پوختەی AI دروست نەکرا.');
-            this.generatedTitleSummary.set({ titles, summary: '', status: 'title-only' } as any);
+            console.warn('Abstract generation error (using local synthesis fallback):', error);
+            const fallbackSummary = `ئەم توێژینەوەیە لەژێر ناونیشانی «${titles[0] || value}» بەدواداچوون بۆ بابەتی سەرەکیی (${value}) دەکات بە شێوازێکی زانستی و میتۆدی لە چوارچێوەی لێکۆڵینەوەیەکی ورددا بە زمانی کوردی.`;
+            this.generatedTitleSummary.set({ titles, summary: fallbackSummary, status: 'degraded' } as any);
             this.isTitleSummaryGenerating.set(false);
           }
         });

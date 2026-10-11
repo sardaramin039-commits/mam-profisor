@@ -28,11 +28,16 @@ export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingSe
 
   anonymizeActiveChapterData(chapter: any) {
     if (!chapter) return;
+    const text = (chapter.content || '').trim();
+    if (!text) {
+      this.anonymizationError.set('تکایە سەرەتا دەق یان ناوەڕۆکی بەش بنووسە بۆ شاردنەوەی زانیارییە کەسییەکان.');
+      return;
+    }
     this.isAnonymizingData.set(true);
     this.anonymizationError.set(null);
 
     this.http.post<any>('/api/anonymize_data', {
-      text: (chapter.content || '').slice(0, 250000)
+      text: text.slice(0, 250000)
     }).subscribe({
       next: result => {
         this.anonymizationResult.set(result);
@@ -218,11 +223,22 @@ export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingSe
   }
   analyzeChapterRigor(c: ChapterItem) {
     if (!c) return;
+    const content = (c.content || '').trim();
+    if (!content) {
+      this.activeAcademicDiagnostic.set({
+        academicScore: 0,
+        clarityScore: 0,
+        methodologyScore: 0,
+        kurdishTerminologyScore: 0,
+        critiqueSummary: 'تکایە سەرەتا ناوەڕۆکی بەش بنووسە پێش داواکردنی هەڵسەنگاندنی ئەکادیمی.'
+      } as any);
+      return;
+    }
     this.isAnalyzingRigorForChapterId.set(c.id);
 
     this.http.post<any>('/api/analyze_academic_rigor', {
       title: c.title || 'بەشی توێژینەوە',
-      content: c.content || '',
+      content,
       discipline: this.consultationAction() || 'گشتی',
       theoreticalFramework: 'critical_theory',
       academicStyle: this.selectedCitationStyle()

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, FormGroup } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 
-export type CitationStyle = 'APA' | 'LC_APA' | 'MLA' | 'CHICAGO';
+export type CitationStyle = 'APA' | 'MLA' | 'HARVARD' | 'CHICAGO' | 'LC_APA';
 
 export interface MarkupOption {
   id: string;
@@ -77,45 +77,27 @@ export interface MarkupOption {
           </div>
 
           <!-- Citation Style Selector Pills -->
+          <!-- Citation Style Selector Dropdown & Quick Buttons -->
           <div class="flex items-center justify-between flex-wrap gap-2 pt-0.5">
-            <span class="text-[11px] font-bold text-stone-300 font-serif flex items-center gap-1">
+            <label for="citation-style-select" class="text-[11px] font-bold text-stone-300 font-serif flex items-center gap-1">
               <mat-icon class="!text-xs !w-3.5 !h-3.5 text-amber-400">tune</mat-icon>
-              شێوازی سەرچاوەدانان (Citation Style):
-            </span>
+              فۆرماتی فەرمیی سەرچاوەدانان (Citation Format):
+            </label>
 
-            <div class="flex items-center gap-1.5 bg-stone-950/70 p-1 rounded-xl border border-stone-800">
-              <button
-                type="button"
-                (click)="selectStyle('APA')"
-                [class]="activeStyle() === 'APA' 
-                  ? 'px-3 py-1 bg-amber-500 text-stone-950 font-extrabold rounded-lg text-xs shadow-sm transition' 
-                  : 'px-3 py-1 text-stone-400 hover:text-white rounded-lg text-xs transition cursor-pointer'">
-                APA 7th
-              </button>
-              <button
-                type="button"
-                (click)="selectStyle('LC_APA')"
-                [class]="activeStyle() === 'LC_APA' 
-                  ? 'px-3 py-1 bg-amber-500 text-stone-950 font-extrabold rounded-lg text-xs shadow-sm transition' 
-                  : 'px-3 py-1 text-stone-400 hover:text-white rounded-lg text-xs transition cursor-pointer'">
-                LC. APA
-              </button>
-              <button
-                type="button"
-                (click)="selectStyle('MLA')"
-                [class]="activeStyle() === 'MLA' 
-                  ? 'px-3 py-1 bg-amber-500 text-stone-950 font-extrabold rounded-lg text-xs shadow-sm transition' 
-                  : 'px-3 py-1 text-stone-400 hover:text-white rounded-lg text-xs transition cursor-pointer'">
-                MLA 9th
-              </button>
-              <button
-                type="button"
-                (click)="selectStyle('CHICAGO')"
-                [class]="activeStyle() === 'CHICAGO' 
-                  ? 'px-3 py-1 bg-amber-500 text-stone-950 font-extrabold rounded-lg text-xs shadow-sm transition' 
-                  : 'px-3 py-1 text-stone-400 hover:text-white rounded-lg text-xs transition cursor-pointer'">
-                Chicago 17th
-              </button>
+            <!-- Dropdown Menu for Citation Formats -->
+            <div class="relative flex items-center">
+              <select
+                id="citation-style-select"
+                [value]="activeStyle()"
+                (change)="onStyleChange($event)"
+                class="bg-stone-950 text-amber-300 border-2 border-amber-600/70 hover:border-amber-500 rounded-xl px-3 py-1.5 text-xs font-serif font-bold focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer shadow-md pr-8">
+                <option value="APA">APA 7th Edition (فۆرماتی ئەی پی ئەی)</option>
+                <option value="MLA">MLA 9th Edition (فۆرماتی ئێم ئێڵ ئەی)</option>
+                <option value="HARVARD">Harvard Academic (شێوازی هارڤارد)</option>
+                <option value="CHICAGO">Chicago Manual of Style 17th (شیکاگۆ)</option>
+                <option value="LC_APA">LC. APA (کۆنگرێسی کتێبخانەی ئەمریکی)</option>
+              </select>
+              <mat-icon class="absolute left-2 text-amber-400 pointer-events-none !text-xs !w-3.5 !h-3.5">arrow_drop_down</mat-icon>
             </div>
           </div>
 
@@ -254,8 +236,11 @@ export class FloatingAcademicToolbarComponent {
     switch (this.activeStyle()) {
       case 'MLA':
         return `(${a} ${p})`;
+      case 'HARVARD':
+        return `(${a}, ${y}: ${p})`;
       case 'CHICAGO':
         return `(${a} ${y}, ${p})`;
+      case 'LC_APA':
       case 'APA':
       default:
         return `(${a}، ${y}، ل. ${p})`;
@@ -345,6 +330,11 @@ export class FloatingAcademicToolbarComponent {
     this.activeStyle.set(style);
   }
 
+  onStyleChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value as CitationStyle;
+    if (val) this.selectStyle(val);
+  }
+
   insertInTextCitation(): void {
     const a = this.citationForm.controls.author.value || 'نووسەر';
     const y = this.citationForm.controls.year.value || '2026';
@@ -355,12 +345,13 @@ export class FloatingAcademicToolbarComponent {
       case 'MLA':
         snippet = `(${a} ${p})`;
         break;
+      case 'HARVARD':
+        snippet = `(${a}, ${y}: ${p})`;
+        break;
       case 'CHICAGO':
         snippet = `(${a} ${y}, ${p})`;
         break;
       case 'LC_APA':
-        snippet = `(${a}، ${y}، ل. ${p})`;
-        break;
       case 'APA':
       default:
         snippet = `(${a}، ${y}، ل. ${p})`;
@@ -378,10 +369,13 @@ export class FloatingAcademicToolbarComponent {
     let snippet = '';
     switch (this.activeStyle()) {
       case 'MLA':
-        snippet = `\n${a}. *${t}*. ناوەندی بڵاوکردنەوە، ${y}.\n`;
+        snippet = `\n${a}. *${t}*. دەزگای بڵاوکردنەوە، ${y}.\n`;
+        break;
+      case 'HARVARD':
+        snippet = `\n${a}, ${y}. *${t}*. دەزگای بڵاوکردنەوە، شوێنی چاپ.\n`;
         break;
       case 'CHICAGO':
-        snippet = `\n${a}. ${y}. *${t}*. شوێنی چاپ: ناوەندی بڵاوکردنەوە.\n`;
+        snippet = `\n${a}. ${y}. *${t}*. شوێنی چاپ: دەزگای بڵاوکردنەوە.\n`;
         break;
       case 'LC_APA':
         snippet = `\n${a} (${y}). *${t}*. دەزگای چاپ و بڵاوکردنەوە. [LCC: Z695.Z8] [LCSH: Kurdish Studies].\n`;

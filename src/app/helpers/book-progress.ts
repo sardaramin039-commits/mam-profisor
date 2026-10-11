@@ -96,7 +96,11 @@ export function calculateBookProgressSummary(
   let statusBadgeBg = 'bg-stone-100 border-stone-300';
   let statusTextColor = 'text-stone-700';
 
-  if (bookProgressPct >= 85 && bookProgressPct <= 115) {
+  if (bookProgressPct >= 98 && bookProgressPct <= 102) {
+    statusBadgeLabel = 'توانا و ڕێژەی کارکردن لە ١٠٠٪ـدایە (ئامانجی پێوانەیی)';
+    statusBadgeBg = 'bg-emerald-100 border-emerald-400';
+    statusTextColor = 'text-emerald-900 font-extrabold';
+  } else if (bookProgressPct >= 85 && bookProgressPct <= 115) {
     statusBadgeLabel = 'لە ئامانجدایە (تەواو بەپێی پلان)';
     statusBadgeBg = 'bg-emerald-50 border-emerald-300';
     statusTextColor = 'text-emerald-800';

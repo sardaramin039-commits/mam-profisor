@@ -164,8 +164,8 @@ export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleG
    */
   router.post('/anonymize_data', validateRequest(textOnlySchema), async (req: Request, res: Response) => {
     try {
-      const { text } = req.body;
-      if (!text) return res.status(400).json({ error: 'دەق پێویستە' });
+      const text = (req.body.text || '').trim();
+      if (!text) return res.json({ anonymizedText: '', entitiesMasked: [], summary: 'هیچ دەقێک نەدۆزرایەوە بۆ شاردنەوەی ناوەکان.' });
       const ai = getGeminiClient();
 
       const response = await ai.models.generateContent({

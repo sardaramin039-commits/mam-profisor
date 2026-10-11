@@ -1,0 +1,354 @@
+<section class="mt-4 border-2 border-amber-800/40 bg-stone-50 rounded-xl p-4 space-y-4 font-serif" dir="rtl">
+  <!-- Header -->
+  <div class="flex items-center justify-between pb-3 border-b border-stone-200 flex-wrap gap-2">
+    <div class="flex items-center gap-2.5">
+      <div class="p-2 rounded-lg bg-amber-800 text-white">
+        <mat-icon class="!text-lg">architecture</mat-icon>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+          <span>نەخشەڕێگە و پێداویستییەکانی پێش نووسین (Pre-Writing Blueprint & Proposal Lab)</span>
+          <span class="text-[9px] px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-sans font-bold">بناغەی زانستی</span>
+        </h4>
+        <p class="text-[11px] text-stone-600 mt-0.5">پێش دەستپێکردنی نووسین، کێشە، پرسیارەکان، ئامانجەکان، و میتۆدۆلۆژیا پێکەوە ببەستەوە.</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        (click)="saveBlueprint()"
+        class="px-3.5 py-1.5 bg-stone-900 hover:bg-black text-white text-xs font-bold rounded-lg flex items-center gap-1 shadow transition-all cursor-pointer">
+        <mat-icon class="!text-xs">save</mat-icon>
+        <span>{{ isSaved() ? 'پاشەکەوت کرا ✓' : 'پاشەکەوتکردنی نەخشەڕێگە' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Alignment Indicator -->
+  @if (alignmentFeedback(); as fb) {
+    <div class="p-3 rounded-lg border flex items-center justify-between flex-wrap gap-2"
+      [class.bg-emerald-50]="fb.status === 'OPTIMAL'"
+      [class.border-emerald-300]="fb.status === 'OPTIMAL'"
+      [class.bg-amber-50]="fb.status === 'COHERENT'"
+      [class.border-amber-300]="fb.status === 'COHERENT'"
+      [class.bg-rose-50]="fb.status === 'NEEDS_ALIGNMENT'"
+      [class.border-rose-300]="fb.status === 'NEEDS_ALIGNMENT'">
+      <div class="flex items-center gap-2">
+        <mat-icon class="!text-base" [class.text-emerald-700]="fb.status === 'OPTIMAL'" [class.text-amber-700]="fb.status === 'COHERENT'" [class.text-rose-700]="fb.status === 'NEEDS_ALIGNMENT'">
+          {{ fb.status === 'OPTIMAL' ? 'verified' : fb.status === 'COHERENT' ? 'tune' : 'warning' }}
+        </mat-icon>
+        <div>
+          <strong class="text-xs text-stone-900 block">
+            ئاستی تەبایی پێش نووسین: {{ fb.status === 'OPTIMAL' ? 'نایاب و تەواو هاوتەریب (OPTIMAL)' : fb.status === 'COHERENT' ? 'باش و پێویستی بە وردبوونەوەیە (COHERENT)' : 'پێویستی بە هاوئاهەنگی کێشە و پرسیارە (NEEDS_ALIGNMENT)' }}
+          </strong>
+          @if (fb.recommendations.length > 0) {
+            <span class="text-[10px] text-stone-700 block mt-0.5">پێشنیار: {{ fb.recommendations[0] }}</span>
+          }
+        </div>
+      </div>
+      <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-white border border-stone-200">
+        نمرەی تەبایی: {{ fb.score }}/100
+      </span>
+    </div>
+  }
+
+  <!-- Step Tabs -->
+  <div class="flex items-center gap-1 overflow-x-auto pb-1 text-xs border-b border-stone-200">
+    <button
+      type="button"
+      (click)="activeStep.set('problem')"
+      class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap"
+      [class.bg-stone-900]="activeStep() === 'problem'"
+      [class.text-white]="activeStep() === 'problem'"
+      [class.bg-stone-200]="activeStep() !== 'problem'">
+      ١. کێشەی توێژینەوە
+    </button>
+    <button
+      type="button"
+      (click)="activeStep.set('questions')"
+      class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap"
+      [class.bg-stone-900]="activeStep() === 'questions'"
+      [class.text-white]="activeStep() === 'questions'"
+      [class.bg-stone-200]="activeStep() !== 'questions'">
+      ٢. پرسیارەکان
+    </button>
+    <button
+      type="button"
+      (click)="activeStep.set('objectives')"
+      class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap"
+      [class.bg-stone-900]="activeStep() === 'objectives'"
+      [class.text-white]="activeStep() === 'objectives'"
+      [class.bg-stone-200]="activeStep() !== 'objectives'">
+      ٣. ئامانج و گریمانە
+    </button>
+    <button
+      type="button"
+      (click)="activeStep.set('scope')"
+      class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap"
+      [class.bg-stone-900]="activeStep() === 'scope'"
+      [class.text-white]="activeStep() === 'scope'"
+      [class.bg-stone-200]="activeStep() !== 'scope'">
+      ٤. کایە و سنووردارکردن
+    </button>
+    <button
+      type="button"
+      (click)="activeStep.set('methodology')"
+      class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap"
+      [class.bg-stone-900]="activeStep() === 'methodology'"
+      [class.text-white]="activeStep() === 'methodology'"
+      [class.bg-stone-200]="activeStep() !== 'methodology'">
+      ٥. میتۆدۆلۆژیا
+    </button>
+    <button
+      type="button"
+      (click)="activeStep.set('preview')"
+      class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap"
+      [class.bg-amber-800]="activeStep() === 'preview'"
+      [class.text-white]="activeStep() === 'preview'"
+      [class.bg-amber-100]="activeStep() !== 'preview'"
+      [class.text-amber-950]="activeStep() !== 'preview'">
+      📄 بەرهەمی پڕۆپۆزەڵ
+    </button>
+  </div>
+
+  <!-- STEP 1: PROBLEM -->
+  @if (activeStep() === 'problem') {
+    <div class="space-y-2">
+      <label class="block space-y-1">
+        <span class="text-xs font-bold text-stone-800 flex items-center gap-1">
+          <mat-icon class="!text-sm text-amber-700">report_problem</mat-icon>
+          کێشەی سەرەکیی توێژینەوە (Problem Statement):
+        </span>
+        <textarea
+          rows="3"
+          class="w-full p-2.5 border border-stone-300 rounded-lg text-xs bg-white focus:ring-2 focus:ring-amber-500"
+          [value]="blueprint().problemStatement"
+          (input)="updateField('problemStatement', $any($event.target).value)"
+          placeholder="ئەو کەلێنە زانستییە چییە کە بووەتە هۆی ئەوەی ئەم توێژینەوەیە ئەنجام بدەیت؟">
+        </textarea>
+      </label>
+      <p class="text-[10px] text-stone-500">ڕێنمایی: کێشەی توێژینەوە دەبێت وەسفی کەلێنێکی ڕاستەقینە بێت، نەک تەنها دەربڕینی هەستێکی گشتی.</p>
+    </div>
+  }
+
+  <!-- STEP 2: QUESTIONS -->
+  @if (activeStep() === 'questions') {
+    <div class="space-y-3">
+      <label class="block space-y-1">
+        <span class="text-xs font-bold text-stone-800 flex items-center gap-1">
+          <mat-icon class="!text-sm text-blue-700">help</mat-icon>
+          پرسیاری سەرەکیی توێژینەوە (Core Research Question):
+        </span>
+        <input
+          type="text"
+          class="w-full p-2 border border-stone-300 rounded-lg text-xs bg-white"
+          [value]="blueprint().coreQuestion"
+          (input)="updateField('coreQuestion', $any($event.target).value)"
+          placeholder="بۆ نموونە: ئایا کاریگەریی گۆڕاوی سەربەخۆ لەسەر گۆڕاوی سەرپێچ چۆنە؟">
+      </label>
+
+      <div class="space-y-1.5">
+        <span class="text-xs font-bold text-stone-700 block">پرسیارە لاوەکییەکان (Sub-questions):</span>
+        @for (q of blueprint().subQuestions; track $index) {
+          <div class="flex items-center justify-between p-2 bg-white border border-stone-200 rounded-md text-xs">
+            <span>{{ q }}</span>
+            <button type="button" (click)="removeSubQuestion($index)" class="text-rose-600 hover:text-rose-800 cursor-pointer">
+              <mat-icon class="!text-xs">delete</mat-icon>
+            </button>
+          </div>
+        }
+        <div class="flex gap-2 pt-1">
+          <input
+            type="text"
+            class="flex-1 p-2 border border-stone-300 rounded-md text-xs bg-white"
+            [value]="newSubQuestion()"
+            (input)="newSubQuestion.set($any($event.target).value)"
+            placeholder="پرسیارێکی لاوەکیی تر بنووسە...">
+          <button type="button" (click)="addSubQuestion()" class="px-3 py-1.5 bg-stone-900 text-white rounded-md text-xs font-bold cursor-pointer">
+            زیادکردن
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- STEP 3: OBJECTIVES & HYPOTHESES -->
+  @if (activeStep() === 'objectives') {
+    <div class="space-y-3">
+      <label class="block space-y-1">
+        <span class="text-xs font-bold text-stone-800 flex items-center gap-1">
+          <mat-icon class="!text-sm text-emerald-700">flag</mat-icon>
+          ئامانجی سەرەکی (Main Objective):
+        </span>
+        <input
+          type="text"
+          class="w-full p-2 border border-stone-300 rounded-lg text-xs bg-white"
+          [value]="blueprint().mainObjective"
+          (input)="updateField('mainObjective', $any($event.target).value)"
+          placeholder="ئامانجی گشتی و پەیوەست بە پرسیاری سەرەکی...">
+      </label>
+
+      <label class="block space-y-1">
+        <span class="text-xs font-bold text-stone-800 flex items-center gap-1">
+          <mat-icon class="!text-sm text-amber-700">science</mat-icon>
+          گریمانەی سەرەکی (Core Hypothesis):
+        </span>
+        <input
+          type="text"
+          class="w-full p-2 border border-stone-300 rounded-lg text-xs bg-white"
+          [value]="blueprint().coreHypothesis"
+          (input)="updateField('coreHypothesis', $any($event.target).value)"
+          placeholder="گریمانەی پەیوەندی یان جیاوازیی ئاماری نێوان نموونەکان...">
+      </label>
+
+      <div class="space-y-1.5">
+        <span class="text-xs font-bold text-stone-700 block">ئامانجە تایبەتەکان:</span>
+        @for (obj of blueprint().specificObjectives; track $index) {
+          <div class="flex items-center justify-between p-2 bg-white border border-stone-200 rounded-md text-xs">
+            <span>{{ obj }}</span>
+            <button type="button" (click)="removeObjective($index)" class="text-rose-600 hover:text-rose-800 cursor-pointer">
+              <mat-icon class="!text-xs">delete</mat-icon>
+            </button>
+          </div>
+        }
+        <div class="flex gap-2 pt-1">
+          <input
+            type="text"
+            class="flex-1 p-2 border border-stone-300 rounded-md text-xs bg-white"
+            [value]="newObjective()"
+            (input)="newObjective.set($any($event.target).value)"
+            placeholder="ئامانجێکی تایبەت بنووسە...">
+          <button type="button" (click)="addObjective()" class="px-3 py-1.5 bg-stone-900 text-white rounded-md text-xs font-bold cursor-pointer">
+            زیادکردن
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- STEP 4: SCOPE -->
+  @if (activeStep() === 'scope') {
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <label class="block space-y-1">
+        <span class="text-[10px] font-bold text-stone-700">سنووری کاتی (Temporal):</span>
+        <input
+          type="text"
+          class="w-full p-2 border border-stone-300 rounded-md text-xs bg-white"
+          [value]="blueprint().temporalScope"
+          (input)="updateField('temporalScope', $any($event.target).value)">
+      </label>
+      <label class="block space-y-1">
+        <span class="text-[10px] font-bold text-stone-700">سنووری شوێنی (Spatial):</span>
+        <input
+          type="text"
+          class="w-full p-2 border border-stone-300 rounded-md text-xs bg-white"
+          [value]="blueprint().spatialScope"
+          (input)="updateField('spatialScope', $any($event.target).value)">
+      </label>
+      <label class="block space-y-1">
+        <span class="text-[10px] font-bold text-stone-700">سنووری بابەتی (Thematic):</span>
+        <input
+          type="text"
+          class="w-full p-2 border border-stone-300 rounded-md text-xs bg-white"
+          [value]="blueprint().thematicScope"
+          (input)="updateField('thematicScope', $any($event.target).value)">
+      </label>
+      <div class="col-span-full space-y-1">
+        <span class="text-[10px] font-bold text-stone-700">گرنگیی زانستی و کرداری (Significance):</span>
+        <textarea
+          rows="2"
+          class="w-full p-2 border border-stone-300 rounded-md text-xs bg-white"
+          [value]="blueprint().significance"
+          (input)="updateField('significance', $any($event.target).value)"></textarea>
+      </div>
+    </div>
+  }
+
+  <!-- STEP 5: METHODOLOGY -->
+  @if (activeStep() === 'methodology') {
+    <div class="space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <label class="block space-y-1">
+          <span class="text-[10px] font-bold text-stone-700">جۆری میتۆدی توێژینەوە:</span>
+          <select
+            class="w-full p-2 border border-stone-300 rounded-md text-xs bg-white"
+            [value]="blueprint().methodologyType"
+            (change)="updateField('methodologyType', $any($event.target).value)">
+            <option value="quantitative">چەندایەتی (Quantitative)</option>
+            <option value="qualitative">چۆنایەتی (Qualitative)</option>
+            <option value="mixed">تێکەڵاو (Mixed-Methods)</option>
+          </select>
+        </label>
+        <label class="block space-y-1">
+          <span class="text-[10px] font-bold text-stone-700">کۆمەڵگەی ئامانج (Population):</span>
+          <input
+            type="text"
+            class="w-full p-2 border border-stone-300 rounded-md text-xs bg-white"
+            [value]="blueprint().targetPopulation"
+            (input)="updateField('targetPopulation', $any($event.target).value)">
+        </label>
+        <label class="block space-y-1">
+          <span class="text-[10px] font-bold text-stone-700">قەبارەی نموونە (Sample Size):</span>
+          <input
+            type="text"
+            class="w-full p-2 border border-stone-300 rounded-md text-xs bg-white"
+            [value]="blueprint().sampleSize"
+            (input)="updateField('sampleSize', $any($event.target).value)">
+        </label>
+      </div>
+
+      <div class="space-y-1.5">
+        <span class="text-xs font-bold text-stone-700 block">ئامرازەکانی کۆکردنەوەی داتا:</span>
+        @for (tool of blueprint().dataCollectionTools; track $index) {
+          <div class="flex items-center justify-between p-2 bg-white border border-stone-200 rounded-md text-xs">
+            <span>{{ tool }}</span>
+            <button type="button" (click)="removeDataTool($index)" class="text-rose-600 hover:text-rose-800 cursor-pointer">
+              <mat-icon class="!text-xs">delete</mat-icon>
+            </button>
+          </div>
+        }
+        <div class="flex gap-2 pt-1">
+          <input
+            type="text"
+            class="flex-1 p-2 border border-stone-300 rounded-md text-xs bg-white"
+            [value]="newTool()"
+            (input)="newTool.set($any($event.target).value)"
+            placeholder="ئامرازێکی تری داتا زیاد بکە...">
+          <button type="button" (click)="addDataTool()" class="px-3 py-1.5 bg-stone-900 text-white rounded-md text-xs font-bold cursor-pointer">
+            زیادکردن
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- STEP 6: PREVIEW -->
+  @if (activeStep() === 'preview') {
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-stone-900 flex items-center gap-1">
+          <mat-icon class="!text-xs">description</mat-icon>
+          پوختەی پڕۆپۆزەڵی فەرمی (Official Proposal Draft)
+        </span>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="copyProposal()"
+            class="px-2.5 py-1 text-xs bg-white border border-stone-300 hover:bg-stone-100 rounded text-stone-800 flex items-center gap-1 cursor-pointer">
+            <mat-icon class="!text-xs">content_copy</mat-icon>
+            <span>لەبەرگرتنەوە</span>
+          </button>
+          <button
+            type="button"
+            (click)="applyToChapterDraft()"
+            class="px-3 py-1 text-xs bg-amber-800 hover:bg-amber-900 text-white font-bold rounded flex items-center gap-1 cursor-pointer">
+            <mat-icon class="!text-xs">download</mat-icon>
+            <span>جێگیرکردن لەناو بەشی کارا</span>
+          </button>
+        </div>
+      </div>
+      <pre class="p-3 bg-white border border-stone-300 rounded text-[11px] font-mono whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto">{{ proposalPreview() }}</pre>
+    </div>
+  }
+</section>

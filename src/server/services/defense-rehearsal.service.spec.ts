@@ -52,3 +52,4 @@ describe('P12 defense rehearsal engine', () => {
     );
     expect(result.coveredElements.length).toBeGreaterThan(0);
   });
+});

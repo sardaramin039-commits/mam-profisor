@@ -5,7 +5,7 @@ const text = (max: number) => z.string().trim().min(1).max(max);
 export const academicRigorSchema = z.object({
   body: z.object({
     title: z.string().trim().max(500).optional(),
-    content: text(250_000),
+    content: z.string().max(250_000).default(''),
     discipline: z.string().trim().max(200).optional(),
     theoreticalFramework: z.string().trim().max(300).optional(),
     academicStyle: z.string().trim().max(100).optional()

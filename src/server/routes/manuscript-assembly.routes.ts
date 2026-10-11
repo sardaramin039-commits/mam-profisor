@@ -4,7 +4,7 @@ import {
   assembleManuscript,
   persistAssembledManuscript
 } from '../services/manuscript-assembly.service';
-import { researchMemoryService } from '../services/research-memory.service';
+import { ResearchMemoryItem, researchMemoryService } from '../services/research-memory.service';
 import { researchControlPlaneService } from '../services/research-control-plane.service';
 import type { AuthRequest } from '../../middleware/auth';
 
@@ -43,10 +43,10 @@ async function resolveServerVerifiedCitations(
   citations: z.infer<typeof citationSchema>[]
 ): Promise<z.infer<typeof citationSchema>[]> {
   const memory = await researchMemoryService.hydrateProjectState(userId, workspaceId);
-  const evidenceById = new Map(
+  const evidenceById = new Map<string, ResearchMemoryItem>(
     memory.memoryItems
       .filter(item => item.type === 'evidence' && item.metadata?.['verified'] === true)
-      .map(item => [
+      .map((item): [string, ResearchMemoryItem] => [
         String(item.metadata?.['evidenceId'] || ''),
         item
       ])

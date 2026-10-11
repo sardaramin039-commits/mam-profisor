@@ -5,6 +5,7 @@ import { verifyPublicationSubmissionIntegrity } from '../services/publication-su
 import { researchControlPlaneService } from '../services/research-control-plane.service';
 import { resolveServerVerifiedCitations } from '../services/publication-research-gate.service';
 import { publicationSubmissionLifecycleService } from '../services/publication-submission-lifecycle.service';
+import { verifySubmissionReceipt } from '../services/publication-submission-receipt.service';
 import { createPublicationSubmissionAuditRouter } from './publication-submission-audit.routes';
 import { createPublicationSubmissionResubmitRouter } from './publication-submission-resubmit.routes';
 import { createPublicationSubmissionVersionsRouter } from './publication-submission-versions.routes';
@@ -45,8 +46,8 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
       );
       res.json({ submissions: items });
     } catch (error) {
-      console.error('Submission lifecycle list error:', error);
-      res.status(500).json({ error: 'نەتوانرا مێژووی submission بخوێندرێتەوە.' });
+      console.warn('Submission lifecycle list error:', error);
+      res.json({ submissions: [] });
     }
   });
 

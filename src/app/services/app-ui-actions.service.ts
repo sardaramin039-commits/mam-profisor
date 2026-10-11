@@ -1,11 +1,32 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { EditorService } from '../features/editor/services/editor';
 import { ChapterItemModel as ChapterItem, ChapterSnapshotModel as ChapterSnapshot, SavedManuscriptModel as SavedManuscript } from '../domain/models';
 import { encryptText, decryptText, calculateIntegrityHash, verifyChapterIntegrity } from '../helpers/academic-vault';
+import { calculateKurdishWordFrequency, calculateKurdishAcademicReadability, WordFrequencyResult, KurdishReadabilityResult } from '../helpers/kurdish-academic-text-analysis';
 
 @Injectable({ providedIn: 'root' })
 export class AppUiActionsService {
   private editorService = inject(EditorService);
+
+  isWordFrequencyOpen = signal<boolean>(false);
+  excludeStopWordsFilter = signal<boolean>(true);
+
+  toggleWordFrequency(): void {
+    this.isWordFrequencyOpen.update(v => !v);
+  }
+
+  toggleStopWordsFilter(): void {
+    this.excludeStopWordsFilter.update(v => !v);
+  }
+
+  getKurdishWordFrequency(text: string, excludeStopWords?: boolean): WordFrequencyResult {
+    const exclude = excludeStopWords !== undefined ? excludeStopWords : this.excludeStopWordsFilter();
+    return calculateKurdishWordFrequency(text, exclude, 10);
+  }
+
+  getKurdishReadability(text: string): KurdishReadabilityResult {
+    return calculateKurdishAcademicReadability(text);
+  }
 
   getKurdishNumberStr(index: number): string {
     const numbers = ['یەکەم', 'دووەم', 'سێیەم', 'چوارەم', 'پێنجەم', 'شەشەم', 'حەوتەم', 'هەشتەم', 'نۆیەم', 'دەیەم'];
@@ -25,6 +46,21 @@ export class AppUiActionsService {
   getWordCountOfText(text: string): number {
     if (!text) return 0;
     return text.trim().split(/\s+/).filter(Boolean).length;
+  }
+
+  getCharCountNoSpaces(text: string): number {
+    if (!text) return 0;
+    return text.replace(/\s+/g, '').length;
+  }
+
+  getParagraphCount(text: string): number {
+    if (!text) return 0;
+    return text.split(/\n+/).filter(Boolean).length;
+  }
+
+  getReadingTimeMinutes(text: string): number {
+    const words = this.getWordCountOfText(text);
+    return Math.max(1, Math.ceil(words / 180));
   }
 
   appendContentToActiveChapter(contentToAppend: string, reason = 'زیادکردنی ناوەڕۆک') {

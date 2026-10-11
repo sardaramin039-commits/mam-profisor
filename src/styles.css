@@ -26,26 +26,27 @@ body {
 
 /* Elegant and highly visible scrollbar styles for academic content containers */
 .scrollbar-thin::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: #f1f0ec;
-  border-radius: 4px;
+  background: #f4f2ed;
+  border-radius: 6px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #c3bfb5;
-  border-radius: 4px;
-  border: 1.5px solid #f1f0ec;
+  background: #a89f91;
+  border-radius: 6px;
+  border: 2px solid #f4f2ed;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #8b8577;
+  background: #73695b;
 }
 
 /* For non-webkit browsers */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: #c3bfb5 #f1f0ec;
+  scrollbar-color: #a89f91 #f4f2ed;
+  scroll-behavior: smooth;
 }
 
 @keyframes expandFade {

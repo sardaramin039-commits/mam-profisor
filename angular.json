@@ -83,7 +83,11 @@
               "sourceMap": false,
               "externalDependencies": [
                 "@google/genai",
-                "firebase-admin"
+                "firebase-admin",
+                "pg",
+                "drizzle-orm",
+                "express",
+                "dotenv"
               ]
             }
           },

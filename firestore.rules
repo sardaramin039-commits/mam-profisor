@@ -210,5 +210,35 @@ service cloud.firestore {
       allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(indexId);
       allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(indexId) && isValidLibraryIndex(request.resource.data);
     }
+
+    // Publication submission lifecycle is isolated by Firebase user ID.
+    match /publication_submission_lifecycle/{userId}/items/{submissionId} {
+      allow get, create, update: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(submissionId)
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(submissionId)
+        && resource.data.userId == request.auth.uid;
+      allow list: if isVerifiedUser() && userId == request.auth.uid;
+
+      match /{subcollection=**} {
+        allow read, write: if isVerifiedUser() && userId == request.auth.uid;
+      }
+    }
+
+    // Publication submission manifests are isolated by Firebase user ID.
+    match /publication_submission_manifests/{userId}/items/{manifestId} {
+      allow get, create, update: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(manifestId)
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(manifestId)
+        && resource.data.userId == request.auth.uid;
+      allow list: if isVerifiedUser() && userId == request.auth.uid;
+    }
   }
 }

@@ -116,32 +116,129 @@
                 [value]="viewedChapter()?.content || ''" 
                 (input)="updateChapterContent(viewedChapter()!.id, chapterTextarea.value)"
                 [readonly]="viewedChapter()?.isLocked"
-                class="w-full flex-1 p-6 text-sm md:text-base lg:text-lg border-2 border-stone-400 bg-[#FAFAFC] focus:bg-white text-slate-900 leading-[2.2] font-serif focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium text-justify shadow-md scrollbar-thin scrollbar-thumb-stone-400 scrollbar-track-transparent transition-all"
-                [class.rounded-xl]="viewedChapter()?.isLocked"
-                [class.rounded-b-xl]="!viewedChapter()?.isLocked"
+                class="w-full flex-1 p-6 text-sm md:text-base lg:text-lg border-2 border-stone-400 bg-[#FAFAFC] focus:bg-white text-slate-900 leading-[2.2] font-serif focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium text-justify shadow-md scrollbar-thin scrollbar-thumb-stone-400 scrollbar-track-transparent transition-all rounded-b-none border-b-0"
+                [class.rounded-t-xl]="!viewedChapter()?.isLocked"
                 [class.border-t-0]="!viewedChapter()?.isLocked"
                 placeholder="دەتوانیت لێرەوە بە دەستی خۆت بابەتەکە بنووسیت، یان ناوەڕۆکە بەکارخراوەکە لە فۆرمەکەدا بنوسیت..."
                 style="resize: vertical; min-height: 500px; overflow-y: scroll !important; max-height: 65vh; display: block;"></textarea>
 
-              <!-- Progress bar based word counter inside the footer of the chapter textarea -->
-              @if (viewedChapter()) {
-                <div class="mt-2 px-4 py-3 bg-stone-100 border border-stone-300 rounded-xl flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-stone-700 font-serif shadow-xs">
-                  <div class="flex items-center gap-2">
-                    <mat-icon class="!text-sm text-amber-800 font-bold">assessment</mat-icon>
-                    <span>ئاماری بەشەکە: <strong>{{ viewedChapter()?.wordCount || 0 }}</strong> وشە لە <strong>{{ getChapterTarget(viewedChapter()) }}</strong> (ئامانجی پێشنیارکراو)</span>
+              <!-- Dynamic Real-Time Word & Character Counter Status Bar -->
+              <div class="flex items-center justify-between px-3.5 py-1.5 bg-stone-200/90 border-2 border-stone-400 rounded-b-xl text-[11px] font-mono text-stone-700 select-none flex-wrap gap-2 shadow-2xs">
+                <div class="flex items-center gap-3 flex-wrap">
+                  <div class="flex items-center gap-1 font-bold text-stone-900" title="ژمارەی وشە چالاکەکان بە کاتی ڕاستەقینە">
+                    <mat-icon class="!text-[13px] !w-3.5 !h-3.5 leading-none text-emerald-800">format_align_right</mat-icon>
+                    <span class="text-emerald-950 font-bold">{{ getWordCountOfText(chapterTextarea.value) }}</span>
+                    <span class="font-serif text-[10px] text-stone-600">وشە (Words)</span>
                   </div>
-                  
-                  <div class="flex items-center gap-3 w-full md:w-auto flex-1 justify-end max-w-md">
-                    <!-- Progress bar container -->
-                    <div class="flex-1 bg-stone-300 rounded-full h-2.5 overflow-hidden">
-                      <div class="bg-amber-600 h-full rounded-full transition-all duration-300"
-                           [style.width.%]="getWordProgressPct(viewedChapter()!)">
+
+                  <span class="text-stone-400">|</span>
+
+                  <div class="flex items-center gap-1 text-stone-800" title="کۆی پیت و هێماکان بە بۆشاییەوە">
+                    <mat-icon class="!text-[13px] !w-3.5 !h-3.5 leading-none text-indigo-700">text_fields</mat-icon>
+                    <span>{{ chapterTextarea.value.length }}</span>
+                    <span class="font-serif text-[10px] text-stone-600">پیت (Chars)</span>
+                  </div>
+
+                  <span class="text-stone-400">|</span>
+
+                  <div class="flex items-center gap-1 text-stone-700" title="پیت بێ بۆشایی">
+                    <span>{{ getCharCountNoSpaces(chapterTextarea.value) }}</span>
+                    <span class="font-serif text-[10px] text-stone-500">بێ بۆشایی</span>
+                  </div>
+
+                  <span class="text-stone-400">|</span>
+
+                  <div class="flex items-center gap-1 text-stone-700" title="ژمارەی پاراگرافەکان">
+                    <span>{{ getParagraphCount(chapterTextarea.value) }}</span>
+                    <span class="font-serif text-[10px] text-stone-500">پاراگراف</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 text-[10px] text-stone-600 font-serif flex-wrap">
+                  <span class="bg-stone-100 px-2 py-0.5 rounded border border-stone-300">
+                    خەمڵاندنی خوێندنەوە: {{ getReadingTimeMinutes(chapterTextarea.value) }} خولەک
+                  </span>
+
+                  <!-- Real-time Kurdish Academic Readability Score -->
+                  @let rScore = getKurdishReadability(chapterTextarea.value);
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border font-sans font-bold text-[10px]" [class]="rScore.badgeClass" [title]="rScore.recommendation">
+                    <mat-icon class="!text-[12px] !w-3 !h-3 leading-none">auto_stories</mat-icon>
+                    <span>خوێندنەوە: {{ rScore.score }}/١٠٠</span>
+                    <span class="font-serif font-normal text-[9.5px]">({{ rScore.levelLabel }})</span>
+                  </span>
+
+                  <!-- Real-time Word Frequency Tool Toggle -->
+                  <button type="button" (click)="toggleWordFrequency()" class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 rounded font-serif text-[10px] font-bold cursor-pointer transition shadow-2xs" title="شیکاریی فرێکوێنسیی وشەکان">
+                    <mat-icon class="!text-[12px] !w-3 !h-3 leading-none text-amber-800">analytics</mat-icon>
+                    <span>فرێکوێنسی (Top 10)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Word Frequency Analysis Drawer -->
+              @if (isWordFrequencyOpen()) {
+                <app-chapter-word-frequency-panel [content]="chapterTextarea.value" [excludeStopWords]="excludeStopWordsFilter()" (toggleFilter)="toggleStopWordsFilter()" (close)="toggleWordFrequency()"></app-chapter-word-frequency-panel>
+              }
+
+              <!-- Progress bar & interactive Word Count Target configurator inside the chapter editor footer -->
+              @if (viewedChapter(); as ch) {
+                @let wStatus = getWordValidationStatus(ch);
+                <div class="mt-2 p-3.5 bg-stone-100 border border-stone-300 rounded-xl space-y-2.5 text-xs text-stone-800 font-serif shadow-xs">
+                  <!-- Row 1: Word Count, Status Badge, and Target Input Configuration -->
+                  <div class="flex flex-wrap items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <div class="flex items-center gap-1 font-bold text-stone-900">
+                        <mat-icon class="!text-sm text-amber-800">assessment</mat-icon>
+                        <span>ژمارەی وشەکان: <strong>{{ chapterTextarea.value ? getWordCountOfText(chapterTextarea.value) : (ch.wordCount || 0) }}</strong> وشە</span>
+                        <span class="text-stone-500 font-mono text-[10.5px]">({{ wStatus.currentPages }} لاپەڕە)</span>
+                      </div>
+
+                      <span class="inline-flex items-center gap-1 text-[9.5px] font-bold px-2 py-0.5 rounded-md border" [class]="wStatus.badgeBg + ' ' + wStatus.textColor + ' ' + wStatus.borderColor">
+                        <mat-icon class="!text-[11px] !w-3 !h-3 leading-none">{{ wStatus.icon }}</mat-icon>
+                        <span>{{ wStatus.label }}</span>
+                      </span>
+                    </div>
+
+                    <!-- Target Configuration Input & Presets -->
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-[10px] text-stone-600 font-bold">ئامانجی وشە:</span>
+                      <div class="flex items-center bg-white px-2 py-0.5 rounded-lg border border-stone-300 shadow-2xs">
+                        <input type="number"
+                               #targetInp
+                               [value]="getChapterTarget(ch)"
+                               (change)="updateChapterTargetWords(ch.id, targetInp.valueAsNumber)"
+                               class="w-16 text-center bg-transparent border-none text-[11px] font-mono font-bold py-0 focus:outline-none p-0 text-stone-900"
+                               min="100" max="30000"
+                               title="دەستکاریی ژمارەی وشەی ئامانج بکە لەم بەشەدا" />
+                        <span class="text-[9.5px] text-stone-500 font-mono">وشە</span>
+                      </div>
+
+                      <!-- Quick Target Presets -->
+                      <div class="flex items-center gap-1">
+                        <button type="button" (click)="updateChapterTargetWords(ch.id, 1000)" class="px-1.5 py-0.5 bg-white hover:bg-stone-200 border border-stone-300 rounded text-[9px] font-mono font-bold cursor-pointer transition">1k</button>
+                        <button type="button" (click)="updateChapterTargetWords(ch.id, 2500)" class="px-1.5 py-0.5 bg-white hover:bg-stone-200 border border-stone-300 rounded text-[9px] font-mono font-bold cursor-pointer transition">2.5k</button>
+                        <button type="button" (click)="updateChapterTargetWords(ch.id, 5000)" class="px-1.5 py-0.5 bg-white hover:bg-stone-200 border border-stone-300 rounded text-[9px] font-mono font-bold cursor-pointer transition">5k</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Row 2: Progress Bar and Remaining Count -->
+                  <div class="flex items-center gap-3">
+                    <div class="flex-1 bg-stone-300 rounded-full h-2 overflow-hidden shadow-inner">
+                      <div class="h-full rounded-full transition-all duration-300"
+                           [style.width.%]="Math.min(100, wStatus.pct)"
+                           [style.background-color]="wStatus.progressBarBg">
                       </div>
                     </div>
                     
-                    <span class="text-[10px] font-mono font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded shrink-0">
-                      {{ getWordProgressPct(viewedChapter()!) }}% تەواوبووە
-                    </span>
+                    <div class="flex items-center gap-2 text-[10px] font-mono font-bold shrink-0">
+                      <span [class]="wStatus.textColor">{{ wStatus.pct }}%</span>
+                      @if (getChapterTarget(ch) > (ch.wordCount || 0)) {
+                        <span class="text-stone-500 font-serif">({{ getChapterTarget(ch) - (ch.wordCount || 0) }} وشە ماوە)</span>
+                      } @else {
+                        <span class="text-emerald-700 font-serif">✓ ئامانج تەواوکراوە</span>
+                      }
+                    </div>
                   </div>
                 </div>
               }

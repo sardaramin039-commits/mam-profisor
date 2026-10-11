@@ -187,7 +187,7 @@ export class CitationBuilder {
   }
 
   /**
-   * Kurdish Academic Citation Formatting
+   * Kurdish Academic Citation Formatting (General Standard)
    */
   public static formatKurdishAcademic(item: CitationItem): string {
     if (!item.authors?.trim() || !item.title?.trim()) return '';
@@ -199,6 +199,81 @@ export class CitationBuilder {
     const vol = item.volume ? `، بەرگی ${toSoraniNumber(item.volume)}` : '';
     const pp = item.pages ? `، ل.ل. ${toSoraniNumber(item.pages)}` : '';
     return `• ${authors} ${soraniYear}، «${title}»${journal}${vol}${pp}${publisher}.`;
+  }
+
+  /**
+   * Kurdish Literary & Research Sources - APA 7th Edition
+   * Format: Author (Year). Title (Editor/Edition). Place: Publisher.
+   */
+  public static formatKurdishAPA(item: CitationItem): string {
+    if (!item.authors?.trim() || !item.title?.trim()) return '';
+    const authors = this.formatAPAAuthors(item.authors);
+    const year = item.year ? `(${item.year})` : '(n.d.)';
+    const title = item.title?.trim() || '';
+    const place = item.place ? `${item.place}: ` : '';
+    const pub = item.publisher ? `${item.publisher}.` : '';
+    const ed = item.edition ? ` (چاپی ${item.edition})` : '';
+
+    if (item.journal) {
+      const vol = item.volume ? `, *${item.volume}*` : '';
+      const iss = item.issue ? `(${item.issue})` : '';
+      const pp = item.pages ? `, ${item.pages}` : '';
+      return `${authors} ${year}. ${title}. *${item.journal}*${vol}${iss}${pp}.`;
+    }
+    return `${authors} ${year}. *${title}*${ed}. ${place}${pub}`.trim();
+  }
+
+  /**
+   * Kurdish Literary & Research Sources - MLA 9th Edition
+   * Format: Author. Title. Editor/Institution, Publisher, Year, pp.
+   */
+  public static formatKurdishMLA(item: CitationItem): string {
+    if (!item.authors?.trim() || !item.title?.trim()) return '';
+    const authors = this.formatMLAAuthors(item.authors);
+    const title = item.title?.trim() || '';
+    const pub = item.publisher ? `${item.publisher}, ` : '';
+    const year = item.year ? `${item.year}.` : '';
+
+    if (item.journal) {
+      const vol = item.volume ? `بەرگی ${item.volume}, ` : '';
+      const iss = item.issue ? `ژمارەی ${item.issue}, ` : '';
+      const pp = item.pages ? `ل.ل. ${item.pages}.` : '';
+      return `${authors}. "${title}." *${item.journal}*, ${vol}${iss}${year ? year.replace('.', ', ') : ''}${pp}`;
+    }
+    return `${authors}. *${title}*. ${pub}${year}`.trim();
+  }
+
+  /**
+   * Kurdish Literary & Research Sources - Chicago Bibliography & Footnote
+   */
+  public static formatKurdishChicago(item: CitationItem): string {
+    if (!item.authors?.trim() || !item.title?.trim()) return '';
+    const authors = item.authors.trim();
+    const title = item.title.trim();
+    const year = item.year ? String(item.year) : 'بێ مێژوو';
+    const place = item.place ? `${item.place}: ` : '';
+    const pub = item.publisher ? `${item.publisher}, ` : '';
+
+    if (item.journal) {
+      const vol = item.volume ? `, بەرگی ${item.volume}` : '';
+      const iss = item.issue ? `، ژمارەی ${item.issue}` : '';
+      const pp = item.pages ? `: ${item.pages}` : '';
+      return `${authors}. «${title}». *${item.journal}*${vol}${iss} (${year})${pp}.`;
+    }
+    return `${authors}. *${title}*. ${place}${pub}${year}.`;
+  }
+
+  /**
+   * Kurdish Academic Footnote Generator (پەراوێز)
+   */
+  public static formatKurdishFootnote(item: CitationItem, page?: string | number): string {
+    if (!item.authors?.trim() || !item.title?.trim()) return '';
+    const authors = item.authors.trim();
+    const title = item.title.trim();
+    const year = item.year ? String(item.year) : '';
+    const pageStr = page ? `، ل. ${toSoraniNumber(page)}` : (item.pages ? `، ل. ${toSoraniNumber(item.pages)}` : '');
+    const pubInfo = item.publisher || item.place ? ` (${item.place ? item.place + ': ' : ''}${item.publisher || ''}${year ? '، ' + year : ''})` : (year ? ` (${year})` : '');
+    return `${authors}، *${title}*${pubInfo}${pageStr}.`;
   }
 
   // --- Helper Author Formatters ---

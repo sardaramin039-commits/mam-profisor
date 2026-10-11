@@ -1,4 +1,5 @@
 import { ChapterItemModel as ChapterItem } from '../domain/models';
+import { generateGranularBookSections } from './academic-book-outline.helper';
 
 export interface ThesisOutlineOptions {
   title: string;
@@ -41,15 +42,46 @@ export function buildAcademicThesisOutline(options: ThesisOutlineOptions): Chapt
     });
   }
 
+  // Generate granular academic book sections based on targetPages / pagesPerResponse capacity formula
+  let customTitles: string[] | undefined = undefined;
+  if (options.customTOCOn && options.customTOCText?.trim()) {
+    const userLines = options.customTOCText
+      .split('\n')
+      .map(line => line.trim().replace(/^[-*•\d.]+\s*/, ''))
+      .filter(line => line.length > 2);
+    if (userLines.length > 0) {
+      customTitles = userLines;
+    }
+  }
+
+  const { sections, tocSummary } = generateGranularBookSections(
+    {
+      title,
+      discipline: options.discipline,
+      writingType: options.writingType,
+      academicLevel: options.academicLevel,
+      targetPages,
+      totalTargetWords,
+      pagesPerResponse: 2,
+      fieldWorkOn: options.fieldWorkOn
+    },
+    currentId + 10,
+    customTitles
+  );
+
   // 2. پێڕست و ناوەڕۆک (Table of Contents)
   if (options.includeTOC !== false) {
+    const formattedToc = tocSummary.length > 0
+      ? tocSummary.join('\n')
+      : '- پێشەکیی گشتی و گرنگیی بابەت\n- بەشی تیۆری و چەمکسازیی چەقی توێژینەوە\n- میتۆدۆلۆژیا و ڕێکارە پەیڕەوکراوەکان\n- شیکردنەوەی داتا و خستنەڕووی دەرئەنجامەکان';
+
     chapters.push({
       id: currentId++,
       title: 'پێڕستی بابەتەکان و خشتەکان (Table of Contents)',
       wordCount: 0,
       status: 'pending',
-      content: `## پێڕستی گشتی بابەتەکان\n\n- پێشەکیی گشتی و گرنگیی بابەت\n- بەشی تیۆری و چەمکسازیی چەقی توێژینەوە\n- میتۆدۆلۆژیا و ڕێکارە پەیڕەوکراوەکان\n- شیکردنەوەی داتا و خستنەڕووی دەرئەنجامەکان\n- کۆبەند، ڕاسپاردە و پێشنیارەکان\n- لیستی سەرچاوە و بەیبلۆگرافی`,
-      academicNotes: 'پێڕستی هەموو تەوەر و ناونیشانە لاوەکییەکان.',
+      content: `## پێڕستی گشتیی تەوەر و بەشەکان\n\n**ئەندازەی پلاندانراوی کتێب:** ${targetPages} لاپەڕە (${totalTargetWords} وشە)، دابەشکراو بەسەر ${sections.length} تەوەری ئەکادیمیدا (توانای هەموو وەڵامێک ~٢ لاپەڕە).\n\n${formattedToc}\n\n- ئەنجام و کۆبەندی لێکۆڵینەوە\n- ڕاسپاردە و پێشنیارەکان\n- پێڕستی سەرچاوە و بەیبلۆگرافی`,
+      academicNotes: 'پێڕستی تەواوی بەشە سەرەکییەکان و تەوەرە وردەکان بە ئاماژەی قەبارە.',
       customTargetWords: 200
     });
   }
@@ -63,43 +95,15 @@ export function buildAcademicThesisOutline(options: ThesisOutlineOptions): Chapt
       status: 'pending',
       content: `## پێشەکی\n\nتوێژینەوەی دەستنیشانکراو بە ناونیشانی «${title}» هەوڵێکی ڕەخنەگرانە و زانستییە بۆ شیکردنەوەی ڕەهەندە سەرەکییەکان و وەڵامدانەوەی پرسیارە جەوهەرییەکانی کایەکە.\n\n### پرسیاری سەرەکیی توێژینەوە:\nچۆن دەکرێت ئاستەنگ و گۆڕاوە سەرەکییەکان بە شێوازێکی زانستی ڕاڤە بکرێن و ڕێگەچارەی زانستی بۆ دابڕێژرێت؟\n\n### گرنگیی توێژینەوەکە:\nئەم لێکۆڵینەوەیە پڕکردنەوەی بۆشاییەکی مەعریفییە لە کتێبخانەی ئەکادیمی و پێشکەشکردنی داتای سەردەمیانەیە بە مێتۆدی زانستی.`,
       academicNotes: 'پێناسەکردنی ڕوون و ڕەوانی ئامانجەکان، پرسیارەکان، و سنووری بابەت.',
-      customTargetWords: Math.max(400, Math.round(totalTargetWords * 0.15))
+      customTargetWords: Math.max(400, Math.round(totalTargetWords * 0.10))
     });
   }
 
-  // 4. بەشە سەرەکییەکان (Core Substantive Chapters based on topic & discipline)
-  const coreChaptersCount = Math.max(2, Math.min(5, Math.round(targetPages / 5)));
-  const coreWordBudget = Math.round((totalTargetWords * 0.55) / coreChaptersCount);
-
-  let coreTitles = [
-    `بەشی یەکەم: چوارچێوەی تیۆری و چەمکسازیی «${title}»`,
-    `بەشی دووەم: میتۆدۆلۆژیا و ڕێبازی ئەکادیمی پەیڕەوکراو`,
-    `بەشی سێیەم: شیکاریی پڕاکتیکی و لێکدانەوەی ڕەخنەگرانەی داتاکان`,
-    `بەشی چوارەم: هەڵسەنگاندنی بەراوردکاری و تاوتوێکردنی دەرئەنجامەکان`
-  ];
-
-  if (options.customTOCOn && options.customTOCText?.trim()) {
-    const userLines = options.customTOCText
-      .split('\n')
-      .map(line => line.trim().replace(/^[-*•\d.]+\s*/, ''))
-      .filter(line => line.length > 2);
-    if (userLines.length > 0) {
-      coreTitles = userLines;
-    }
-  }
-
-  const effectiveCount = Math.min(coreTitles.length, Math.max(coreChaptersCount, coreTitles.length));
-
-  for (let i = 0; i < effectiveCount; i++) {
-    const chTitle = coreTitles[i] || `بەشی ${i + 1}: تاوتوێی لێکۆڵینەوە لەسەر «${title}»`;
+  // 4. بەشە سەرەکی و تەوەرە ئەکادیمییەکان (Core Substantive Sections)
+  for (const section of sections) {
     chapters.push({
-      id: currentId++,
-      title: chTitle,
-      wordCount: 0,
-      status: 'pending',
-      content: `## ${chTitle}\n\nلەم بەشەدا بە پشتبەستن بە سەرچاوە زانستییە متمانەپێکراوەکان و تیۆرییە سەردەمییەکان، ڕەهەندە پراکتیکی و فیکرییەکان بە درێژی دەخرێنە بەر شیکاری ورد.\n\n### تەوەری سەرەکی:\nدەستنیشانکردنی هۆکارە بنەڕەتییەکان و بەراوردکردنیان لەگەڵ توێژینەوە پێشینەکان.`,
-      academicNotes: options.fieldWorkOn ? 'کاری مەیدانی و داتای ڕاستەوخۆ بەکارهاتووە.' : 'شیکاری ئەکادیمی بێ لایەنانە و بەستنەوەی سەرچاوە هاوچەرخەکان بە داتا.',
-      customTargetWords: coreWordBudget
+      ...section,
+      id: currentId++
     });
   }
 

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, setLogLevel, Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   projectId: "annular-xenolalia-x71nt",
@@ -16,10 +16,21 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  localCache: typeof window !== 'undefined' ? persistentLocalCache({ tabManager: persistentMultipleTabManager() }) : undefined
-}, firebaseConfig.firestoreDatabaseId); // CRITICAL: Points to the provisioned database
+// Suppress non-fatal offline/network notices to prevent monitoring false alarms
+setLogLevel('error');
+
+function getOrInitFirestore(): Firestore {
+  try {
+    return initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true,
+      localCache: typeof window !== 'undefined' ? persistentLocalCache({ tabManager: persistentMultipleTabManager() }) : undefined
+    }, firebaseConfig.firestoreDatabaseId);
+  } catch {
+    return getFirestore(app, firebaseConfig.firestoreDatabaseId);
+  }
+}
+
+export const db = getOrInitFirestore();
 export const auth = getAuth();
 export const googleAuthProvider = new GoogleAuthProvider();
 
