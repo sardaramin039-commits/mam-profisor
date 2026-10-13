@@ -1,18 +1,56 @@
+import { EventEmitter } from 'node:events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { enrichSourcesWithFullText, isSafeExternalHttpsUrl } from './full-text-evidence.service';
 import { isServerVerifiedFullText } from './evidence-verification-policy';
 
-const { mockLookup } = vi.hoisted(() => ({
-  mockLookup: vi.fn(async (_hostname: string) => [{ address: '93.184.216.34', family: 4 }])
+const { mockLookup, mockHttpsRequest } = vi.hoisted(() => ({
+  mockLookup: vi.fn(async (_hostname: string) => [{ address: '93.184.216.34', family: 4 }]),
+  mockHttpsRequest: vi.fn()
 }));
 
 vi.mock('node:dns/promises', () => ({ lookup: mockLookup }));
+vi.mock('node:https', () => ({ request: mockHttpsRequest }));
 
 const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
   mockLookup.mockReset();
   mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
+  mockHttpsRequest.mockReset();
+  mockHttpsRequest.mockImplementation((input: unknown, _options: unknown, callback: (response: unknown) => void) => {
+    const request = new EventEmitter() as EventEmitter & {
+      end: () => void;
+      destroy: (error?: Error) => EventEmitter;
+    };
+    request.destroy = (error?: Error) => {
+      if (error) queueMicrotask(() => request.emit('error', error));
+      return request;
+    };
+    request.end = () => {
+      void (async () => {
+        try {
+          const responseFromFetch = await globalThis.fetch(String(input));
+          const response = new EventEmitter() as EventEmitter & {
+            statusCode: number;
+            headers: Record<string, string>;
+            resume: () => void;
+          };
+          response.statusCode = responseFromFetch.status;
+          response.headers = {
+            'content-type': responseFromFetch.headers.get('content-type') || 'text/html'
+          };
+          response.resume = () => undefined;
+          callback(response);
+          const body = Buffer.from(await responseFromFetch.text());
+          response.emit('data', body);
+          response.emit('end');
+        } catch (error) {
+          request.emit('error', error instanceof Error ? error : new Error(String(error)));
+        }
+      })();
+    };
+    return request;
+  });
 });
 
 afterEach(() => {
