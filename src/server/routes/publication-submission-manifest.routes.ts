@@ -46,8 +46,13 @@ export function createPublicationSubmissionManifestRouter(): Router {
       const manifests = await listSubmissionManifests(userId, workspaceId, Number.isFinite(limit) ? limit : 50);
       res.json({ manifests });
     } catch (error) {
-      console.error('Submission manifest list error:', error);
-      res.status(500).json({ error: 'نەتوانرا manifest ـەکانی submission بخوێندرێنەوە.' });
+      console.error('Submission manifest list failed because authoritative storage is unavailable:', error);
+      res.status(503).json({
+        success: false,
+        degraded: true,
+        status: 'SUBMISSION_STORAGE_UNAVAILABLE',
+        error: 'نەتوانرا manifest ـەکان لە داتابەیسی سەرەکی بخوێندرێنەوە.'
+      });
     }
   });
 
@@ -73,8 +78,13 @@ export function createPublicationSubmissionManifestRouter(): Router {
         verification
       });
     } catch (error) {
-      console.error('Submission manifest get error:', error);
-      res.status(500).json({ error: 'نەتوانرا manifest پشکنرێت.' });
+      console.error('Submission manifest get failed because authoritative storage is unavailable:', error);
+      res.status(503).json({
+        success: false,
+        degraded: true,
+        status: 'SUBMISSION_STORAGE_UNAVAILABLE',
+        error: 'نەتوانرا manifest لە داتابەیسی سەرەکی پشکنرێت.'
+      });
     }
   });
 
@@ -205,7 +215,18 @@ export function createPublicationSubmissionManifestRouter(): Router {
         auditHeadHash: lifecycle.auditHeadHash,
         capturedAt
       });
-      await saveSubmissionManifest(manifest);
+      try {
+        await saveSubmissionManifest(manifest);
+      } catch (storageError) {
+        console.error('Submission manifest could not be durably persisted:', storageError);
+        res.status(503).json({
+          success: false,
+          degraded: true,
+          status: 'SUBMISSION_STORAGE_UNAVAILABLE',
+          error: 'مانفێستی submission لە داتابەیسی سەرەکی پاشەکەوت نەکرا؛ بە سەرکەوتوو دانەنرا.'
+        });
+        return;
+      }
       res.status(201).json({ success: true, manifest });
     } catch (error) {
       console.error('Submission manifest capture error:', error);
