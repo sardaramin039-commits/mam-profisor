@@ -25,22 +25,24 @@ export class BackupRestoreService {
   public statusMessage = signal<string | null>(null);
 
   /**
-   * Generates a complete JSON backup file of all local application data
+   * Exports a bounded, unencrypted localStorage backup; server data and IndexedDB are not included.
    */
   exportFullBackup(): void {
     if (typeof window === 'undefined') return;
     this.isExporting.set(true);
     try {
       const dump: Record<string, string> = {};
+      let totalChars = 0;
       if (window.localStorage) {
-        for (let i = 0; i < localStorage.length; i++) {
+        for (let i = 0; i < localStorage.length && Object.keys(dump).length < MAX_BACKUP_ENTRIES; i++) {
           const key = localStorage.key(i);
-          if (key && isBackupableKey(key)) {
-            const value = localStorage.getItem(key);
-            if (value !== null && value.length <= MAX_BACKUP_VALUE_CHARS) {
-              dump[key] = value;
-            }
-          }
+          if (!key || !isBackupableKey(key)) continue;
+          const value = localStorage.getItem(key);
+          if (value === null || value.length > MAX_BACKUP_VALUE_CHARS) continue;
+          const entryChars = key.length + value.length;
+          if (totalChars + entryChars > MAX_BACKUP_STORAGE_CHARS) continue;
+          dump[key] = value;
+          totalChars += entryChars;
         }
       }
 
@@ -60,7 +62,7 @@ export class BackupRestoreService {
       a.click();
       URL.revokeObjectURL(url);
 
-      this.statusMessage.set('Backup دابەزێنرا؛ کلیلی auth/token/secret لە فایلەکەدا نییە. فایلەکە هێشتا encrypted نییە و بە پارێزەوە هەڵیبگرە.');
+      this.statusMessage.set('Backup ـی localStorage دابەزێنرا؛ داتای سێرڤەر و IndexedDB ناگرێتەوە. کلیلی auth/token/secret لێی لابراوە. فایلەکە encrypted نییە، بە پارێزەوە هەڵیبگرە.');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.statusMessage.set(`هەڵە لە پاشەکەوتسازی: ${msg}`);
