@@ -92,10 +92,13 @@ export class AcademicAgentsService {
    * جێبەجێکردنی یەکێک لە ١٢ بریکارە ئەکادیمییە پسپۆڕەکە
    */
   async runAgent(agentId: string, prompt: string, context?: string): Promise<string> {
-    const systemInstruction = this.getAgentSystemPrompt(agentId);
-    const client = this.getClient();
+    if (!ACADEMIC_AGENTS_LIST.some(agent => agent.id === agentId)) {
+      throw new Error('Unknown academic agent ID.');
+    }
 
     try {
+      const systemInstruction = this.getAgentSystemPrompt(agentId);
+      const client = this.getClient();
       const response = await client.models.generateContent({
         model: 'gemini-3.8-flash',
         contents: [
@@ -110,7 +113,7 @@ export class AcademicAgentsService {
         ],
         config: {
           systemInstruction,
-          temperature: 0.3, // تۆنی بێلایەن و ئەکادیمیی هاوسەنگ
+          temperature: 0.3,
         },
       });
 
@@ -162,12 +165,13 @@ export class AcademicAgentsService {
   private getFallbackResponse(agentId: string, prompt: string): string {
     const agent = ACADEMIC_AGENTS_LIST.find(a => a.id === agentId);
     const agentName = agent ? agent.name : 'بریکاری ئەکادیمی';
+    const promptPreview = prompt.trim().slice(0, 800);
 
-    return `## ڕاپۆرتی ئەکادیمی: ${agentName}\n\n` +
-      `### شیکاری بۆ پرسیار:\n${prompt}\n\n` +
-      `> تێبینی زانستی: دەقەکە بە سەرکەوتوویی لە چوارچێوەی پێوەرە زانستییەکانی پەیمانگای هارڤارد و زانکۆ باوەڕپێکراوەکان شی کرایەوە.\n\n` +
-      `* **ڕەهەندی بنەڕەتی:** دڵنیابوونەوە لە بەکارهێنانی زاراوەسازیی یەکگرتووی کوردی و پەیوەستکردنی بە ئەدەبیاتی زانستی پێشوو.\n` +
-      `* **هەنگاوی پێشنیارکراو:** پێداچوونەوە بە بەڵگەنامە هاوتاکان و پشتڕاستکردنەوەی بەڵگە لەسەر بنەمای سەرچاوەی دەستی یەکەم.`;
+    return `[DEGRADED — AI PROVIDER UNAVAILABLE]\n` +
+      `بریکاری «${agentName}» نەتوانی شیکاریی AI جێبەجێ بکات. ئەم وەڵامە تەنها ئاگادارکردنەوەیە، نەک ڕاپۆرتی ئەکادیمی.\n\n` +
+      `داواکاریی سەرەتایی (شیکاری نەکراو): ${promptPreview}\n\n` +
+      `هیچ نمرە، بڕیار، citation، دۆزینەوەی ئەدەبیات یان پشکنینی سەرچاوە پشتڕاست نەکراوەتەوە.\n` +
+      `پەیوەندیی AI چاک بکە و دوای بەردەستبوون دووبارە داواکارییەکە جێبەجێ بکە.`;
   }
 }
 
