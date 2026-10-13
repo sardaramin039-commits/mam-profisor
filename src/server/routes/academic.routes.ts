@@ -284,7 +284,7 @@ ${JSON.stringify(sourceContext, null, 2)}
           relevance: 'retrieved-from-index',
           doi: source.doi || undefined,
           url: source.url || undefined,
-          verificationStatus: 'verified'
+          verificationStatus: 'identity-verified-not-evidence-verified'
         })),
         kurdishAcademicSynthesis: typeof parsed['kurdishAcademicSynthesis'] === 'string' ? parsed['kurdishAcademicSynthesis'] : '',
         futureAvenues: stringArray(parsed['futureAvenues']),
