@@ -158,27 +158,29 @@ ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
       },
       {
         id: 'citations_verified',
-        title: 'سەرچاوە و ژێدەرە سەلمێنراوەکان (Evidence Grounding)',
-        status: verifiedCount > 0 && verifiedCount === citationCount ? 'PASS' : verifiedCount > 0 ? 'WARN' : 'FAIL',
+        title: 'نیشانەکانی پشتڕاستکردنەوەی سەرچاوە (Server verification required)',
+        status: 'WARN',
         detail: verifiedCount > 0
-          ? `${verifiedCount} سەرچاوەی سەلمێنراو بوونیان هەیە.`
-          : 'هیچ سەرچاوەیەکی سەلمێنراو لە دەستنووسەکەدا بەردەست نییە.'
+          ? `${verifiedCount} تۆمار نیشانەی verification هەیە لە ڕووکاردا؛ ئەمە بەڵگەی پشکنینی سەربەخۆ نییە و پێش دەرکردن دەبێت لەلایەن سێرڤەرەوە دووبارە بپشکنرێن.`
+          : citationCount > 0
+            ? 'سەرچاوە هەیە، بەڵام هیچ یەکێک لەم پشکنینی ڕووکارەدا بە شێوەیەکی سەربەخۆ نەسەلمێنراوە.'
+            : 'هیچ سەرچاوەیەک نییە؛ پێش چاپ، سەرچاوەی ڕاستەقینە زیاد و پشتڕاست بکەوە.'
       },
       {
         id: 'legal_metadata',
         title: 'ژمارەی سپاردن و داتای چاپ (Legal & Deposit)',
-        status: meta.legalDepositNumber.trim() || meta.isbn.trim() ? 'PASS' : 'WARN',
+        status: 'WARN',
         detail: meta.legalDepositNumber.trim() || meta.isbn.trim()
-          ? 'زانیاریی سپاردنی کتێبخانە یان ISBN تۆمارکراوە.'
-          : 'تۆمارکردنی ژمارەی سپاردن یان ISBN بۆ چاپی ڕاستەوخۆ پێشنیار دەکرێت.'
+          ? 'داتای چاپ لە خانەکەدا نووسراوە، بەڵام لەم پشکنینی ناوخۆییەدا لەگەڵ تۆماری دەسەڵاتدار پشتڕاست نەکراوەتەوە.'
+          : 'ژمارەی سپاردن و ISBN تۆمار نەکراون؛ زانیاریی ڕاستەقینەی گۆڤار/کتێبخانە دابین بکە.'
       },
       {
         id: 'ethical_clearance',
         title: 'ڕەزامەندیی ئەخلاقی (Ethical Clearance / IRB)',
-        status: meta.ethicalClearanceCode.trim() ? 'PASS' : 'WARN',
+        status: 'WARN',
         detail: meta.ethicalClearanceCode.trim()
-          ? `کۆدی ئەخلاقیی تۆمارکراو: ${meta.ethicalClearanceCode}`
-          : 'پێویستە کۆدی پەسەندکردنی لێژنەی ئەخلاقی بنووسرێت ئەگەر لێکۆڵینەوەی مەیدانییە.'
+          ? 'کۆدێک لە خانەکەدا تۆمارکراوە، بەڵام پەسەندکردنی IRB لەم ئەپەدا پشتڕاست نەکراوەتەوە.'
+          : 'کۆدی پەسەندکردنی لێژنەی ئەخلاقی بەردەست نییە؛ ئەگەر توێژینەوەکە پێویستی پێیە، پەسەندکردنی ڕاستەقینە وەرگرە.'
       }
     ];
 
@@ -208,7 +210,7 @@ ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
     }
 
     return {
-      overallStatus: readinessPercentage >= 80 ? 'CAMERA_READY' : 'ACTION_REQUIRED',
+      overallStatus: checks.every(check => check.status === 'PASS') ? 'CAMERA_READY' : 'ACTION_REQUIRED',
       readinessPercentage,
       checks,
       preflightFingerprint,
