@@ -21,6 +21,11 @@ function isAiPath(path: string): boolean {
     normalized.startsWith('/agents/run') ||
     normalized.startsWith('/library/search') ||
     normalized.startsWith('/library/ocr') ||
+    normalized.startsWith('/multi-agent/') ||
+    normalized.startsWith('/rag/') ||
+    normalized.startsWith('/writing/') ||
+    normalized.startsWith('/defense-rehearsal/') ||
+    normalized.startsWith('/publication-defense/') ||
     normalized.startsWith('/platform/') ||
     normalized === '/refine' ||
     normalized === '/review_structure' ||
