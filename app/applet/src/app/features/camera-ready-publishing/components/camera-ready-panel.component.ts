@@ -86,8 +86,20 @@ export class AppCameraReadyPublishingPanelComponent implements OnInit {
     this.isRunningDefense.set(true);
     this.defenseError.set('');
     try {
-      const workspaceId = this.host().selectedHistoryId?.() || 'default_workspace';
+      const workspaceId = this.host().selectedHistoryId?.() || '';
+      if (!workspaceId) {
+        throw new Error('پێش ئەنجامدانی تاقیکردنەوەی بەرگری، workspace ـێکی ڕاستەقینە هەڵبژێرە.');
+      }
+
+      await this.runPreFlight();
+      const currentPreFlight = this.preFlightReport();
       const chaps = this.host().chapters?.() || [];
+      const citationSources = this.host().citationSources?.() || [];
+      const verifiedCitationCount = this.countVerifiedCitations(citationSources);
+      const hasStructuredChapters = chaps.length >= 3 && chaps.every((chapter: any) =>
+        typeof chapter.title === 'string' && chapter.title.trim().length > 0 &&
+        typeof chapter.content === 'string' && chapter.content.trim().length > 0
+      );
       const title = this.meta().titleKurdish || this.host().manuscriptTitle?.() || 'توێژینەوەی ئەکادیمی';
 
       const payload = {
@@ -98,13 +110,13 @@ export class AppCameraReadyPublishingPanelComponent implements OnInit {
           title: c.title || `بەشی ${idx + 1}`,
           order: idx + 1,
           content: c.content || '',
-          citationIds: []
+          citationIds: Array.isArray(c.citationIds) ? c.citationIds : []
         })),
-        referencedCitationCount: this.host().citationSources?.()?.length || 3,
-        verifiedCitationCount: this.host().citationSources?.()?.length || 3,
-        bibliographyCount: this.host().citationSources?.()?.length || 3,
-        structuralStatus: 'PASS' as const,
-        exportBlocked: false,
+        referencedCitationCount: citationSources.length,
+        verifiedCitationCount,
+        bibliographyCount: citationSources.length,
+        structuralStatus: hasStructuredChapters ? 'PASS' as const : 'REJECT' as const,
+        exportBlocked: currentPreFlight?.overallStatus !== 'CAMERA_READY',
         answers: Object.entries(this.defenseAnswers()).map(([questionId, answer]) => ({
           questionId,
           answer
@@ -118,7 +130,7 @@ export class AppCameraReadyPublishingPanelComponent implements OnInit {
         this.defenseSummary.set(res.answerSummary || null);
       }
     } catch (err: any) {
-      this.defenseError.set(err?.error?.error || 'نەتوانرا سێشنی بەرگری لەگەڵ سێرڤەر ئەنجام بدرێت.');
+      this.defenseError.set(err?.error?.error || err?.message || 'نەتوانرا سێشنی بەرگری لەگەڵ سێرڤەر ئەنجام بدرێت.');
     } finally {
       this.isRunningDefense.set(false);
     }
@@ -128,17 +140,67 @@ export class AppCameraReadyPublishingPanelComponent implements OnInit {
     this.defenseAnswers.update(curr => ({ ...curr, [qId]: answer }));
   }
 
-  runPreFlight(): void {
+  async runPreFlight(): Promise<void> {
     const chaps = this.host().chapters?.() || [];
     const citations = this.host().citationSources?.() || [];
-    const report = this.cameraReadyService.evaluatePreFlight(
-      this.meta(),
+    const meta = this.meta();
+    const hasStructuredChapters = chaps.length >= 3 && chaps.every((chapter: any) =>
+      typeof chapter.title === 'string' && chapter.title.trim().length > 0 &&
+      typeof chapter.content === 'string' && chapter.content.trim().length > 0
+    );
+
+    const fingerprintMaterial = {
+      metadata: meta,
+      chapters: chaps.map((chapter: any) => ({
+        id: String(chapter.id || ''),
+        title: String(chapter.title || ''),
+        content: String(chapter.content || '')
+      })),
+      citations: citations.map((citation: unknown) => {
+        if (!citation || typeof citation !== 'object' || Array.isArray(citation)) {
+          return { value: String(citation ?? '') };
+        }
+        const record = citation as Record<string, unknown>;
+        return {
+          sourceId: String(record['sourceId'] || ''),
+          title: String(record['title'] || record['sourceTitle'] || ''),
+          author: String(record['author'] || ''),
+          year: String(record['year'] || record['publicationYear'] || ''),
+          doi: String(record['doi'] || record['doiOrIsbn'] || ''),
+          identityStatus: record['identityStatus'],
+          evidenceStatus: record['evidenceStatus'],
+          evidenceType: record['evidenceType'],
+          evidenceProvenance: record['evidenceProvenance'],
+          citationEligible: record['citationEligible'],
+          evidenceText: String(record['evidenceText'] || '')
+        };
+      })
+    };
+
+    const report = await this.cameraReadyService.evaluatePreFlight(
+      meta,
       chaps.length,
       citations.length,
-      citations.length,
-      true
+      this.countVerifiedCitations(citations),
+      hasStructuredChapters,
+      fingerprintMaterial
     );
     this.preFlightReport.set(report);
+  }
+
+  private countVerifiedCitations(citations: unknown[]): number {
+    return citations.filter((citation: unknown) => {
+      if (!citation || typeof citation !== 'object' || Array.isArray(citation)) return false;
+      const record = citation as Record<string, unknown>;
+      return record['citationEligible'] === true
+        && record['identityStatus'] === 'verified'
+        && record['evidenceStatus'] === 'verified'
+        && record['evidenceType'] === 'full-text'
+        && record['evidenceProvenance'] === 'server-verified-fulltext'
+        && record['existenceVerified'] === true
+        && typeof record['evidenceText'] === 'string'
+        && record['evidenceText'].trim().length > 0;
+    }).length;
   }
 
   addAppendix(): void {
