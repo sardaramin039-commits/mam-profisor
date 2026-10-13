@@ -11,6 +11,7 @@ export interface ArgumentNode {
 }
 
 export interface ThesisStructurePlan {
+  status: 'generated' | 'degraded';
   researchQuestion: string;
   thesisStatement: string;
   arguments: ArgumentNode[];
@@ -69,16 +70,50 @@ export class AcademicWritingEngineService {
         }
       });
 
-      const parsed = JSON.parse(response.text || '{}');
+      const parsed = JSON.parse(response.text || '{}') as Record<string, unknown>;
+      const researchQuestion = typeof parsed['researchQuestion'] === 'string' ? parsed['researchQuestion'].trim() : '';
+      const thesisStatement = typeof parsed['thesisStatement'] === 'string' ? parsed['thesisStatement'].trim() : '';
+      const overallConclusion = typeof parsed['overallConclusion'] === 'string' ? parsed['overallConclusion'].trim() : '';
+      const rawArguments = parsed['arguments'];
+      if (
+        !researchQuestion ||
+        !thesisStatement ||
+        !overallConclusion ||
+        !Array.isArray(rawArguments) ||
+        rawArguments.length === 0
+      ) {
+        throw new Error('Argument architecture response is incomplete.');
+      }
+
+      const argumentsList: ArgumentNode[] = rawArguments.flatMap((raw: unknown, index: number) => {
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return [];
+        const item = raw as Record<string, unknown>;
+        const claim = typeof item['claim'] === 'string' ? item['claim'].trim() : '';
+        if (!claim) return [];
+        return [{
+          id: typeof item['id'] === 'string' && item['id'].trim() ? item['id'].trim().slice(0, 80) : `ARG-${String(index + 1).padStart(2, '0')}`,
+          claim,
+          subArguments: Array.isArray(item['subArguments']) ? item['subArguments'].filter((value): value is string => typeof value === 'string').slice(0, 20) : [],
+          evidenceQuotes: Array.isArray(item['evidenceQuotes']) ? item['evidenceQuotes'].filter((value): value is string => typeof value === 'string').slice(0, 20) : [],
+          counterArguments: Array.isArray(item['counterArguments']) ? item['counterArguments'].filter((value): value is string => typeof value === 'string').slice(0, 20) : [],
+          synthesisKurdish: typeof item['synthesisKurdish'] === 'string' ? item['synthesisKurdish'] : ''
+        }];
+      });
+      if (argumentsList.length === 0) {
+        throw new Error('Argument architecture contained no usable arguments.');
+      }
+
       return {
-        researchQuestion: parsed.researchQuestion || `پرسیاری توێژینەوەی پێشنیارکراو لەسەر «${topic}»؛ پێویستی بە پشکنینی ئەدەبیات هەیە.`,
-        thesisStatement: parsed.thesisStatement || `فرزیەی پێشنیارکراو بۆ «${topic}»؛ پێویستە بە Evidence ـی ڕاستەقینە پشتڕاست بکرێتەوە.`,
-        arguments: parsed.arguments || [],
-        overallConclusion: parsed.overallConclusion || `کۆتایی و دەرئەنجامی توێژینەوەکە دوای کۆکردنەوە و هەڵسەنگاندنی Evidence دیاری دەکرێت.`
+        status: 'generated',
+        researchQuestion,
+        thesisStatement,
+        arguments: argumentsList,
+        overallConclusion
       };
     } catch (err: any) {
       console.error('Error in AcademicWritingEngineService:', err);
       return {
+        status: 'degraded',
         researchQuestion: `پرسیاری پێشنیارکراو بۆ توێژینەوەی «${topic}»؛ پێویستی بە دیاریکردنی scope و پشکنینی ئەدەبیات هەیە.`,
         thesisStatement: `فرزیەی پێشنیارکراو بۆ «${topic}»؛ نابێت وەک دەرئەنجامی سەلمێنراو وەربگیرێت تا Evidence کۆنەکرێت و پشکنین نەکرێت.`,
         arguments: [
@@ -88,7 +123,7 @@ export class AcademicWritingEngineService {
             subArguments: ['ژێرپرسیاری یەکەم بۆ پشکنین', 'ژێرپرسیاری دووەم بۆ پشکنین'],
             evidenceQuotes: [],
             counterArguments: ['دژە-ئارگومێنتێکی ئەگەری دیاری بکە دوای خوێندنەوەی ئەدەبیات.'],
-            synthesisKurdish: 'ئەم بونیادە تەنها scaffold ـە؛ پێویستە Claim و Evidence ـەکان لە سەرچاوەی ڕەسەنەوە پشتڕاست بکرێن.'
+            synthesisKurdish: 'ئەم بونیادە تەنها ڕەشنووسێکی جێگرەوەیە؛ AI بەرهەمی نەدا و هیچ بانگەشەیەک پشتڕاست نەکراوەتەوە.'
           }
         ],
         overallConclusion: 'دەرئەنجامی کۆتایی نابێت لە fallback ـدا دروست بکرێت؛ دوای کۆکردنەوەی Evidence و پشکنینی توێژەر پڕ دەکرێتەوە.'
