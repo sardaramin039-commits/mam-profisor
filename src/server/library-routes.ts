@@ -74,10 +74,12 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
 
       res.json(parsed);
     } catch (err) {
-      console.warn('Semantic search fallback:', err);
-      res.json({
-        expandedKeywords: [req.body?.query || ''],
-        aiSummary: 'ئەنجامی گەڕانی ڕاستەوخۆ لە ئەرشیڤی ٤٠ کتێبخانەکە'
+      console.warn('Semantic library search unavailable:', err);
+      res.status(503).json({
+        success: false,
+        degraded: true,
+        retrievalStatus: 'unavailable',
+        error: 'فراوانکردنی گەڕان بە AI بەردەست نییە؛ هیچ ئەنجامی گەڕانی ڕاستەوخۆ پشتڕاست نەکراوەتەوە.'
       });
     }
   });
@@ -86,8 +88,11 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   router.post('/sync', requireAuth, requireRole('admin', 'professor'), async (_req: ExtendedAuthRequest, res: Response) => {
     try {
       const log = await crawlerEngine.triggerSync();
-      res.json({
-        message: 'هاودەمکردنی سەرچاوەکان بەسەرکەوتوویی ئەنجامدرا',
+      const synchronized = log.status === 'success';
+      res.status(synchronized ? 200 : 503).json({
+        success: synchronized,
+        status: log.status,
+        message: log.message,
         log
       });
     } catch {
