@@ -89,6 +89,20 @@ export async function linkClaimsToEvidence(
         const evidenceVerification = evidence
           ? assessEvidenceVerification({ claimText: claim, evidenceText: evidence })
           : { status: 'not_available' as const };
+        // A text match is not proof of an authentic source. Require the server-generated
+        // report to confirm identity, retrieved full text, and citation eligibility.
+        const serverEvidenceEligible = Boolean(
+          report?.identityStatus === 'verified' &&
+          report.evidenceStatus === 'verified' &&
+          report.citationEligible === true &&
+          isCitationEligibleEvidence(
+            report.evidenceStatus,
+            Boolean(evidence),
+            report.evidenceType,
+            report.evidenceProvenance
+          )
+        );
+        const claimVerified = serverEvidenceEligible && evidenceVerification.status === 'verified';
 
         return {
           claim,
@@ -97,21 +111,10 @@ export async function linkClaimsToEvidence(
           evidenceText: evidence,
           overlapScore: score,
           status: score >= 70 ? 'strong-candidate' as const : 'candidate' as const,
-          verificationStatus: evidenceVerification.status,
-          // A caller-supplied provenance label is not proof. Use the
-          // server-generated verification report as the trust anchor and then
-          // require the current claim to match this retrieved evidence excerpt.
-          claimCitationEligible:
-            report?.identityStatus === 'verified' &&
-            report.evidenceStatus === 'verified' &&
-            report.citationEligible === true &&
-            evidenceVerification.status === 'verified' &&
-            isCitationEligibleEvidence(
-              report.evidenceStatus,
-              Boolean(evidence),
-              report.evidenceType,
-              report.evidenceProvenance
-            ),
+          verificationStatus: claimVerified
+            ? 'verified' as const
+            : evidence ? 'unverified' as const : 'not_available' as const,
+          claimCitationEligible: claimVerified,
           evidenceUrl: String(source.evidenceUrl || '').trim() || undefined,
           evidenceType: source.evidenceType,
           evidenceProvenance: source.evidenceProvenance || 'unknown',
