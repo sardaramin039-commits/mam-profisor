@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { SYSTEM_PROMPT_ANALYZE_RIGOR } from '../../prompts/system-prompts';
 import { robustParseJson } from '../utils/json-repair';
@@ -15,6 +16,7 @@ import {
 
 export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+  router.use(requireAuth);
 
   /**
    * Academic Rigor & Four-Module Analysis Endpoint
