@@ -1,3 +1,4 @@
+import { markServerVerifiedFullText } from './evidence-verification-policy';
 import type { EvidenceProvenance, EvidenceType } from './evidence-verification-policy';
 
 export interface FullTextEnrichmentSource {
@@ -8,6 +9,10 @@ export interface FullTextEnrichmentSource {
   url?: string;
   pmid?: string;
   pmcid?: string;
+  doi?: string;
+  year?: string | number;
+  publicationYear?: number;
+  authors?: string[];
   openAlexId?: string;
   sourceType?: string;
   evidenceText?: string;
@@ -16,16 +21,26 @@ export interface FullTextEnrichmentSource {
   evidenceUrl?: string;
 }
 
+type EuropePmcRecord = {
+  pmcid?: string;
+  pmid?: string;
+  isOpenAccess?: string;
+  title?: string;
+  authorString?: string;
+  doi?: string;
+  firstPublicationDate?: string;
+};
+
 type EuropePmcSearchResponse = {
   resultList?: {
-    result?: Array<{
-      pmcid?: string;
-      isOpenAccess?: string;
-    }>;
+    result?: EuropePmcRecord[];
   };
 };
 
 type OpenAlexWorkResponse = {
+  title?: string;
+  doi?: string | null;
+  publication_year?: number;
   best_oa_location?: {
     is_oa?: boolean;
     landing_page_url?: string | null;
@@ -40,6 +55,49 @@ function normalize(value: string): string {
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function normalizeDoi(value?: string): string {
+  return String(value || '').trim()
+    .replace(/^https?:\/\/(dx\.)?doi\.org\//i, '')
+    .toLocaleLowerCase();
+}
+
+function titleSimilarity(a: string, b: string): number {
+  const left = new Set(normalize(a).split(' ').filter(token => token.length > 2));
+  const right = new Set(normalize(b).split(' ').filter(token => token.length > 2));
+  if (!left.size || !right.size) return 0;
+  let overlap = 0;
+  for (const token of left) if (right.has(token)) overlap++;
+  return overlap / Math.max(left.size, right.size);
+}
+
+function matchesAuthoritativeMetadata(
+  source: FullTextEnrichmentSource,
+  authoritative: { title?: string; doi?: string; pmid?: string; pmcid?: string; publicationYear?: number }
+): boolean {
+  if (!authoritative.title?.trim()) return false;
+  if (source.title?.trim() && titleSimilarity(source.title, authoritative.title) < 0.75) return false;
+
+  if (source.doi?.trim()) {
+    if (!authoritative.doi || normalizeDoi(source.doi) !== normalizeDoi(authoritative.doi)) return false;
+  }
+  if (source.pmid?.trim() && authoritative.pmid && source.pmid.replace(/\D/g, '') !== authoritative.pmid.replace(/\D/g, '')) {
+    return false;
+  }
+  if (source.pmcid?.trim() && authoritative.pmcid
+    && source.pmcid.replace(/^PMC/i, '') !== authoritative.pmcid.replace(/^PMC/i, '')) {
+    return false;
+  }
+
+  const sourceYear = Number(source.year ?? source.publicationYear);
+  const authoritativeYear = Number(authoritative.publicationYear);
+  if (Number.isFinite(sourceYear) && sourceYear > 0 && Number.isFinite(authoritativeYear) && authoritativeYear > 0
+    && Math.abs(sourceYear - authoritativeYear) > 1) {
+    return false;
+  }
+
+  return true;
 }
 
 function decodeXml(value: string): string {
@@ -70,12 +128,12 @@ function extractPmcId(source: FullTextEnrichmentSource): string {
   return match ? `PMC${match[1]}`.toUpperCase() : '';
 }
 
-async function resolveOpenAccessPmcId(
+async function resolveOpenAccessPmcRecord(
   source: FullTextEnrichmentSource
-): Promise<string> {
+): Promise<EuropePmcRecord | undefined> {
   const direct = extractPmcId(source);
   const pmid = String(source.pmid || '').trim();
-  if (!direct && !pmid) return '';
+  if (!direct && !pmid) return undefined;
 
   const query = direct
     ? `PMCID:${direct} AND OPEN_ACCESS:y`
@@ -86,21 +144,30 @@ async function resolveOpenAccessPmcId(
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(5000)
   });
-  if (!response.ok) return '';
+  if (!response.ok) return undefined;
 
   const data = await response.json() as EuropePmcSearchResponse;
   const record = data.resultList?.result?.[0];
-  if (!record?.pmcid || record.isOpenAccess === 'N') return '';
+  if (!record?.pmcid || record.isOpenAccess !== 'Y') return undefined;
 
-  return record.pmcid.trim().toUpperCase();
+  const dateYear = Number(record.firstPublicationDate?.match(/\b\d{4}\b/)?.[0] || 0);
+  const authoritative = {
+    ...record,
+    publicationYear: dateYear || undefined
+  };
+  if (!matchesAuthoritativeMetadata(source, authoritative)) return undefined;
+  return record;
 }
 
-async function resolveOpenAlexHtmlUrl(source: FullTextEnrichmentSource): Promise<string> {
+
+async function resolveOpenAlexFullTextLocation(
+  source: FullTextEnrichmentSource
+): Promise<{ url: string; title: string; doi?: string; publicationYear?: number } | undefined> {
   const rawId = String(source.openAlexId || '').trim();
-  if (!rawId) return '';
+  if (!rawId) return undefined;
 
   const workId = rawId.replace(/^https?:\/\/openalex\.org\//i, '').trim();
-  if (!/^W\d+$/i.test(workId)) return '';
+  if (!/^W\d+$/i.test(workId)) return undefined;
 
   try {
     const response = await fetch(
@@ -110,17 +177,41 @@ async function resolveOpenAlexHtmlUrl(source: FullTextEnrichmentSource): Promise
         signal: AbortSignal.timeout(5000)
       }
     );
-    if (!response.ok) return '';
+    if (!response.ok) return undefined;
 
     const data = await response.json() as OpenAlexWorkResponse;
     const location = data.best_oa_location;
-    if (location?.is_oa !== true || !location.landing_page_url) return '';
+    if (location?.is_oa !== true || !location.landing_page_url || !data.title) return undefined;
+    const authoritative = {
+      title: data.title,
+      doi: data.doi || undefined,
+      publicationYear: data.publication_year
+    };
+    if (!matchesAuthoritativeMetadata(source, authoritative)) return undefined;
 
-    return location.landing_page_url.trim();
+    const url = location.landing_page_url.trim();
+    if (!isSafeExternalHttpsUrl(url)) return undefined;
+    return { url, title: data.title, doi: data.doi || undefined, publicationYear: data.publication_year };
   } catch {
-    return '';
+    return undefined;
   }
 }
+
+function isSafeExternalHttpsUrl(rawUrl: string): boolean {
+  try {
+    const url = new URL(rawUrl);
+    const hostname = url.hostname.toLocaleLowerCase().replace(/\.$/, '');
+    if (url.protocol !== 'https:' || url.username || url.password) return false;
+    if (url.port && url.port !== '443') return false;
+    if (hostname === 'localhost' || hostname.endsWith('.localhost') || hostname.endsWith('.local')
+      || hostname.endsWith('.internal') || hostname === 'metadata.google.internal') return false;
+    if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname) || hostname.includes(':')) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 
 const MIN_HTML_FULLTEXT_CHARS = 1600;
 const MIN_HTML_PARAGRAPHS = 3;
@@ -139,14 +230,15 @@ function looksLikeFullTextHtml(body: string, text: string): boolean {
 }
 
 async function readHtmlText(url: string): Promise<string> {
-  if (!url) return '';
+  if (!url || !isSafeExternalHttpsUrl(url)) return '';
 
   try {
     const response = await fetch(url, {
       headers: {
         Accept: 'text/html,application/xhtml+xml;q=0.9,text/plain;q=0.8'
       },
-      signal: AbortSignal.timeout(7000)
+      signal: AbortSignal.timeout(7000),
+      redirect: 'error'
     });
     if (!response.ok) return '';
 
@@ -213,7 +305,8 @@ function findExcerpts(
 
 export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSource>(
   sources: T[],
-  claims: string[]
+  claims: string[],
+  options: { allowDiscoveredProviderUrls?: boolean } = {}
 ): Promise<Array<T & Partial<FullTextEnrichmentSource>>> {
   if (!Array.isArray(sources) || !claims.some(claim => normalize(claim))) {
     return sources;
@@ -221,8 +314,9 @@ export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSour
 
   return Promise.all(sources.map(async source => {
     try {
-      const pmcid = await resolveOpenAccessPmcId(source);
-      if (pmcid) {
+      const pmcRecord = await resolveOpenAccessPmcRecord(source);
+      if (pmcRecord?.pmcid) {
+        const pmcid = pmcRecord.pmcid.trim().toUpperCase();
         const url =
           `https://www.ebi.ac.uk/europepmc/webservices/rest/${encodeURIComponent(pmcid)}/fullTextXML`;
         const response = await fetch(url, {
@@ -233,37 +327,59 @@ export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSour
           const xml = await response.text();
           const match = findExcerpts(cleanFullText(xml), claims);
           if (match.excerpt) {
-            return {
+            return markServerVerifiedFullText({
               ...source,
+              title: source.title?.trim() || pmcRecord.title,
+              doi: source.doi?.trim() || pmcRecord.doi,
+              pmid: source.pmid?.trim() || pmcRecord.pmid,
+              pmcid,
               claimText: match.claim,
               evidenceText: match.excerpt,
               evidenceType: 'full-text',
               evidenceProvenance: 'server-verified-fulltext',
               evidenceUrl: url
-            } as T & Partial<FullTextEnrichmentSource>;
+            }) as T & Partial<FullTextEnrichmentSource>;
           }
         }
       }
 
-      const htmlUrl = String(
-        source.sourceType === 'OpenAlex'
-          ? await resolveOpenAlexHtmlUrl(source)
-          : source.sourceType === 'DOAJ'
-            ? source.url || source.evidenceUrl || ''
-            : ''
-      ).trim();
+      let htmlUrl = '';
+      let authoritativeTitle = '';
+      let authoritativeDoi: string | undefined;
+      let authoritativeYear: number | undefined;
+
+      if (source.sourceType === 'OpenAlex') {
+        const location = await resolveOpenAlexFullTextLocation(source);
+        htmlUrl = location?.url || '';
+        authoritativeTitle = location?.title || '';
+        authoritativeDoi = location?.doi;
+        authoritativeYear = location?.publicationYear;
+      } else if (source.sourceType === 'DOAJ' && options.allowDiscoveredProviderUrls === true) {
+        // Only call this branch for records obtained by the server's own discovery adapter,
+        // never for rawSources supplied in an HTTP request.
+        htmlUrl = source.url || source.evidenceUrl || '';
+        authoritativeTitle = source.title || '';
+        authoritativeDoi = source.doi;
+        const sourceYear = Number(source.year ?? source.publicationYear);
+        authoritativeYear = Number.isFinite(sourceYear) && sourceYear > 0 ? sourceYear : undefined;
+      }
+
+      if (!htmlUrl || !authoritativeTitle || !isSafeExternalHttpsUrl(htmlUrl)) return source;
       const htmlText = await readHtmlText(htmlUrl);
       const htmlMatch = findExcerpts(htmlText, claims);
       if (!htmlMatch.excerpt) return source;
 
-      return {
+      return markServerVerifiedFullText({
         ...source,
+        title: source.title?.trim() || authoritativeTitle,
+        doi: source.doi || authoritativeDoi,
+        year: source.year || authoritativeYear,
         claimText: htmlMatch.claim,
         evidenceText: htmlMatch.excerpt,
         evidenceType: 'full-text',
         evidenceProvenance: 'server-verified-fulltext',
         evidenceUrl: htmlUrl
-      } as T & Partial<FullTextEnrichmentSource>;
+      }) as T & Partial<FullTextEnrichmentSource>;
     } catch {
       return source;
     }
