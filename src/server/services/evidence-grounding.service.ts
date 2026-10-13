@@ -135,8 +135,6 @@ export class EvidenceGroundingService {
     }>,
     getGeminiClient: () => GoogleGenAI
   ): Promise<GroundedGenerationResult> {
-    const ai = getGeminiClient();
-
     const contextChunks = verifiedEvidenceChunks.filter(chunk =>
       !!chunk.chunkText?.trim() && !!chunk.sourceId && !!chunk.sourceTitle
     );
@@ -214,6 +212,7 @@ ${JSON.stringify(preparedContextChunks, null, 2)}
 }`;
 
     try {
+      const ai = getGeminiClient();
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
         contents: prompt,
