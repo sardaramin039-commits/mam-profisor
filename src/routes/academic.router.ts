@@ -10,7 +10,7 @@ export const academicRouter = Router();
 const searchSchema = z.object({
   query: z.object({
     q: z.string().trim().min(2).max(500),
-    limit: z.string().regex(/^\\d{1,2}$/).optional(),
+    limit: z.string().regex(/^\d{1,2}$/).optional(),
   }),
 });
 
