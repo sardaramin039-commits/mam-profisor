@@ -15,6 +15,7 @@ import type { CitationStyle } from './citation-intelligence.service';
 import { textSimilarityService } from './text-similarity.service';
 import { observabilityService } from './observability.service';
 import { researchIntelligenceService } from './research-intelligence.service';
+import { enrichSourcesWithFullText } from './full-text-evidence.service';
 
 export interface MultiAgentOrchestrationRequest {
   topic: string;
@@ -77,6 +78,18 @@ export class MultiAgentOrchestratorService {
     }
 
     log('01', 'Research Planner Agent', 'Creating discipline-specific research framework');
+
+    // Never treat fullText/content included in the request as authoritative evidence.
+    // Retrieve relevant open-access text from approved server adapters first; if no
+    // substantial text is retrieved and matched to the draft, the gate stays closed.
+    const evidenceClaims = (request.draftText || '')
+      .split(/(?<=[.!?؟])\s+|\n+/u)
+      .map(claim => claim.trim())
+      .filter(claim => claim.length >= 20)
+      .slice(0, 30);
+    const retrievalClaims = evidenceClaims.length > 0 ? evidenceClaims : [request.topic];
+    effectiveSources = await enrichSourcesWithFullText(effectiveSources, retrievalClaims);
+
     const verification = await sourceVerificationService.verifySources(effectiveSources, getGeminiClient);
     const citationEligibleSources = verification.citationEligibleSources;
     log(
@@ -101,9 +114,8 @@ export class MultiAgentOrchestratorService {
         const verified = verifiedByKey.get(id);
         if (!verified) return null;
 
-        const chunkText = String(
-          source.content ?? source.fullText ?? source.text ?? source.chunkText ?? ''
-        ).trim();
+        // Cite only the exact excerpt retrieved by the server and accepted by verification.
+        const chunkText = String(verified.evidenceText || '').trim();
         if (!chunkText) return null;
 
         return {
@@ -166,13 +178,8 @@ export class MultiAgentOrchestratorService {
         const verified = verifiedByKey.get(sourceKey(source));
         if (!verified) return null;
 
-        const evidenceText = String(
-          source.content ??
-          source.fullText ??
-          source.text ??
-          source.chunkText ??
-          ''
-        ).trim();
+        // Use server-verified retrieved text, never the raw uploaded content.
+        const evidenceText = String(verified.evidenceText || '').trim();
         if (!evidenceText) return null;
 
         return {
