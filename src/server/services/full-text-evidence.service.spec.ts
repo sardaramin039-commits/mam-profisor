@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { enrichSourcesWithFullText } from './full-text-evidence.service';
+import { isServerVerifiedFullText } from './evidence-verification-policy';
 
 const originalFetch = globalThis.fetch;
 
@@ -17,6 +18,10 @@ describe('full-text evidence enrichment', () => {
           resultList: {
             result: [{
               pmcid: 'PMC123456',
+              pmid: '12345',
+              title: 'Peer Tutoring Study',
+              doi: '10.1000/example',
+              firstPublicationDate: '2025-02-01',
               isOpenAccess: 'Y'
             }]
           }
@@ -55,6 +60,7 @@ describe('full-text evidence enrichment', () => {
     expect(enriched.doi).toBe(source.doi);
     expect(enriched.evidenceType).toBe('full-text');
     expect(enriched.evidenceProvenance).toBe('server-verified-fulltext');
+    expect(isServerVerifiedFullText(enriched)).toBe(true);
     expect(enriched.claimText).toBe(
       'peer tutoring improves academic achievement among students'
     );
@@ -69,6 +75,9 @@ describe('full-text evidence enrichment', () => {
 
       if (url.includes('/works/W123456789')) {
         return new Response(JSON.stringify({
+          title: 'Open access study',
+          doi: null,
+          publication_year: 2024,
           best_oa_location: {
             is_oa: true,
             landing_page_url: 'https://publisher.example.org/articles/oa-study'
@@ -148,7 +157,8 @@ describe('full-text evidence enrichment', () => {
 
     const [enriched] = await enrichSourcesWithFullText(
       [source],
-      ['teacher feedback can improve revision quality']
+      ['teacher feedback can improve revision quality'],
+      { allowDiscoveredProviderUrls: true }
     );
 
     expect(enriched.evidenceType).toBe('full-text');
@@ -206,7 +216,8 @@ describe('HTML full-text validation', () => {
         sourceType: 'DOAJ',
         url: 'https://example.org/abstract'
       }],
-      ['school belonging improves engagement']
+      ['school belonging improves engagement'],
+      { allowDiscoveredProviderUrls: true }
     );
 
     expect(enriched.evidenceType).toBeUndefined();
