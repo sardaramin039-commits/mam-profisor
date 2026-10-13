@@ -92,7 +92,6 @@ export class ClaimEvidenceGraphService {
     sources: any[],
     getGeminiClient: () => GoogleGenAI
   ): Promise<ClaimEvidenceGraph> {
-    const ai = getGeminiClient();
     const prompt = `بەڵگە و ادعاکان بۆ ئەم بابەتە پێشنیار بکە، بەڵام تەنها لەسەر تۆمارە سەرچاوەکانی لیستی خوارەوە.
 بابەت: ${topic}
 دەق: ${draftText}
@@ -132,6 +131,7 @@ export class ClaimEvidenceGraphService {
 }`;
 
     try {
+      const ai = getGeminiClient();
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
         contents: prompt,
