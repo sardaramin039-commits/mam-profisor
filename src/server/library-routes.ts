@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { requireRole, ExtendedAuthRequest } from './middleware/rbac.middleware';
+import { requireAuth } from '../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { crawlerEngine } from '../services/crawler-engine';
 
@@ -33,7 +34,7 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 3. POST /api/library/search - AI Semantic Search & Query Expansion
-  router.post('/search', async (req: Request, res: Response) => {
+  router.post('/search', requireAuth, async (req: Request, res: Response) => {
     try {
       const { query, language } = req.body || {};
       if (!query || typeof query !== 'string') {
@@ -82,7 +83,7 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 4. POST /api/library/sync - Trigger 24h Crawler Sync
-  router.post('/sync', requireRole('admin', 'professor'), async (_req: ExtendedAuthRequest, res: Response) => {
+  router.post('/sync', requireAuth, requireRole('admin', 'professor'), async (_req: ExtendedAuthRequest, res: Response) => {
     try {
       const log = await crawlerEngine.triggerSync();
       res.json({
@@ -95,7 +96,7 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 5. POST /api/library/ocr - OCR from a real page image
-  router.post('/ocr', async (req: Request, res: Response) => {
+  router.post('/ocr', requireAuth, async (req: Request, res: Response) => {
     try {
       const { imageDataUrl } = req.body || {};
       if (typeof imageDataUrl !== 'string' || imageDataUrl.length > 12_000_000) {
@@ -141,7 +142,7 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 6. GET /api/library/admin/stats - Admin Metrics
-  router.get('/admin/stats', requireRole('admin', 'professor'), (_req: ExtendedAuthRequest, res: Response) => {
+  router.get('/admin/stats', requireAuth, requireRole('admin', 'professor'), (_req: ExtendedAuthRequest, res: Response) => {
     try {
       const stats = crawlerEngine.getAdminStats();
       res.json(stats);
