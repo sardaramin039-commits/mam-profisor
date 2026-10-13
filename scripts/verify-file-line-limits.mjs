@@ -1,7 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-const ROOT = 'src';
+const ROOTS = ['src', 'app/applet/src'];
 const LIMIT = 500;
 const EXTENSIONS = new Set(['.ts','.tsx','.js','.mjs','.html','.css','.scss']);
 const offenders = [];
@@ -17,11 +17,13 @@ function walk(dir) {
   }
 }
 
-walk(ROOT);
+for (const root of ROOTS) {
+  if (existsSync(root)) walk(root);
+}
 offenders.sort((a,b) => b.lineCount - a.lineCount);
 if (offenders.length) {
   console.error(`File line limit exceeded (> ${LIMIT} lines):`);
   for (const item of offenders) console.error(`- ${item.lineCount}: ${item.file}`);
   process.exit(1);
 }
-console.log(`Line-limit check passed: all tracked source/template files are <= ${LIMIT} lines.`);
+console.log(`Line-limit check passed: all source/template files under ${ROOTS.filter(existsSync).join(', ')} are <= ${LIMIT} lines.`);
