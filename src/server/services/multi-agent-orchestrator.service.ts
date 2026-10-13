@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { claimEvidenceGraphService } from './claim-evidence-graph.service';
 import { sourceVerificationService } from './source-verification.service';
+import { downgradeUntrustedEvidence } from './untrusted-evidence';
 import { evidenceGroundingService } from './evidence-grounding.service';
 import { academicWritingEngineService } from './academic-writing-engine.service';
 import { academicReviewerService } from './academic-reviewer.service';
@@ -77,7 +78,10 @@ export class MultiAgentOrchestratorService {
     }
 
     log('01', 'Research Planner Agent', 'Creating discipline-specific research framework');
-    const verification = await sourceVerificationService.verifySources(effectiveSources, getGeminiClient);
+    const verification = await sourceVerificationService.verifySources(
+      effectiveSources.map(source => downgradeUntrustedEvidence(source)),
+      getGeminiClient
+    );
     const citationEligibleSources = verification.citationEligibleSources;
     log(
       '02',
@@ -110,11 +114,12 @@ export class MultiAgentOrchestratorService {
           sourceId: id,
           sourceTitle: verified.sourceTitle,
           chunkText,
-          verificationStatus: 'verified' as const,
+          verificationStatus: 'unverified' as const,
           pageNumber: String(source.pageNumber ?? source.page ?? '').trim() || undefined,
           author: verified.author,
           year: verified.year || String(source.year ?? '').trim() || undefined,
-          provenance: 'server-verified-fulltext' as const
+          evidenceType: 'snippet' as const,
+          provenance: 'user-supplied-content' as const
         };
       })
       .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -179,9 +184,10 @@ export class MultiAgentOrchestratorService {
           ...source,
           ...verified,
           identityStatus: 'verified' as const,
-          evidenceStatus: verified.evidenceStatus,
-          evidenceType: 'full-text' as const,
-          evidenceProvenance: 'server-verified-fulltext' as const,
+          evidenceStatus: 'unverified' as const,
+          evidenceType: 'snippet' as const,
+          evidenceProvenance: 'user-supplied-content' as const,
+          provenance: 'user-supplied-content' as const,
           content: evidenceText
         };
       })
