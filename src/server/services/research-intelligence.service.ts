@@ -356,8 +356,10 @@ JSON:
 
     const textOf = (result: PromiseSettledResult<{ text?: string }>): string =>
       result.status === 'fulfilled' ? String(result.value.text || '') : '';
-    const statusOf = (result: PromiseSettledResult<unknown>): 'ok' | 'degraded' =>
-      result.status === 'fulfilled' ? 'ok' : 'degraded';
+    const statusOf = (result: PromiseSettledResult<{ text?: string }>): 'ok' | 'degraded' =>
+      result.status === 'fulfilled' && typeof result.value?.text === 'string' && result.value.text.trim().length > 0
+        ? 'ok'
+        : 'degraded';
 
     const plannerRes = analysisResults[0];
     const methodologyRes = analysisResults[1];
