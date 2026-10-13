@@ -71,8 +71,7 @@ async function verifySourcesWithServerEvidence(
   const candidates = sources.slice(0, 12);
   const enriched = await Promise.all(candidates.map(async source => {
     const claim = [
-      source['claimText'], source['evidenceText'], source['content'],
-      source['chunkText'], source['text']
+      source['claimText'], source['evidenceText'], source['chunkText'], source['text']
     ].find(value => typeof value === 'string' && value.trim().length >= 20);
     if (typeof claim !== 'string') return source;
     const [result] = await enrichSourcesWithFullText([source as never], [claim.slice(0, 2000)]);
@@ -178,7 +177,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         discipline || 'توێژینەوەی گشتی',
         getGeminiClient
       );
-      res.json({ success: true, plan });
+      const generated = plan.status === 'generated';
+      res.status(generated ? 200 : 503).json({
+        success: generated,
+        status: plan.status,
+        plan
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'خەتای دروستکردنی ئارگومێنت' });
     }
@@ -214,8 +218,10 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
           }))
         }
       );
-      res.json({
-        success: true,
+      const generated = report.status === 'generated';
+      res.status(generated ? 200 : 503).json({
+        success: generated,
+        status: report.status,
         report,
         sourceVerification: {
           identityVerifiedSources: verification.verifiedSources,
