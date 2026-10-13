@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { createHash } from 'node:crypto';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -20,6 +21,7 @@ export function isTransientError(error: unknown): boolean {
 }
 
 let geminiClientsPool: GoogleGenAI[] = [];
+let geminiClientsPoolSignature = '';
 let nextClientIndex = 0;
 
 export function getGeminiClient(): GoogleGenAI {
@@ -46,7 +48,8 @@ export function getGeminiClient(): GoogleGenAI {
     } as unknown as GoogleGenAI;
   }
 
-  if (geminiClientsPool.length !== keys.length) {
+  const poolSignature = createHash('sha256').update(keys.join('\0')).digest('hex');
+  if (geminiClientsPool.length !== keys.length || poolSignature !== geminiClientsPoolSignature) {
     nextClientIndex = 0;
     geminiClientsPool = keys.map((key, index) => {
       const client = new GoogleGenAI({
@@ -131,8 +134,8 @@ export function getGeminiClient(): GoogleGenAI {
                 
                 console.warn(`[GEMINI ATTEMPT FAIL] SDK call failed for key index ${activeIndex} with model ${targetModel} (Attempt ${retry + 1}/3). Error: ${errMsg}.`);
                 
-                if (isTransient && retry < 1) {
-                  const sleepTime = 500;
+                if (isTransient && retry < 2) {
+                  const sleepTime = 500 * (retry + 1);
                   console.warn(`[GEMINI RETRY] Transient error detected. Quick retry in ${sleepTime}ms...`);
                   await delay(sleepTime);
                 } else {
@@ -157,6 +160,7 @@ export function getGeminiClient(): GoogleGenAI {
 
       return client;
     });
+    geminiClientsPoolSignature = poolSignature;
   }
 
   const client = geminiClientsPool[nextClientIndex];
