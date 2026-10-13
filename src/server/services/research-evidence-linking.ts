@@ -98,13 +98,19 @@ export async function linkClaimsToEvidence(
           overlapScore: score,
           status: score >= 70 ? 'strong-candidate' as const : 'candidate' as const,
           verificationStatus: evidenceVerification.status,
+          // A caller-supplied provenance label is not proof. Use the
+          // server-generated verification report as the trust anchor and then
+          // require the current claim to match this retrieved evidence excerpt.
           claimCitationEligible:
             report?.identityStatus === 'verified' &&
+            report.evidenceStatus === 'verified' &&
+            report.citationEligible === true &&
+            evidenceVerification.status === 'verified' &&
             isCitationEligibleEvidence(
-              evidenceVerification.status,
+              report.evidenceStatus,
               Boolean(evidence),
-              source.evidenceType,
-              source.evidenceProvenance
+              report.evidenceType,
+              report.evidenceProvenance
             ),
           evidenceUrl: String(source.evidenceUrl || '').trim() || undefined,
           evidenceType: source.evidenceType,
