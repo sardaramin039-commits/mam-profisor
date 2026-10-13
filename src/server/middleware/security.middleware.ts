@@ -130,15 +130,13 @@ export function promptSanitizerMiddleware(req: Request, res: Response, next: Nex
       /you\s+are\s+now\s+a\s+DAN/gi
     ];
 
-    let sanitized = value;
+    // Detection is advisory only. Never rewrite a researcher's prompt or quoted text:
+    // stripping a few phrases is not reliable prompt-injection defense and corrupts input.
     for (const pattern of injectionPatterns) {
-      if (pattern.test(sanitized)) {
-        detected = true;
-        sanitized = sanitized.replace(pattern, '[ instruction override removed ]');
-      }
+      if (pattern.test(value)) detected = true;
       pattern.lastIndex = 0;
     }
-    return sanitized;
+    return value;
   };
 
   if (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) {
