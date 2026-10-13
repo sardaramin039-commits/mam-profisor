@@ -1,4 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../helpers/extended-academic-tools', () => ({
+  resolveDoi: vi.fn(async () => ({
+    title: 'Authoritative Full Text Study',
+    authors: ['Author One'],
+    publishedYear: 2025,
+    publisher: 'Verified Publisher',
+    doi: '10.1000/test'
+  })),
+  lookupIsbn: vi.fn(async () => undefined),
+  lookupIssn: vi.fn(async () => undefined)
+}));
 import {
   assessEvidenceVerification,
   isCitationEligibleEvidence,
@@ -48,6 +60,26 @@ describe('citation evidence eligibility policy', () => {
       sourceId: 'SRC-TRUSTED',
       title: 'Authoritative Full Text Study',
       openAlexId: 'W123456789',
+      claimText: 'validated claim',
+      evidenceText: 'This authoritative full text contains the validated claim and supporting details.',
+      evidenceType: 'full-text' as const,
+      evidenceProvenance: 'server-verified-fulltext' as const
+    });
+
+    const result = await service.verifySources([trusted], () => ({}) as any);
+    expect(result.verifiedSources[0]?.identityStatus).toBe('verified');
+    expect(result.citationEligibleSources).toHaveLength(1);
+    expect(result.citationEligibleSources[0]?.citationEligible).toBe(true);
+  });
+
+  it('preserves server trust through successful DOI metadata normalization', async () => {
+    const service = new SourceVerificationService();
+    const trusted = markServerVerifiedFullText({
+      id: 'SRC-DOI-TRUSTED',
+      title: 'Authoritative Full Text Study',
+      doi: '10.1000/test',
+      author: 'Author One',
+      year: '2025',
       claimText: 'validated claim',
       evidenceText: 'This authoritative full text contains the validated claim and supporting details.',
       evidenceType: 'full-text' as const,
