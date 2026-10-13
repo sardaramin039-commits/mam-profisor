@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { sha256Fingerprint } from './sha256-fingerprint';
 import {
   CameraReadyReport,
   DefenseAssessment,
@@ -32,8 +33,8 @@ export class CameraReadyService {
       legalDepositNumber: '',
       isbn: '',
       doi: '',
-      ethicalClearanceCode: 'IRB-2026-KU-019',
-      ethicalStatement: 'ئەم توێژینەوەیە بەپێی ڕێنمایییە ئەخلاقییەکانی لێکۆڵینەوە لەگەڵ مرۆڤ و پاراستنی داتاکان ئەنجامدراوە.',
+      ethicalClearanceCode: '',
+      ethicalStatement: 'ڕەزامەندیی ئەخلاقی و پاراستنی داتا بەپێی پێداویستییەکانی ئەم توێژینەوەیە و یاسای زانکۆ پڕبکرێتەوە.',
       copyrightNotice: 'هەموو مافەکانی ئەم بەرهەمە بۆ نووسەر پارێزراوە © ٢٠٢٦'
     };
   }
@@ -131,13 +132,14 @@ ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
 -------------------------------------------------------`;
   }
 
-  public evaluatePreFlight(
+  public async evaluatePreFlight(
     meta: PublishingMetadata,
     chapterCount: number,
     citationCount: number,
     verifiedCount: number,
-    hasPassStatus: boolean
-  ): CameraReadyReport {
+    hasPassStatus: boolean,
+    fingerprintMaterial?: unknown
+  ): Promise<CameraReadyReport> {
     const checks: PreFlightCheckItem[] = [
       {
         id: 'title_meta',
@@ -174,21 +176,47 @@ ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
       {
         id: 'ethical_clearance',
         title: 'ڕەزامەندیی ئەخلاقی (Ethical Clearance / IRB)',
-        status: meta.ethicalClearanceCode.trim() ? 'PASS' : 'WARN',
+        status: 'WARN',
         detail: meta.ethicalClearanceCode.trim()
-          ? `کۆدی ئەخلاقیی تۆمارکراو: ${meta.ethicalClearanceCode}`
-          : 'پێویستە کۆدی پەسەندکردنی لێژنەی ئەخلاقی بنووسرێت ئەگەر لێکۆڵینەوەی مەیدانییە.'
+          ? `کۆدی ئەخلاقی تۆمارکراوە (${meta.ethicalClearanceCode})، بەڵام پەسەندکردنی ڕاستەقینە لەم پشکنینەدا پشتڕاست نەکراوەتەوە.`
+          : 'کۆدی ڕەزامەندیی ئەخلاقی بەردەست نییە؛ ئەگەر توێژینەوەکە پێویستی پێیە، پێش بڵاوکردنەوە پشتڕاستی بکەوە.'
       }
     ];
 
+    let manuscriptFingerprint = '';
+    try {
+      manuscriptFingerprint = await sha256Fingerprint(fingerprintMaterial ?? {
+        metadata: meta,
+        chapterCount,
+        citationCount,
+        verifiedCount,
+        hasPassStatus,
+        checks
+      });
+    } catch {
+      // A report without a real digest must never be called camera-ready.
+    }
+
+    checks.push({
+      id: 'manuscript_fingerprint',
+      title: 'پەنجەمۆری تێز (SHA-256)',
+      status: manuscriptFingerprint ? 'PASS' : 'FAIL',
+      detail: manuscriptFingerprint
+        ? 'پەنجەمۆری SHA-256 لە زانیارییە پێدراوەکان بەرهەم هاتووە.'
+        : 'پەنجەمۆری ڕاستەقینە بەردەست نەبوو؛ ئامادەی چاپ ناڕاگەیەنرێت.'
+    });
+
     const passCount = checks.filter(c => c.status === 'PASS').length;
     const readinessPercentage = Math.round((passCount / checks.length) * 100);
+    const hasBlockingFailure = checks.some(check => check.status === 'FAIL');
 
     return {
-      overallStatus: readinessPercentage >= 80 ? 'CAMERA_READY' : 'ACTION_REQUIRED',
+      overallStatus: readinessPercentage >= 80 && !hasBlockingFailure
+        ? 'CAMERA_READY'
+        : 'ACTION_REQUIRED',
       readinessPercentage,
       checks,
-      manuscriptFingerprint: 'SHA256:' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+      manuscriptFingerprint: manuscriptFingerprint || 'UNAVAILABLE',
       generatedAt: new Date().toLocaleDateString('ckb-IQ')
     };
   }
