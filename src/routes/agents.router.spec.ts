@@ -25,11 +25,17 @@ import { agentsRouter } from './agents.router';
 
 let server: Server | undefined;
 
-function buildTestServer(): Server {
+async function buildTestServer(): Promise<Server> {
   const app = express();
   app.use(express.json());
   app.use('/api/agents', agentsRouter);
-  return app.listen(0);
+
+  const listeningServer = app.listen(0);
+  await new Promise<void>((resolve, reject) => {
+    listeningServer.once('listening', resolve);
+    listeningServer.once('error', reject);
+  });
+  return listeningServer;
 }
 
 async function baseUrl(): Promise<string> {
@@ -46,7 +52,7 @@ async function closeServer(): Promise<void> {
   server = undefined;
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetAllMocks();
   mocks.requireAuth.mockImplementation((
     req: Request,
@@ -61,7 +67,7 @@ beforeEach(() => {
     next();
   });
   mocks.runAgent.mockResolvedValue({ status: 'generated', content: 'وەڵامی تاقیکراو' });
-  server = buildTestServer();
+  server = await buildTestServer();
 });
 
 afterEach(async () => {
