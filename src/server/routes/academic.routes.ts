@@ -204,7 +204,9 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
         source: source.source,
         doi: source.doi || '',
         url: source.url || '',
-        verificationStatus: 'verified'
+        identityVerificationStatus: 'verified',
+        evidenceVerificationStatus: 'unverified',
+        citationEligible: false
       }));
 
       if (sources.length === 0) {
@@ -284,14 +286,18 @@ ${JSON.stringify(sourceContext, null, 2)}
           relevance: 'retrieved-from-index',
           doi: source.doi || undefined,
           url: source.url || undefined,
-          verificationStatus: 'verified'
+          verificationStatus: 'identity-verified-only',
+          evidenceVerificationStatus: 'unverified',
+          citationEligible: false
         })),
         kurdishAcademicSynthesis: typeof parsed['kurdishAcademicSynthesis'] === 'string' ? parsed['kurdishAcademicSynthesis'] : '',
         futureAvenues: stringArray(parsed['futureAvenues']),
         sourceIntegrity: {
           retrievalStatus: 'index-results',
           sourceCount: sources.length,
-          verificationStatus: 'verified'
+          identityVerifiedCount: verification.verifiedSources.length,
+          citationEligibleCount: verification.citationEligibleSources.length,
+          verificationStatus: 'identity-verified-only'
         }
       });
     } catch (error) {
