@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { requireRole, ExtendedAuthRequest } from './middleware/rbac.middleware';
 import { GoogleGenAI } from '@google/genai';
 import { crawlerEngine } from '../services/crawler-engine';
+import { requireAuth } from '../middleware/auth';
 
 export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
