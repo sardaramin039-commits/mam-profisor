@@ -24,6 +24,10 @@ let geminiClientsPool: GoogleGenAI[] = [];
 let geminiClientsPoolSignature = '';
 let nextClientIndex = 0;
 
+export function geminiKeyPoolSignature(keys: string[]): string {
+  return createHash('sha256').update(keys.join(String.fromCharCode(0))).digest('hex');
+}
+
 export function getGeminiClient(): GoogleGenAI {
   const keysEnv = process.env['GEMINI_API_KEY'];
   if (!keysEnv || keysEnv.trim() === '') {
@@ -48,7 +52,7 @@ export function getGeminiClient(): GoogleGenAI {
     } as unknown as GoogleGenAI;
   }
 
-  const poolSignature = createHash('sha256').update(keys.join('\0')).digest('hex');
+  const poolSignature = geminiKeyPoolSignature(keys);
   if (geminiClientsPool.length !== keys.length || poolSignature !== geminiClientsPoolSignature) {
     nextClientIndex = 0;
     geminiClientsPool = keys.map((key, index) => {
