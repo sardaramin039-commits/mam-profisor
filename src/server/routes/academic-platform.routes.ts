@@ -246,7 +246,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         text || '',
         getGeminiClient
       );
-      res.json({ success: true, analysis });
+      const generated = analysis.status === 'generated';
+      res.status(generated ? 200 : 503).json({
+        success: generated,
+        status: analysis.status,
+        analysis
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'خەتای شیکاری زمانی کوردی' });
     }
