@@ -88,9 +88,11 @@ export function isCitationEligibleEvidence(
   evidenceStatus: EvidenceVerificationStatus,
   hasEvidence: boolean,
   evidenceType: EvidenceType | undefined,
-  evidenceProvenance: EvidenceProvenance | undefined
+  evidenceProvenance: EvidenceProvenance | undefined,
+  trustedSource?: unknown
 ): boolean {
   return (
+    isServerVerifiedFullText(trustedSource) &&
     evidenceStatus === 'verified' &&
     hasEvidence &&
     evidenceType === 'full-text' &&
