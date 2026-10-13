@@ -131,7 +131,7 @@ ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
 -------------------------------------------------------`;
   }
 
-  public evaluatePreFlight(
+  public async evaluatePreFlight(
     meta: PublishingMetadata,
     chapterCount: number,
     citationCount: number,
