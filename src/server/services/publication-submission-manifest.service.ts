@@ -141,36 +141,46 @@ function ref(userId: string, workspaceId: string) {
 }
 
 export async function saveSubmissionManifest(manifest: SubmissionManifest): Promise<void> {
-  submissionMemoryStore.saveManifest(manifest);
-  try {
-    const reference = adminDb.collection('publication_submission_manifests').doc(manifest.userId)
-      .collection('items').doc(manifest.id);
-    await reference.create(manifest);
-  } catch { /* offline fallback */ }
-}
+  const reference = adminDb.collection('publication_submission_manifests').doc(manifest.userId)
+    .collection('items').doc(manifest.id);
 
-export async function listSubmissionManifests(userId: string, workspaceId: string, limit = 50): Promise<SubmissionManifest[]> {
   try {
-    const snapshot = await ref(userId, workspaceId).limit(100).get();
-    const items = snapshot.docs.map(doc => doc.data() as SubmissionManifest)
-      .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
-      .slice(0, Math.min(Math.max(limit, 1), 100));
-    for (const item of items) submissionMemoryStore.saveManifest(item);
-    return items;
-  } catch {
-    return submissionMemoryStore.listManifests(userId, workspaceId, limit) as unknown as SubmissionManifest[];
+    await reference.create(manifest);
+    submissionMemoryStore.saveManifest(manifest);
+    return;
+  } catch (error: unknown) {
+    const code = error && typeof error === 'object'
+      ? String((error as { code?: unknown }).code ?? '')
+      : '';
+    if (!['6', 'already-exists', 'ALREADY_EXISTS'].includes(code)) throw error;
+
+    // Deterministic IDs make retries idempotent only when the stored immutable
+    // manifest matches. Never treat an in-memory copy as a durable submission receipt.
+    const snapshot = await reference.get();
+    if (!snapshot.exists) throw error;
+    const existing = snapshot.data() as SubmissionManifest;
+    const verification = verifySubmissionManifest(existing);
+    if (verification.status !== 'VERIFIED' || existing.immutableHash !== manifest.immutableHash) {
+      throw new Error('An immutable manifest with this ID already exists but does not match.');
+    }
+    submissionMemoryStore.saveManifest(existing);
   }
 }
 
+export async function listSubmissionManifests(userId: string, workspaceId: string, limit = 50): Promise<SubmissionManifest[]> {
+  const safeLimit = Number.isFinite(limit) ? Math.min(Math.max(Math.floor(limit), 1), 100) : 50;
+  const snapshot = await ref(userId, workspaceId).limit(safeLimit).get();
+  const items = snapshot.docs.map(doc => doc.data() as SubmissionManifest)
+    .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
+  for (const item of items) submissionMemoryStore.saveManifest(item);
+  return items;
+}
+
 export async function getSubmissionManifest(userId: string, manifestId: string): Promise<SubmissionManifest | null> {
-  try {
-    const snapshot = await adminDb.collection('publication_submission_manifests').doc(userId)
-      .collection('items').doc(manifestId).get();
-    if (snapshot.exists) {
-      const item = snapshot.data() as SubmissionManifest;
-      submissionMemoryStore.saveManifest(item);
-      return item;
-    }
-  } catch { /* offline fallback */ }
-  return (submissionMemoryStore.getManifest(userId, manifestId) as unknown as SubmissionManifest) ?? null;
+  const snapshot = await adminDb.collection('publication_submission_manifests').doc(userId)
+    .collection('items').doc(manifestId).get();
+  if (!snapshot.exists) return null;
+  const item = snapshot.data() as SubmissionManifest;
+  submissionMemoryStore.saveManifest(item);
+  return item;
 }
