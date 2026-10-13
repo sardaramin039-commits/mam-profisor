@@ -43,6 +43,7 @@ describe('claim-to-evidence citation eligibility', () => {
 
     expect(links).toHaveLength(1);
     expect(links[0]?.claimCitationEligible).toBe(false);
+    expect(links[0]?.verificationStatus).toBe('unverified');
   });
 
   it('allows a claim only when the server report verifies the source and evidence', async () => {
