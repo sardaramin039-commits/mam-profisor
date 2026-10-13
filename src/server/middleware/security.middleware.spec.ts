@@ -21,6 +21,25 @@ function createResponse() {
 }
 
 describe('security middleware', () => {
+  it('sets a restrictive CSP without unsafe script execution', () => {
+    const response = createResponse();
+    const request = {
+      method: 'GET',
+      protocol: 'https',
+      headers: {},
+      get: (name: string) => name.toLowerCase() === 'host' ? 'app.example.com' : undefined
+    };
+
+    securityHeadersMiddleware(request as never, response as never, () => undefined);
+    const csp = response.headers.get('Content-Security-Policy') || '';
+
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain("base-uri 'self'");
+    expect(csp).toContain("script-src 'self'");
+    expect(csp).not.toContain("'unsafe-eval'");
+    expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+  });
+
   it('rejects lookalike origins instead of using suffix matching', () => {
     const previous = process.env['ALLOWED_ORIGINS'];
     process.env['ALLOWED_ORIGINS'] = 'https://app.example.com';
