@@ -67,24 +67,24 @@ ${trimmed.slice(0, 12000)}
           detailedAnalysis?: string;
         }>(response.text || '{}');
 
-        const score = typeof parsed?.originalityScore === 'number' && Number.isFinite(parsed.originalityScore)
-          ? Math.max(0, Math.min(100, Math.round(parsed.originalityScore)))
-          : null;
-
-        const risk: 'نزم' | 'مامناوەند' | 'بەرز' | 'نەپشکنراو' =
-          parsed?.plagiarismRisk === 'بەرز' || parsed?.plagiarismRisk === 'مامناوەند' || parsed?.plagiarismRisk === 'نزم'
+        const modelRisk = parsed?.plagiarismRisk === 'بەرز' ||
+          parsed?.plagiarismRisk === 'مامناوەند' ||
+          parsed?.plagiarismRisk === 'نزم'
             ? parsed.plagiarismRisk
-            : score === null ? 'نەپشکنراو' : score >= 80 ? 'نزم' : score >= 55 ? 'مامناوەند' : 'بەرز';
+            : null;
 
+        // Without a real comparison corpus, the AI's estimated percentage or match
+        // count is not a plagiarism measurement. Keep the actual score unassessed.
         res.json({
-          originalityScore: score,
-          plagiarismRisk: risk,
-          matchesCount: typeof parsed?.matchesCount === 'number' && Number.isFinite(parsed.matchesCount)
-            ? Math.max(0, Math.round(parsed.matchesCount))
-            : null,
-          analysisMode: 'ai-heuristic-no-external-corpus',
-          corpusCoverage: localResult.corpusCoverage,
-          limitation: 'ئەمە پێشبینیی AI ـە؛ بەراورد لەگەڵ corpus ـی سەرچاوە ڕاستەقینە نەکراوە و بەڵگەی پاکبوونەوە لە plagiarism نییە.',
+          success: true,
+          status: 'qualitative-review-only',
+          originalityScore: null,
+          plagiarismRisk: 'نەپشکنراو',
+          aiQualitativeRiskSuggestion: modelRisk,
+          matchesCount: null,
+          analysisMode: 'ai-qualitative-no-external-corpus',
+          corpusCoverage: 0,
+          limitation: 'هیچ corpus ـی سەرچاوەی ڕاستەقینە بۆ بەراورد بەستراو نییە؛ نمرەی ڕەسەنایەتی، ڕێژەی plagiarism و ژمارەی match ناتوانرێت پشتڕاست بکرێتەوە.',
           detailedAnalysis: parsed?.detailedAnalysis || 'AI شیکاریی وردی دابین نەکرد؛ بڕیارێکی پشتڕاستکراو لەسەر ڕەسەنایەتی ناتوانرێت بدرێت.'
         });
       } catch (aiErr) {
