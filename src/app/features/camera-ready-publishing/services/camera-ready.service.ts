@@ -188,7 +188,7 @@ ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
       overallStatus: readinessPercentage >= 80 ? 'CAMERA_READY' : 'ACTION_REQUIRED',
       readinessPercentage,
       checks,
-      manuscriptFingerprint: 'SHA256:' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+      manuscriptFingerprint: 'SHA256:' + Date.now().toString(16).toUpperCase(),
       generatedAt: new Date().toLocaleDateString('ckb-IQ')
     };
   }

@@ -13,6 +13,10 @@ import { AcademicIndexSearchComponent } from './academic-index-search.component'
 import { DialecticalThesisEngineComponent } from './dialectical-thesis-engine.component';
 import { AcademicPlagiarismCheckerComponent } from './academic-plagiarism-checker.component';
 import { AcademicResearchArchitectureComponent } from './academic-research-architecture.component';
+import { KurdishTerminologyRefinerComponent } from './kurdish-terminology-refiner.component';
+import { InTextCitationPrompterComponent } from './in-text-citation-prompter.component';
+import { ProjectCitationManagerComponent } from './project-citation-manager.component';
+import { AdvancedAcademicSearchComponent } from './advanced-academic-search.component';
 import { ChapterItemModel as ChapterItem } from '../../domain/models';
 
 export interface EssentialAcademicTool {
@@ -104,7 +108,11 @@ const FIFTY_TOOLS_DATA: EssentialAcademicTool[] = [
     AcademicIndexSearchComponent,
     DialecticalThesisEngineComponent,
     AcademicPlagiarismCheckerComponent,
-    AcademicResearchArchitectureComponent
+    AcademicResearchArchitectureComponent,
+    KurdishTerminologyRefinerComponent,
+    InTextCitationPrompterComponent,
+    ProjectCitationManagerComponent,
+    AdvancedAcademicSearchComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -187,6 +195,26 @@ const FIFTY_TOOLS_DATA: EssentialAcademicTool[] = [
                     class="px-2.5 py-1 rounded-xl border border-slate-800 transition cursor-pointer shrink-0">
               Harvard & APA
             </button>
+            <button (click)="activeToolTab.set('refiner')"
+                    [class]="activeToolTab() === 'refiner' ? 'bg-amber-600 text-white font-bold' : 'bg-slate-950 text-slate-400 hover:text-slate-200'"
+                    class="px-2.5 py-1 rounded-xl border border-slate-800 transition cursor-pointer shrink-0">
+              بژارکەری زاراوەسازی
+            </button>
+            <button (click)="activeToolTab.set('citation_linker')"
+                    [class]="activeToolTab() === 'citation_linker' ? 'bg-cyan-600 text-white font-bold' : 'bg-slate-950 text-slate-400 hover:text-slate-200'"
+                    class="px-2.5 py-1 rounded-xl border border-slate-800 transition cursor-pointer shrink-0">
+              هاوپێچی ژێدەر
+            </button>
+            <button (click)="activeToolTab.set('citation_manager')"
+                    [class]="activeToolTab() === 'citation_manager' ? 'bg-blue-600 text-white font-bold' : 'bg-slate-950 text-slate-400 hover:text-slate-200'"
+                    class="px-2.5 py-1 rounded-xl border border-slate-800 transition cursor-pointer shrink-0">
+              بەڕێوەبەری سەرچاوە و PDF
+            </button>
+            <button (click)="activeToolTab.set('advanced_search')"
+                    [class]="activeToolTab() === 'advanced_search' ? 'bg-purple-600 text-white font-bold' : 'bg-slate-950 text-slate-400 hover:text-slate-200'"
+                    class="px-2.5 py-1 rounded-xl border border-slate-800 transition cursor-pointer shrink-0">
+              گەڕانی پێشکەوتوو
+            </button>
           </div>
         </div>
 
@@ -212,6 +240,42 @@ const FIFTY_TOOLS_DATA: EssentialAcademicTool[] = [
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'formatter') {
           <app-bibliographic-reference-formatter [activeChapter]="activeChapter()"></app-bibliographic-reference-formatter>
+        }
+
+        @if (activeToolTab() === 'all' || activeToolTab() === 'refiner') {
+          <app-kurdish-terminology-refiner [activeChapter]="activeChapter()"></app-kurdish-terminology-refiner>
+        }
+
+        @if (activeToolTab() === 'all' || activeToolTab() === 'citation_linker') {
+          <app-in-text-citation-prompter [activeChapter]="activeChapter()"></app-in-text-citation-prompter>
+        }
+
+        @if (activeToolTab() === 'all' || activeToolTab() === 'citation_manager') {
+          <app-project-citation-manager [activeChapter]="activeChapter()"></app-project-citation-manager>
+        }
+
+        @if (activeToolTab() === 'all' || activeToolTab() === 'advanced_search') {
+          <app-advanced-academic-search [activeChapter]="activeChapter()"></app-advanced-academic-search>
+        }
+
+        @if (activeToolTab() === 'all' || activeToolTab() === 'defense_simulator') {
+          <app-thesis-defense-simulator [chapters]="activeChapter() ? [activeChapter()!] : []"></app-thesis-defense-simulator>
+        }
+
+        @if (activeToolTab() === 'all' || activeToolTab() === 'appendices') {
+          <app-thesis-appendices-generator [chapters]="activeChapter() ? [activeChapter()!] : []"></app-thesis-appendices-generator>
+        }
+
+        @if (activeToolTab() === 'all' || activeToolTab() === 'uni_layout') {
+          <app-university-layout-formatter></app-university-layout-formatter>
+        }
+
+        @if (activeToolTab() === 'all' || activeToolTab() === 'tone_analyzer') {
+          <app-academic-tone-analyzer [chapters]="activeChapter() ? [activeChapter()!] : []"></app-academic-tone-analyzer>
+        }
+
+        @if (activeToolTab() === 'all' || activeToolTab() === 'terminology_manager') {
+          <app-academic-terminology-manager [activeChapter]="activeChapter()"></app-academic-terminology-manager>
         }
 
         @if (activeToolTab() === 'all') {
@@ -321,6 +385,7 @@ const FIFTY_TOOLS_DATA: EssentialAcademicTool[] = [
 export class FiftyAcademicToolsSuiteComponent {
   activeChapter = input<ChapterItem | null>(null);
 
+  activeToolTab = signal<string>('all');
   allTools = signal<EssentialAcademicTool[]>(FIFTY_TOOLS_DATA);
   selectedCategory = signal<string>('all');
 

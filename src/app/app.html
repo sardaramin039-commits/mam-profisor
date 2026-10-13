@@ -1,5 +1,19 @@
-<div class="mam-app-root" [class.academic-dark]="academicDarkMode()" dir="rtl" id="scholarly-workspace">
+<div class="mam-app-root" [class.academic-dark]="academicDarkMode()" [class.focus-mode]="isFocusMode()" dir="rtl" id="scholarly-workspace">
   <app-global-toast-container></app-global-toast-container>
+
+  @if (isFocusMode() && viewMode() === 'workspace') {
+    <div class="fixed top-3 left-4 z-[999] flex items-center gap-2">
+      <button 
+        type="button"
+        (click)="toggleFocusMode()"
+        class="px-3.5 py-1.5 bg-black/90 hover:bg-black text-white text-xs font-serif font-bold rounded-full shadow-lg border border-amber-400/40 backdrop-blur-md flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95"
+        title="دەرچوون لە دۆخی سەرنج (Exit Focus Mode) - دەتوانیت دوگمەی Esc-یش دابگریت">
+        <mat-icon class="!text-xs !w-4 !h-4 text-amber-400">fullscreen_exit</mat-icon>
+        <span>دەرچوون لە دۆخی سەرنج</span>
+        <span class="text-[10px] bg-white/20 px-1.5 py-0.2 rounded font-mono text-amber-200">Esc</span>
+      </button>
+    </div>
+  }
 
   @if (viewMode() === 'splash') {
     <app-splash-screen

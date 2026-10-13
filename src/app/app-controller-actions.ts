@@ -416,6 +416,10 @@ export abstract class AppControllerActions extends AppControllerBase {
   insertAcademicHeading(textarea: HTMLTextAreaElement, level: string) { this.bridge.insertAcademicHeading(textarea, level); }
   updateChapterContent(id: number, content: string, msg?: string) {
     this.editorService.updateChapterContent(id, content, msg || 'تۆمارکردنی گۆڕانکاری');
+    this.editorSyncFeedback.scheduleSync(this.editorService.chapters(), this.refineForm.value, this.manuscriptTitle());
+  }
+  forceManualSyncNow() {
+    this.editorSyncFeedback.forceSyncNow(this.editorService.chapters(), this.refineForm.value, this.manuscriptTitle());
   }
   applySoranispellFixInViewedChapter() { this.bridge.applySoranispellFixInViewedChapter(); }
   encryptChapterInVault(c: any, pwd: any) { this.bridge.encryptChapterInVault(c, pwd); }

@@ -30,7 +30,7 @@ export interface FormattedReferenceResult {
  */
 export function parseRawBibliographicText(rawText: string): ParsedBibliographicReference {
   const cleaned = (rawText || '').trim().replace(/\r\n/g, ' ').replace(/\n/g, ' ');
-  const id = `ref-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+  const id = `ref-${Date.now()}-${cleaned.length.toString(16)}`;
 
   // Detect language
   const isKurdish = /[\u0600-\u06FF]/.test(cleaned);

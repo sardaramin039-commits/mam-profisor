@@ -49,7 +49,7 @@ export class AcademicPerfectionService {
       hasConflictOfInterest: false,
       conflictDetails: 'هیچ ململانێیەکی بەرژەوەندی لەم توێژینەوەیەدا نییە (No conflict of interest).',
       fundingStatement: 'ئەم توێژینەوەیە خەرجی و پاڵپشتیی تایبەتی خۆیی بووە (Self-funded research).',
-      verificationHash: 'AUTH-SHA256-' + Math.random().toString(36).substring(2, 9).toUpperCase()
+      verificationHash: 'AUTH-SHA256-' + Date.now().toString(16).toUpperCase()
     };
   }
 

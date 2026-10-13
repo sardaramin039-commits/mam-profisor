@@ -32,9 +32,19 @@
           <h1>ناوەندی نووسینی زانستی</h1>
           <p>لە ڕێکخستنی بیرۆکەوە بۆ دەقی ڕێکخراو، بەڵگەدار و ئامادەی پێداچوونەوە.</p>
         </div>
-        <div class="mam-page-meta">
+        <div class="mam-page-meta flex items-center gap-2 flex-wrap">
           <span><mat-icon>description</mat-icon>{{ chapters().length }} بەش</span>
           <span><mat-icon>translate</mat-icon>سۆرانی</span>
+          <app-editor-auto-save-status (manualSyncRequested)="forceManualSyncNow()"></app-editor-auto-save-status>
+          <button 
+            type="button"
+            (click)="toggleFocusMode()"
+            class="px-2.5 py-1 rounded-lg text-xs font-serif font-bold transition flex items-center gap-1.5 cursor-pointer border shadow-2xs"
+            [class]="isFocusMode() ? 'bg-amber-600 text-white border-amber-700' : 'bg-white hover:bg-stone-100 text-stone-800 border-stone-300'"
+            title="دۆخی سەرنج (Focus Mode) - لابردنی هەموو بەربەستەکان بۆ نووسینی ئارام بە یەک کرتە">
+            <mat-icon class="!text-xs !w-3.5 !h-3.5">{{ isFocusMode() ? 'fullscreen_exit' : 'center_focus_strong' }}</mat-icon>
+            <span>{{ isFocusMode() ? 'دەرچوون لە سەرنج' : 'دۆخی سەرنج' }}</span>
+          </button>
         </div>
       </section>
 
@@ -70,7 +80,7 @@
       }
 
       <div class="mam-editor-grid">
-        <section class="mam-editor-section">
+        <section class="mam-editor-section" [class.hidden]="isFocusMode()">
           <div class="mam-section-heading">
             <div>
               <span class="mam-number">٠١</span>
@@ -80,8 +90,8 @@
           <app-window-one [host]="host"></app-window-one>
         </section>
 
-        <section class="mam-editor-section">
-          <div class="mam-section-heading">
+        <section class="mam-editor-section" [class.col-span-full]="isFocusMode()">
+          <div class="mam-section-heading" [class.hidden]="isFocusMode()">
             <div>
               <span class="mam-number">٠٢</span>
               <div><h2>نووسین و پشکنینی بەشەکان</h2><p>دەقی بەشەکان، سەرچاوەکان و پێداچوونەوە لێرە کۆکراونەتەوە.</p></div>
@@ -91,7 +101,7 @@
         </section>
       </div>
 
-      <details class="mam-secondary-tools">
+      <details class="mam-secondary-tools" [class.hidden]="isFocusMode()">
         <summary><mat-icon>fact_check</mat-icon><span>پشکنینی کوالیتیی نووسین</span><small>زمان، پێکهاتە، بەڵگە، توندوتۆڵی و پێشنیاری چاکسازی</small></summary>
         <div class="mam-secondary-grid">
           <app-vip-writing-quality

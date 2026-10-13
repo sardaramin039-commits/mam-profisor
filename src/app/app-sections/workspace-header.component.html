@@ -2,11 +2,13 @@
   [mainTab]="mainTab()"
   [currentUser]="currentUser()"
   [academicDarkMode]="academicDarkMode()"
+  [isFocusMode]="isFocusMode()"
   (goSplash)="viewMode.set('splash')"
   (selectTab)="mainTab.set($event)"
   (loginWithGoogle)="loginWithGoogle()"
   (logout)="logout()"
   (openReadingMode)="isReadingModeOpen.set(true)"
   (toggleDarkMode)="toggleAcademicDarkMode()"
-  (clearEditor)="clearEditor()">
+  (clearEditor)="clearEditor()"
+  (toggleFocusMode)="toggleFocusMode()">
 </app-dashboard-header>

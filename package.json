@@ -6,7 +6,7 @@
   "packageManager": "npm@10.9.8",
   "scripts": {
     "ng": "ng",
-    "dev": "node --max-old-space-size=3072 node_modules/@angular/cli/bin/ng.js serve --host 0.0.0.0 --port 3000",
+    "dev": "node --max-old-space-size=3072 node_modules/@angular/cli/bin/ng.js serve",
     "start": "node --max-old-space-size=3072 node_modules/@angular/cli/bin/ng.js serve --host 0.0.0.0 --port 3000",
     "build": "node --max-old-space-size=3072 node_modules/@angular/cli/bin/ng.js build",
     "watch": "ng build --watch --configuration development",
@@ -82,7 +82,6 @@
     "node": ">=22.22.2",
     "npm": ">=10.9.0"
   },
-  "packageManager": "npm@10.9.8",
   "description": "Kurdish-first academic research and thesis workspace.",
   "overrides": {
     "@grpc/grpc-js": "1.14.5",

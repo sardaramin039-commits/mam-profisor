@@ -1,12 +1,31 @@
         <!-- ======================= WINDOW 2 (Sequential Document Preview & Output - Left layout in RTL is right col) ======================= -->
         <section id="window-2-section" class="mam-module-card">
           
-          <div class="mam-module-header">
+          <div class="mam-module-header flex items-center justify-between flex-wrap gap-2">
             <div class="flex items-center gap-2">
               <mat-icon>article</mat-icon>
               <h3 class="font-serif font-bold text-sm text-black">نووسین، بەڵگە و پشکنین</h3>
             </div>
-            <span class="mam-module-tag">هەنگاوی ٢</span>
+            
+            <div class="flex items-center gap-2 flex-wrap">
+              <!-- Subtle Auto-Saving status indicator in the top right of the editor interface -->
+              <app-editor-auto-save-status 
+                (manualSyncRequested)="forceManualSyncNow()">
+              </app-editor-auto-save-status>
+
+              <!-- Single-click Focus Mode Toggle Button -->
+              <button 
+                type="button" 
+                (click)="toggleFocusMode()"
+                class="px-2.5 py-1 rounded-lg text-xs font-serif font-bold transition flex items-center gap-1.5 cursor-pointer border shadow-2xs"
+                [class]="isFocusMode() ? 'bg-amber-600 text-white border-amber-700' : 'bg-white hover:bg-stone-100 text-stone-800 border-stone-300'"
+                title="دۆخی سەرنج (Focus Mode) - لابردنی هەموو بەربەستەکان بۆ نووسینی ئارام بە یەک کرتە">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">{{ isFocusMode() ? 'fullscreen_exit' : 'center_focus_strong' }}</mat-icon>
+                <span>{{ isFocusMode() ? 'دەرچوون لە سەرنج' : 'دۆخی سەرنج' }}</span>
+              </button>
+
+              <span class="mam-module-tag">هەنگاوی ٢</span>
+            </div>
           </div>
 
           <!-- Subtab Navigation Switcher Bar -->

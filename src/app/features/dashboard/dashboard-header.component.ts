@@ -69,6 +69,11 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
           <span>هاوبەشی و فایل</span>
         </button>
 
+        <button type="button" class="mam-sidebar-action" (click)="toggleFocusMode.emit(); closeMobileNav()">
+          <mat-icon>{{ isFocusMode() ? 'fullscreen_exit' : 'center_focus_strong' }}</mat-icon>
+          <span>{{ isFocusMode() ? 'دەرچوون لە سەرنج' : 'دۆخی سەرنج (Focus Mode)' }}</span>
+        </button>
+
         <button type="button" class="mam-sidebar-action" (click)="openReadingMode.emit(); closeMobileNav()">
           <mat-icon>menu_book</mat-icon>
           <span>دۆخی خوێندنەوە</span>
@@ -131,6 +136,11 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
           <span>جریانەی بەڵگە و پشکنین</span>
         </div>
 
+        <button type="button" class="mam-top-action" [class.primary]="isFocusMode()" (click)="toggleFocusMode.emit()" title="دۆخی سەرنج (Focus Mode) - نووسینی ئارام و بێ بەربەست">
+          <mat-icon>{{ isFocusMode() ? 'fullscreen_exit' : 'center_focus_strong' }}</mat-icon>
+          <span>{{ isFocusMode() ? 'دەرچوون لە سەرنج' : 'دۆخی سەرنج' }}</span>
+        </button>
+
         <button type="button" class="mam-top-action" (click)="openReadingMode.emit()" title="دۆخی خوێندنەوە">
           <mat-icon>menu_book</mat-icon>
           <span>خوێندنەوە</span>
@@ -155,6 +165,7 @@ export class DashboardHeaderComponent {
   mainTab = input<MainTab>('editor');
   currentUser = input<any>(null);
   academicDarkMode = input(false);
+  isFocusMode = input(false);
 
   goSplash = output<void>();
   selectTab = output<MainTab>();
@@ -163,6 +174,7 @@ export class DashboardHeaderComponent {
   openReadingMode = output<void>();
   toggleDarkMode = output<void>();
   clearEditor = output<void>();
+  toggleFocusMode = output<void>();
 
   mobileNavOpen = signal(false);
 

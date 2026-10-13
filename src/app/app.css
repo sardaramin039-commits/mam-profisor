@@ -258,3 +258,16 @@
 .mam-preview-body{grid-template-columns:78px minmax(0,1fr);min-height:250px;}
 .mam-preview-content{padding:18px 12px;}
 }.mam-defer-placeholder{min-height:96px;display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--mam-border-strong);border-radius:13px;background:var(--mam-surface-2);color:var(--mam-muted);font-size:11px;padding:18px;text-align:center;}
+/* Focus Mode: distraction-free environment */
+.mam-app-root.focus-mode .mam-sidebar{display:none !important;}
+.mam-app-root.focus-mode .mam-topbar{right:0 !important;}
+.mam-app-root.focus-mode .mam-workspace-content{margin-right:0 !important;padding-top:72px;}
+.mam-app-root.focus-mode .mam-main{width:min(1300px,calc(100% - 32px)) !important;padding:16px 0 60px !important;}
+.mam-app-root.focus-mode .mam-page-head,
+.mam-app-root.focus-mode .mam-workflow,
+.mam-app-root.focus-mode .mam-workspace-bottom-bar,
+.mam-app-root.focus-mode .mam-footer,
+.mam-app-root.focus-mode .mam-editor-section:first-child,
+.mam-app-root.focus-mode .mam-secondary-tools{display:none !important;}
+.mam-app-root.focus-mode .mam-editor-grid{grid-template-columns:1fr !important;}
+.mam-app-root.focus-mode #window-2-section{box-shadow:0 12px 36px rgba(0,0,0,.08);}

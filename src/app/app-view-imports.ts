@@ -48,6 +48,7 @@ import { LibraryWorkspaceComponent } from './features/digital-library/library-wo
 import { VipWritingQualityComponent } from './features/editor/components/vip-writing-quality.component';
 import { FloatingAcademicToolbarComponent } from './features/editor/components/floating-academic-toolbar.component';
 import { AcademicQualityCenterComponent } from './features/academic-quality-center/academic-quality-center';
+import { EditorAutoSaveStatusComponent } from './features/editor/components/editor-auto-save-status.component';
 
 export const BASIC_VIEW_IMPORTS = [
   CommonModule,
@@ -155,4 +156,5 @@ export const APP_VIEW_IMPORTS = [
   VipWritingQualityComponent,
   FloatingAcademicToolbarComponent,
   AcademicQualityCenterComponent,
+  EditorAutoSaveStatusComponent,
 ];

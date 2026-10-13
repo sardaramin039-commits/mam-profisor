@@ -43,14 +43,16 @@
               "pg",
               "drizzle-orm",
               "express",
-              "dotenv"
+              "dotenv",
+              "axios",
+              "zod",
+              "docx"
             ],
             "server": "src/main.server.ts",
             "outputMode": "server",
             "ssr": {
               "entry": "src/server.ts"
-            },
-            "prerender": false
+            }
           },
           "configurations": {
             "production": {
@@ -87,25 +89,20 @@
                 "pg",
                 "drizzle-orm",
                 "express",
-                "dotenv"
+                "dotenv",
+                "axios",
+                "zod",
+                "docx"
               ]
             }
           },
-          "defaultConfiguration": "production"
+          "defaultConfiguration": "development"
         },
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
             "host": "0.0.0.0",
-            "port": 3000,
-            "allowedHosts": [
-              "localhost",
-              "127.0.0.1",
-              "0.0.0.0",
-              "ais-dev-ayekpdfdqja7byvwvchwet-68604374778.europe-west2.run.app",
-              ".run.app",
-              ".google.com"
-            ]
+            "port": 3000
           },
           "configurations": {
             "production": {

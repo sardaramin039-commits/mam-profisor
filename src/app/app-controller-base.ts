@@ -32,6 +32,8 @@ import { ACADEMIC_GLOSSARY } from '../prompts/academic-glossary';
 import { calculateBookProgressSummary, BookProgressSummary } from './helpers/book-progress';
 import { ChapterItemModel as ChapterItem, StructureReviewResult } from './domain/models';
 import { calculateChapterTargetWords } from './helpers/chapter-calculator';
+import { EditorFocusModeService } from './services/editor-focus-mode.service';
+import { EditorSyncFeedbackService } from './services/editor-sync-feedback.service';
 
 @Directive()
 export abstract class AppControllerBase implements OnInit {
@@ -163,6 +165,11 @@ export abstract class AppControllerBase implements OnInit {
   public latexService = inject(LatexService);
   public searchService = inject(SearchService);
   public data = inject(Data);
+  public editorFocusMode = inject(EditorFocusModeService);
+  public editorSyncFeedback = inject(EditorSyncFeedbackService);
+  isFocusMode = this.editorFocusMode.isFocusMode;
+  toggleFocusMode = () => this.editorFocusMode.toggleFocusMode();
+  exitFocusMode = () => this.editorFocusMode.exitFocusMode();
 
   // Core navigation view state
   viewMode = signal<'splash' | 'workspace'>('splash');
