@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import type { AuthRequest } from '../../middleware/auth';
 import { z } from 'zod';
 import { openAiChatGptService } from '../services/openai-chatgpt.service';
