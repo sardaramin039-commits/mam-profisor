@@ -107,7 +107,7 @@ app.use('/api/publication-submission-editorial', requireAuth, createPublicationS
 app.use('/api/defense-rehearsal', requireAuth, createDefenseRehearsalRouter());
 
 // Modular Services & Routers (Agents, Scholarly Search, Digital Library Catalog)
-app.use('/api/agents', agentsRouter);
+app.use('/api/agents', requireAuth, agentsRouter);
 app.use('/api/scholarly', modularAcademicRouter);
 app.use('/api/library-catalog', modularLibraryRouter);
 
