@@ -26,10 +26,21 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), payment=()');
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'self' https://ai.studio https://*.google.com https://*.run.app;"
-  );
+  const contentSecurityPolicy = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "script-src 'self' https://apis.google.com https://www.gstatic.com",
+    "style-src 'self' 'unsafe-inline' https:",
+    "img-src 'self' https: data: blob:",
+    "font-src 'self' https: data:",
+    "connect-src 'self' https: wss:",
+    "frame-src 'self' https://accounts.google.com https://*.google.com https://*.firebaseapp.com",
+    "frame-ancestors 'self' https://ai.studio https://*.google.com https://*.run.app",
+    "form-action 'self' https://accounts.google.com",
+    "worker-src 'self' blob:"
+  ].join('; ');
+  res.setHeader('Content-Security-Policy', contentSecurityPolicy);
 
   const originHeader = req.headers.origin;
   const rawEnvOrigins = process.env['ALLOWED_ORIGINS'] || process.env['APP_URL'] || '';
