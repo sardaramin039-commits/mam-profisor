@@ -55,14 +55,15 @@ app.disable('x-powered-by');
 // Security headers & strict CORS enforcement middleware
 app.use(securityHeadersMiddleware);
 
-// Academic requests can be larger than Express's default 100 KB, but keep a hard upper bound.
-app.use(express.json({ limit: '5mb' }));
-
-// Prompt injection protection middleware
-app.use('/api', promptSanitizerMiddleware);
-
-// Simple in-memory rate limiter middleware
+// Protect API routes before parsing potentially large request bodies.
 app.use('/api', rateLimiterMiddleware);
+
+// OCR data URLs may encode an 8 MB image as more than 10 MB of JSON.
+// Per-route schemas still impose tighter limits on normal academic fields.
+app.use(express.json({ limit: '13mb' }));
+
+// Prompt injection protection middleware; academic source text is preserved.
+app.use('/api', promptSanitizerMiddleware);
 
 const angularApp = new AngularNodeAppEngine({
   allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0', '*.run.app', '*.google.com']
