@@ -1,11 +1,45 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { enrichSourcesWithFullText } from './full-text-evidence.service';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { enrichSourcesWithFullText, isSafeExternalHttpsUrl } from './full-text-evidence.service';
 import { isServerVerifiedFullText } from './evidence-verification-policy';
+
+const { mockLookup } = vi.hoisted(() => ({
+  mockLookup: vi.fn(async (_hostname: string) => [{ address: '93.184.216.34', family: 4 }])
+}));
+
+vi.mock('node:dns/promises', () => ({ lookup: mockLookup }));
 
 const originalFetch = globalThis.fetch;
 
+beforeEach(() => {
+  mockLookup.mockReset();
+  mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
+});
+
 afterEach(() => {
   globalThis.fetch = originalFetch;
+});
+
+describe('external URL safety', () => {
+  it('rejects unsafe URL schemes, credentials, ports, and literal IPs', async () => {
+    expect(await isSafeExternalHttpsUrl('http://public.example.org/article')).toBe(false);
+    expect(await isSafeExternalHttpsUrl('https://user@public.example.org/article')).toBe(false);
+    expect(await isSafeExternalHttpsUrl('https://public.example.org:8443/article')).toBe(false);
+    expect(await isSafeExternalHttpsUrl('https://127.0.0.1/article')).toBe(false);
+    expect(await isSafeExternalHttpsUrl('https://localhost/article')).toBe(false);
+  });
+
+  it('rejects a public-looking hostname if DNS resolves to a private address', async () => {
+    mockLookup.mockResolvedValue([{ address: '10.10.10.10', family: 4 }]);
+    expect(await isSafeExternalHttpsUrl('https://public-looking.example.org/article')).toBe(false);
+  });
+
+  it('requires every DNS answer to be public', async () => {
+    mockLookup.mockResolvedValue([
+      { address: '93.184.216.34', family: 4 },
+      { address: '192.168.1.12', family: 4 }
+    ]);
+    expect(await isSafeExternalHttpsUrl('https://mixed-answer.example.org/article')).toBe(false);
+  });
 });
 
 describe('full-text evidence enrichment', () => {
