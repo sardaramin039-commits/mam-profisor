@@ -216,7 +216,14 @@ export class ResearchIntelligenceService {
     getGeminiClient: () => GoogleGenAI
   ): Promise<ResearchIntelligenceResult> {
     const discovery = await this.discover(request.topic, request.discipline);
-    const ai = getGeminiClient();
+    let ai: GoogleGenAI | undefined;
+    let clientSetupError: unknown;
+    try {
+      ai = getGeminiClient();
+    } catch (error) {
+      // Missing credentials/configuration should make modules degraded, not bypass status reporting.
+      clientSetupError = error;
+    }
 
     const chapters = (request.chapters || [])
       .filter(ch => String(ch.content || '').trim())
@@ -319,28 +326,33 @@ JSON:
  "normalizationSuggestions":[]
 }`;
 
-    const analysisResults = await Promise.allSettled([
-      ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: plannerPrompt,
-        config: { responseMimeType: 'application/json', temperature: 0.2 }
-      }),
-      ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: methodologyPrompt,
-        config: { responseMimeType: 'application/json', temperature: 0.1 }
-      }),
-      ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: factPrompt,
-        config: { responseMimeType: 'application/json', temperature: 0.1 }
-      }),
-      ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: consistencyPrompt,
-        config: { responseMimeType: 'application/json', temperature: 0.1 }
-      })
-    ]);
+    const analysisResults: PromiseSettledResult<{ text?: string }>[] = ai
+      ? await Promise.allSettled([
+          ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents: plannerPrompt,
+            config: { responseMimeType: 'application/json', temperature: 0.2 }
+          }),
+          ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents: methodologyPrompt,
+            config: { responseMimeType: 'application/json', temperature: 0.1 }
+          }),
+          ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents: factPrompt,
+            config: { responseMimeType: 'application/json', temperature: 0.1 }
+          }),
+          ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents: consistencyPrompt,
+            config: { responseMimeType: 'application/json', temperature: 0.1 }
+          })
+        ])
+      : Array.from({ length: 4 }, () => ({
+          status: 'rejected',
+          reason: clientSetupError
+        } as PromiseRejectedResult));
 
     const textOf = (result: PromiseSettledResult<{ text?: string }>): string =>
       result.status === 'fulfilled' ? String(result.value.text || '') : '';
@@ -435,15 +447,15 @@ JSON:
       factCheck,
       evidenceLinks,
       methodology: safeJson(textOf(methodologyRes), {
-        overallScore: 0,
+        overallScore: null,
         status: 'review',
         checks: [],
         blockingIssues: ['پشکنینی مێتۆدۆلۆژیا تەواو نەبوو.'],
         strengths: []
       }),
       consistency: safeJson(textOf(consistencyRes), {
-        overallScore: chapters.length ? 0 : null,
-        status: chapters.length ? 'review' : 'consistent',
+        overallScore: null,
+        status: 'review',
         conflicts: [],
         stableElements: [],
         normalizationSuggestions: []
