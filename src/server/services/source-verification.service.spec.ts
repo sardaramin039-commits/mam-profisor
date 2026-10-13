@@ -41,6 +41,25 @@ describe('source evidence verification policy', () => {
 
 
 describe('citation evidence eligibility policy', () => {
+  it('allows citations only for server-acquired full text with matching evidence', async () => {
+    const service = new SourceVerificationService();
+    const trusted = markServerVerifiedFullText({
+      id: 'SRC-TRUSTED',
+      sourceId: 'SRC-TRUSTED',
+      title: 'Authoritative Full Text Study',
+      openAlexId: 'W123456789',
+      claimText: 'validated claim',
+      evidenceText: 'This authoritative full text contains the validated claim and supporting details.',
+      evidenceType: 'full-text' as const,
+      evidenceProvenance: 'server-verified-fulltext' as const
+    });
+
+    const result = await service.verifySources([trusted], () => ({}) as any);
+    expect(result.verifiedSources[0]?.identityStatus).toBe('verified');
+    expect(result.citationEligibleSources).toHaveLength(1);
+    expect(result.citationEligibleSources[0]?.citationEligible).toBe(true);
+  });
+
   it('blocks abstracts even when the claim exactly matches the evidence', () => {
     expect(
       isCitationEligibleEvidence('verified', true, 'abstract', 'unknown')
