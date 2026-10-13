@@ -64,6 +64,9 @@ jobs:
       - name: Digital library factuality audit
         run: node scripts/library-integrity-audit.mjs
 
+      - name: Firestore rules security contract
+        run: node scripts/firestore-rules-contract-check.mjs
+
       - name: Secret audit
         run: node scripts/security-secret-audit.mjs
 
