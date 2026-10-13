@@ -12,6 +12,7 @@ import { multiAgentOrchestratorService } from '../services/multi-agent-orchestra
 import { observabilityService } from '../services/observability.service';
 import { aiModelRouterService } from '../services/ai-model-router.service';
 import { z } from 'zod';
+import { downgradeUntrustedEvidenceList } from '../services/untrusted-evidence';
 
 const textField = (max: number) => z.string().trim().min(1).max(max);
 const rawSourceArray = z.array(z.record(z.string(), z.unknown())).max(100);
@@ -68,10 +69,11 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         return;
       }
       const { topic, draftText, sources } = evidenceGraphSchemaParsed.data;
+      const untrustedSources = downgradeUntrustedEvidenceList(sources || []);
       const graph = await claimEvidenceGraphService.buildGraph(
         topic || 'تێزی زانستی',
         draftText || '',
-        sources || [],
+        untrustedSources,
         getGeminiClient
       );
       res.json({ success: true, graph });

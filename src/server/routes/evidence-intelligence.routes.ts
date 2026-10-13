@@ -12,11 +12,8 @@ const evidenceChunkSchema = z.object({
   claimText: z.string().trim().min(1).max(10_000),
   chunkText: z.string().trim().min(10).max(100_000),
   evidenceType: z.enum(['abstract', 'snippet', 'full-text']).default('snippet'),
-  provenance: z.enum([
-    'server-verified-fulltext',
-    'user-supplied-content',
-    'unknown'
-  ]).default('unknown'),
+  // Client requests may describe provenance, but cannot claim server verification.
+  provenance: z.enum(['user-supplied-content', 'unknown']).default('unknown'),
   doi: z.string().trim().max(500).optional(),
   isbn: z.string().trim().max(32).optional(),
   issn: z.string().trim().max(32).optional(),
@@ -78,7 +75,9 @@ export function createEvidenceIntelligenceRouter(
           ...chunk,
           pageNumber: chunk.pageNumber != null ? String(chunk.pageNumber) : undefined,
           year: chunk.year != null ? String(chunk.year) : undefined,
-          verificationStatus: 'verified' as const
+          verificationStatus: 'unverified' as const,
+          evidenceType: 'snippet' as const,
+          provenance: 'user-supplied-content' as const
         }));
 
       const result = await evidenceGroundingService.generateGroundedContent(

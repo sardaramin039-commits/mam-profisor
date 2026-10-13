@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { robustParseJson } from '../utils/json-repair';
 import { validateRequest } from '../../middleware/validate.middleware';
@@ -7,6 +8,7 @@ import { academicReviewerService } from '../services/academic-reviewer.service';
 
 export function createEvaluationReviewRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+  router.use(requireAuth);
 
   /**
    * AI Peer Review Endpoint

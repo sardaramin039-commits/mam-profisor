@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import type { AuthRequest } from '../../middleware/auth';
 import { z } from 'zod';
 import { openAiChatGptService } from '../services/openai-chatgpt.service';
@@ -20,6 +21,7 @@ const organizeReferencesSchema = z.object({
 
 export function createChatGptAcademicSourcesRouter(): Router {
   const router = Router();
+  router.use(requireAuth);
 
   router.post('/discover-sources', async (req: AuthRequest, res: Response) => {
     const openAiEnabled =

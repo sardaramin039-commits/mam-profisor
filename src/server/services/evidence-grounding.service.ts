@@ -89,7 +89,8 @@ export class EvidenceGroundingService {
     sourceStatus: string,
     hasEvidence: boolean,
     evidenceType: EvidenceType = 'snippet',
-    provenance: EvidenceProvenance = 'unknown'
+    provenance: EvidenceProvenance = 'unknown',
+    sourceObject?: unknown
   ): {
     eligible: boolean;
     status: 'verified' | 'partially_verified' | 'unverified'
@@ -110,7 +111,8 @@ export class EvidenceGroundingService {
             : 'unverified',
           hasEvidence,
           evidenceType,
-          provenance
+          provenance,
+          sourceObject
         ),
       status
     };
@@ -145,7 +147,8 @@ export class EvidenceGroundingService {
         chunk.verificationStatus,
         !!chunk.chunkText?.trim(),
         chunk.evidenceType || 'snippet',
-        chunk.provenance || 'unknown'
+        chunk.provenance || 'unknown',
+        chunk
       ).eligible
     );
 

@@ -36,48 +36,35 @@ class PublicationSubmissionLifecycleService {
     return adminDb.collection('publication_submission_lifecycle').doc(userId).collection('items');
   }
   async get(userId: string, submissionId: string): Promise<SubmissionLifecycleRecord | null> {
-    try {
-      const snap = await this.ref(userId).doc(submissionId).get();
-      if (snap.exists) {
-        const item = snap.data() as SubmissionLifecycleRecord;
-        submissionMemoryStore.saveRecord(item);
-        return item;
-      }
-    } catch { /* fallback */ }
-    return submissionMemoryStore.getRecord(userId, submissionId);
+    const snap = await this.ref(userId).doc(submissionId).get();
+    if (!snap.exists) return null;
+    const item = snap.data() as SubmissionLifecycleRecord;
+    submissionMemoryStore.saveRecord(item);
+    return item;
   }
   async getByWorkspaceAndFingerprint(userId: string, workspaceId: string, fp: string): Promise<SubmissionLifecycleRecord | null> {
-    try {
-      const snap = await this.ref(userId).limit(100).get();
-      const m = snap.docs.map(d => d.data() as SubmissionLifecycleRecord)
-        .filter(i => i.workspaceId === workspaceId && i.submissionFingerprint === fp)
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-      if (m[0]) { submissionMemoryStore.saveRecord(m[0]); return m[0]; }
-    } catch { /* fallback */ }
-    return submissionMemoryStore.listRecords(userId, workspaceId).find(i => i.submissionFingerprint === fp) ?? null;
+    const snap = await this.ref(userId).where('workspaceId', '==', workspaceId).limit(100).get();
+    const match = snap.docs
+      .map(d => d.data() as SubmissionLifecycleRecord)
+      .filter(item => item.submissionFingerprint === fp)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    if (match) submissionMemoryStore.saveRecord(match);
+    return match ?? null;
   }
   async getReceipt(userId: string, submissionId: string, receiptId: string): Promise<SubmissionReceipt | null> {
-    try {
-      const snap = await this.ref(userId).doc(submissionId).collection('receipts').doc(receiptId).get();
-      if (snap.exists) {
-        const rc = snap.data() as SubmissionReceipt;
-        submissionMemoryStore.saveReceipt(userId, submissionId, rc);
-        return rc;
-      }
-    } catch { /* fallback */ }
-    return submissionMemoryStore.getReceipt(userId, submissionId, receiptId);
+    const snap = await this.ref(userId).doc(submissionId).collection('receipts').doc(receiptId).get();
+    if (!snap.exists) return null;
+    const receipt = snap.data() as SubmissionReceipt;
+    submissionMemoryStore.saveReceipt(userId, submissionId, receipt);
+    return receipt;
   }
   async list(userId: string, workspaceId: string, limit = 50): Promise<SubmissionLifecycleRecord[]> {
-    try {
-      const snap = await this.ref(userId).limit(100).get();
-      const items = snap.docs.map(d => d.data() as SubmissionLifecycleRecord)
-        .filter(i => i.workspaceId === workspaceId)
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .slice(0, Math.min(Math.max(limit, 1), 100));
-      for (const item of items) submissionMemoryStore.saveRecord(item);
-      return items;
-    } catch { /* fallback */ }
-    return submissionMemoryStore.listRecords(userId, workspaceId, limit);
+    const safeLimit = Number.isFinite(limit) ? Math.min(Math.max(Math.floor(limit), 1), 100) : 50;
+    const snap = await this.ref(userId).where('workspaceId', '==', workspaceId).limit(safeLimit).get();
+    const items = snap.docs.map(d => d.data() as SubmissionLifecycleRecord)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    for (const item of items) submissionMemoryStore.saveRecord(item);
+    return items;
   }
   async create(
     userId: string,

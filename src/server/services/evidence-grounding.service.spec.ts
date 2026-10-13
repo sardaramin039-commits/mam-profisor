@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { evidenceGroundingService } from './evidence-grounding.service';
 import { claimEvidenceGraphService } from './claim-evidence-graph.service';
+import { markServerVerifiedFullText } from './evidence-verification-policy';
 
 const originalBuildGraph = claimEvidenceGraphService.buildGraph;
 
@@ -88,7 +89,7 @@ describe('EvidenceGroundingService chunk retention', () => {
     const result = await evidenceGroundingService.generateGroundedContent(
       'topic',
       'write from evidence',
-      [{
+      [markServerVerifiedFullText({
         sourceId: 'SRC-1',
         sourceTitle: 'Study',
         chunkText: 'verified source evidence',
@@ -97,7 +98,7 @@ describe('EvidenceGroundingService chunk retention', () => {
         year: '2025',
         evidenceType: 'full-text',
         provenance: 'server-verified-fulltext'
-      }],
+      })],
       () => ai
     );
 
@@ -153,7 +154,7 @@ describe('EvidenceGroundingService chunk retention', () => {
       'topic',
       'write from evidence',
       [
-        {
+        markServerVerifiedFullText({
           sourceId: 'SRC-1',
           sourceTitle: 'Study',
           chunkText: 'evidence from first chunk',
@@ -162,8 +163,8 @@ describe('EvidenceGroundingService chunk retention', () => {
           year: '2025',
           evidenceType: 'full-text',
           provenance: 'server-verified-fulltext'
-        },
-        {
+        }),
+        markServerVerifiedFullText({
           sourceId: 'SRC-1',
           sourceTitle: 'Study',
           chunkText: 'different evidence from second chunk',
@@ -172,7 +173,7 @@ describe('EvidenceGroundingService chunk retention', () => {
           year: '2025',
           evidenceType: 'full-text',
           provenance: 'server-verified-fulltext'
-        }
+        })
       ],
       () => ai
     );
@@ -223,7 +224,7 @@ describe('EvidenceGroundingService chunk retention', () => {
       'topic',
       'write from evidence',
       [
-        {
+        markServerVerifiedFullText({
           sourceId: 'SRC-1',
           sourceTitle: 'Study',
           chunkText: 'evidence from first chunk',
@@ -232,8 +233,8 @@ describe('EvidenceGroundingService chunk retention', () => {
           year: '2025',
           evidenceType: 'full-text',
           provenance: 'server-verified-fulltext'
-        },
-        {
+        }),
+        markServerVerifiedFullText({
           sourceId: 'SRC-1',
           sourceTitle: 'Study',
           chunkText: 'evidence from second chunk',
@@ -242,7 +243,7 @@ describe('EvidenceGroundingService chunk retention', () => {
           year: '2025',
           evidenceType: 'full-text',
           provenance: 'server-verified-fulltext'
-        }
+        })
       ],
       () => ai
     );

@@ -13,11 +13,32 @@ const AUTHENTICATED_MAX_REQUESTS = 90;
 const AUTHENTICATED_AI_MAX_REQUESTS = 30;
 const MAX_TRACKED_CLIENTS = 10_000;
 
-function isAiPath(path: string): boolean {
+export function isAiPath(path: string): boolean {
   const normalized = path.toLocaleLowerCase();
 
   return (
     normalized.startsWith('/ai-tools/') ||
+    normalized.startsWith('/agents/run') ||
+    normalized.startsWith('/library/search') ||
+    normalized.startsWith('/library/ocr') ||
+    normalized.startsWith('/multi-agent/') ||
+    normalized.startsWith('/rag/') ||
+    normalized.startsWith('/writing/') ||
+    normalized.startsWith('/defense-rehearsal/') ||
+    normalized.startsWith('/publication-defense/') ||
+    normalized.startsWith('/platform/') ||
+    normalized === '/refine' ||
+    normalized === '/review_structure' ||
+    normalized.startsWith('/generate_') ||
+    normalized.startsWith('/expand_') ||
+    normalized.startsWith('/grounded_') ||
+    normalized === '/argument-builder' ||
+    normalized === '/academic-review' ||
+    normalized === '/qa-gate' ||
+    normalized === '/source-verification' ||
+    normalized === '/evidence-graph' ||
+    normalized === '/kurdish-language' ||
+    normalized === '/kurdish-knowledge-graph' ||
     normalized.startsWith('/platform/multi-agent-orchestrate') ||
     normalized === '/generate_chapter' ||
     normalized === '/deep_research_agent' ||

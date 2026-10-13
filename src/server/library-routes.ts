@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { requireRole, ExtendedAuthRequest } from './middleware/rbac.middleware';
 import { GoogleGenAI } from '@google/genai';
 import { crawlerEngine } from '../services/crawler-engine';
+import { requireAuth } from '../middleware/auth';
 
 export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -33,11 +34,16 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 3. POST /api/library/search - AI Semantic Search & Query Expansion
-  router.post('/search', async (req: Request, res: Response) => {
+  router.post('/search', requireAuth, async (req: Request, res: Response) => {
     try {
       const { query, language } = req.body || {};
-      if (!query || typeof query !== 'string') {
-        res.status(400).json({ error: 'Query parameter is required' });
+      if (
+        typeof query !== 'string' ||
+        query.trim().length < 2 ||
+        query.length > 5000 ||
+        (language !== undefined && (typeof language !== 'string' || language.length > 50))
+      ) {
+        res.status(400).json({ error: 'Valid query (2-5000 characters) and optional language are required.' });
         return;
       }
 
@@ -63,20 +69,38 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
         }
       });
 
-      const responseText = response.text || '{}';
-      let parsed = {};
+      const responseText = response.text || '';
+      let parsed: Record<string, unknown>;
       try {
-        parsed = JSON.parse(responseText);
+        const candidate = JSON.parse(responseText) as unknown;
+        if (
+          !candidate ||
+          typeof candidate !== 'object' ||
+          Array.isArray(candidate) ||
+          !Array.isArray((candidate as Record<string, unknown>)['expandedKeywords']) ||
+          typeof (candidate as Record<string, unknown>)['aiSummary'] !== 'string'
+        ) {
+          throw new Error('Invalid semantic-search response shape.');
+        }
+        parsed = candidate as Record<string, unknown>;
       } catch {
-        parsed = { expandedKeywords: [query], aiSummary: 'ئەنجامەکانی گەڕانی سیمانتیکی' };
+        res.status(502).json({
+          success: false,
+          degraded: true,
+          status: 'AI_RESPONSE_INVALID',
+          error: 'AI نەیتوانی وەڵامێکی پێکهاتەدار بۆ گەڕانی سیمانتیکی بدات.'
+        });
+        return;
       }
 
-      res.json(parsed);
+      res.json({ success: true, degraded: false, ...parsed });
     } catch (err) {
-      console.warn('Semantic search fallback:', err);
-      res.json({
-        expandedKeywords: [req.body?.query || ''],
-        aiSummary: 'ئەنجامی گەڕانی ڕاستەوخۆ لە ئەرشیڤی ٤٠ کتێبخانەکە'
+      console.warn('Semantic search provider unavailable:', err);
+      res.status(503).json({
+        success: false,
+        degraded: true,
+        status: 'AI_PROVIDER_UNAVAILABLE',
+        error: 'گەڕانی سیمانتیکی بەردەست نییە؛ هیچ ئەنجامی ڕاستەوخۆی کتێبخانە بە ساختە پیشان نادرێت.'
       });
     }
   });
@@ -85,8 +109,11 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   router.post('/sync', requireRole('admin', 'professor'), async (_req: ExtendedAuthRequest, res: Response) => {
     try {
       const log = await crawlerEngine.triggerSync();
+      const success = log.status === 'success';
       res.json({
-        message: 'هاودەمکردنی سەرچاوەکان بەسەرکەوتوویی ئەنجامدرا',
+        success,
+        degraded: !success,
+        message: log.message,
         log
       });
     } catch {
@@ -95,7 +122,7 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 5. POST /api/library/ocr - OCR from a real page image
-  router.post('/ocr', async (req: Request, res: Response) => {
+  router.post('/ocr', requireAuth, async (req: Request, res: Response) => {
     try {
       const { imageDataUrl } = req.body || {};
       if (typeof imageDataUrl !== 'string' || imageDataUrl.length > 12_000_000) {

@@ -1,10 +1,83 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { enrichSourcesWithFullText } from './full-text-evidence.service';
+import { EventEmitter } from 'node:events';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { enrichSourcesWithFullText, isSafeExternalHttpsUrl } from './full-text-evidence.service';
+import { isServerVerifiedFullText } from './evidence-verification-policy';
+
+const { mockLookup, mockHttpsRequest } = vi.hoisted(() => ({
+  mockLookup: vi.fn(async (_hostname: string) => [{ address: '93.184.216.34', family: 4 }]),
+  mockHttpsRequest: vi.fn()
+}));
+
+vi.mock('node:dns/promises', () => ({ lookup: mockLookup }));
+vi.mock('node:https', () => ({ request: mockHttpsRequest }));
 
 const originalFetch = globalThis.fetch;
 
+beforeEach(() => {
+  mockLookup.mockReset();
+  mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
+  mockHttpsRequest.mockReset();
+  mockHttpsRequest.mockImplementation((input: unknown, _options: unknown, callback: (response: unknown) => void) => {
+    const request = new EventEmitter() as EventEmitter & {
+      end: () => void;
+      destroy: (error?: Error) => EventEmitter;
+    };
+    request.destroy = (error?: Error) => {
+      if (error) queueMicrotask(() => request.emit('error', error));
+      return request;
+    };
+    request.end = () => {
+      void (async () => {
+        try {
+          const responseFromFetch = await globalThis.fetch(String(input));
+          const response = new EventEmitter() as EventEmitter & {
+            statusCode: number;
+            headers: Record<string, string>;
+            resume: () => void;
+          };
+          response.statusCode = responseFromFetch.status;
+          response.headers = {
+            'content-type': responseFromFetch.headers.get('content-type') || 'text/html'
+          };
+          response.resume = () => undefined;
+          callback(response);
+          const body = Buffer.from(await responseFromFetch.text());
+          response.emit('data', body);
+          response.emit('end');
+        } catch (error) {
+          request.emit('error', error instanceof Error ? error : new Error(String(error)));
+        }
+      })();
+    };
+    return request;
+  });
+});
+
 afterEach(() => {
   globalThis.fetch = originalFetch;
+});
+
+describe('external URL safety', () => {
+  it('rejects unsafe URL schemes, credentials, ports, and literal IPs', async () => {
+    expect(await isSafeExternalHttpsUrl('http://public.example.org/article')).toBe(false);
+    expect(await isSafeExternalHttpsUrl('https://user@public.example.org/article')).toBe(false);
+    expect(await isSafeExternalHttpsUrl('https://public.example.org:8443/article')).toBe(false);
+    expect(await isSafeExternalHttpsUrl('https://127.0.0.1/article')).toBe(false);
+    expect(await isSafeExternalHttpsUrl('https://localhost/article')).toBe(false);
+  });
+
+  it('rejects a public-looking hostname if DNS resolves to a private address', async () => {
+    mockLookup.mockResolvedValue([{ address: '10.10.10.10', family: 4 }]);
+    expect(await isSafeExternalHttpsUrl('https://public-looking.example.org/article')).toBe(false);
+  });
+
+  it('requires every DNS answer to be public', async () => {
+    mockLookup.mockResolvedValue([
+      { address: '93.184.216.34', family: 4 },
+      { address: '192.168.1.12', family: 4 }
+    ]);
+    expect(await isSafeExternalHttpsUrl('https://mixed-answer.example.org/article')).toBe(false);
+  });
 });
 
 describe('full-text evidence enrichment', () => {
@@ -17,6 +90,10 @@ describe('full-text evidence enrichment', () => {
           resultList: {
             result: [{
               pmcid: 'PMC123456',
+              pmid: '12345',
+              title: 'Peer Tutoring Study',
+              doi: '10.1000/example',
+              firstPublicationDate: '2025-02-01',
               isOpenAccess: 'Y'
             }]
           }
@@ -55,6 +132,7 @@ describe('full-text evidence enrichment', () => {
     expect(enriched.doi).toBe(source.doi);
     expect(enriched.evidenceType).toBe('full-text');
     expect(enriched.evidenceProvenance).toBe('server-verified-fulltext');
+    expect(isServerVerifiedFullText(enriched)).toBe(true);
     expect(enriched.claimText).toBe(
       'peer tutoring improves academic achievement among students'
     );
@@ -69,6 +147,9 @@ describe('full-text evidence enrichment', () => {
 
       if (url.includes('/works/W123456789')) {
         return new Response(JSON.stringify({
+          title: 'Open access study',
+          doi: null,
+          publication_year: 2024,
           best_oa_location: {
             is_oa: true,
             landing_page_url: 'https://publisher.example.org/articles/oa-study'
@@ -148,7 +229,8 @@ describe('full-text evidence enrichment', () => {
 
     const [enriched] = await enrichSourcesWithFullText(
       [source],
-      ['teacher feedback can improve revision quality']
+      ['teacher feedback can improve revision quality'],
+      { allowDiscoveredProviderUrls: true }
     );
 
     expect(enriched.evidenceType).toBe('full-text');
@@ -206,7 +288,8 @@ describe('HTML full-text validation', () => {
         sourceType: 'DOAJ',
         url: 'https://example.org/abstract'
       }],
-      ['school belonging improves engagement']
+      ['school belonging improves engagement'],
+      { allowDiscoveredProviderUrls: true }
     );
 
     expect(enriched.evidenceType).toBeUndefined();

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { SYSTEM_PROMPT_ANALYZE_RIGOR } from '../../prompts/system-prompts';
 import { robustParseJson } from '../utils/json-repair';
@@ -15,6 +16,7 @@ import {
 
 export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+  router.use(requireAuth);
 
   /**
    * Academic Rigor & Four-Module Analysis Endpoint
@@ -58,8 +60,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
       res.json(robustParseJson(response.text || ''));
     } catch (error) {
       console.error('Analyze academic rigor error:', error);
-      const reqTitle = req.body.title || 'کارێکی ئەکادیمی';
-      const reqContent = req.body.content || '';
+      const reqContent = typeof req.body.content === 'string' ? req.body.content : '';
       
       const fallbackResponse = {
         academicScore: null,
@@ -86,7 +87,13 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
           mismatches: []
         }
       };
-      res.json(fallbackResponse);
+      res.status(503).json({
+        ...fallbackResponse,
+        success: false,
+        degraded: true,
+        generationSucceeded: false,
+        status: 'AI_PROVIDER_UNAVAILABLE'
+      });
     }
   });
 

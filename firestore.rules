@@ -51,6 +51,7 @@ service cloud.firestore {
 
     function isValidReview(data) {
       return data.submissionId is string
+        && isValidId(data.submissionId)
         && data.reviewerId is string
         && data.reviewerId == request.auth.uid
         && data.isAnonymous is bool
@@ -60,12 +61,19 @@ service cloud.firestore {
         && data.generalComments is string && data.generalComments.size() <= 10000;
     }
 
+    function canReviewSubmission(data) {
+      return isVerifiedUser()
+        && request.auth.token.get('role', '') in ['reviewer', 'professor', 'admin']
+        && exists(/databases/$(database)/documents/peer_submissions/$(data.submissionId))
+        && get(/databases/$(database)/documents/peer_submissions/$(data.submissionId)).data.userId != request.auth.uid;
+    }
+
     function isValidSource(data) {
       return data.userId is string
         && data.userId == request.auth.uid
         && data.title is string && data.title.size() >= 5
         && data.author is string && data.author.size() >= 3
-        && data.year is int && data.year >= 1000 && data.year <= 2027
+        && data.year is int && data.year >= 1000 && data.year <= 2100
         && data.publisher is string
         && data.sourceType in ['book', 'journal', 'thesis', 'manuscript']
         && data.isVerified is bool;
@@ -145,14 +153,18 @@ service cloud.firestore {
         );
       allow create: if isVerifiedUser()
         && isValidId(reviewId)
-        && isValidReview(request.resource.data);
+        && isValidReview(request.resource.data)
+        && canReviewSubmission(request.resource.data);
       allow delete: if isVerifiedUser()
         && resource.data.reviewerId == request.auth.uid
         && isValidId(reviewId);
       allow update: if isVerifiedUser()
         && resource.data.reviewerId == request.auth.uid
         && isValidId(reviewId)
-        && isValidReview(request.resource.data);
+        && request.resource.data.reviewerId == resource.data.reviewerId
+        && request.resource.data.submissionId == resource.data.submissionId
+        && isValidReview(request.resource.data)
+        && canReviewSubmission(request.resource.data);
     }
 
     // Match sources collection: sources are private to their owner.

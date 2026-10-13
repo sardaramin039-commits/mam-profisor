@@ -55,14 +55,15 @@ app.disable('x-powered-by');
 // Security headers & strict CORS enforcement middleware
 app.use(securityHeadersMiddleware);
 
-// Academic requests can be larger than Express's default 100 KB, but keep a hard upper bound.
-app.use(express.json({ limit: '5mb' }));
-
-// Prompt injection protection middleware
-app.use('/api', promptSanitizerMiddleware);
-
-// Simple in-memory rate limiter middleware
+// Protect API routes before parsing potentially large request bodies.
 app.use('/api', rateLimiterMiddleware);
+
+// OCR data URLs may encode an 8 MB image as more than 10 MB of JSON.
+// Per-route schemas still impose tighter limits on normal academic fields.
+app.use(express.json({ limit: '13mb' }));
+
+// Prompt injection protection middleware; academic source text is preserved.
+app.use('/api', promptSanitizerMiddleware);
 
 const angularApp = new AngularNodeAppEngine({
   allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0', '*.run.app', '*.google.com']
@@ -75,9 +76,9 @@ app.use('/api/docs', createApiDocsRouter());
 app.use('/api', optionalAuth, authenticatedRateLimiterMiddleware);
 
 // Public & Scholarly AI Tools
-app.use('/api/ai-tools', createAiToolsRouter(getGeminiClient));
+app.use('/api/ai-tools', requireAuth, createAiToolsRouter(getGeminiClient));
 app.use('/api/library', createLibraryRouter(getGeminiClient));
-app.use('/api/external-integrations', createExternalApiRouter());
+app.use('/api/external-integrations', requireAuth, createExternalApiRouter());
 app.use('/api', createAcademicRouter(getGeminiClient));
 app.use('/api', createThesisWritingRouter(getGeminiClient));
 app.use('/api', createResearchAnalysisRouter(getGeminiClient));
@@ -86,7 +87,7 @@ app.use('/api', createEvaluationReviewRouter(getGeminiClient));
 app.use('/api', createAcademicSearchIntegrationsRouter(getGeminiClient));
 app.use('/api/chatgpt-sources', createChatGptAcademicSourcesRouter());
 app.use('/api', createAdvancedAcademicToolsRouter(getGeminiClient));
-app.use('/api/platform', createAcademicPlatformRouter(getGeminiClient));
+app.use('/api/platform', requireAuth, createAcademicPlatformRouter(getGeminiClient));
 app.use('/api/writing', requireAuth, createEvidenceIntelligenceRouter(getGeminiClient));
 app.use('/api/rag', createRagRouter(getGeminiClient));
 app.use('/api/multi-agent', requireAuth, createMultiAgentRouter(getGeminiClient));
@@ -107,7 +108,7 @@ app.use('/api/publication-submission-editorial', requireAuth, createPublicationS
 app.use('/api/defense-rehearsal', requireAuth, createDefenseRehearsalRouter());
 
 // Modular Services & Routers (Agents, Scholarly Search, Digital Library Catalog)
-app.use('/api/agents', agentsRouter);
+app.use('/api/agents', requireAuth, agentsRouter);
 app.use('/api/scholarly', modularAcademicRouter);
 app.use('/api/library-catalog', modularLibraryRouter);
 

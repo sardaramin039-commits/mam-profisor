@@ -1,8 +1,11 @@
 import { GoogleGenAI } from '@google/genai';
+import { searchCrossrefByMetadata, type CrossrefCandidate } from './crossref-metadata-verification';
 import { lookupIsbn, lookupIssn, resolveDoi } from '../../helpers/extended-academic-tools';
 import {
   assessEvidenceVerification,
   isCitationEligibleEvidence,
+  isServerVerifiedFullText,
+  markServerVerifiedFullText,
   readEvidence
 } from './evidence-verification-policy';
 import type {
@@ -81,6 +84,10 @@ type InputSource = {
   pageNumber?: string | number | null;
 };
 
+function preserveServerFullTextTrust<T extends InputSource>(original: InputSource, normalized: T): T {
+  return isServerVerifiedFullText(original) ? markServerVerifiedFullText(normalized) : normalized;
+}
+
 function normalize(value: string): string {
   return value
     .toLocaleLowerCase()
@@ -151,17 +158,25 @@ function buildBaseReport(
   rejectedAsFabricated = false,
   rejectionReasonKurdish?: string
 ): SourceVerificationReport {
-  const evidence = assessEvidenceVerification(source);
+  const trustedFullText = isServerVerifiedFullText(source)
+    && source.evidenceType === 'full-text'
+    && source.evidenceProvenance === 'server-verified-fulltext';
+  const suppliedEvidence = Boolean(readEvidence(source));
+  const evidence = trustedFullText
+    ? assessEvidenceVerification(source)
+    : { status: suppliedEvidence ? 'unverified' as const : 'not_available' as const };
   const citationEligible =
+    trustedFullText &&
     identityStatus === 'verified' &&
     isCitationEligibleEvidence(
       evidence.status,
       Boolean(readEvidence(source)),
       source.evidenceType,
-      source.evidenceProvenance
+      source.evidenceProvenance,
+      source
     );
 
-  return {
+  const report: SourceVerificationReport = {
     sourceId,
     sourceTitle: source.title,
     author: sourceAuthorString(source) || 'نادیار',
@@ -177,8 +192,8 @@ function buildBaseReport(
     citationEligible,
     evidenceVerificationMethod: evidence.method,
     evidenceText: readEvidence(source) || undefined,
-    evidenceType: source.evidenceType,
-    evidenceProvenance: source.evidenceProvenance || 'unknown',
+    evidenceType: trustedFullText ? 'full-text' : (source.evidenceType === 'abstract' || source.evidenceType === 'snippet' ? source.evidenceType : undefined),
+    evidenceProvenance: trustedFullText ? 'server-verified-fulltext' : suppliedEvidence ? 'user-supplied-content' : 'unknown',
     pageNumber: source.pageNumber ?? null,
     metadataAccuracy,
     peerReviewed: false,
@@ -186,102 +201,7 @@ function buildBaseReport(
     rejectionReasonKurdish,
     kurdishVerificationDetails: details
   };
-}
-
-type CrossrefCandidate = {
-  title: string;
-  authors: string[];
-  publisher: string;
-  year: string;
-  doi: string;
-};
-
-async function searchCrossrefByMetadata(
-  source: InputSource
-): Promise<CrossrefCandidate | undefined> {
-  const query = [source.title, sourceAuthorString(source), source.publisher]
-    .filter(Boolean)
-    .join(' ')
-    .trim();
-  if (!query) return undefined;
-
-  try {
-    const response = await fetch(
-      `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(query)}&rows=5`,
-      {
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': 'Mam-Professor-Academic-Platform/1.0'
-        },
-        signal: AbortSignal.timeout(5000)
-      }
-    );
-    if (!response.ok) return undefined;
-
-    const data = await response.json() as {
-      message?: {
-        items?: Array<{
-          title?: string[];
-          author?: Array<{ given?: string; family?: string }>;
-          publisher?: string;
-          DOI?: string;
-          published?: { 'date-parts'?: number[][] };
-          issued?: { 'date-parts'?: number[][] };
-        }>
-      }
-    };
-
-    const items = Array.isArray(data.message?.items) ? data.message.items : [];
-    let best:
-      | { candidate: CrossrefCandidate; score: number; authorScore: number; yearMatch: boolean }
-      | undefined;
-
-    for (const item of items) {
-      const title = item.title?.[0]?.trim() || '';
-      if (!title) continue;
-
-      const authors = (item.author || [])
-        .map(author => [author.given, author.family].filter(Boolean).join(' ').trim())
-        .filter(Boolean);
-
-      const score = titleSimilarity(source.title, title);
-      const authorText = sourceAuthorString(source);
-      const authorScore = authorText ? authorOverlap(authorText, authors) : 1;
-      const sourceYear = Number(source.year);
-      const itemYear = Number(
-        item.published?.['date-parts']?.[0]?.[0] ??
-        item.issued?.['date-parts']?.[0]?.[0] ??
-        0
-      );
-      const yearMatch =
-        !Number.isFinite(sourceYear) || !sourceYear || !itemYear
-          ? true
-          : Math.abs(sourceYear - itemYear) <= 1;
-
-      if (!best || score + authorScore * 0.1 > best.score + best.authorScore * 0.1) {
-        best = {
-          candidate: {
-            title,
-            authors,
-            publisher: item.publisher || '',
-            year: itemYear ? String(itemYear) : '',
-            doi: item.DOI || ''
-          },
-          score,
-          authorScore,
-          yearMatch
-        };
-      }
-    }
-
-    if (!best || best.score < 0.82 || best.authorScore < 0.5 || !best.yearMatch) {
-      return undefined;
-    }
-
-    return best.candidate;
-  } catch {
-    return undefined;
-  }
+  return trustedFullText ? markServerVerifiedFullText(report) : report;
 }
 
 export class SourceVerificationService {
@@ -380,7 +300,7 @@ export class SourceVerificationService {
         }
 
         return buildBaseReport(
-          { ...source, title: external.title, author: external.authors.join(', ') || sourceAuthorString(source), authors: external.authors.length ? external.authors : sourceAuthorList(source), year: external.publishedYear, publisher: external.publisher || source.publisher, doi: external.doi },
+          preserveServerFullTextTrust(source, { ...source, title: external.title, author: external.authors.join(', ') || sourceAuthorString(source), authors: external.authors.length ? external.authors : sourceAuthorList(source), year: external.publishedYear, publisher: external.publisher || source.publisher, doi: external.doi }),
           sourceId,
           'verified',
           0,
@@ -400,7 +320,7 @@ export class SourceVerificationService {
         const matched = titleMatch && authorMatch;
 
         return buildBaseReport(
-          { ...source, title: isbnExternal.title, author: isbnExternal.authors.join(', ') || sourceAuthorString(source), authors: isbnExternal.authors.length ? isbnExternal.authors : sourceAuthorList(source), year: isbnExternal.publishDate || source.year, publisher: isbnExternal.publisher || source.publisher, isbn: isbnExternal.isbn },
+          preserveServerFullTextTrust(source, { ...source, title: isbnExternal.title, author: isbnExternal.authors.join(', ') || sourceAuthorString(source), authors: isbnExternal.authors.length ? isbnExternal.authors : sourceAuthorList(source), year: isbnExternal.publishDate || source.year, publisher: isbnExternal.publisher || source.publisher, isbn: isbnExternal.isbn }),
           sourceId,
           matched ? 'verified' : 'rejected',
           matched ? 0 : 0,
@@ -417,7 +337,7 @@ export class SourceVerificationService {
       const candidate = metadataResolved.get(index);
       if (candidate) {
         return buildBaseReport(
-          { ...source, title: candidate.title, author: candidate.authors.join(', ') || sourceAuthorString(source), authors: candidate.authors.length ? candidate.authors : sourceAuthorList(source), year: candidate.year || source.year, publisher: candidate.publisher || source.publisher, doi: candidate.doi || source.doi },
+          preserveServerFullTextTrust(source, { ...source, title: candidate.title, author: candidate.authors.join(', ') || sourceAuthorString(source), authors: candidate.authors.length ? candidate.authors : sourceAuthorList(source), year: candidate.year || source.year, publisher: candidate.publisher || source.publisher, doi: candidate.doi || source.doi }),
           sourceId,
           'verified',
           0,
@@ -438,7 +358,7 @@ export class SourceVerificationService {
         const matched = titleMatch && publisherMatch;
 
         return buildBaseReport(
-          { ...source, title: issnExternal.journalTitle || source.title, publisher: issnExternal.publisher || source.publisher, issn: issnExternal.issn },
+          preserveServerFullTextTrust(source, { ...source, title: issnExternal.journalTitle || source.title, publisher: issnExternal.publisher || source.publisher, issn: issnExternal.issn }),
           sourceId,
           matched ? 'verified' : 'rejected',
           matched ? 0 : 0,
@@ -449,6 +369,21 @@ export class SourceVerificationService {
             : 'تۆماری ISSN لەگەڵ metadata ـی پێدراو ناگونجێت.',
           !matched,
           matched ? undefined : 'metadata ـی سەرچاوە لەگەڵ تۆماری ISSN ناگونجێت.'
+        );
+      }
+
+      if (isServerVerifiedFullText(source)) {
+        // The full-text acquisition service marks a record only after matching
+        // authoritative provider metadata and retrieving the actual open-access text.
+        // This establishes source identity; claim evidence is evaluated separately.
+        return buildBaseReport(
+          source,
+          sourceId,
+          'verified',
+          0,
+          'C',
+          100,
+          'ناسنامە بە metadata ـی provider و وەرگرتنی full-text پشتڕاستکراوەتەوە؛ پشتیوانیی هەر claim ـێک جیاوازە.'
         );
       }
 

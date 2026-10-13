@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { isServerVerifiedFullText } from './evidence-verification-policy';
 
 export type EvidenceProvenance = 'server-verified-fulltext' | 'user-supplied-content' | 'unknown';
 
@@ -148,6 +149,7 @@ export class ClaimEvidenceGraphService {
       const safeSources = (Array.isArray(sources) ? sources : []).filter(source => {
         const provenance = source?.evidenceProvenance || source?.provenance;
         const strictEvidence =
+          isServerVerifiedFullText(source) &&
           (source?.verificationStatus === 'verified' || source?.identityStatus === 'verified') &&
           source?.evidenceStatus === 'verified' &&
           source?.evidenceType === 'full-text' &&
