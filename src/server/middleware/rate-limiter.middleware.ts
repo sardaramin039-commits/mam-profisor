@@ -18,6 +18,7 @@ function isAiPath(path: string): boolean {
 
   return (
     normalized.startsWith('/ai-tools/') ||
+    normalized === '/agents/run' ||
     normalized.startsWith('/platform/multi-agent-orchestrate') ||
     normalized === '/generate_chapter' ||
     normalized === '/deep_research_agent' ||
