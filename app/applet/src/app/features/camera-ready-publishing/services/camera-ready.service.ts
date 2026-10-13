@@ -25,16 +25,16 @@ export class CameraReadyService {
       authorOrcid: '',
       supervisorName: '',
       academicDegree: 'master',
-      institution: 'زانکۆی سلێمانی / زانکۆی سەلاحەدین',
-      faculty: 'کۆلێژی زانست / کۆلێژی زمان',
-      department: 'بەشی خوێندنی باڵا',
-      publicationYear: '٢٠٢٦',
+      institution: '',
+      faculty: '',
+      department: '',
+      publicationYear: '',
       legalDepositNumber: '',
       isbn: '',
       doi: '',
-      ethicalClearanceCode: 'IRB-2026-KU-019',
-      ethicalStatement: 'ئەم توێژینەوەیە بەپێی ڕێنمایییە ئەخلاقییەکانی لێکۆڵینەوە لەگەڵ مرۆڤ و پاراستنی داتاکان ئەنجامدراوە.',
-      copyrightNotice: 'هەموو مافەکانی ئەم بەرهەمە بۆ نووسەر پارێزراوە © ٢٠٢٦'
+      ethicalClearanceCode: '',
+      ethicalStatement: '',
+      copyrightNotice: ''
     };
   }
 
@@ -119,15 +119,15 @@ ${meta.authorOrcid ? 'ناسنامەی ORCID: ' + meta.authorOrcid : ''}
 سەرپەرشتیاری زانستی:
 ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
 
-ساڵی خوێندن / چاپ: ${meta.publicationYear}
+ساڵی خوێندن / چاپ: ${meta.publicationYear || 'دیاری نەکراوە'}
 
 -------------------------------------------------------
 زانیاریی یاسایی و چاپی کتێبخانە:
-* ژمارەی سپاردن (Legal Deposit): ${meta.legalDepositNumber || 'لە پرۆسەدایە'}
+* ژمارەی سپاردن (Legal Deposit): ${meta.legalDepositNumber || 'تۆمار نەکراوە'}
 * ژمارەی نێودەوڵەتی (ISBN/ISSN): ${meta.isbn || 'دیاری نەکراوە'}
 * ناسێنەری دیجیتاڵی (DOI): ${meta.doi || 'تۆمار نەکراوە'}
-* ڕەزامەندیی ئەخلاقی (IRB Clearance): ${meta.ethicalClearanceCode || 'پەسەندکراوە'}
-* ڕێسای مافی چاپ: ${meta.copyrightNotice}
+* ڕەزامەندیی ئەخلاقی (IRB Clearance): ${meta.ethicalClearanceCode || 'کۆدی پەسەندکردن تۆمار نەکراوە'}
+* ڕێسای مافی چاپ: ${meta.copyrightNotice || 'مەرجەکانی مافی چاپ دیاری نەکراوە'}
 -------------------------------------------------------`;
   }
 
