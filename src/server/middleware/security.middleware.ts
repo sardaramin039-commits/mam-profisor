@@ -79,7 +79,7 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Requested-With, X-Kurdish-Library-Sanitized, X-RAG-Pipeline-Access'
+    'Content-Type, Authorization, X-Requested-With'
   );
 
   if (req.method === 'OPTIONS') {
