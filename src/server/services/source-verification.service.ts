@@ -463,6 +463,21 @@ export class SourceVerificationService {
         );
       }
 
+      if (isServerVerifiedFullText(source)) {
+        // The full-text acquisition service marks a record only after matching
+        // authoritative provider metadata and retrieving the actual open-access text.
+        // This establishes source identity; claim evidence is evaluated separately.
+        return buildBaseReport(
+          source,
+          sourceId,
+          'verified',
+          0,
+          'C',
+          100,
+          'ناسنامە بە metadata ـی provider و وەرگرتنی full-text پشتڕاستکراوەتەوە؛ پشتیوانیی هەر claim ـێک جیاوازە.'
+        );
+      }
+
       return buildBaseReport(
         source,
         sourceId,
