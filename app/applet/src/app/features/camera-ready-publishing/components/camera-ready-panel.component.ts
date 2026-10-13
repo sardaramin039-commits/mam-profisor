@@ -128,17 +128,32 @@ export class AppCameraReadyPublishingPanelComponent implements OnInit {
     this.defenseAnswers.update(curr => ({ ...curr, [qId]: answer }));
   }
 
-  runPreFlight(): void {
+  async runPreFlight(): Promise<void> {
     const chaps = this.host().chapters?.() || [];
     const citations = this.host().citationSources?.() || [];
-    const report = this.cameraReadyService.evaluatePreFlight(
-      this.meta(),
-      chaps.length,
-      citations.length,
-      citations.length,
-      true
-    );
-    this.preFlightReport.set(report);
+    const manuscriptSnapshot = JSON.stringify({
+      chapters: chaps.map((chapter: any) => ({
+        id: chapter.id,
+        title: chapter.title,
+        order: chapter.order,
+        content: chapter.content,
+        citationIds: chapter.citationIds
+      })),
+      citations
+    });
+    try {
+      const report = await this.cameraReadyService.evaluatePreFlight(
+        this.meta(),
+        chaps.length,
+        citations.length,
+        citations.length,
+        true,
+        manuscriptSnapshot
+      );
+      this.preFlightReport.set(report);
+    } catch {
+      this.preFlightReport.set(null);
+    }
   }
 
   addAppendix(): void {
