@@ -19,6 +19,12 @@ function isAiPath(path: string): boolean {
   return (
     normalized.startsWith('/ai-tools/') ||
     normalized === '/agents/run' ||
+    normalized.startsWith('/platform/') ||
+    normalized.startsWith('/library/search') ||
+    normalized.startsWith('/library/ocr') ||
+    normalized.startsWith('/chatgpt-sources/') ||
+    normalized.startsWith('/multi-agent/') ||
+    normalized === '/refine' ||
     normalized.startsWith('/platform/multi-agent-orchestrate') ||
     normalized === '/generate_chapter' ||
     normalized === '/deep_research_agent' ||
