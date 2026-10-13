@@ -4,6 +4,7 @@ import { ExtendedAuthRequest, requireRole } from '../middleware/rbac.middleware'
 import { requireAuth } from '../../middleware/auth';
 import { claimEvidenceGraphService } from '../services/claim-evidence-graph.service';
 import { sourceVerificationService } from '../services/source-verification.service';
+import { enrichSourcesWithFullText } from '../services/full-text-evidence.service';
 import { academicWritingEngineService } from '../services/academic-writing-engine.service';
 import { academicReviewerService } from '../services/academic-reviewer.service';
 import { academicQAGateService } from '../services/academic-qa-gate.service';
@@ -32,7 +33,13 @@ const verificationSourceSchema = z.object({
   fullText: z.string().max(100_000).optional(),
   text: z.string().max(100_000).optional(),
   chunkText: z.string().max(100_000).optional(),
-  pageNumber: z.union([z.string(), z.number()]).optional()
+  pageNumber: z.union([z.string(), z.number()]).optional(),
+  pmid: z.string().max(40).optional(),
+  pmcid: z.string().max(40).optional(),
+  openAlexId: z.string().max(200).optional(),
+  sourceType: z.string().max(100).optional(),
+  url: z.string().url().max(2000).optional(),
+  evidenceUrl: z.string().url().max(2000).optional()
 }).strict();
 const verificationSourceArray = z.array(verificationSourceSchema).max(100);
 
@@ -56,6 +63,29 @@ const orchestrationSchema = z.object({
   citationStyle: z.enum(['APA7', 'MLA9', 'ChicagoAD', 'ChicagoNB', 'Harvard', 'IEEE']).default('APA7')
 }).strict();
 const modelRouterSchema = z.object({ taskType: z.enum(['fast', 'reasoning', 'long_context', 'embedding']).default('fast'), textLength: z.coerce.number().int().min(0).max(1_000_000).default(0) }).strict();
+async function verifySourcesWithServerEvidence(
+  sources: Array<Record<string, unknown>>,
+  getGeminiClient: () => GoogleGenAI
+): Promise<Awaited<ReturnType<typeof sourceVerificationService.verifySources>>> {
+  // Bound external full-text retrieval to avoid one request triggering an unbounded number of fetches.
+  const candidates = sources.slice(0, 12);
+  const enriched = await Promise.all(candidates.map(async source => {
+    const claim = [
+      source['claimText'], source['evidenceText'], source['content'],
+      source['fullText'], source['text'], source['chunkText'], source['title']
+    ].find(value => typeof value === 'string' && value.trim().length >= 20);
+    if (typeof claim !== 'string') return source;
+    const [result] = await enrichSourcesWithFullText([source as never], [claim.slice(0, 2000)]);
+    return result || source;
+  }));
+
+  return sourceVerificationService.verifySources(
+    [...enriched, ...sources.slice(candidates.length)] as never[],
+    getGeminiClient
+  );
+}
+
+
 
 // Evidence labels arrive in a client request and are therefore claims, not trust anchors.
 // Only server-owned retrieval/verification code may grant these fields.
@@ -118,7 +148,7 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         return;
       }
       const { sources } = sourceVerificationSchemaParsed.data;
-      const result = await sourceVerificationService.verifySources(sources || [], getGeminiClient);
+      const result = await verifySourcesWithServerEvidence((sources || []) as Array<Record<string, unknown>>, getGeminiClient);
       res.json({ success: true, ...result });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'خەتای پشکنینی سەرچاوەکان' });
@@ -154,8 +184,8 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         return;
       }
       const { draftText, topic, discipline, verifiedSources } = academicReviewSchemaParsed.data;
-      const verification = await sourceVerificationService.verifySources(
-        verifiedSources || [],
+      const verification = await verifySourcesWithServerEvidence(
+        (verifiedSources || []) as Array<Record<string, unknown>>,
         getGeminiClient
       );
       const report = await academicReviewerService.evaluateThesis(
@@ -202,8 +232,8 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
 
       // Never trust a client-provided verification flag. Re-run authoritative
       // source verification on the server before allowing the QA gate to pass.
-      const verification = await sourceVerificationService.verifySources(
-        sources || [],
+      const verification = await verifySourcesWithServerEvidence(
+        (sources || []) as Array<Record<string, unknown>>,
         getGeminiClient
       );
 
