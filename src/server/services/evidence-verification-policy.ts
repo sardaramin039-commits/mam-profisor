@@ -11,7 +11,10 @@ const SERVER_VERIFIED_FULLTEXT = Symbol('mam-professor.server-verified-fulltext'
  * Call only after the server itself has fetched and validated the source full text.
  * JSON clients cannot create this non-serializable trust marker.
  */
-export function markServerVerifiedFullText<T extends object>(source: T): T {
+export function markServerVerifiedFullText<T extends object>(source: T): T & {
+  evidenceType: 'full-text';
+  evidenceProvenance: 'server-verified-fulltext';
+} {
   Object.assign(source, {
     evidenceType: 'full-text',
     evidenceProvenance: 'server-verified-fulltext'
