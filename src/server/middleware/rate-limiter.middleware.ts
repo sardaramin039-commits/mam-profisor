@@ -18,6 +18,22 @@ function isAiPath(path: string): boolean {
 
   return (
     normalized.startsWith('/ai-tools/') ||
+    normalized.startsWith('/agents/run') ||
+    normalized.startsWith('/library/search') ||
+    normalized.startsWith('/library/ocr') ||
+    normalized.startsWith('/platform/') ||
+    normalized === '/refine' ||
+    normalized === '/review_structure' ||
+    normalized.startsWith('/generate_') ||
+    normalized.startsWith('/expand_') ||
+    normalized.startsWith('/grounded_') ||
+    normalized === '/argument-builder' ||
+    normalized === '/academic-review' ||
+    normalized === '/qa-gate' ||
+    normalized === '/source-verification' ||
+    normalized === '/evidence-graph' ||
+    normalized === '/kurdish-language' ||
+    normalized === '/kurdish-knowledge-graph' ||
     normalized.startsWith('/platform/multi-agent-orchestrate') ||
     normalized === '/generate_chapter' ||
     normalized === '/deep_research_agent' ||
