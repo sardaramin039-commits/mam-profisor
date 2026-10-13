@@ -6,8 +6,11 @@
 export function downgradeUntrustedEvidence<T extends Record<string, unknown>>(
   source: T
 ): T & Record<string, unknown> {
+  // Object spread copies enumerable symbols too; copy only string-keyed JSON
+  // fields so a server-only trust marker cannot cross this untrusted boundary.
+  const serializableFields = Object.fromEntries(Object.entries(source)) as T;
   return {
-    ...source,
+    ...serializableFields,
     verificationStatus: 'unverified',
     identityStatus: 'unverified',
     evidenceStatus: 'unverified',
