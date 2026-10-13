@@ -39,20 +39,8 @@ export class AppCameraReadyPublishingPanelComponent implements OnInit {
   readonly preFlightReport = signal<CameraReadyReport | null>(null);
 
   // Appendices
-  readonly appendices = signal<Array<{ id: string; title: string; type: string; content: string }>>([
-    {
-      id: 'app_a',
-      title: 'پاشکۆی (ئـ): بەڵگەنامەی ڕەزامەندیی ئەخلاقی (IRB Approval Certificate)',
-      type: 'ethical',
-      content: 'بەپێی کۆبوونەوەی لێژنەی ئەخلاقیی زانستی، ئەم توێژینەوەیە سەرجەم مەرجەکانی پاراستنی تایبەتمەندی و مافی بەشداربووانی جێبەجێکردووە.'
-    },
-    {
-      id: 'app_b',
-      title: 'پاشکۆی (ب): پرسیارنامەی توێژینەوە و ئامرازی کۆکردنەوەی داتا (Survey Tool)',
-      type: 'survey',
-      content: 'فۆرمی ڕاپرسیی پێوانەکردنی متغیرەکان بە زمانی کوردی کە ئاراستەی نموونەی توێژینەوە کراوە.'
-    }
-  ]);
+  // Start empty: an IRB approval or field survey must never be fabricated as a template fact.
+  readonly appendices = signal<Array<{ id: string; title: string; type: string; content: string }>>([]);
 
   readonly newAppendixTitle = signal('');
   readonly newAppendixContent = signal('');
@@ -131,6 +119,18 @@ export class AppCameraReadyPublishingPanelComponent implements OnInit {
   async runPreFlight(): Promise<void> {
     const chaps = this.host().chapters?.() || [];
     const citations = this.host().citationSources?.() || [];
+    const verifiedCount = citations.filter((citation: any) =>
+      citation?.citationEligible === true &&
+      citation?.identityStatus === 'verified' &&
+      citation?.evidenceStatus === 'verified' &&
+      citation?.evidenceType === 'full-text' &&
+      citation?.evidenceProvenance === 'server-verified-fulltext'
+    ).length;
+    const hasPassStatus = chaps.length > 0 && chaps.every((chapter: any) =>
+      chapter?.integrityStatus === 'PASS' ||
+      chapter?.structuralStatus === 'PASS' ||
+      chapter?.status === 'PASS'
+    );
     const manuscriptSnapshot = JSON.stringify({
       chapters: chaps.map((chapter: any) => ({
         id: chapter.id,
@@ -146,8 +146,8 @@ export class AppCameraReadyPublishingPanelComponent implements OnInit {
         this.meta(),
         chaps.length,
         citations.length,
-        citations.length,
-        true,
+        verifiedCount,
+        hasPassStatus,
         manuscriptSnapshot
       );
       this.preFlightReport.set(report);
