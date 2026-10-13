@@ -4,6 +4,7 @@ import {
   assessEvidenceVerification,
   isCitationEligibleEvidence,
   isServerVerifiedFullText,
+  markServerVerifiedFullText,
   readEvidence
 } from './evidence-verification-policy';
 import type {
@@ -170,7 +171,7 @@ function buildBaseReport(
       source
     );
 
-  return {
+  const report: SourceVerificationReport = {
     sourceId,
     sourceTitle: source.title,
     author: sourceAuthorString(source) || 'نادیار',
@@ -195,6 +196,7 @@ function buildBaseReport(
     rejectionReasonKurdish,
     kurdishVerificationDetails: details
   };
+  return trustedFullText ? markServerVerifiedFullText(report) : report;
 }
 
 type CrossrefCandidate = {
