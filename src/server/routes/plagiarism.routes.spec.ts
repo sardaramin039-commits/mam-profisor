@@ -56,6 +56,38 @@ afterEach(async () => {
 });
 
 describe('plagiarism screening factuality', () => {
+  it('never returns a numeric originality score without a real comparison corpus', async () => {
+    generateContent.mockResolvedValue({
+      text: JSON.stringify({
+        originalityScore: 97,
+        plagiarismRisk: 'نزم',
+        matchesCount: 0,
+        detailedAnalysis: 'AI qualitative commentary'
+      })
+    });
+
+    const response = await fetch(`${await baseUrl()}/api/plagiarism_check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+      body: JSON.stringify({
+        title: 'Test document',
+        content: 'A sufficiently long academic text that is not compared against a verified corpus of source documents.'
+      })
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      success: true,
+      status: 'qualitative-review-only',
+      originalityScore: null,
+      plagiarismRisk: 'نەپشکنراو',
+      aiQualitativeRiskSuggestion: 'نزم',
+      matchesCount: null,
+      analysisMode: 'ai-qualitative-no-external-corpus',
+      corpusCoverage: 0
+    });
+  });
+
   it('does not report a fabricated originality score when AI is unavailable and no corpus is connected', async () => {
     const response = await fetch(`${await baseUrl()}/api/plagiarism_check`, {
       method: 'POST',
