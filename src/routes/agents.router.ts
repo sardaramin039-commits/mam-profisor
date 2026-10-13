@@ -1,10 +1,17 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import {
   academicAgentsService,
   ACADEMIC_AGENTS_LIST,
 } from '../services/academic-agents.service';
 
 export const agentsRouter = Router();
+
+const runAgentSchema = z.object({
+  agentId: z.string().trim().min(1).max(100),
+  prompt: z.string().trim().min(1).max(20_000),
+  context: z.string().max(40_000).optional()
+}).strict();
 
 // پیشاندانی لیستی سەرجەم ١٢ بریکارە ئەکادیمییە پسپۆڕەکە
 agentsRouter.get('/list', (_req: Request, res: Response) => {
@@ -34,17 +41,19 @@ agentsRouter.post(
   '/run',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { agentId, prompt, context } = req.body as {
-        agentId?: string;
-        prompt?: string;
-        context?: string;
-      };
-
-      if (!agentId || !prompt || prompt.trim() === '') {
+      const parsed = runAgentSchema.safeParse(req.body ?? {});
+      if (!parsed.success) {
         res.status(400).json({
           success: false,
-          error: 'دیاریکردنی هەردوو بڕگەی agentId و prompt پێویستە.',
+          error: 'داتای ناردراو بۆ بریکاری ئەکادیمی نادروستە.',
+          issues: parsed.error.issues
         });
+        return;
+      }
+
+      const { agentId, prompt, context } = parsed.data;
+      if (!ACADEMIC_AGENTS_LIST.some(agent => agent.id === agentId)) {
+        res.status(404).json({ success: false, error: 'بریکاری ئەکادیمی نەدۆزرایەوە.' });
         return;
       }
 
