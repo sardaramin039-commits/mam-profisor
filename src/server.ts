@@ -86,7 +86,7 @@ app.use('/api', createEvaluationReviewRouter(getGeminiClient));
 app.use('/api', createAcademicSearchIntegrationsRouter(getGeminiClient));
 app.use('/api/chatgpt-sources', createChatGptAcademicSourcesRouter());
 app.use('/api', createAdvancedAcademicToolsRouter(getGeminiClient));
-app.use('/api/platform', createAcademicPlatformRouter(getGeminiClient));
+app.use('/api/platform', requireAuth, createAcademicPlatformRouter(getGeminiClient));
 app.use('/api/writing', requireAuth, createEvidenceIntelligenceRouter(getGeminiClient));
 app.use('/api/rag', createRagRouter(getGeminiClient));
 app.use('/api/multi-agent', requireAuth, createMultiAgentRouter(getGeminiClient));
