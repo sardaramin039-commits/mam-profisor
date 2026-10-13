@@ -13,7 +13,7 @@ const AUTHENTICATED_MAX_REQUESTS = 90;
 const AUTHENTICATED_AI_MAX_REQUESTS = 30;
 const MAX_TRACKED_CLIENTS = 10_000;
 
-function isAiPath(path: string): boolean {
+export function isAiPath(path: string): boolean {
   const normalized = path.toLocaleLowerCase();
 
   return (
