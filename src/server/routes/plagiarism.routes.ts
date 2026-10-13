@@ -1,10 +1,12 @@
 import { Router, Request, Response } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { textSimilarityService } from '../services/text-similarity.service';
 import { robustParseJson } from '../utils/json-repair';
 
 export function createPlagiarismRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+  router.use('/plagiarism_check', requireAuth);
 
   /**
    * POST /api/plagiarism_check
@@ -15,16 +17,16 @@ export function createPlagiarismRouter(getGeminiClient: () => GoogleGenAI): Rout
       const { content, title } = req.body || {};
       const trimmed = typeof content === 'string' ? content.trim() : '';
 
-      if (!trimmed || trimmed.length < 10) {
+      if (!trimmed || trimmed.length < 10 || trimmed.length > 100_000) {
         res.status(400).json({
-          error: 'دەقی داواکراو زۆر کورتە بۆ پشکنینی دزدیی ئەدەبی (لانی کەم دەبێت ١٠ پیت بێت).'
+          error: 'دەق دەبێت لەنێوان ١٠ و ١٠٠٬٠٠٠ پیت بێت.'
         });
         return;
       }
 
-      // 1. Heuristic Local Screening
+      // This endpoint currently has no authoritative comparison corpus attached.
+      // Screening against [] cannot establish originality or plagiarism.
       const localResult = textSimilarityService.screen(trimmed.slice(0, 50000), []);
-      const defaultOriginality = Math.max(0, 100 - localResult.overallSimilarityScore);
 
       try {
         const ai = getGeminiClient();
@@ -65,30 +67,39 @@ ${trimmed.slice(0, 12000)}
           detailedAnalysis?: string;
         }>(response.text || '{}');
 
-        const score = typeof parsed?.originalityScore === 'number'
-          ? Math.max(0, Math.min(100, Math.round(parsed.originalityScore)))
-          : defaultOriginality;
-
-        const risk: 'نزم' | 'مامناوەند' | 'بەرز' =
-          parsed?.plagiarismRisk === 'بەرز' || parsed?.plagiarismRisk === 'مامناوەند' || parsed?.plagiarismRisk === 'نزم'
+        const modelRisk = parsed?.plagiarismRisk === 'بەرز' ||
+          parsed?.plagiarismRisk === 'مامناوەند' ||
+          parsed?.plagiarismRisk === 'نزم'
             ? parsed.plagiarismRisk
-            : score >= 80 ? 'نزم' : score >= 55 ? 'مامناوەند' : 'بەرز';
+            : null;
 
+        // Without a real comparison corpus, the AI's estimated percentage or match
+        // count is not a plagiarism measurement. Keep the actual score unassessed.
         res.json({
-          originalityScore: score,
-          plagiarismRisk: risk,
-          matchesCount: typeof parsed?.matchesCount === 'number' ? parsed.matchesCount : localResult.highRiskMatches,
-          detailedAnalysis: parsed?.detailedAnalysis || 'پشکنینی ئەکادیمی تەواو بوو؛ دەقەکە ڕەسەنایەتییەکی قبووڵکراوی هەیە بەپێی ستانداردە زانستییەکان.'
+          success: true,
+          status: 'qualitative-review-only',
+          originalityScore: null,
+          plagiarismRisk: 'نەپشکنراو',
+          aiQualitativeRiskSuggestion: modelRisk,
+          matchesCount: null,
+          analysisMode: 'ai-qualitative-no-external-corpus',
+          corpusCoverage: 0,
+          limitation: 'هیچ corpus ـی سەرچاوەی ڕاستەقینە بۆ بەراورد بەستراو نییە؛ نمرەی ڕەسەنایەتی، ڕێژەی plagiarism و ژمارەی match ناتوانرێت پشتڕاست بکرێتەوە.',
+          detailedAnalysis: parsed?.detailedAnalysis || 'AI شیکاریی وردی دابین نەکرد؛ بڕیارێکی پشتڕاستکراو لەسەر ڕەسەنایەتی ناتوانرێت بدرێت.'
         });
       } catch (aiErr) {
         console.warn('AI Plagiarism check fallback:', aiErr);
-        // Resilient deterministic fallback
-        const risk: 'نزم' | 'مامناوەند' | 'بەرز' = defaultOriginality >= 80 ? 'نزم' : defaultOriginality >= 55 ? 'مامناوەند' : 'بەرز';
-        res.json({
-          originalityScore: defaultOriginality,
-          plagiarismRisk: risk,
-          matchesCount: localResult.highRiskMatches,
-          detailedAnalysis: 'پشکنینی لۆکاڵی بۆ ڕەسەنایەتی دەق ئەنجام درا. پێشنیاز دەکرێت سەرچاوە فەرمییەکان بە تەواوی ئاماژەیان پێ بکرێت لە سەرچاوەنامەدا.'
+        // No external corpus and no AI result means no supportable originality score.
+        res.status(503).json({
+          success: false,
+          status: 'degraded',
+          originalityScore: null,
+          plagiarismRisk: 'نەپشکنراو',
+          matchesCount: null,
+          analysisMode: 'unavailable',
+          corpusCoverage: 0,
+          limitation: 'AI بەردەست نەبوو و هیچ corpus ـی سەرچاوەی ڕاستەقینە بۆ بەراورد بەستراو نەبوو؛ نمرەی ڕەسەنایەتی دروست نەکرا.',
+          detailedAnalysis: 'نەتوانرا پشکنینی ڕەسەنایەتی ئەنجام بدرێت؛ ئەم وەڵامە نابێت وەک بەڵگەی پاکبوونەوە لە plagiarism بەکاربهێنرێت.'
         });
       }
     } catch (err: unknown) {

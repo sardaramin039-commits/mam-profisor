@@ -26,10 +26,21 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), payment=()');
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'self' https://ai.studio https://*.google.com https://*.run.app;"
-  );
+  const contentSecurityPolicy = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "script-src 'self' https://apis.google.com https://www.gstatic.com",
+    "style-src 'self' 'unsafe-inline' https:",
+    "img-src 'self' https: data: blob:",
+    "font-src 'self' https: data:",
+    "connect-src 'self' https: wss:",
+    "frame-src 'self' https://accounts.google.com https://*.google.com https://*.firebaseapp.com",
+    "frame-ancestors 'self' https://ai.studio https://*.google.com https://*.run.app",
+    "form-action 'self' https://accounts.google.com",
+    "worker-src 'self' blob:"
+  ].join('; ');
+  res.setHeader('Content-Security-Policy', contentSecurityPolicy);
 
   const originHeader = req.headers.origin;
   const rawEnvOrigins = process.env['ALLOWED_ORIGINS'] || process.env['APP_URL'] || '';
@@ -79,7 +90,7 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Requested-With, X-Kurdish-Library-Sanitized, X-RAG-Pipeline-Access'
+    'Content-Type, Authorization, X-Requested-With'
   );
 
   if (req.method === 'OPTIONS') {
@@ -119,15 +130,13 @@ export function promptSanitizerMiddleware(req: Request, res: Response, next: Nex
       /you\s+are\s+now\s+a\s+DAN/gi
     ];
 
-    let sanitized = value;
+    // Detection is advisory only. Never rewrite a researcher's prompt or quoted text:
+    // stripping a few phrases is not reliable prompt-injection defense and corrupts input.
     for (const pattern of injectionPatterns) {
-      if (pattern.test(sanitized)) {
-        detected = true;
-        sanitized = sanitized.replace(pattern, '[ instruction override removed ]');
-      }
+      if (pattern.test(value)) detected = true;
       pattern.lastIndex = 0;
     }
-    return sanitized;
+    return value;
   };
 
   if (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) {

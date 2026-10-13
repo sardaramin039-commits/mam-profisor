@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import {
   SYSTEM_PROMPT_REFINE,
@@ -24,6 +25,7 @@ import {
 
 export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+  router.use(['/refine', '/review_structure', '/generate_chapter', '/expand_glossary_term', '/grounded_generate'], requireAuth);
 
   /**
    * Academic Kurdish Text Refinement and Enrichment Endpoint
@@ -131,6 +133,9 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
     } catch (error) {
       console.error('Refine endpoint error:', error);
       const fallbackResponse = {
+        success: false,
+        status: 'degraded',
+        isFallback: true,
         refinedText: text,
         diffs: [],
         metrics: {
@@ -147,7 +152,7 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
         bibliography: [],
         visualizations: []
       };
-      res.json(fallbackResponse);
+      res.status(503).json(fallbackResponse);
     }
   });
 
@@ -407,7 +412,10 @@ ${comparisonPrompt}
         discipline: req.body.discipline || 'گشتی',
         academicLevel: req.body.academicLevel || 'زانکۆ'
       });
-      res.json({
+      res.status(503).json({
+        success: false,
+        status: 'degraded',
+        isFallback: true,
         content: fallbackText,
         wordCount: fallbackText.trim().split(/\s+/).filter(Boolean).length,
         academicNotes: 'AI بەردەست نەبوو؛ ئەم وەڵامە تەنها scaffold ـە و هیچ citation ی پشتڕاستکراوی تێدا نییە.',
@@ -473,14 +481,53 @@ ${comparisonPrompt}
         return;
       }
 
+      // Evidence chunks arrive through a client request. A client cannot attest that
+      // its own text came from an authoritative full-text source, regardless of any flags.
+      let totalEvidenceChars = 0;
+      const untrustedEvidenceChunks = (Array.isArray(evidenceChunks) ? evidenceChunks : [])
+        .slice(0, 500)
+        .flatMap((item: unknown) => {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+          const chunk = item as Record<string, unknown>;
+          const sourceId = typeof chunk['sourceId'] === 'string' ? chunk['sourceId'].trim().slice(0, 200) : '';
+          const sourceTitle = typeof chunk['sourceTitle'] === 'string' ? chunk['sourceTitle'].trim().slice(0, 1000) : '';
+          const chunkText = typeof chunk['chunkText'] === 'string' ? chunk['chunkText'] : '';
+          if (!sourceId || !sourceTitle || !chunkText.trim() || chunkText.length > 50_000) return [];
+          totalEvidenceChars += chunkText.length;
+          if (totalEvidenceChars > 250_000) return [];
+          return [{
+            sourceId,
+            sourceTitle,
+            chunkText,
+            verificationStatus: 'unverified' as const,
+            author: typeof chunk['author'] === 'string' ? chunk['author'].slice(0, 500) : undefined,
+            year: typeof chunk['year'] === 'string' || typeof chunk['year'] === 'number' ? String(chunk['year']).slice(0, 10) : undefined,
+            pageNumber: typeof chunk['pageNumber'] === 'string' ? chunk['pageNumber'].slice(0, 40) : undefined,
+            evidenceType: 'snippet' as const,
+            provenance: 'user-supplied-content' as const
+          }];
+        });
+
       const result = await evidenceGroundingService.generateGroundedContent(
         topic,
         prompt,
-        Array.isArray(evidenceChunks) ? evidenceChunks : [],
+        untrustedEvidenceChunks,
         getGeminiClient
       );
 
-      res.json(result);
+      if (
+        result.integrityMetrics.citationEligibleClaims === 0 ||
+        result.integrityMetrics.eligibilityGateStatus === 'FAIL'
+      ) {
+        res.status(422).json({
+          success: false,
+          status: 'evidence-not-verified',
+          result
+        });
+        return;
+      }
+
+      res.json({ success: true, status: 'generated', result });
     } catch (err: unknown) {
       console.error('Grounded generate error:', err);
       res.status(500).json({ error: 'کێشەیەک لە دروستکردنی دەقی بنەماپێدراو لەسەر بەڵگەکان ڕوویدا.' });

@@ -56,6 +56,8 @@ app.disable('x-powered-by');
 app.use(securityHeadersMiddleware);
 
 // Academic requests can be larger than Express's default 100 KB, but keep a hard upper bound.
+// OCR accepts a bounded 8 MiB decoded image; parse this one route before the general 5 MiB JSON limit.
+app.use('/api/library/ocr', requireAuth, express.json({ limit: '12mb' }));
 app.use(express.json({ limit: '5mb' }));
 
 // Prompt injection protection middleware
@@ -75,7 +77,7 @@ app.use('/api/docs', createApiDocsRouter());
 app.use('/api', optionalAuth, authenticatedRateLimiterMiddleware);
 
 // Public & Scholarly AI Tools
-app.use('/api/ai-tools', createAiToolsRouter(getGeminiClient));
+app.use('/api/ai-tools', requireAuth, createAiToolsRouter(getGeminiClient));
 app.use('/api/library', createLibraryRouter(getGeminiClient));
 app.use('/api/external-integrations', createExternalApiRouter());
 app.use('/api', createAcademicRouter(getGeminiClient));
@@ -84,7 +86,7 @@ app.use('/api', createResearchAnalysisRouter(getGeminiClient));
 app.use('/api', createPlagiarismRouter(getGeminiClient));
 app.use('/api', createEvaluationReviewRouter(getGeminiClient));
 app.use('/api', createAcademicSearchIntegrationsRouter(getGeminiClient));
-app.use('/api/chatgpt-sources', createChatGptAcademicSourcesRouter());
+app.use('/api/chatgpt-sources', requireAuth, createChatGptAcademicSourcesRouter());
 app.use('/api', createAdvancedAcademicToolsRouter(getGeminiClient));
 app.use('/api/platform', createAcademicPlatformRouter(getGeminiClient));
 app.use('/api/writing', requireAuth, createEvidenceIntelligenceRouter(getGeminiClient));

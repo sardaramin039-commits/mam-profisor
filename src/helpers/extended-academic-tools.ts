@@ -158,11 +158,16 @@ export async function resolveDoi(doi: string): Promise<DoiResolutionResult> {
     const url = `https://api.crossref.org/works/${encodeURIComponent(cleanDoi)}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (res.ok) {
-      const data = await res.json() as { message?: { title?: string[]; author?: { given?: string; family?: string }[]; publisher?: string; 'container-title'?: string[]; created?: { 'date-parts'?: number[][] }; volume?: string; issue?: string; page?: string; URL?: string } };
+      const data = await res.json() as { message?: { title?: string[]; author?: { given?: string; family?: string }[]; publisher?: string; 'container-title'?: string[]; published?: { 'date-parts'?: number[][] }; issued?: { 'date-parts'?: number[][] }; created?: { 'date-parts'?: number[][] }; volume?: string; issue?: string; page?: string; URL?: string } };
       const msg = data.message || {};
       const title = msg.title?.[0]?.trim() || '';
       const authors = msg.author?.map(a => `${a.given || ''} ${a.family || ''}`.trim()).filter(Boolean) || [];
-      const year = String(msg.created?.['date-parts']?.[0]?.[0] || '');
+      const year = String(
+        msg.published?.['date-parts']?.[0]?.[0] ??
+        msg.issued?.['date-parts']?.[0]?.[0] ??
+        msg.created?.['date-parts']?.[0]?.[0] ??
+        ''
+      );
       const journal = msg['container-title']?.[0]?.trim() || '';
       const publisher = msg.publisher?.trim() || '';
       if (!title) {

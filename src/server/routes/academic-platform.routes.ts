@@ -1,8 +1,10 @@
 import { Router, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { ExtendedAuthRequest, requireRole } from '../middleware/rbac.middleware';
+import { requireAuth } from '../../middleware/auth';
 import { claimEvidenceGraphService } from '../services/claim-evidence-graph.service';
 import { sourceVerificationService } from '../services/source-verification.service';
+import { enrichSourcesWithFullText } from '../services/full-text-evidence.service';
 import { academicWritingEngineService } from '../services/academic-writing-engine.service';
 import { academicReviewerService } from '../services/academic-reviewer.service';
 import { academicQAGateService } from '../services/academic-qa-gate.service';
@@ -31,11 +33,17 @@ const verificationSourceSchema = z.object({
   fullText: z.string().max(100_000).optional(),
   text: z.string().max(100_000).optional(),
   chunkText: z.string().max(100_000).optional(),
-  pageNumber: z.union([z.string(), z.number()]).optional()
-}).strict();
+  pageNumber: z.union([z.string(), z.number()]).optional(),
+  pmid: z.string().max(40).optional(),
+  pmcid: z.string().max(40).optional(),
+  openAlexId: z.string().max(200).optional(),
+  sourceType: z.string().max(100).optional(),
+  url: z.string().url().max(2000).optional(),
+  evidenceUrl: z.string().url().max(2000).optional()
+});
 const verificationSourceArray = z.array(verificationSourceSchema).max(100);
 
-const evidenceGraphSchema = z.object({ topic: textField(500), draftText: z.string().max(250_000).default(''), sources: rawSourceArray.default([]) }).strict();
+const evidenceGraphSchema = z.object({ topic: textField(500), draftText: z.string().max(250_000).default(''), sources: verificationSourceArray.default([]) }).strict();
 const sourceVerificationSchema = z.object({ sources: verificationSourceArray.default([]) }).strict();
 const academicReviewSchema = z.object({
   draftText: textField(250_000),
@@ -55,9 +63,35 @@ const orchestrationSchema = z.object({
   citationStyle: z.enum(['APA7', 'MLA9', 'ChicagoAD', 'ChicagoNB', 'Harvard', 'IEEE']).default('APA7')
 }).strict();
 const modelRouterSchema = z.object({ taskType: z.enum(['fast', 'reasoning', 'long_context', 'embedding']).default('fast'), textLength: z.coerce.number().int().min(0).max(1_000_000).default(0) }).strict();
+async function verifySourcesWithServerEvidence(
+  sources: Array<Record<string, unknown>>,
+  getGeminiClient: () => GoogleGenAI
+): Promise<Awaited<ReturnType<typeof sourceVerificationService.verifySources>>> {
+  // Bound external full-text retrieval to avoid one request triggering an unbounded number of fetches.
+  const candidates = sources.slice(0, 12);
+  const enriched = await Promise.all(candidates.map(async source => {
+    const claim = [
+      source['claimText'], source['evidenceText'], source['chunkText'], source['text']
+    ].find(value => typeof value === 'string' && value.trim().length >= 20);
+    if (typeof claim !== 'string') return source;
+    const [result] = await enrichSourcesWithFullText([source as never], [claim.slice(0, 2000)]);
+    return result || source;
+  }));
+
+  return sourceVerificationService.verifySources(
+    [...enriched, ...sources.slice(candidates.length)] as never[],
+    getGeminiClient
+  );
+}
+
+
 
 export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+
+  // Every endpoint in this router is an academic AI/evidence operation or
+  // privileged telemetry/configuration surface. Require a verified Firebase ID token first.
+  router.use(requireAuth);
 
   // 1. Claim-Evidence Graph Engine
   router.post('/evidence-graph', async (req: ExtendedAuthRequest, res: Response): Promise<void> => {
@@ -68,13 +102,46 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         return;
       }
       const { topic, draftText, sources } = evidenceGraphSchemaParsed.data;
+      const verification = await verifySourcesWithServerEvidence(
+        (sources || []) as unknown as Array<Record<string, unknown>>,
+        getGeminiClient
+      );
+      // The graph receives only server-verified full-text excerpts. Client flags and
+      // caller-supplied full text never become evidence simply by being in this request.
+      const graphSources = verification.allReports.map(report => {
+        const eligible = report.citationEligible === true;
+        const evidenceText = eligible ? String(report.evidenceText || '') : '';
+        return {
+          id: report.sourceId,
+          sourceId: report.sourceId,
+          title: report.sourceTitle,
+          content: evidenceText,
+          fullText: evidenceText,
+          evidenceText,
+          verificationStatus: report.identityStatus,
+          identityStatus: report.identityStatus,
+          evidenceStatus: report.evidenceStatus,
+          evidenceType: report.evidenceType,
+          evidenceProvenance: report.evidenceProvenance,
+          trustLevel: report.trustLevel,
+          rejectedAsFabricated: report.rejectedAsFabricated
+        };
+      });
       const graph = await claimEvidenceGraphService.buildGraph(
         topic || 'تێزی زانستی',
         draftText || '',
-        sources || [],
+        graphSources,
         getGeminiClient
       );
-      res.json({ success: true, graph });
+      res.json({
+        success: true,
+        graph,
+        sourceVerification: {
+          citationEligibleSourceCount: verification.citationEligibleSources.length,
+          identityVerifiedSourceCount: verification.verifiedSources.length,
+          unverifiedSourceCount: verification.unverifiedSources.length
+        }
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'خەتای دروستکردنی گرافی بەڵگەکان' });
     }
@@ -89,7 +156,7 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         return;
       }
       const { sources } = sourceVerificationSchemaParsed.data;
-      const result = await sourceVerificationService.verifySources(sources || [], getGeminiClient);
+      const result = await verifySourcesWithServerEvidence((sources || []) as Array<Record<string, unknown>>, getGeminiClient);
       res.json({ success: true, ...result });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'خەتای پشکنینی سەرچاوەکان' });
@@ -110,7 +177,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         discipline || 'توێژینەوەی گشتی',
         getGeminiClient
       );
-      res.json({ success: true, plan });
+      const generated = plan.status === 'generated';
+      res.status(generated ? 200 : 503).json({
+        success: generated,
+        status: plan.status,
+        plan
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'خەتای دروستکردنی ئارگومێنت' });
     }
@@ -125,8 +197,8 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         return;
       }
       const { draftText, topic, discipline, verifiedSources } = academicReviewSchemaParsed.data;
-      const verification = await sourceVerificationService.verifySources(
-        verifiedSources || [],
+      const verification = await verifySourcesWithServerEvidence(
+        (verifiedSources || []) as Array<Record<string, unknown>>,
         getGeminiClient
       );
       const report = await academicReviewerService.evaluateThesis(
@@ -146,8 +218,10 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
           }))
         }
       );
-      res.json({
-        success: true,
+      const generated = report.status === 'generated';
+      res.status(generated ? 200 : 503).json({
+        success: generated,
+        status: report.status,
         report,
         sourceVerification: {
           identityVerifiedSources: verification.verifiedSources,
@@ -173,8 +247,8 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
 
       // Never trust a client-provided verification flag. Re-run authoritative
       // source verification on the server before allowing the QA gate to pass.
-      const verification = await sourceVerificationService.verifySources(
-        sources || [],
+      const verification = await verifySourcesWithServerEvidence(
+        (sources || []) as Array<Record<string, unknown>>,
         getGeminiClient
       );
 
@@ -217,7 +291,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         text || '',
         getGeminiClient
       );
-      res.json({ success: true, analysis });
+      const generated = analysis.status === 'generated';
+      res.status(generated ? 200 : 503).json({
+        success: generated,
+        status: analysis.status,
+        analysis
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'خەتای شیکاری زمانی کوردی' });
     }

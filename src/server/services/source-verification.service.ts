@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { isServerVerifiedFullTextSource, preserveServerVerifiedFullText } from './full-text-evidence.service';
 import { lookupIsbn, lookupIssn, resolveDoi } from '../../helpers/extended-academic-tools';
 import {
   assessEvidenceVerification,
@@ -151,14 +152,28 @@ function buildBaseReport(
   rejectedAsFabricated = false,
   rejectionReasonKurdish?: string
 ): SourceVerificationReport {
-  const evidence = assessEvidenceVerification(source);
+  const suppliedEvidenceText = readEvidence(source);
+  // Only object identity registered by the server full-text retriever can prove
+  // provenance. JSON flags like evidenceProvenance='server-verified-fulltext' do not.
+  const serverRetrievedFullText = isServerVerifiedFullTextSource(source) && Boolean(suppliedEvidenceText);
+  const assessedEvidence: ReturnType<typeof assessEvidenceVerification> = serverRetrievedFullText
+    ? assessEvidenceVerification(source)
+    : { status: suppliedEvidenceText ? 'unverified' : 'not_available' };
+  const evidenceStatus: EvidenceVerificationStatus = assessedEvidence.status;
+  const evidenceType: EvidenceType = serverRetrievedFullText
+    ? 'full-text'
+    : suppliedEvidenceText ? 'snippet' : source.evidenceType === 'abstract' ? 'abstract' : 'snippet';
+  const evidenceProvenance: EvidenceProvenance = serverRetrievedFullText
+    ? 'server-verified-fulltext'
+    : suppliedEvidenceText ? 'user-supplied-content' : 'unknown';
   const citationEligible =
     identityStatus === 'verified' &&
+    serverRetrievedFullText &&
     isCitationEligibleEvidence(
-      evidence.status,
-      Boolean(readEvidence(source)),
-      source.evidenceType,
-      source.evidenceProvenance
+      evidenceStatus,
+      Boolean(suppliedEvidenceText),
+      evidenceType,
+      evidenceProvenance
     );
 
   return {
@@ -173,12 +188,12 @@ function buildBaseReport(
     trustLevel,
     existenceVerified: identityStatus === 'verified',
     identityStatus,
-    evidenceStatus: evidence.status,
+    evidenceStatus,
     citationEligible,
-    evidenceVerificationMethod: evidence.method,
-    evidenceText: readEvidence(source) || undefined,
-    evidenceType: source.evidenceType,
-    evidenceProvenance: source.evidenceProvenance || 'unknown',
+    evidenceVerificationMethod: serverRetrievedFullText ? assessedEvidence.method : undefined,
+    evidenceText: suppliedEvidenceText || undefined,
+    evidenceType,
+    evidenceProvenance,
     pageNumber: source.pageNumber ?? null,
     metadataAccuracy,
     peerReviewed: false,
@@ -194,90 +209,68 @@ type CrossrefCandidate = {
   publisher: string;
   year: string;
   doi: string;
+  metadataAccuracy: number;
 };
 
-async function searchCrossrefByMetadata(
-  source: InputSource
-): Promise<CrossrefCandidate | undefined> {
-  const query = [source.title, sourceAuthorString(source), source.publisher]
-    .filter(Boolean)
-    .join(' ')
-    .trim();
+async function searchCrossrefByMetadata(source: InputSource): Promise<CrossrefCandidate | undefined> {
+  const inputAuthor = sourceAuthorString(source);
+  const query = [source.title, inputAuthor, source.publisher].filter(Boolean).join(' ').trim();
   if (!query) return undefined;
 
   try {
     const response = await fetch(
       `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(query)}&rows=5`,
       {
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': 'Mam-Professor-Academic-Platform/1.0'
-        },
+        headers: { Accept: 'application/json', 'User-Agent': 'Mam-Professor-Academic-Platform/1.0' },
         signal: AbortSignal.timeout(5000)
       }
     );
     if (!response.ok) return undefined;
-
     const data = await response.json() as {
-      message?: {
-        items?: Array<{
-          title?: string[];
-          author?: Array<{ given?: string; family?: string }>;
-          publisher?: string;
-          DOI?: string;
-          published?: { 'date-parts'?: number[][] };
-          issued?: { 'date-parts'?: number[][] };
-        }>
-      }
+      message?: { items?: Array<{
+        title?: string[];
+        author?: Array<{ given?: string; family?: string }>;
+        publisher?: string;
+        DOI?: string;
+        published?: { 'date-parts'?: number[][] };
+        issued?: { 'date-parts'?: number[][] };
+      }> }
     };
 
-    const items = Array.isArray(data.message?.items) ? data.message.items : [];
-    let best:
-      | { candidate: CrossrefCandidate; score: number; authorScore: number; yearMatch: boolean }
-      | undefined;
-
-    for (const item of items) {
+    const sourceYear = Number(source.year);
+    const hasSourceYear = Number.isFinite(sourceYear) && sourceYear > 0;
+    let best: { candidate: CrossrefCandidate; score: number; authorScore: number } | undefined;
+    for (const item of Array.isArray(data.message?.items) ? data.message.items : []) {
       const title = item.title?.[0]?.trim() || '';
       if (!title) continue;
-
       const authors = (item.author || [])
         .map(author => [author.given, author.family].filter(Boolean).join(' ').trim())
         .filter(Boolean);
-
       const score = titleSimilarity(source.title, title);
-      const authorText = sourceAuthorString(source);
-      const authorScore = authorText ? authorOverlap(authorText, authors) : 1;
-      const sourceYear = Number(source.year);
-      const itemYear = Number(
-        item.published?.['date-parts']?.[0]?.[0] ??
-        item.issued?.['date-parts']?.[0]?.[0] ??
-        0
-      );
-      const yearMatch =
-        !Number.isFinite(sourceYear) || !sourceYear || !itemYear
-          ? true
-          : Math.abs(sourceYear - itemYear) <= 1;
-
+      const authorScore = inputAuthor ? authorOverlap(inputAuthor, authors) : 1;
+      const year = Number(item.published?.['date-parts']?.[0]?.[0] ?? item.issued?.['date-parts']?.[0]?.[0] ?? 0);
+      const yearMatch = !hasSourceYear || (year > 0 && Math.abs(sourceYear - year) <= 1);
+      const publisher = item.publisher || '';
+      const checks = [
+        score,
+        ...(inputAuthor ? [authorScore] : []),
+        ...(hasSourceYear ? [Number(yearMatch)] : []),
+        ...(source.publisher && publisher ? [Number(normalize(source.publisher) === normalize(publisher))] : [])
+      ];
+      const candidate: CrossrefCandidate = {
+        title, authors, publisher, year: year ? String(year) : '', doi: item.DOI || '',
+        metadataAccuracy: Math.round(checks.reduce((sum, value) => sum + value, 0) / checks.length * 100)
+      };
       if (!best || score + authorScore * 0.1 > best.score + best.authorScore * 0.1) {
-        best = {
-          candidate: {
-            title,
-            authors,
-            publisher: item.publisher || '',
-            year: itemYear ? String(itemYear) : '',
-            doi: item.DOI || ''
-          },
-          score,
-          authorScore,
-          yearMatch
-        };
+        best = { candidate, score, authorScore };
       }
     }
 
-    if (!best || best.score < 0.82 || best.authorScore < 0.5 || !best.yearMatch) {
-      return undefined;
-    }
-
+    if (
+      !best || best.score < 0.82 || best.authorScore < 0.5 ||
+      (!inputAuthor && !hasSourceYear) ||
+      (hasSourceYear && !best.candidate.year)
+    ) return undefined;
     return best.candidate;
   } catch {
     return undefined;
@@ -353,16 +346,22 @@ export class SourceVerificationService {
 
       if (external) {
         const titleMatch = titleSimilarity(source.title, external.title) >= 0.72;
-        const authorMatch =
-          !sourceAuthorString(source) || external.authors.length === 0
-            ? true
-            : authorOverlap(sourceAuthorString(source), external.authors) >= 0.5;
+        const inputAuthor = sourceAuthorString(source);
+        const authorMatch = !inputAuthor ||
+          (external.authors.length > 0 && authorOverlap(inputAuthor, external.authors) >= 0.5);
         const inputYear = Number(source.year);
         const externalYear = Number(external.publishedYear);
-        const yearMatch =
-          !Number.isFinite(inputYear) || !Number.isFinite(externalYear) || inputYear === 0
-            ? true
-            : Math.abs(inputYear - externalYear) <= 1;
+        const hasInputYear = Number.isFinite(inputYear) && inputYear > 0;
+        const yearMatch = !hasInputYear ||
+          (Number.isFinite(externalYear) && externalYear > 0 && Math.abs(inputYear - externalYear) <= 1);
+        const metadataChecks = [
+          Number(titleMatch),
+          ...(inputAuthor ? [Number(authorMatch)] : []),
+          ...(hasInputYear ? [Number(yearMatch)] : [])
+        ];
+        const metadataAccuracy = Math.round(
+          metadataChecks.reduce((sum, value) => sum + value, 0) / metadataChecks.length * 100
+        );
         const matches = titleMatch && authorMatch && yearMatch;
 
         if (!matches) {
@@ -372,7 +371,7 @@ export class SourceVerificationService {
             'rejected',
             0,
             'F',
-            Math.round((Number(titleMatch) + Number(authorMatch) + Number(yearMatch)) / 3 * 100),
+            metadataAccuracy,
             'DOI دۆزرایەوە، بەڵام metadata ـی سەرچاوە لەگەڵ تۆماری Crossref ناگونجێت.',
             true,
             'metadata ـی سەرچاوە لەگەڵ تۆماری DOI/Crossref بە تەواوی هاوتا نییە.'
@@ -380,12 +379,12 @@ export class SourceVerificationService {
         }
 
         return buildBaseReport(
-          { ...source, title: external.title, author: external.authors.join(', ') || sourceAuthorString(source), authors: external.authors.length ? external.authors : sourceAuthorList(source), year: external.publishedYear, publisher: external.publisher || source.publisher, doi: external.doi },
+          preserveServerVerifiedFullText(source, { ...source, title: external.title, author: external.authors.join(', ') || sourceAuthorString(source), authors: external.authors.length ? external.authors : sourceAuthorList(source), year: external.publishedYear, publisher: external.publisher || source.publisher, doi: external.doi }),
           sourceId,
           'verified',
           0,
           'C',
-          100,
+          metadataAccuracy,
           'ناسنامەی سەرچاوە بە DOI/Crossref پشتڕاستکراوەتەوە؛ ئەمە بە تەنها peer-review یان evidence verification نییە.',
           false
         );
@@ -393,19 +392,22 @@ export class SourceVerificationService {
 
       if (isbnExternal) {
         const titleMatch = titleSimilarity(source.title, isbnExternal.title) >= 0.65;
-        const authorMatch =
-          !sourceAuthorString(source) || isbnExternal.authors.length === 0
-            ? true
-            : authorOverlap(sourceAuthorString(source), isbnExternal.authors) >= 0.5;
+        const inputAuthor = sourceAuthorString(source);
+        const authorMatch = !inputAuthor ||
+          (isbnExternal.authors.length > 0 && authorOverlap(inputAuthor, isbnExternal.authors) >= 0.5);
+        const metadataChecks = [Number(titleMatch), ...(inputAuthor ? [Number(authorMatch)] : [])];
+        const metadataAccuracy = Math.round(
+          metadataChecks.reduce((sum, value) => sum + value, 0) / metadataChecks.length * 100
+        );
         const matched = titleMatch && authorMatch;
 
         return buildBaseReport(
-          { ...source, title: isbnExternal.title, author: isbnExternal.authors.join(', ') || sourceAuthorString(source), authors: isbnExternal.authors.length ? isbnExternal.authors : sourceAuthorList(source), year: isbnExternal.publishDate || source.year, publisher: isbnExternal.publisher || source.publisher, isbn: isbnExternal.isbn },
+          preserveServerVerifiedFullText(source, { ...source, title: isbnExternal.title, author: isbnExternal.authors.join(', ') || sourceAuthorString(source), authors: isbnExternal.authors.length ? isbnExternal.authors : sourceAuthorList(source), year: isbnExternal.publishDate || source.year, publisher: isbnExternal.publisher || source.publisher, isbn: isbnExternal.isbn }),
           sourceId,
           matched ? 'verified' : 'rejected',
           matched ? 0 : 0,
           matched ? 'C' : 'F',
-          Math.round((Number(titleMatch) + Number(authorMatch)) / 2 * 100),
+          metadataAccuracy,
           matched
             ? 'ناسنامەی کتێب بە ISBN/Open Library پشتڕاستکراوەتەوە؛ evidence verification جیاوازە.'
             : 'ناونیشان یان نووسەر لەگەڵ تۆماری ISBN ناگونجێت.',
@@ -417,33 +419,37 @@ export class SourceVerificationService {
       const candidate = metadataResolved.get(index);
       if (candidate) {
         return buildBaseReport(
-          { ...source, title: candidate.title, author: candidate.authors.join(', ') || sourceAuthorString(source), authors: candidate.authors.length ? candidate.authors : sourceAuthorList(source), year: candidate.year || source.year, publisher: candidate.publisher || source.publisher, doi: candidate.doi || source.doi },
+          preserveServerVerifiedFullText(source, { ...source, title: candidate.title, author: candidate.authors.join(', ') || sourceAuthorString(source), authors: candidate.authors.length ? candidate.authors : sourceAuthorList(source), year: candidate.year || source.year, publisher: candidate.publisher || source.publisher, doi: candidate.doi || source.doi }),
           sourceId,
           'verified',
           0,
           'C',
-          100,
+          candidate.metadataAccuracy,
           'ناسنامەی سەرچاوە بە metadata ـی Crossref پشتڕاستکراوەتەوە؛ evidence verification جیاوازە.'
         );
       }
 
       if (issnExternal) {
-        const titleMatch =
-          !issnExternal.journalTitle ||
-          titleSimilarity(source.title, issnExternal.journalTitle) >= 0.65;
-        const publisherMatch =
-          !source.publisher ||
-          !issnExternal.publisher ||
-          normalize(source.publisher) === normalize(issnExternal.publisher);
-        const matched = titleMatch && publisherMatch;
+        const titleMatch = Boolean(issnExternal.journalTitle) &&
+          titleSimilarity(source.title, issnExternal.journalTitle || '') >= 0.65;
+        const publisherMatch = Boolean(source.publisher && issnExternal.publisher) &&
+          normalize(source.publisher || '') === normalize(issnExternal.publisher || '');
+        const availableChecks = [
+          ...(issnExternal.journalTitle ? [Number(titleMatch)] : []),
+          ...(source.publisher && issnExternal.publisher ? [Number(publisherMatch)] : [])
+        ];
+        const metadataAccuracy = availableChecks.length
+          ? Math.round(availableChecks.reduce((sum, value) => sum + value, 0) / availableChecks.length * 100)
+          : 0;
+        const matched = availableChecks.length > 0 && availableChecks.every(value => value === 1);
 
         return buildBaseReport(
-          { ...source, title: issnExternal.journalTitle || source.title, publisher: issnExternal.publisher || source.publisher, issn: issnExternal.issn },
+          preserveServerVerifiedFullText(source, { ...source, title: issnExternal.journalTitle || source.title, publisher: issnExternal.publisher || source.publisher, issn: issnExternal.issn }),
           sourceId,
           matched ? 'verified' : 'rejected',
           matched ? 0 : 0,
           matched ? 'C' : 'F',
-          Math.round((Number(titleMatch) + Number(publisherMatch)) / 2 * 100),
+          metadataAccuracy,
           matched
             ? 'ژمارەی ISSN و metadata ـی گۆڤار پشتڕاستکراوەتەوە؛ evidence verification جیاوازە.'
             : 'تۆماری ISSN لەگەڵ metadata ـی پێدراو ناگونجێت.',

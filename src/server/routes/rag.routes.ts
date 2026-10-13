@@ -73,14 +73,17 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
         userId,
         documentId: typeof documentId === 'string' ? documentId.trim().slice(0, 200) : undefined,
         pages,
-        verificationStatus: verification.verifiedSources.length > 0 ? 'verified' : 'unverified'
+        // Identity metadata verification does not verify caller-supplied document content.
+        // Uploaded text remains unverified until the server retrieves and validates authoritative full text.
+        verificationStatus: 'unverified'
       });
 
       res.status(201).json({
         id: indexed.id,
         title: indexed.title,
         retrievalStatus: indexed.retrievalStatus,
-        verificationStatus: verification.verifiedSources.length > 0 ? 'verified' : 'unverified',
+        verificationStatus: 'unverified',
+        sourceIdentityStatus: verification.verifiedSources.length > 0 ? 'verified' : 'unverified',
         embeddingDimensions: indexed.embedding?.length || 0,
         documentId: indexed.documentId || indexed.id,
         chunkCount: indexed.chunkCount || 1,

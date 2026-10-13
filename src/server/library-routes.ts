@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { requireRole, ExtendedAuthRequest } from './middleware/rbac.middleware';
+import { requireAuth } from '../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { crawlerEngine } from '../services/crawler-engine';
 
@@ -33,18 +34,24 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 3. POST /api/library/search - AI Semantic Search & Query Expansion
-  router.post('/search', async (req: Request, res: Response) => {
+  router.post('/search', requireAuth, async (req: Request, res: Response) => {
     try {
       const { query, language } = req.body || {};
-      if (!query || typeof query !== 'string') {
-        res.status(400).json({ error: 'Query parameter is required' });
+      if (
+        typeof query !== 'string' ||
+        query.trim().length < 2 ||
+        query.length > 2_000
+      ) {
+        res.status(400).json({ error: 'Query must contain 2 to 2000 characters.' });
         return;
       }
+      const safeQuery = query.trim();
+      const safeLanguage = typeof language === 'string' ? language.trim().slice(0, 60) : 'سۆرانی';
 
       const ai = getGeminiClient();
       const prompt = `شیکاری سیمانتیکی و فرانۆشکردنی گەڕان بکە بۆ ئەم داواکارییەی گەڕان لە کتێبخانەی دیجیتاڵیی کوردی:
-داواکاری: "${query}"
-زمانی خوازراو: ${language || 'سۆرانی'}
+داواکاریی گەڕان (JSON string): ${JSON.stringify(safeQuery)}
+زمانی خوازراو: ${safeLanguage}
 
 تکایە وەڵام بە فۆرماتی JSON بدەرەوە بەم شێوەیە:
 {
@@ -73,20 +80,25 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
 
       res.json(parsed);
     } catch (err) {
-      console.warn('Semantic search fallback:', err);
-      res.json({
-        expandedKeywords: [req.body?.query || ''],
-        aiSummary: 'ئەنجامی گەڕانی ڕاستەوخۆ لە ئەرشیڤی ٤٠ کتێبخانەکە'
+      console.warn('Semantic library search unavailable:', err);
+      res.status(503).json({
+        success: false,
+        degraded: true,
+        retrievalStatus: 'unavailable',
+        error: 'فراوانکردنی گەڕان بە AI بەردەست نییە؛ هیچ ئەنجامی گەڕانی ڕاستەوخۆ پشتڕاست نەکراوەتەوە.'
       });
     }
   });
 
   // 4. POST /api/library/sync - Trigger 24h Crawler Sync
-  router.post('/sync', requireRole('admin', 'professor'), async (_req: ExtendedAuthRequest, res: Response) => {
+  router.post('/sync', requireAuth, requireRole('admin', 'professor'), async (_req: ExtendedAuthRequest, res: Response) => {
     try {
       const log = await crawlerEngine.triggerSync();
-      res.json({
-        message: 'هاودەمکردنی سەرچاوەکان بەسەرکەوتوویی ئەنجامدرا',
+      const synchronized = log.status === 'success';
+      res.status(synchronized ? 200 : 503).json({
+        success: synchronized,
+        status: log.status,
+        message: log.message,
         log
       });
     } catch {
@@ -98,23 +110,30 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   router.post('/ocr', async (req: Request, res: Response) => {
     try {
       const { imageDataUrl } = req.body || {};
-      if (typeof imageDataUrl !== 'string' || imageDataUrl.length > 12_000_000) {
-        res.status(400).json({ error: 'Valid page image is required (maximum 8 MB decoded input).' });
+      if (typeof imageDataUrl !== 'string' || imageDataUrl.length > 11_200_000) {
+        res.status(413).json({ error: 'A PNG, JPEG, or WebP page image up to 8 MiB is required.' });
         return;
       }
 
       const commaIndex = imageDataUrl.indexOf(',');
       const header = commaIndex >= 0 ? imageDataUrl.slice(0, commaIndex) : '';
       const data = commaIndex >= 0 ? imageDataUrl.slice(commaIndex + 1) : '';
-      const mimeMatch = header.startsWith('data:image/') ? header.slice('data:image/'.length).split(';')[0] : '';
-      const allowedMimeTypes = new Set(['png', 'jpeg', 'webp']);
+      const mimeMatch = /^data:image\/(png|jpeg|webp);base64$/i.exec(header);
+      const allowedMimeType = mimeMatch?.[1]?.toLowerCase();
+      const validBase64 = data.length > 0 && data.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(data);
 
-      if (commaIndex < 0 || !allowedMimeTypes.has(mimeMatch) || !data) {
-        res.status(400).json({ error: 'Only PNG, JPEG, and WebP page images are supported.' });
+      if (!allowedMimeType || !validBase64) {
+        res.status(400).json({ error: 'Only valid base64 data URLs for PNG, JPEG, and WebP are supported.' });
         return;
       }
 
-      const mimeType = `image/${mimeMatch}`;
+      const decodedBytes = (data.length / 4) * 3 - (data.endsWith('==') ? 2 : data.endsWith('=') ? 1 : 0);
+      if (decodedBytes > 8 * 1024 * 1024) {
+        res.status(413).json({ error: 'Page image exceeds the 8 MiB decoded limit.' });
+        return;
+      }
+
+      const mimeType = `image/${allowedMimeType}`;
       const ai = getGeminiClient();
       const prompt = 'OCR ـی ئەم وێنەی لاپەڕەی بەڵگەنامە بکە. تەنها ئەو دەقەی بە ڕاستی لە وێنەکەدا دەبینرێت بنووسە. هیچ وشە، ڕستە، سەرچاوە یان زانیارییەکی خەیاڵی زیاد مەکە. هێڵبەندی و ژمارەکانی لاپەڕە تا ئەوەی دەتوانیت بپارێزە.';
 
@@ -141,7 +160,7 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 6. GET /api/library/admin/stats - Admin Metrics
-  router.get('/admin/stats', requireRole('admin', 'professor'), (_req: ExtendedAuthRequest, res: Response) => {
+  router.get('/admin/stats', requireAuth, requireRole('admin', 'professor'), (_req: ExtendedAuthRequest, res: Response) => {
     try {
       const stats = crawlerEngine.getAdminStats();
       res.json(stats);

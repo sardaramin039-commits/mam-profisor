@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import {
   SYSTEM_PROMPT_REFINE
@@ -25,7 +26,7 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
   const router = Router();
 
   // /api/refine
-  router.post('/refine', async (req: Request, res: Response) => {
+  router.post('/refine', requireAuth, async (req: Request, res: Response) => {
     const { text, discipline, tone, goal } = req.body;
     try {
       if (!text || typeof text !== 'string') {
@@ -160,7 +161,7 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
   });
 
   // /api/deep_research_agent
-  router.post('/deep_research_agent', async (req: Request, res: Response) => {
+  router.post('/deep_research_agent', requireAuth, async (req: Request, res: Response) => {
     try {
       const { topic, discipline, documentTitle } = req.body || {};
       if (!topic || typeof topic !== 'string' || topic.trim().length < 2) {
@@ -202,7 +203,8 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
         source: source.source,
         doi: source.doi || '',
         url: source.url || '',
-        verificationStatus: 'verified'
+        identityVerificationStatus: 'verified',
+        evidenceVerificationStatus: 'not-verified'
       }));
 
       if (sources.length === 0) {
@@ -282,14 +284,14 @@ ${JSON.stringify(sourceContext, null, 2)}
           relevance: 'retrieved-from-index',
           doi: source.doi || undefined,
           url: source.url || undefined,
-          verificationStatus: 'verified'
+          verificationStatus: 'identity-verified-not-evidence-verified'
         })),
         kurdishAcademicSynthesis: typeof parsed['kurdishAcademicSynthesis'] === 'string' ? parsed['kurdishAcademicSynthesis'] : '',
         futureAvenues: stringArray(parsed['futureAvenues']),
         sourceIntegrity: {
           retrievalStatus: 'index-results',
           sourceCount: sources.length,
-          verificationStatus: 'verified'
+          verificationStatus: 'identity-verified-not-evidence-verified'
         }
       });
     } catch (error) {

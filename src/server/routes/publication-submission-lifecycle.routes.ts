@@ -46,8 +46,12 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
       );
       res.json({ submissions: items });
     } catch (error) {
-      console.warn('Submission lifecycle list error:', error);
-      res.json({ submissions: [] });
+      console.error('Submission lifecycle list unavailable:', error);
+      res.status(503).json({
+        success: false,
+        degraded: true,
+        error: 'نەتوانرا submission lifecycle لە داتابەیس بخوێندرێتەوە؛ لیستی بەتاڵ وەک ئەنجامی ڕاستەقینە ناگەڕێندرێتەوە.'
+      });
     }
   });
 

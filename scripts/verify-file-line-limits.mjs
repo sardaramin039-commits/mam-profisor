@@ -1,7 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-const ROOT = 'src';
+const ROOTS = ['src', 'app/applet/src'];
 const LIMIT = 500;
 const EXTENSIONS = new Set(['.ts','.tsx','.js','.mjs','.html','.css','.scss']);
 const offenders = [];
@@ -11,17 +11,22 @@ function walk(dir) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) walk(full);
     else if (EXTENSIONS.has(full.slice(full.lastIndexOf('.')).toLowerCase())) {
-      const lineCount = readFileSync(full, 'utf8').split(/\r?\n/).length;
+      const content = readFileSync(full, 'utf8');
+      const lineCount = content.length === 0
+        ? 0
+        : content.split(/\r?\n/).length - (content.endsWith('\n') ? 1 : 0);
       if (lineCount > LIMIT) offenders.push({ file: relative(process.cwd(), full), lineCount });
     }
   }
 }
 
-walk(ROOT);
+for (const root of ROOTS) {
+  if (existsSync(root)) walk(root);
+}
 offenders.sort((a,b) => b.lineCount - a.lineCount);
 if (offenders.length) {
   console.error(`File line limit exceeded (> ${LIMIT} lines):`);
   for (const item of offenders) console.error(`- ${item.lineCount}: ${item.file}`);
   process.exit(1);
 }
-console.log(`Line-limit check passed: all tracked source/template files are <= ${LIMIT} lines.`);
+console.log(`Line-limit check passed: all files under ${ROOTS.filter(existsSync).join(', ')} are <= ${LIMIT} lines.`);

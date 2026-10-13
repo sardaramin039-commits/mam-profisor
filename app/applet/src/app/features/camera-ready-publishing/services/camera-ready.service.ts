@@ -25,16 +25,16 @@ export class CameraReadyService {
       authorOrcid: '',
       supervisorName: '',
       academicDegree: 'master',
-      institution: 'زانکۆی سلێمانی / زانکۆی سەلاحەدین',
-      faculty: 'کۆلێژی زانست / کۆلێژی زمان',
-      department: 'بەشی خوێندنی باڵا',
-      publicationYear: '٢٠٢٦',
+      institution: '',
+      faculty: '',
+      department: '',
+      publicationYear: '',
       legalDepositNumber: '',
       isbn: '',
       doi: '',
-      ethicalClearanceCode: 'IRB-2026-KU-019',
-      ethicalStatement: 'ئەم توێژینەوەیە بەپێی ڕێنمایییە ئەخلاقییەکانی لێکۆڵینەوە لەگەڵ مرۆڤ و پاراستنی داتاکان ئەنجامدراوە.',
-      copyrightNotice: 'هەموو مافەکانی ئەم بەرهەمە بۆ نووسەر پارێزراوە © ٢٠٢٦'
+      ethicalClearanceCode: '',
+      ethicalStatement: '',
+      copyrightNotice: ''
     };
   }
 
@@ -119,25 +119,26 @@ ${meta.authorOrcid ? 'ناسنامەی ORCID: ' + meta.authorOrcid : ''}
 سەرپەرشتیاری زانستی:
 ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
 
-ساڵی خوێندن / چاپ: ${meta.publicationYear}
+ساڵی خوێندن / چاپ: ${meta.publicationYear || 'دیاری نەکراوە'}
 
 -------------------------------------------------------
 زانیاریی یاسایی و چاپی کتێبخانە:
-* ژمارەی سپاردن (Legal Deposit): ${meta.legalDepositNumber || 'لە پرۆسەدایە'}
+* ژمارەی سپاردن (Legal Deposit): ${meta.legalDepositNumber || 'تۆمار نەکراوە'}
 * ژمارەی نێودەوڵەتی (ISBN/ISSN): ${meta.isbn || 'دیاری نەکراوە'}
 * ناسێنەری دیجیتاڵی (DOI): ${meta.doi || 'تۆمار نەکراوە'}
-* ڕەزامەندیی ئەخلاقی (IRB Clearance): ${meta.ethicalClearanceCode || 'پەسەندکراوە'}
-* ڕێسای مافی چاپ: ${meta.copyrightNotice}
+* ڕەزامەندیی ئەخلاقی (IRB Clearance): ${meta.ethicalClearanceCode || 'کۆدی پەسەندکردن تۆمار نەکراوە'}
+* ڕێسای مافی چاپ: ${meta.copyrightNotice || 'مەرجەکانی مافی چاپ دیاری نەکراوە'}
 -------------------------------------------------------`;
   }
 
-  public evaluatePreFlight(
+  public async evaluatePreFlight(
     meta: PublishingMetadata,
     chapterCount: number,
     citationCount: number,
     verifiedCount: number,
-    hasPassStatus: boolean
-  ): CameraReadyReport {
+    hasPassStatus: boolean,
+    manuscriptSnapshot: string
+  ): Promise<CameraReadyReport> {
     const checks: PreFlightCheckItem[] = [
       {
         id: 'title_meta',
@@ -157,39 +158,63 @@ ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
       },
       {
         id: 'citations_verified',
-        title: 'سەرچاوە و ژێدەرە سەلمێنراوەکان (Evidence Grounding)',
-        status: verifiedCount > 0 && verifiedCount === citationCount ? 'PASS' : verifiedCount > 0 ? 'WARN' : 'FAIL',
+        title: 'نیشانەکانی پشتڕاستکردنەوەی سەرچاوە (Server verification required)',
+        status: 'WARN',
         detail: verifiedCount > 0
-          ? `${verifiedCount} سەرچاوەی سەلمێنراو بوونیان هەیە.`
-          : 'هیچ سەرچاوەیەکی سەلمێنراو لە دەستنووسەکەدا بەردەست نییە.'
+          ? `${verifiedCount} تۆمار نیشانەی verification هەیە لە ڕووکاردا؛ ئەمە بەڵگەی پشکنینی سەربەخۆ نییە و پێش دەرکردن دەبێت لەلایەن سێرڤەرەوە دووبارە بپشکنرێن.`
+          : citationCount > 0
+            ? 'سەرچاوە هەیە، بەڵام هیچ یەکێک لەم پشکنینی ڕووکارەدا بە شێوەیەکی سەربەخۆ نەسەلمێنراوە.'
+            : 'هیچ سەرچاوەیەک نییە؛ پێش چاپ، سەرچاوەی ڕاستەقینە زیاد و پشتڕاست بکەوە.'
       },
       {
         id: 'legal_metadata',
         title: 'ژمارەی سپاردن و داتای چاپ (Legal & Deposit)',
-        status: meta.legalDepositNumber.trim() || meta.isbn.trim() ? 'PASS' : 'WARN',
+        status: 'WARN',
         detail: meta.legalDepositNumber.trim() || meta.isbn.trim()
-          ? 'زانیاریی سپاردنی کتێبخانە یان ISBN تۆمارکراوە.'
-          : 'تۆمارکردنی ژمارەی سپاردن یان ISBN بۆ چاپی ڕاستەوخۆ پێشنیار دەکرێت.'
+          ? 'داتای چاپ لە خانەکەدا نووسراوە، بەڵام لەم پشکنینی ناوخۆییەدا لەگەڵ تۆماری دەسەڵاتدار پشتڕاست نەکراوەتەوە.'
+          : 'ژمارەی سپاردن و ISBN تۆمار نەکراون؛ زانیاریی ڕاستەقینەی گۆڤار/کتێبخانە دابین بکە.'
       },
       {
         id: 'ethical_clearance',
         title: 'ڕەزامەندیی ئەخلاقی (Ethical Clearance / IRB)',
-        status: meta.ethicalClearanceCode.trim() ? 'PASS' : 'WARN',
+        status: 'WARN',
         detail: meta.ethicalClearanceCode.trim()
-          ? `کۆدی ئەخلاقیی تۆمارکراو: ${meta.ethicalClearanceCode}`
-          : 'پێویستە کۆدی پەسەندکردنی لێژنەی ئەخلاقی بنووسرێت ئەگەر لێکۆڵینەوەی مەیدانییە.'
+          ? 'کۆدێک لە خانەکەدا تۆمارکراوە، بەڵام پەسەندکردنی IRB لەم ئەپەدا پشتڕاست نەکراوەتەوە.'
+          : 'کۆدی پەسەندکردنی لێژنەی ئەخلاقی بەردەست نییە؛ ئەگەر توێژینەوەکە پێویستی پێیە، پەسەندکردنی ڕاستەقینە وەرگرە.'
       }
     ];
 
     const passCount = checks.filter(c => c.status === 'PASS').length;
     const readinessPercentage = Math.round((passCount / checks.length) * 100);
 
+    const fingerprintPayload = JSON.stringify({
+      manuscriptSnapshot,
+      metadata: meta,
+      chapterCount,
+      citationCount,
+      verifiedCount,
+      hasPassStatus,
+      checkResults: checks.map(check => ({ id: check.id, status: check.status }))
+    });
+    let preflightFingerprint = 'UNAVAILABLE';
+    try {
+      const digest = await globalThis.crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(fingerprintPayload)
+      );
+      preflightFingerprint = 'SHA256:' + Array.from(new Uint8Array(digest))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+    } catch {
+      // Readiness still renders, but never fabricate a hash if WebCrypto is unavailable.
+    }
+
     return {
-      overallStatus: readinessPercentage >= 80 ? 'CAMERA_READY' : 'ACTION_REQUIRED',
+      overallStatus: checks.every(check => check.status === 'PASS') ? 'CAMERA_READY' : 'ACTION_REQUIRED',
       readinessPercentage,
       checks,
-      manuscriptFingerprint: 'SHA256:' + Math.random().toString(36).substring(2, 10).toUpperCase(),
-      generatedAt: new Date().toLocaleDateString('ckb-IQ')
+      preflightFingerprint,
+      generatedAt: new Date().toISOString()
     };
   }
 }

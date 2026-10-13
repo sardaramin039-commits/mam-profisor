@@ -43,6 +43,6 @@ export interface CameraReadyReport {
   overallStatus: 'CAMERA_READY' | 'ACTION_REQUIRED';
   readinessPercentage: number;
   checks: PreFlightCheckItem[];
-  manuscriptFingerprint: string;
+  preflightFingerprint: string;
   generatedAt: string;
 }
