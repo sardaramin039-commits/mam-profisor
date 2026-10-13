@@ -38,7 +38,7 @@ describe('AcademicAgentsService failure honesty', () => {
     expect(result.status).toBe('degraded');
     expect(result.content).toContain('شیکارییەک');
     expect(result.content).toContain('سەرچاوەکان پشتڕاست نەکراونەتەوە');
-    expect(result.content).not.toContain('بە سەرکەوتوویی');
+    expect(result.content).toContain('شیکارییەک لەسەر داواکارییەکەت ئەنجام نەدرا');
   });
 
   it('handles client setup failures as degraded responses', async () => {
