@@ -1,10 +1,12 @@
 import { Router, Request, Response } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { textSimilarityService } from '../services/text-similarity.service';
 import { robustParseJson } from '../utils/json-repair';
 
 export function createPlagiarismRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+  router.use(requireAuth);
 
   /**
    * POST /api/plagiarism_check
