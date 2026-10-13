@@ -32,7 +32,7 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
       "default-src 'self'",
       "base-uri 'self'",
       "object-src 'none'",
-      "script-src 'self' https://apis.google.com https://www.gstatic.com",
+      "script-src 'self' https://apis.google.com https://accounts.google.com https://www.gstatic.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
