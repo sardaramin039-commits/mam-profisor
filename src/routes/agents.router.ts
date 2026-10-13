@@ -1,6 +1,8 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { AuthRequest, requireAuth } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
+import type { AuthRequest } from '../middleware/auth';
 import {
   academicAgentsService,
   ACADEMIC_AGENTS_LIST,
