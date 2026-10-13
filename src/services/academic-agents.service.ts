@@ -91,11 +91,17 @@ export class AcademicAgentsService {
   /**
    * جێبەجێکردنی یەکێک لە ١٢ بریکارە ئەکادیمییە پسپۆڕەکە
    */
-  async runAgent(agentId: string, prompt: string, context?: string): Promise<string> {
+  async runAgent(
+    agentId: string,
+    prompt: string,
+    context?: string
+  ): Promise<{ status: 'generated' | 'degraded'; content: string }> {
     const systemInstruction = this.getAgentSystemPrompt(agentId);
-    const client = this.getClient();
 
     try {
+      // Client setup is inside try so missing configuration is reported as degraded,
+      // never as an unhandled error or a fabricated successful analysis.
+      const client = this.getClient();
       const response = await client.models.generateContent({
         model: 'gemini-3.8-flash',
         contents: [
@@ -103,25 +109,27 @@ export class AcademicAgentsService {
             role: 'user',
             parts: [
               {
-                text: `دەقی زانیاری و پاشخان (Context):\n${context || 'پاشخانی تایبەت دیاری نەکراوە.'}\n\nداواکاری ئەکادیمی (Task):\n${prompt}`,
+                text: 'دەقی زانیاری و پاشخان (Context):\\n' +
+                  (context || 'پاشخانی تایبەت دیاری نەکراوە.') +
+                  '\\n\\nداواکاری ئەکادیمی (Task):\\n' + prompt,
               },
             ],
           },
         ],
         config: {
           systemInstruction,
-          temperature: 0.3, // تۆنی بێلایەن و ئەکادیمیی هاوسەنگ
+          temperature: 0.3,
         },
       });
 
       const responseText = (response as { text?: string }).text;
       if (!responseText || responseText.trim() === '') {
-        return this.getFallbackResponse(agentId, prompt);
+        return { status: 'degraded', content: this.getFallbackResponse(agentId) };
       }
-      return responseText;
+      return { status: 'generated', content: responseText };
     } catch (err: unknown) {
       console.warn(`[AcademicAgentsService] AI call error for agent ${agentId}:`, err);
-      return this.getFallbackResponse(agentId, prompt);
+      return { status: 'degraded', content: this.getFallbackResponse(agentId) };
     }
   }
 
@@ -159,15 +167,16 @@ export class AcademicAgentsService {
     );
   }
 
-  private getFallbackResponse(agentId: string, prompt: string): string {
+  private getFallbackResponse(agentId: string): string {
     const agent = ACADEMIC_AGENTS_LIST.find(a => a.id === agentId);
     const agentName = agent ? agent.name : 'بریکاری ئەکادیمی';
 
-    return `## ڕاپۆرتی ئەکادیمی: ${agentName}\n\n` +
-      `### شیکاری بۆ پرسیار:\n${prompt}\n\n` +
-      `> تێبینی زانستی: دەقەکە بە سەرکەوتوویی لە چوارچێوەی پێوەرە زانستییەکانی پەیمانگای هارڤارد و زانکۆ باوەڕپێکراوەکان شی کرایەوە.\n\n` +
-      `* **ڕەهەندی بنەڕەتی:** دڵنیابوونەوە لە بەکارهێنانی زاراوەسازیی یەکگرتووی کوردی و پەیوەستکردنی بە ئەدەبیاتی زانستی پێشوو.\n` +
-      `* **هەنگاوی پێشنیارکراو:** پێداچوونەوە بە بەڵگەنامە هاوتاکان و پشتڕاستکردنەوەی بەڵگە لەسەر بنەمای سەرچاوەی دەستی یەکەم.`;
+    return [
+      `## ${agentName}: وەڵامی AI بەردەست نییە`,
+      'ئەم جارە وەڵامی AI بە سەرکەوتوویی وەرنەگیرا، بۆیە شیکارییەک لەسەر داواکارییەکەت ئەنجام نەدرا.',
+      'ئەم پەیامە تەنها ئاگادارکردنەوەیە؛ سەرچاوەکان پشتڕاست نەکراونەتەوە و هیچ ڕاپۆرتێکی ئەکادیمی دروست نەکراوە.',
+      'تکایە دواتر هەوڵ بدەرەوە و کلیل، quota، پەیوەندیی ئینتەرنێت و دۆخی خزمەتگوزاریی AI بپشکنە.'
+    ].join('\\n\\n');
   }
 }
 
