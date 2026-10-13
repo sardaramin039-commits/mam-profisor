@@ -21,6 +21,7 @@ const organizeReferencesSchema = z.object({
 
 export function createChatGptAcademicSourcesRouter(): Router {
   const router = Router();
+  router.use(requireAuth);
 
   router.post('/discover-sources', async (req: AuthRequest, res: Response) => {
     const openAiEnabled =
