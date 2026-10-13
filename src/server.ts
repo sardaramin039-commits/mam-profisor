@@ -75,17 +75,17 @@ app.use('/api/docs', createApiDocsRouter());
 app.use('/api', optionalAuth, authenticatedRateLimiterMiddleware);
 
 // Public & Scholarly AI Tools
-app.use('/api/ai-tools', createAiToolsRouter(getGeminiClient));
+app.use('/api/ai-tools', requireAuth, createAiToolsRouter(getGeminiClient));
 app.use('/api/library', createLibraryRouter(getGeminiClient));
 app.use('/api/external-integrations', createExternalApiRouter());
 app.use('/api', createAcademicRouter(getGeminiClient));
-app.use('/api', createThesisWritingRouter(getGeminiClient));
-app.use('/api', createResearchAnalysisRouter(getGeminiClient));
-app.use('/api', createPlagiarismRouter(getGeminiClient));
-app.use('/api', createEvaluationReviewRouter(getGeminiClient));
-app.use('/api', createAcademicSearchIntegrationsRouter(getGeminiClient));
-app.use('/api/chatgpt-sources', createChatGptAcademicSourcesRouter());
-app.use('/api', createAdvancedAcademicToolsRouter(getGeminiClient));
+app.use('/api', requireAuth, createThesisWritingRouter(getGeminiClient));
+app.use('/api', requireAuth, createResearchAnalysisRouter(getGeminiClient));
+app.use('/api', requireAuth, createPlagiarismRouter(getGeminiClient));
+app.use('/api', requireAuth, createEvaluationReviewRouter(getGeminiClient));
+app.use('/api', requireAuth, createAcademicSearchIntegrationsRouter(getGeminiClient));
+app.use('/api/chatgpt-sources', requireAuth, createChatGptAcademicSourcesRouter());
+app.use('/api', requireAuth, createAdvancedAcademicToolsRouter(getGeminiClient));
 app.use('/api/platform', createAcademicPlatformRouter(getGeminiClient));
 app.use('/api/writing', requireAuth, createEvidenceIntelligenceRouter(getGeminiClient));
 app.use('/api/rag', createRagRouter(getGeminiClient));
