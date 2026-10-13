@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import {
   SYSTEM_PROMPT_REFINE,
@@ -24,6 +25,7 @@ import {
 
 export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+  router.use(['/refine', '/review_structure', '/generate_chapter', '/expand_glossary_term', '/grounded_generate'], requireAuth);
 
   /**
    * Academic Kurdish Text Refinement and Enrichment Endpoint
