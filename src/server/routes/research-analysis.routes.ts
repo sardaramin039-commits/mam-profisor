@@ -62,6 +62,9 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
       const reqContent = req.body.content || '';
       
       const fallbackResponse = {
+        success: false,
+        status: 'degraded',
+        isFallback: true,
         academicScore: null,
         toneEvaluation: 'هەڵسەنگاندنی خۆکار بەهۆی نەبوونی خزمەتگوزاریی ژیریی دەستکرد بەردەست نییە.',
         citationSuggestions: 'هیچ citation ی نوێ بە شێوەی ئۆفلاین دروست نەکراوە؛ سەرچاوەکان دەبێت بە شێوەی دەرەکی پشتڕاست بکرێنەوە.',
@@ -86,7 +89,7 @@ export function createResearchAnalysisRouter(getGeminiClient: () => GoogleGenAI)
           mismatches: []
         }
       };
-      res.json(fallbackResponse);
+      res.status(503).json(fallbackResponse);
     }
   });
 
