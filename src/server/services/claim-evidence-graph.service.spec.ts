@@ -71,7 +71,7 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
           evidenceProvenance: 'unknown',
           evidenceText: 'abstract evidence',
           trustLevel: 'A'
-        })
+        }
       ],
       () => ai
     );
@@ -176,7 +176,7 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
       'topic',
       'draft',
       [
-        {
+        markServerVerifiedFullText({
           id: 'SRC-ONE',
           title: 'Same Title',
           verificationStatus: 'verified',
@@ -186,8 +186,8 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
           evidenceProvenance: 'server-verified-fulltext',
           evidenceText: 'shared evidence',
           trustLevel: 'A'
-        },
-        {
+        }),
+        markServerVerifiedFullText({
           id: 'SRC-TWO',
           title: 'Same Title',
           verificationStatus: 'verified',
@@ -197,7 +197,7 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
           evidenceProvenance: 'server-verified-fulltext',
           evidenceText: 'shared evidence',
           trustLevel: 'A'
-        }
+        })
       ],
       () => ai
     );
