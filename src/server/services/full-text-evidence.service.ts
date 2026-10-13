@@ -1,5 +1,24 @@
 import type { EvidenceProvenance, EvidenceType } from './evidence-verification-policy';
 
+// WeakSet trust cannot be supplied over JSON; only this server retrieval module marks sources.
+const serverVerifiedFullTextSources = new WeakSet<object>();
+
+export function isServerVerifiedFullTextSource(source: unknown): boolean {
+  return typeof source === 'object' && source !== null && serverVerifiedFullTextSources.has(source);
+}
+
+export function preserveServerVerifiedFullText<T extends object>(original: unknown, copy: T): T {
+  if (isServerVerifiedFullTextSource(original)) {
+    serverVerifiedFullTextSources.add(copy);
+  }
+  return copy;
+}
+
+function markServerVerifiedFullText<T extends object>(source: T): T {
+  serverVerifiedFullTextSources.add(source);
+  return source;
+}
+
 export interface FullTextEnrichmentSource {
   claimText?: string;
   id?: string;
@@ -233,14 +252,14 @@ export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSour
           const xml = await response.text();
           const match = findExcerpts(cleanFullText(xml), claims);
           if (match.excerpt) {
-            return {
+            return markServerVerifiedFullText({
               ...source,
               claimText: match.claim,
               evidenceText: match.excerpt,
               evidenceType: 'full-text',
               evidenceProvenance: 'server-verified-fulltext',
               evidenceUrl: url
-            } as T & Partial<FullTextEnrichmentSource>;
+            }) as T & Partial<FullTextEnrichmentSource>;
           }
         }
       }
@@ -256,14 +275,14 @@ export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSour
       const htmlMatch = findExcerpts(htmlText, claims);
       if (!htmlMatch.excerpt) return source;
 
-      return {
+      return markServerVerifiedFullText({
         ...source,
         claimText: htmlMatch.claim,
         evidenceText: htmlMatch.excerpt,
         evidenceType: 'full-text',
         evidenceProvenance: 'server-verified-fulltext',
         evidenceUrl: htmlUrl
-      } as T & Partial<FullTextEnrichmentSource>;
+      }) as T & Partial<FullTextEnrichmentSource>;
     } catch {
       return source;
     }
