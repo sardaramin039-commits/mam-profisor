@@ -17,7 +17,7 @@ async function buildServer(): Promise<Server> {
   app.use(express.json());
   app.use('/api/platform', createAcademicPlatformRouter(() => {
     throw new Error('AI provider must not be called in this authentication test');
-  } as never));
+  }));
 
   const instance = app.listen(0);
   await new Promise<void>((resolve, reject) => {
