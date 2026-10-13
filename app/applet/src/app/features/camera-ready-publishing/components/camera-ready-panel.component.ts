@@ -74,25 +74,46 @@ export class AppCameraReadyPublishingPanelComponent implements OnInit {
     this.isRunningDefense.set(true);
     this.defenseError.set('');
     try {
-      const workspaceId = this.host().selectedHistoryId?.() || 'default_workspace';
+      const workspaceId = this.host().selectedHistoryId?.();
+      if (typeof workspaceId !== 'string' || !workspaceId.trim()) {
+        throw new Error('پێش دەستپێکردنی ڕاهێنانی بەرگری، workspace ـێکی ڕاستەقینە هەڵبژێرە.');
+      }
       const chaps = this.host().chapters?.() || [];
+      const citations = this.host().citationSources?.() || [];
       const title = this.meta().titleKurdish || this.host().manuscriptTitle?.() || 'توێژینەوەی ئەکادیمی';
+      const normalizedChapters = chaps.map((chapter: any, idx: number) => ({
+        id: chapter.id || `ch_${idx + 1}`,
+        title: String(chapter.title || '').trim(),
+        order: idx + 1,
+        content: String(chapter.content || ''),
+        citationIds: Array.isArray(chapter.citationIds) ? chapter.citationIds : []
+      }));
+      const citedSourceIds = new Set(normalizedChapters.flatMap((chapter: any) => chapter.citationIds));
+      const referencedCitationCount = citedSourceIds.size;
+      const verifiedCitationCount = citations.filter((citation: any) =>
+        citation?.citationEligible === true &&
+        citation?.identityStatus === 'verified' &&
+        citation?.evidenceStatus === 'verified' &&
+        citation?.evidenceType === 'full-text' &&
+        citation?.evidenceProvenance === 'server-verified-fulltext'
+      ).filter((citation: any) => citedSourceIds.has(citation.sourceId || citation.id)).length;
+      const structuralStatus = normalizedChapters.length >= 3 &&
+        normalizedChapters.every((chapter: any) => chapter.title && chapter.content.trim())
+          ? 'PASS' as const
+          : 'REJECT' as const;
+      const exportBlocked = structuralStatus !== 'PASS' ||
+        referencedCitationCount === 0 ||
+        verifiedCitationCount < referencedCitationCount;
 
       const payload = {
         topic: title,
         title,
-        chapters: chaps.map((c: any, idx: number) => ({
-          id: c.id || `ch_${idx + 1}`,
-          title: c.title || `بەشی ${idx + 1}`,
-          order: idx + 1,
-          content: c.content || '',
-          citationIds: []
-        })),
-        referencedCitationCount: this.host().citationSources?.()?.length || 3,
-        verifiedCitationCount: this.host().citationSources?.()?.length || 3,
-        bibliographyCount: this.host().citationSources?.()?.length || 3,
-        structuralStatus: 'PASS' as const,
-        exportBlocked: false,
+        chapters: normalizedChapters,
+        referencedCitationCount,
+        verifiedCitationCount,
+        bibliographyCount: citations.length,
+        structuralStatus,
+        exportBlocked,
         answers: Object.entries(this.defenseAnswers()).map(([questionId, answer]) => ({
           questionId,
           answer
@@ -106,7 +127,7 @@ export class AppCameraReadyPublishingPanelComponent implements OnInit {
         this.defenseSummary.set(res.answerSummary || null);
       }
     } catch (err: any) {
-      this.defenseError.set(err?.error?.error || 'نەتوانرا سێشنی بەرگری لەگەڵ سێرڤەر ئەنجام بدرێت.');
+      this.defenseError.set(err?.error?.error || err?.message || 'نەتوانرا سێشنی بەرگری لەگەڵ سێرڤەر ئەنجام بدرێت.');
     } finally {
       this.isRunningDefense.set(false);
     }
