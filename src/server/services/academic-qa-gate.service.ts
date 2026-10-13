@@ -123,7 +123,6 @@ export class AcademicQAGateService {
       sourceCount?: number;
     }
   ): Promise<QAGateResult> {
-    const ai = getGeminiClient();
     const safeSources = Array.isArray(sources) ? sources : [];
     const identityVerifiedSourceCount = Number(compliance?.identityVerifiedSourceCount) || 0;
     const citationEligibleSourceCount =
@@ -149,6 +148,7 @@ export class AcademicQAGateService {
 }`;
 
     try {
+      const ai = getGeminiClient();
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
         contents: prompt,
