@@ -5,7 +5,13 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'app/applet/**'
+      - 'public/**'
       - 'e2e/**'
+      - 'firestore.rules'
+      - 'firebase.json'
+      - 'playwright.config.ts'
+      - 'vitest.config.*'
       - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
@@ -16,7 +22,13 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'app/applet/**'
+      - 'public/**'
       - 'e2e/**'
+      - 'firestore.rules'
+      - 'firebase.json'
+      - 'playwright.config.ts'
+      - 'vitest.config.*'
       - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
