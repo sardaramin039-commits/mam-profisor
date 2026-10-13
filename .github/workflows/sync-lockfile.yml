@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: 22.22.2
           cache: npm
-          cache-dependency-path: package.json
+          cache-dependency-path: package-lock.json
 
       - name: Configure npm lockfile mode
         run: npm config set package-lock true
@@ -63,6 +63,7 @@ jobs:
           git pull --rebase origin main
           git push origin main
 
-          echo "Lockfile changed. Dispatching validation against the updated main branch."
-          gh workflow run quality-gate.yml --ref main
-          gh workflow run academic-integrity-ci.yml --ref main
+          # GITHUB_TOKEN pushes do not trigger the usual push workflows.
+          # Dispatch the single canonical gate instead of two overlapping pipelines.
+          echo "Lockfile changed. Dispatching the canonical quality gate."
+          gh workflow run quality.yml --ref main
