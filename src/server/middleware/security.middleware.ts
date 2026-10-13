@@ -28,7 +28,22 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), payment=()');
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'self' https://ai.studio https://*.google.com https://*.run.app;"
+    [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "script-src 'self' https://apis.google.com https://www.gstatic.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https:",
+      "media-src 'self' data: blob: https:",
+      "connect-src 'self' https: wss:",
+      "worker-src 'self' blob:",
+      "frame-src 'self' https://accounts.google.com https://*.google.com https://*.firebaseapp.com https://ai.studio https://*.run.app https:",
+      "form-action 'self' https://accounts.google.com",
+      "frame-ancestors 'self' https://ai.studio https://*.google.com https://*.run.app",
+      "upgrade-insecure-requests"
+    ].join('; ')
   );
 
   const originHeader = req.headers.origin;
@@ -79,7 +94,7 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Requested-With, X-Kurdish-Library-Sanitized, X-RAG-Pipeline-Access'
+    'Content-Type, Authorization, X-Requested-With'
   );
 
   if (req.method === 'OPTIONS') {
