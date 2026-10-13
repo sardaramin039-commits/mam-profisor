@@ -7,6 +7,12 @@ const errors = [];
 const contracts = [
   ['.github/workflows/quality.yml', [
     'pull_request:',
+    "      - 'app/applet/**'",
+    "      - 'public/**'",
+    "      - 'firestore.rules'",
+    "      - 'firebase.json'",
+    "      - 'playwright.config.ts'",
+    "      - 'vitest.config.*'",
     'node-version: 22.22.2',
     'run: npm ci',
     'run: npm run release:check',
