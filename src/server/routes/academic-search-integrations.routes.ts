@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import { z } from 'zod';
 import { GoogleGenAI } from '@google/genai';
 import {
@@ -62,6 +63,7 @@ export function createAcademicSearchIntegrationsRouter(
   getGeminiClient: () => GoogleGenAI
 ): Router {
   const router = Router();
+  router.use(requireAuth);
 
   router.post('/semantic_database_search', async (req: Request, res: Response) => {
     const parsed = semanticSearchSchema.safeParse(req.body ?? {});
