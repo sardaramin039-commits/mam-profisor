@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { validateRequest } from '../../middleware/validate.middleware';
 import {
@@ -26,6 +27,7 @@ import {
 
 export function createAdvancedAcademicToolsRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+  router.use(['/research_timeline', '/mind_map_generator', '/auto_outline_generator', '/table_figure_generator', '/simulate_viva', '/ai_integrity_audit', '/anonymize_data', '/harvard_quality_audit'], requireAuth);
 
   /**
    * Research Timeline Generator
