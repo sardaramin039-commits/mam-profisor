@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { downgradeUntrustedEvidence } from './untrusted-evidence';
+import { downgradeUntrustedEvidence, downgradeUntrustedEvidenceList } from './untrusted-evidence';
 
 describe('untrusted evidence boundary', () => {
   it('overrides client-supplied verification and full-text provenance flags', () => {
@@ -29,7 +29,6 @@ describe('untrusted evidence boundary', () => {
   });
 
   it('does not allow non-object array items through the evidence boundary', () => {
-    const { downgradeUntrustedEvidenceList } = require('./untrusted-evidence') as typeof import('./untrusted-evidence');
     const result = downgradeUntrustedEvidenceList([null, 'bad', [], { title: 'ok' }]);
 
     expect(result).toHaveLength(1);
