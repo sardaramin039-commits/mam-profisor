@@ -26,16 +26,16 @@ export class CameraReadyService {
       authorOrcid: '',
       supervisorName: '',
       academicDegree: 'master',
-      institution: 'زانکۆی سلێمانی / زانکۆی سەلاحەدین',
-      faculty: 'کۆلێژی زانست / کۆلێژی زمان',
-      department: 'بەشی خوێندنی باڵا',
+      institution: '',
+      faculty: '',
+      department: '',
       publicationYear: '٢٠٢٦',
       legalDepositNumber: '',
       isbn: '',
       doi: '',
       ethicalClearanceCode: '',
       ethicalStatement: 'ڕەزامەندیی ئەخلاقی و پاراستنی داتا بەپێی پێداویستییەکانی ئەم توێژینەوەیە و یاسای زانکۆ پڕبکرێتەوە.',
-      copyrightNotice: 'هەموو مافەکانی ئەم بەرهەمە بۆ نووسەر پارێزراوە © ٢٠٢٦'
+      copyrightNotice: 'زانیاریی مافی چاپ و خاوەندارێتی بەپێی ڕێککەوتن و یاسای پەیوەندیدار دیاری بکرێت.'
     };
   }
 
@@ -102,9 +102,9 @@ export class CameraReadyService {
     }[meta.academicDegree];
 
     return `=======================================================
-${meta.institution}
-${meta.faculty}
-${meta.department}
+${meta.institution || 'ناوی زانکۆ / دامەزراوە'}
+${meta.faculty || 'ناوی کۆلێژ'}
+${meta.department || 'ناوی بەش'}
 =======================================================
 
 ${meta.titleKurdish || 'ناونیشانی توێژینەوە'}
@@ -127,7 +127,7 @@ ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
 * ژمارەی سپاردن (Legal Deposit): ${meta.legalDepositNumber || 'لە پرۆسەدایە'}
 * ژمارەی نێودەوڵەتی (ISBN/ISSN): ${meta.isbn || 'دیاری نەکراوە'}
 * ناسێنەری دیجیتاڵی (DOI): ${meta.doi || 'تۆمار نەکراوە'}
-* ڕەزامەندیی ئەخلاقی (IRB Clearance): ${meta.ethicalClearanceCode || 'پەسەندکراوە'}
+* ڕەزامەندیی ئەخلاقی (IRB Clearance): ${meta.ethicalClearanceCode || 'تۆمار نەکراوە؛ پێویستی بە پشکنین هەیە'}
 * ڕێسای مافی چاپ: ${meta.copyrightNotice}
 -------------------------------------------------------`;
   }
