@@ -136,8 +136,9 @@ ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
     chapterCount: number,
     citationCount: number,
     verifiedCount: number,
-    hasPassStatus: boolean
-  ): CameraReadyReport {
+    hasPassStatus: boolean,
+    manuscriptSnapshot: string
+  ): Promise<CameraReadyReport> {
     const checks: PreFlightCheckItem[] = [
       {
         id: 'title_meta',
@@ -184,12 +185,34 @@ ${meta.supervisorName || 'ناوی سەرپەرشتیار'}
     const passCount = checks.filter(c => c.status === 'PASS').length;
     const readinessPercentage = Math.round((passCount / checks.length) * 100);
 
+    const fingerprintPayload = JSON.stringify({
+      manuscriptSnapshot,
+      metadata: meta,
+      chapterCount,
+      citationCount,
+      verifiedCount,
+      hasPassStatus,
+      checkResults: checks.map(check => ({ id: check.id, status: check.status }))
+    });
+    let preflightFingerprint = 'UNAVAILABLE';
+    try {
+      const digest = await globalThis.crypto.subtle.digest(
+        'SHA-256',
+        new TextEncoder().encode(fingerprintPayload)
+      );
+      preflightFingerprint = 'SHA256:' + Array.from(new Uint8Array(digest))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+    } catch {
+      // Readiness still renders, but never fabricate a hash if WebCrypto is unavailable.
+    }
+
     return {
       overallStatus: readinessPercentage >= 80 ? 'CAMERA_READY' : 'ACTION_REQUIRED',
       readinessPercentage,
       checks,
-      manuscriptFingerprint: 'SHA256:' + Math.random().toString(36).substring(2, 10).toUpperCase(),
-      generatedAt: new Date().toLocaleDateString('ckb-IQ')
+      preflightFingerprint,
+      generatedAt: new Date().toISOString()
     };
   }
 }
