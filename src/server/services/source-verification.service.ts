@@ -156,9 +156,9 @@ function buildBaseReport(
   // Only object identity registered by the server full-text retriever can prove
   // provenance. JSON flags like evidenceProvenance='server-verified-fulltext' do not.
   const serverRetrievedFullText = isServerVerifiedFullTextSource(source) && Boolean(suppliedEvidenceText);
-  const assessedEvidence = serverRetrievedFullText
+  const assessedEvidence: ReturnType<typeof assessEvidenceVerification> = serverRetrievedFullText
     ? assessEvidenceVerification(source)
-    : { status: suppliedEvidenceText ? 'unverified' as const : 'not_available' as const };
+    : { status: suppliedEvidenceText ? 'unverified' : 'not_available' };
   const evidenceStatus: EvidenceVerificationStatus = assessedEvidence.status;
   const evidenceType: EvidenceType = serverRetrievedFullText
     ? 'full-text'
