@@ -1,5 +1,7 @@
 import { lookup } from 'node:dns/promises';
+import type { LookupFunction } from 'node:dns';
 import { isIP } from 'node:net';
+import { request as httpsRequest } from 'node:https';
 import { markServerVerifiedFullText } from './evidence-verification-policy';
 import type { EvidenceProvenance, EvidenceType } from './evidence-verification-policy';
 
@@ -239,12 +241,14 @@ function isPublicAddress(address: string, family: number): boolean {
   return false;
 }
 
-export async function isSafeExternalHttpsUrl(rawUrl: string): Promise<boolean> {
+type ResolvedPublicHttpsUrl = { url: URL; addresses: Array<{ address: string; family: number }> };
+
+async function resolvePublicHttpsUrl(rawUrl: string): Promise<ResolvedPublicHttpsUrl | undefined> {
   try {
     const url = new URL(rawUrl);
     const hostname = url.hostname.toLocaleLowerCase().replace(/\.$/, '');
-    if (url.protocol !== 'https:' || url.username || url.password) return false;
-    if (url.port && url.port !== '443') return false;
+    if (url.protocol !== 'https:' || url.username || url.password) return undefined;
+    if (url.port && url.port !== '443') return undefined;
     if (
       hostname === 'localhost' ||
       hostname.endsWith('.localhost') ||
@@ -253,17 +257,82 @@ export async function isSafeExternalHttpsUrl(rawUrl: string): Promise<boolean> {
       hostname === 'metadata.google.internal' ||
       hostname.includes(':') ||
       isIP(hostname) !== 0
-    ) {
-      return false;
-    }
+    ) return undefined;
 
     const addresses = await lookup(hostname, { all: true, verbatim: true });
-    return addresses.length > 0 && addresses.every(item => isPublicAddress(item.address, item.family));
+    if (!addresses.length || !addresses.every(item => isPublicAddress(item.address, item.family))) {
+      return undefined;
+    }
+    return { url, addresses };
   } catch {
-    return false;
+    return undefined;
   }
 }
 
+export async function isSafeExternalHttpsUrl(rawUrl: string): Promise<boolean> {
+  return Boolean(await resolvePublicHttpsUrl(rawUrl));
+}
+
+const MAX_HTML_RESPONSE_BYTES = 8 * 1024 * 1024;
+
+async function readPinnedPublicHttps(urlString: string): Promise<{ statusCode: number; contentType: string; body: string } | undefined> {
+  const resolved = await resolvePublicHttpsUrl(urlString);
+  if (!resolved) return undefined;
+  const { url, addresses } = resolved;
+  const pinnedAddress = addresses[0];
+  if (!pinnedAddress) return undefined;
+
+  const pinnedLookup: LookupFunction = (hostname, _options, callback) => {
+    if (hostname.toLocaleLowerCase().replace(/\.$/, '') !== url.hostname.toLocaleLowerCase().replace(/\.$/, '')) {
+      const error = Object.assign(new Error('Pinned HTTPS lookup received an unexpected hostname.'), { code: 'ENOTFOUND' });
+      callback(error, '', 4);
+      return;
+    }
+    callback(null, pinnedAddress.address, pinnedAddress.family);
+  };
+
+  return new Promise((resolve, reject) => {
+    const request = httpsRequest(url, {
+      method: 'GET',
+      headers: { Accept: 'text/html,application/xhtml+xml;q=0.9,text/plain;q=0.8' },
+      lookup: pinnedLookup,
+      autoSelectFamily: false,
+      agent: false,
+      timeout: 7000
+    }, response => {
+      const statusCode = response.statusCode || 0;
+      const rawContentType = response.headers['content-type'];
+      const contentType = Array.isArray(rawContentType) ? rawContentType.join(';') : rawContentType || '';
+      if (statusCode >= 300 && statusCode < 400) {
+        response.resume();
+        resolve({ statusCode, contentType, body: '' });
+        return;
+      }
+
+      const chunks: Buffer[] = [];
+      let received = 0;
+      response.on('data', (chunk: Buffer | string) => {
+        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        received += buffer.length;
+        if (received > MAX_HTML_RESPONSE_BYTES) {
+          request.destroy(new Error('Full-text response exceeds the configured size limit.'));
+          return;
+        }
+        chunks.push(buffer);
+      });
+      response.on('end', () => resolve({
+        statusCode,
+        contentType,
+        body: Buffer.concat(chunks).toString('utf8')
+      }));
+      response.on('error', reject);
+    });
+
+    request.on('timeout', () => request.destroy(new Error('Full-text request timed out.')));
+    request.on('error', reject);
+    request.end();
+  });
+}
 
 const MIN_HTML_FULLTEXT_CHARS = 1600;
 const MIN_HTML_PARAGRAPHS = 3;
@@ -282,22 +351,12 @@ function looksLikeFullTextHtml(body: string, text: string): boolean {
 }
 
 async function readHtmlText(url: string): Promise<string> {
-  if (!url || !(await isSafeExternalHttpsUrl(url))) return '';
-
   try {
-    const response = await fetch(url, {
-      headers: {
-        Accept: 'text/html,application/xhtml+xml;q=0.9,text/plain;q=0.8'
-      },
-      signal: AbortSignal.timeout(7000),
-      redirect: 'error'
-    });
-    if (!response.ok) return '';
+    const response = await readPinnedPublicHttps(url);
+    if (!response || response.statusCode !== 200) return '';
+    if (!/text\/html|application\/xhtml\+xml|text\/plain/i.test(response.contentType)) return '';
 
-    const contentType = response.headers.get('content-type') || '';
-    if (!/text\/html|application\/xhtml\+xml|text\/plain/i.test(contentType)) return '';
-
-    const body = await response.text();
+    const body = response.body;
     const text = body
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
