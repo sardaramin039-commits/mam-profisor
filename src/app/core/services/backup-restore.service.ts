@@ -54,6 +54,9 @@ export class BackupRestoreService {
 
       const jsonStr = JSON.stringify(backup, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
+      if (blob.size > MAX_BACKUP_FILE_BYTES) {
+        throw new Error('Backup file exceeds the 25 MiB safety limit.');
+      }
       const url = URL.createObjectURL(blob);
 
       const a = document.createElement('a');
