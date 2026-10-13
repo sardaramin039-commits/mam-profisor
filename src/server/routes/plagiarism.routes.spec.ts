@@ -11,7 +11,7 @@ async function startServer(): Promise<Server> {
   app.use(express.json());
   app.use('/api', createPlagiarismRouter(() => ({
     models: { generateContent }
-  } as never));
+  } as never)));
   const instance = app.listen(0);
   await new Promise<void>((resolve, reject) => {
     instance.once('listening', resolve);
