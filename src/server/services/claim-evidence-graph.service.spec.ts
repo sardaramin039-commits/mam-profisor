@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ClaimEvidenceGraphService } from './claim-evidence-graph.service';
+import { markServerVerifiedFullText } from './evidence-verification-policy';
 
 describe('ClaimEvidenceGraphService strict evidence gate', () => {
   it('verifies only claims grounded in server-verified full text', async () => {
@@ -51,7 +52,7 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
       'topic',
       'draft',
       [
-        {
+        markServerVerifiedFullText({
           id: 'SRC-STRICT',
           title: 'Strict Study',
           verificationStatus: 'verified',
@@ -61,7 +62,7 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
           evidenceProvenance: 'server-verified-fulltext',
           evidenceText: 'verified source evidence and more detail',
           trustLevel: 'A'
-        },
+        }),
         {
           id: 'SRC-ABSTRACT',
           title: 'Abstract Study',
@@ -70,7 +71,7 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
           evidenceProvenance: 'unknown',
           evidenceText: 'abstract evidence',
           trustLevel: 'A'
-        }
+        })
       ],
       () => ai
     );
@@ -115,7 +116,7 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
       'topic',
       'draft',
       [
-        {
+        markServerVerifiedFullText({
           id: 'SRC-ONE',
           title: 'Same Title',
           verificationStatus: 'verified',
@@ -125,8 +126,8 @@ describe('ClaimEvidenceGraphService strict evidence gate', () => {
           evidenceProvenance: 'server-verified-fulltext',
           evidenceText: 'evidence from source one',
           trustLevel: 'A'
-        },
-        {
+        }),
+        markServerVerifiedFullText({
           id: 'SRC-TWO',
           title: 'Same Title',
           verificationStatus: 'verified',
