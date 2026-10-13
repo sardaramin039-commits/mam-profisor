@@ -1,10 +1,19 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
+import { AuthRequest, requireAuth } from '../middleware/auth';
 import {
   academicAgentsService,
   ACADEMIC_AGENTS_LIST,
 } from '../services/academic-agents.service';
 
 export const agentsRouter = Router();
+
+const runAgentSchema = z.object({
+  agentId: z.string().trim().min(1).max(100)
+    .refine(id => ACADEMIC_AGENTS_LIST.some(agent => agent.id === id), 'ناسنامەی بریکار نادروستە.'),
+  prompt: z.string().trim().min(1).max(20_000),
+  context: z.string().max(40_000).optional().default('')
+}).strict();
 
 // پیشاندانی لیستی سەرجەم ١٢ بریکارە ئەکادیمییە پسپۆڕەکە
 agentsRouter.get('/list', (_req: Request, res: Response) => {
@@ -29,34 +38,33 @@ agentsRouter.get('/:agentId', (req: Request, res: Response) => {
   res.json({ success: true, agent });
 });
 
-// جێبەجێکردنی داواکاری و ئەرکی ئەکادیمی لە ڕێگەی بریکارەوە
+// ئەم endpoint ـە دەتوانێت API ـی AI بەکاربهێنێت؛ دەسەڵات و قەبارەی داواکاری پێش جێبەجێکردن دەپشکنرێن.
 agentsRouter.post(
   '/run',
-  async (req: Request, res: Response, next: NextFunction) => {
+  requireAuth,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const parsed = runAgentSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        error: 'داتای داواکاریی بریکاری ئەکادیمی نادروستە.',
+        issues: parsed.error.issues
+      });
+      return;
+    }
+
     try {
-      const { agentId, prompt, context } = req.body as {
-        agentId?: string;
-        prompt?: string;
-        context?: string;
-      };
-
-      if (!agentId || !prompt || prompt.trim() === '') {
-        res.status(400).json({
-          success: false,
-          error: 'دیاریکردنی هەردوو بڕگەی agentId و prompt پێویستە.',
-        });
-        return;
-      }
-
-      const result = await academicAgentsService.runAgent(
-        agentId,
-        prompt,
-        context
+      const execution = await academicAgentsService.runAgent(
+        parsed.data.agentId,
+        parsed.data.prompt,
+        parsed.data.context
       );
-      res.json({
-        success: true,
-        agentId,
-        result,
+      const succeeded = execution.status === 'generated';
+      res.status(succeeded ? 200 : 503).json({
+        success: succeeded,
+        status: execution.status,
+        agentId: parsed.data.agentId,
+        result: execution.content,
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
