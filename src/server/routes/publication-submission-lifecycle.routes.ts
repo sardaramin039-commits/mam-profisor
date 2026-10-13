@@ -46,8 +46,13 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
       );
       res.json({ submissions: items });
     } catch (error) {
-      console.warn('Submission lifecycle list error:', error);
-      res.json({ submissions: [] });
+      console.error('Submission lifecycle list failed because authoritative storage is unavailable:', error);
+      res.status(503).json({
+        success: false,
+        degraded: true,
+        status: 'SUBMISSION_STORAGE_UNAVAILABLE',
+        error: 'نەتوانرا مێژووی submission لە داتابەیسی سەرەکی بخوێندرێتەوە؛ لیستی بەتاڵ وەک ئەنجامی ڕاستەقینە پیشان نەدرا.'
+      });
     }
   });
 
