@@ -86,8 +86,11 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   router.post('/sync', requireRole('admin', 'professor'), async (_req: ExtendedAuthRequest, res: Response) => {
     try {
       const log = await crawlerEngine.triggerSync();
+      const success = log.status === 'success';
       res.json({
-        message: 'هاودەمکردنی سەرچاوەکان بەسەرکەوتوویی ئەنجامدرا',
+        success,
+        degraded: !success,
+        message: log.message,
         log
       });
     } catch {
