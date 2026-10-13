@@ -34,7 +34,7 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 3. POST /api/library/search - AI Semantic Search & Query Expansion
-  router.post('/search', async (req: Request, res: Response) => {
+  router.post('/search', requireAuth, async (req: Request, res: Response) => {
     try {
       const { query, language } = req.body || {};
       if (!query || typeof query !== 'string') {
