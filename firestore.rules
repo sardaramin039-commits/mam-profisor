@@ -22,6 +22,22 @@ service cloud.firestore {
         && (request.auth.token.role == 'admin' || request.auth.token.role == 'professor');
     }
 
+    function isReviewerOrAdmin() {
+      return isVerifiedUser()
+        && (
+          request.auth.token.role == 'reviewer' ||
+          request.auth.token.role == 'admin' ||
+          request.auth.token.role == 'professor'
+        );
+    }
+
+    function canReviewSubmission(data) {
+      return isReviewerOrAdmin()
+        && data.submissionId is string
+        && exists(/databases/$(database)/documents/peer_submissions/$(data.submissionId))
+        && get(/databases/$(database)/documents/peer_submissions/$(data.submissionId)).data.userId != request.auth.uid;
+    }
+
     function isSubmissionOwner(submissionId) {
       return isSignedIn()
         && exists(/databases/$(database)/documents/peer_submissions/$(submissionId))
@@ -143,16 +159,18 @@ service cloud.firestore {
           isSubmissionOwner(resource.data.submissionId) ||
           isAdminOrProfessor()
         );
-      allow create: if isVerifiedUser()
-        && isValidId(reviewId)
-        && isValidReview(request.resource.data);
+      allow create: if isValidId(reviewId)
+        && isValidReview(request.resource.data)
+        && canReviewSubmission(request.resource.data);
       allow delete: if isVerifiedUser()
         && resource.data.reviewerId == request.auth.uid
         && isValidId(reviewId);
-      allow update: if isVerifiedUser()
+      allow update: if isValidId(reviewId)
+        && canReviewSubmission(request.resource.data)
+        && isValidReview(request.resource.data)
         && resource.data.reviewerId == request.auth.uid
-        && isValidId(reviewId)
-        && isValidReview(request.resource.data);
+        && request.resource.data.reviewerId == resource.data.reviewerId
+        && request.resource.data.submissionId == resource.data.submissionId;
     }
 
     // Match sources collection: sources are private to their owner.
