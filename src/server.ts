@@ -57,7 +57,7 @@ app.use(securityHeadersMiddleware);
 
 // Academic requests can be larger than Express's default 100 KB, but keep a hard upper bound.
 // OCR accepts a bounded 8 MiB decoded image; parse this one route before the general 5 MiB JSON limit.
-app.use('/api/library/ocr', express.json({ limit: '12mb' }));
+app.use('/api/library/ocr', requireAuth, express.json({ limit: '12mb' }));
 app.use(express.json({ limit: '5mb' }));
 
 // Prompt injection protection middleware
