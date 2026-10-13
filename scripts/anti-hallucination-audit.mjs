@@ -11,7 +11,7 @@ const rules = [
   { name: 'obvious fake scholarly URL', pattern: /(?:example123|example\.com\/|doi\.org\/example)/gi, allowed: [/scripts\/.*\.(?:mjs|js)$/] },
   { name: 'fake scholarly author placeholder', pattern: /(?:توێژەری نەناسراو|نووسەری نەناسراو)/g, allowed: [] },
   { name: 'mock scholarly retrieval in production source', pattern: /\bmockCandidates\b/g, allowed: [] },
-  { name: 'fabricated source verification assignment', pattern: /\bsourceVerified\s*[:=]\s*true\b/g, allowed: [/source-verification-service\.ts$/] },
+  { name: 'fabricated source verification assignment', pattern: /\bsourceVerified\s*[:=]\s*true\b/g, allowed: [/source-verification\.service\.ts$/] },
   { name: 'random ID generation', pattern: /Math\.random\(\)\.toString\(36\)/g, allowed: [/src\/server\/services\/gemini\.service\.ts$/] },
   { name: 'unsupported Cross-Encoder claim', pattern: /(?:Cross-Encoder Score|Cross-Encoder Reranking Engine)/gi, allowed: [] },
   { name: 'unsupported Harvard affiliation branding', pattern: /(?:پڕۆژەی هارڤارد|Harvard Project|Harvard affiliation)/gi, allowed: [] },
