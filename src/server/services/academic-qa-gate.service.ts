@@ -20,17 +20,16 @@ export interface ExportContract {
 
 export interface QAGateResult {
   exportBlocked: boolean;
-  overallQAScore: number;
+  overallQAScore: number | null;
   criticalViolationsCount: number;
   checks: QACheckItem[];
   kurdishSummaryStatus: string;
   exportContract: ExportContract;
 }
 
-function clampScore(value: unknown): number {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return 0;
-  return Math.max(0, Math.min(100, Math.round(numeric)));
+function clampScore(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.min(100, Math.round(value)));
 }
 
 function hasCitationEligibleSource(source: unknown): boolean {
@@ -310,7 +309,9 @@ export class AcademicQAGateService {
         check => !check.passed && check.severity === 'critical'
       ).length;
       const aiScore = clampScore(parsed['overallQAScore']);
-      const overallQAScore = criticalCount > 0 ? Math.min(aiScore, 49) : aiScore;
+      const overallQAScore = aiScore === null
+        ? null
+        : criticalCount > 0 ? Math.min(aiScore, 49) : aiScore;
       const approved = !parsed['exportBlocked'] && criticalCount === 0;
       const sourceIds = safeSources
         .filter(hasCitationEligibleSource)
@@ -340,7 +341,7 @@ export class AcademicQAGateService {
       const createdAt = new Date().toISOString();
       return {
         exportBlocked: true,
-        overallQAScore: 0,
+        overallQAScore: null,
         criticalViolationsCount: 1,
         checks: [{
           ruleName: 'QA Engine Availability',
