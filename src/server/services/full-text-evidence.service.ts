@@ -144,7 +144,8 @@ async function resolveOpenAccessPmcRecord(
     `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(query)}&format=json&resultType=core&pageSize=1`;
   const response = await fetch(searchUrl, {
     headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(5000)
+    signal: AbortSignal.timeout(5000),
+    redirect: 'error'
   });
   if (!response.ok) return undefined;
 
@@ -176,7 +177,8 @@ async function resolveOpenAlexFullTextLocation(
       `https://api.openalex.org/works/${encodeURIComponent(workId)}`,
       {
         headers: { Accept: 'application/json' },
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(5000),
+        redirect: 'error'
       }
     );
     if (!response.ok) return undefined;
@@ -371,7 +373,8 @@ export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSour
           `https://www.ebi.ac.uk/europepmc/webservices/rest/${encodeURIComponent(pmcid)}/fullTextXML`;
         const response = await fetch(url, {
           headers: { Accept: 'application/xml,text/xml' },
-          signal: AbortSignal.timeout(7000)
+          signal: AbortSignal.timeout(7000),
+          redirect: 'error'
         });
         if (response.ok) {
           const xml = await response.text();
