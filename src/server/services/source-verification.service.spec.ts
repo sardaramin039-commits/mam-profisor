@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   assessEvidenceVerification,
   isCitationEligibleEvidence,
-  markServerVerifiedFullText,
   SourceVerificationService
 } from './source-verification.service';
+import { markServerVerifiedFullText } from './evidence-verification-policy';
 
 describe('source verification author preservation', () => {
   it('preserves multiple authors in the verification report', async () => {
