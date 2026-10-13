@@ -2,6 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import { claimEvidenceGraphService } from './claim-evidence-graph.service';
 import { sourceVerificationService } from './source-verification.service';
 import { downgradeUntrustedEvidence } from './untrusted-evidence';
+import { isServerVerifiedFullText, markServerVerifiedFullText } from './evidence-verification-policy';
+import { enrichSourcesWithFullText } from './full-text-evidence.service';
 import { evidenceGroundingService } from './evidence-grounding.service';
 import { academicWritingEngineService } from './academic-writing-engine.service';
 import { academicReviewerService } from './academic-reviewer.service';
@@ -63,6 +65,7 @@ export class MultiAgentOrchestratorService {
 
     const profile = disciplineProfileService.getProfile(request.discipline);
     const rawSources = Array.isArray(request.rawSources) ? request.rawSources.slice(0, 100) : [];
+    const clientSuppliedSources = rawSources.length > 0;
     let effectiveSources = rawSources;
     let discovery: { sources: any[]; providers: string[] } = { sources: [], providers: [] };
 
@@ -78,23 +81,58 @@ export class MultiAgentOrchestratorService {
     }
 
     log('01', 'Research Planner Agent', 'Creating discipline-specific research framework');
-    const verification = await sourceVerificationService.verifySources(
-      effectiveSources.map(source => downgradeUntrustedEvidence(source)),
-      getGeminiClient
-    );
-    const citationEligibleSources = verification.citationEligibleSources;
-    log(
-      '02',
-      'Source Verification Agent',
-      `${verification.verifiedSources.length} identity-verified; ${citationEligibleSources.length} citation-eligible`
-    );
 
     const structure = await academicWritingEngineService.generateArgumentArchitecture(
       request.topic,
       request.discipline,
       getGeminiClient
     );
-    log('03', 'Argument & Methodology Agent', 'Built discipline-specific argument architecture');
+    log('02', 'Argument & Methodology Agent', 'Built discipline-specific argument architecture');
+
+    const candidateDraft = request.draftText?.trim()
+      || `${structure.thesisStatement}\n\n${structure.overallConclusion}`;
+
+    const claimTexts = [
+      ...(request.draftText || '').split(/[.!?؟]+|\n+/),
+      String(structure.thesisStatement || ''),
+      String(structure.overallConclusion || '')
+    ]
+      .map(claim => claim.trim().slice(0, 500))
+      .filter(claim => claim.length >= 12)
+      .slice(0, 20);
+
+    if (!clientSuppliedSources) {
+      effectiveSources = await enrichSourcesWithFullText(
+        effectiveSources,
+        claimTexts,
+        { allowDiscoveredProviderUrls: true }
+      );
+      log(
+        '03',
+        'Server Full-Text Acquisition Agent',
+        `${effectiveSources.filter(source => isServerVerifiedFullText(source)).length} full-text source(s) acquired and source-matched`
+      );
+    } else {
+      log(
+        '03',
+        'Untrusted Source Boundary',
+        'Client-supplied source content is not fetched by URL or promoted to verified full text'
+      );
+    }
+
+    const verificationInput = clientSuppliedSources
+      ? effectiveSources.map(source => downgradeUntrustedEvidence(source))
+      : effectiveSources;
+    const verification = await sourceVerificationService.verifySources(
+      verificationInput,
+      getGeminiClient
+    );
+    const citationEligibleSources = verification.citationEligibleSources;
+    log(
+      '04',
+      'Source Verification Agent',
+      `${verification.verifiedSources.length} identity-verified; ${citationEligibleSources.length} citation-eligible`
+    );
 
     const verifiedByKey = new Map(
       citationEligibleSources.map(source => [source.sourceId, source])
@@ -103,37 +141,32 @@ export class MultiAgentOrchestratorService {
       .map(source => {
         const id = sourceKey(source);
         const verified = verifiedByKey.get(id);
-        if (!verified) return null;
+        if (!verified || !isServerVerifiedFullText(source) || !isServerVerifiedFullText(verified)) return null;
 
         const chunkText = String(
-          source.content ?? source.fullText ?? source.text ?? source.chunkText ?? ''
+          source.content ?? source.fullText ?? source.text ?? source.chunkText ?? source.evidenceText ?? ''
         ).trim();
         if (!chunkText) return null;
 
-        return {
+        return markServerVerifiedFullText({
           sourceId: id,
           sourceTitle: verified.sourceTitle,
           chunkText,
-          verificationStatus: 'unverified' as const,
+          verificationStatus: 'verified' as const,
           pageNumber: String(source.pageNumber ?? source.page ?? '').trim() || undefined,
           author: verified.author,
           year: verified.year || String(source.year ?? '').trim() || undefined,
-          evidenceType: 'snippet' as const,
-          provenance: 'user-supplied-content' as const
-        };
+          provenance: 'server-verified-fulltext' as const
+        });
       })
       .filter((item): item is NonNullable<typeof item> => Boolean(item));
-
-    const candidateDraft = request.draftText?.trim()
-      || `${structure.thesisStatement}\n\n${structure.overallConclusion}`;
-
     const grounded = await evidenceGroundingService.generateGroundedContent(
       request.topic,
       candidateDraft,
       evidenceChunks,
       getGeminiClient
     );
-    log('04', 'Evidence-Grounded Writer Agent',
+    log('05', 'Evidence-Grounded Writer Agent',
       `${grounded.integrityMetrics.verifiedClaims}/${grounded.integrityMetrics.totalClaims} claims citation-grounded`);
 
     const groundedText = grounded.paragraphs.length
@@ -144,7 +177,7 @@ export class MultiAgentOrchestratorService {
       groundedText,
       getGeminiClient
     );
-    log('05', 'Kurdish Academic Language Agent', 'Validated Sorani grammar and academic terminology');
+    log('06', 'Kurdish Academic Language Agent', 'Validated Sorani grammar and academic terminology');
 
     const protectedFragments = Array.from(new Set([
       ...grounded.verifiedCitations.map(citation => citation.inTextCitation),
@@ -159,7 +192,7 @@ export class MultiAgentOrchestratorService {
       protectedFragments,
       getGeminiClient
     );
-    log('06', 'Natural Scholarly Prose Agent',
+    log('07', 'Natural Scholarly Prose Agent',
       humanProse.preservationPassed === false
         ? 'Preservation guard kept the previous text'
         : 'Applied natural scholarly variation without adding facts');
@@ -169,27 +202,29 @@ export class MultiAgentOrchestratorService {
     const graphSources = effectiveSources
       .map(source => {
         const verified = verifiedByKey.get(sourceKey(source));
-        if (!verified) return null;
+        if (!verified || !isServerVerifiedFullText(source) || !isServerVerifiedFullText(verified)) return null;
 
         const evidenceText = String(
           source.content ??
           source.fullText ??
           source.text ??
           source.chunkText ??
+          source.evidenceText ??
           ''
         ).trim();
         if (!evidenceText) return null;
 
-        return {
+        return markServerVerifiedFullText({
           ...source,
           ...verified,
+          verificationStatus: 'verified' as const,
           identityStatus: 'verified' as const,
-          evidenceStatus: 'unverified' as const,
-          evidenceType: 'snippet' as const,
-          evidenceProvenance: 'user-supplied-content' as const,
-          provenance: 'user-supplied-content' as const,
+          evidenceStatus: 'verified' as const,
+          evidenceType: 'full-text' as const,
+          evidenceProvenance: 'server-verified-fulltext' as const,
+          provenance: 'server-verified-fulltext' as const,
           content: evidenceText
-        };
+        });
       })
       .filter((source): source is NonNullable<typeof source> => Boolean(source));
 
@@ -199,7 +234,7 @@ export class MultiAgentOrchestratorService {
       graphSources,
       getGeminiClient
     );
-    log('07', 'Claim-Evidence Graph Agent', `${graph.claims.length} final claims analyzed`);
+    log('08', 'Claim-Evidence Graph Agent', `${graph.claims.length} final claims analyzed`);
 
     const contradictions = await contradictionDetectionService.analyze(
       request.topic,
@@ -207,7 +242,7 @@ export class MultiAgentOrchestratorService {
       citationEligibleSources,
       getGeminiClient
     );
-    log('08', 'Contradiction Agent', contradictions.contradictionCount
+    log('09', 'Contradiction Agent', contradictions.contradictionCount
       ? `${contradictions.contradictionCount} contradiction(s) require review`
       : 'No supported contradictions found');
 
@@ -228,7 +263,7 @@ export class MultiAgentOrchestratorService {
         ? (citationEligibleSources.length / effectiveSources.length) * 100
         : 0
     });
-    log('09', 'Academic Confidence Agent', confidence.labelKurdish);
+    log('10', 'Academic Confidence Agent', confidence.labelKurdish);
 
     const review = await academicReviewerService.evaluateThesis(
       finalText,
@@ -249,7 +284,7 @@ export class MultiAgentOrchestratorService {
         }))
       }
     );
-    log('10', 'Professor Reviewer Agent', 'Completed independent academic review');
+    log('11', 'Professor Reviewer Agent', 'Completed independent academic review');
 
     const qa = await academicQAGateService.runQAGate(
       finalText,
@@ -263,7 +298,7 @@ export class MultiAgentOrchestratorService {
         totalClaims: grounded.integrityMetrics.totalClaims
       }
     );
-    log('11', 'Final Academic QA Gate', qa.exportBlocked
+    log('12', 'Final Academic QA Gate', qa.exportBlocked
       ? 'Export blocked pending evidence/review'
       : 'QA passed');
 
