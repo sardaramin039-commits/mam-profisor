@@ -84,6 +84,10 @@ type InputSource = {
   pageNumber?: string | number | null;
 };
 
+function preserveServerFullTextTrust<T extends InputSource>(original: InputSource, normalized: T): T {
+  return isServerVerifiedFullText(original) ? markServerVerifiedFullText(normalized) : normalized;
+}
+
 function normalize(value: string): string {
   return value
     .toLocaleLowerCase()
@@ -296,7 +300,7 @@ export class SourceVerificationService {
         }
 
         return buildBaseReport(
-          { ...source, title: external.title, author: external.authors.join(', ') || sourceAuthorString(source), authors: external.authors.length ? external.authors : sourceAuthorList(source), year: external.publishedYear, publisher: external.publisher || source.publisher, doi: external.doi },
+          preserveServerFullTextTrust(source, { ...source, title: external.title, author: external.authors.join(', ') || sourceAuthorString(source), authors: external.authors.length ? external.authors : sourceAuthorList(source), year: external.publishedYear, publisher: external.publisher || source.publisher, doi: external.doi }),
           sourceId,
           'verified',
           0,
@@ -316,7 +320,7 @@ export class SourceVerificationService {
         const matched = titleMatch && authorMatch;
 
         return buildBaseReport(
-          { ...source, title: isbnExternal.title, author: isbnExternal.authors.join(', ') || sourceAuthorString(source), authors: isbnExternal.authors.length ? isbnExternal.authors : sourceAuthorList(source), year: isbnExternal.publishDate || source.year, publisher: isbnExternal.publisher || source.publisher, isbn: isbnExternal.isbn },
+          preserveServerFullTextTrust(source, { ...source, title: isbnExternal.title, author: isbnExternal.authors.join(', ') || sourceAuthorString(source), authors: isbnExternal.authors.length ? isbnExternal.authors : sourceAuthorList(source), year: isbnExternal.publishDate || source.year, publisher: isbnExternal.publisher || source.publisher, isbn: isbnExternal.isbn }),
           sourceId,
           matched ? 'verified' : 'rejected',
           matched ? 0 : 0,
@@ -333,7 +337,7 @@ export class SourceVerificationService {
       const candidate = metadataResolved.get(index);
       if (candidate) {
         return buildBaseReport(
-          { ...source, title: candidate.title, author: candidate.authors.join(', ') || sourceAuthorString(source), authors: candidate.authors.length ? candidate.authors : sourceAuthorList(source), year: candidate.year || source.year, publisher: candidate.publisher || source.publisher, doi: candidate.doi || source.doi },
+          preserveServerFullTextTrust(source, { ...source, title: candidate.title, author: candidate.authors.join(', ') || sourceAuthorString(source), authors: candidate.authors.length ? candidate.authors : sourceAuthorList(source), year: candidate.year || source.year, publisher: candidate.publisher || source.publisher, doi: candidate.doi || source.doi }),
           sourceId,
           'verified',
           0,
@@ -354,7 +358,7 @@ export class SourceVerificationService {
         const matched = titleMatch && publisherMatch;
 
         return buildBaseReport(
-          { ...source, title: issnExternal.journalTitle || source.title, publisher: issnExternal.publisher || source.publisher, issn: issnExternal.issn },
+          preserveServerFullTextTrust(source, { ...source, title: issnExternal.journalTitle || source.title, publisher: issnExternal.publisher || source.publisher, issn: issnExternal.issn }),
           sourceId,
           matched ? 'verified' : 'rejected',
           matched ? 0 : 0,
