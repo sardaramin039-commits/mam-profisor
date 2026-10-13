@@ -203,7 +203,8 @@ export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router
         source: source.source,
         doi: source.doi || '',
         url: source.url || '',
-        verificationStatus: 'verified'
+        identityVerificationStatus: 'verified',
+        evidenceVerificationStatus: 'not-verified'
       }));
 
       if (sources.length === 0) {
@@ -290,7 +291,7 @@ ${JSON.stringify(sourceContext, null, 2)}
         sourceIntegrity: {
           retrievalStatus: 'index-results',
           sourceCount: sources.length,
-          verificationStatus: 'verified'
+          verificationStatus: 'identity-verified-not-evidence-verified'
         }
       });
     } catch (error) {
