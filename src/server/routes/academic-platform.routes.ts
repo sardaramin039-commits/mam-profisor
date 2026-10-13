@@ -57,6 +57,28 @@ const orchestrationSchema = z.object({
 }).strict();
 const modelRouterSchema = z.object({ taskType: z.enum(['fast', 'reasoning', 'long_context', 'embedding']).default('fast'), textLength: z.coerce.number().int().min(0).max(1_000_000).default(0) }).strict();
 
+// Evidence labels arrive in a client request and are therefore claims, not trust anchors.
+// Only server-owned retrieval/verification code may grant these fields.
+const CLIENT_CONTROLLED_EVIDENCE_FIELDS = [
+  'verificationStatus', 'identityStatus', 'evidenceStatus', 'evidenceType',
+  'evidenceProvenance', 'provenance', 'trustLevel', 'existenceVerified',
+  'citationEligible', 'rejectedAsFabricated', 'isVerified', 'verified',
+  'sourceVerified', 'verifiedAt', 'metadataAccuracy', 'integrityScore',
+  'evidenceVerificationMethod'
+] as const;
+
+function stripClientEvidenceTrustClaims(
+  sources: Array<Record<string, unknown>>
+): Array<Record<string, unknown>> {
+  return sources.map(source => {
+    const safeSource = { ...source };
+    for (const field of CLIENT_CONTROLLED_EVIDENCE_FIELDS) {
+      delete safeSource[field];
+    }
+    return safeSource;
+  });
+}
+
 export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
 
@@ -73,10 +95,12 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         return;
       }
       const { topic, draftText, sources } = evidenceGraphSchemaParsed.data;
+      // Never accept client-provided verification/provenance flags as proof of full-text evidence.
+      const untrustedSources = stripClientEvidenceTrustClaims(sources || []);
       const graph = await claimEvidenceGraphService.buildGraph(
         topic || 'تێزی زانستی',
         draftText || '',
-        sources || [],
+        untrustedSources,
         getGeminiClient
       );
       res.json({ success: true, graph });
