@@ -3,6 +3,7 @@ import { lookupIsbn, lookupIssn, resolveDoi } from '../../helpers/extended-acade
 import {
   assessEvidenceVerification,
   isCitationEligibleEvidence,
+  isServerVerifiedFullText,
   readEvidence
 } from './evidence-verification-policy';
 import type {
@@ -151,8 +152,15 @@ function buildBaseReport(
   rejectedAsFabricated = false,
   rejectionReasonKurdish?: string
 ): SourceVerificationReport {
-  const evidence = assessEvidenceVerification(source);
+  const trustedFullText = isServerVerifiedFullText(source)
+    && source.evidenceType === 'full-text'
+    && source.evidenceProvenance === 'server-verified-fulltext';
+  const suppliedEvidence = Boolean(readEvidence(source));
+  const evidence = trustedFullText
+    ? assessEvidenceVerification(source)
+    : { status: suppliedEvidence ? 'unverified' as const : 'not_available' as const };
   const citationEligible =
+    trustedFullText &&
     identityStatus === 'verified' &&
     isCitationEligibleEvidence(
       evidence.status,
@@ -177,8 +185,8 @@ function buildBaseReport(
     citationEligible,
     evidenceVerificationMethod: evidence.method,
     evidenceText: readEvidence(source) || undefined,
-    evidenceType: source.evidenceType,
-    evidenceProvenance: source.evidenceProvenance || 'unknown',
+    evidenceType: trustedFullText ? 'full-text' : (source.evidenceType === 'abstract' || source.evidenceType === 'snippet' ? source.evidenceType : undefined),
+    evidenceProvenance: trustedFullText ? 'server-verified-fulltext' : suppliedEvidence ? 'user-supplied-content' : 'unknown',
     pageNumber: source.pageNumber ?? null,
     metadataAccuracy,
     peerReviewed: false,
