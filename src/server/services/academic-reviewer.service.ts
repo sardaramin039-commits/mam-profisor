@@ -41,7 +41,6 @@ export class AcademicReviewerService {
     getGeminiClient: () => GoogleGenAI,
     context: ReviewerContext = {}
   ): Promise<ReviewerReport> {
-    const ai = getGeminiClient();
     const sourceContext = (context.verifiedSources || []).slice(0, 100);
 
     const prompt = `تۆ وەک Reviewer ـێکی زانستی و بێلایەن کار دەکەیت. ئەرکت هەڵسەنگاندنی ئەکادیمییانەی ئەم دەقەی توێژینەوەیەیە.
@@ -91,6 +90,7 @@ ${JSON.stringify(sourceContext, null, 2)}
 }`;
 
     try {
+      const ai = getGeminiClient();
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
         contents: prompt,
