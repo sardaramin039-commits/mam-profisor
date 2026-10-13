@@ -11,7 +11,10 @@ function walk(dir) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) walk(full);
     else if (EXTENSIONS.has(full.slice(full.lastIndexOf('.')).toLowerCase())) {
-      const lineCount = readFileSync(full, 'utf8').split(/\r?\n/).length;
+      const source = readFileSync(full, 'utf8');
+      const lineCount = source.length === 0
+        ? 0
+        : source.split(/\r?\n/).length - (source.endsWith('\n') ? 1 : 0);
       if (lineCount > LIMIT) offenders.push({ file: relative(process.cwd(), full), lineCount });
     }
   }
