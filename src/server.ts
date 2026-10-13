@@ -77,7 +77,7 @@ app.use('/api', optionalAuth, authenticatedRateLimiterMiddleware);
 // Public & Scholarly AI Tools
 app.use('/api/ai-tools', requireAuth, createAiToolsRouter(getGeminiClient));
 app.use('/api/library', createLibraryRouter(getGeminiClient));
-app.use('/api/external-integrations', createExternalApiRouter());
+app.use('/api/external-integrations', requireAuth, createExternalApiRouter());
 app.use('/api', createAcademicRouter(getGeminiClient));
 app.use('/api', createThesisWritingRouter(getGeminiClient));
 app.use('/api', createResearchAnalysisRouter(getGeminiClient));
