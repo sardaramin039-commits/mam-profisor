@@ -134,6 +134,10 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
     } catch (error) {
       console.error('Refine endpoint error:', error);
       const fallbackResponse = {
+        success: false,
+        degraded: true,
+        generationSucceeded: false,
+        status: 'AI_PROVIDER_UNAVAILABLE',
         refinedText: text,
         diffs: [],
         metrics: {
@@ -150,7 +154,7 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
         bibliography: [],
         visualizations: []
       };
-      res.json(fallbackResponse);
+      res.status(503).json(fallbackResponse);
     }
   });
 
@@ -410,7 +414,11 @@ ${comparisonPrompt}
         discipline: req.body.discipline || 'گشتی',
         academicLevel: req.body.academicLevel || 'زانکۆ'
       });
-      res.json({
+      res.status(503).json({
+        success: false,
+        degraded: true,
+        generationSucceeded: false,
+        status: 'AI_PROVIDER_UNAVAILABLE',
         content: fallbackText,
         wordCount: fallbackText.trim().split(/\s+/).filter(Boolean).length,
         academicNotes: 'AI بەردەست نەبوو؛ ئەم وەڵامە تەنها scaffold ـە و هیچ citation ی پشتڕاستکراوی تێدا نییە.',
