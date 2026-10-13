@@ -26,7 +26,6 @@ export class AcademicWritingEngineService {
     discipline: string,
     getGeminiClient: () => GoogleGenAI
   ): Promise<ThesisStructurePlan> {
-    const ai = getGeminiClient();
     const profile = disciplineProfileService.getProfile(discipline);
 
     const prompt = `تۆ سەرنووسەرێکی ئەکادیمیی زانکۆیییت. بونیادێکی ڕێکخراوی ئارگومێنتی (Argument Architecture) بۆ ئەم بابەتە دابنێ:
@@ -60,6 +59,7 @@ export class AcademicWritingEngineService {
 }`;
 
     try {
+      const ai = getGeminiClient();
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
         contents: prompt,
