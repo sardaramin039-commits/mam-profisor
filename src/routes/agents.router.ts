@@ -62,8 +62,12 @@ agentsRouter.post(
         prompt,
         context
       );
-      res.json({
-        success: true,
+      const degraded = result.startsWith('[DEGRADED — AI PROVIDER UNAVAILABLE]');
+      res.status(degraded ? 503 : 200).json({
+        success: !degraded,
+        generationSucceeded: !degraded,
+        degraded,
+        status: degraded ? 'AI_PROVIDER_UNAVAILABLE' : 'completed',
         agentId,
         result,
         timestamp: new Date().toISOString(),
