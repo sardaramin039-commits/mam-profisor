@@ -1,4 +1,9 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { lookup } from 'node:dns/promises';
+
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }])
+}));
 import { enrichSourcesWithFullText } from './full-text-evidence.service';
 
 const originalFetch = globalThis.fetch;
@@ -62,6 +67,36 @@ describe('full-text evidence enrichment', () => {
     expect(enriched.evidenceUrl).toContain('/PMC123456/fullTextXML');
   });
 
+
+  it('rejects private-network hosts and IP-literal URLs before fetching HTML', async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      '<html><body><article>' + '<p>Academic content with enough text to resemble a full paper.</p>'.repeat(60) +
+      '</article></body></html>',
+      { status: 200, headers: { 'Content-Type': 'text/html' } }
+    ));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const [privateIpResult] = await enrichSourcesWithFullText([{
+      id: 'doaj-private-ip',
+      title: 'Private URL',
+      sourceType: 'DOAJ',
+      url: 'https://127.0.0.1/admin'
+    }], ['academic content']);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(privateIpResult.evidenceProvenance).toBeUndefined();
+
+    vi.mocked(lookup).mockResolvedValueOnce([{ address: '10.1.2.3', family: 4 }] as never);
+    const [privateDnsResult] = await enrichSourcesWithFullText([{
+      id: 'doaj-private-dns',
+      title: 'Private DNS',
+      sourceType: 'DOAJ',
+      url: 'https://publisher.example/private'
+    }], ['academic content']);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(privateDnsResult.evidenceProvenance).toBeUndefined();
+  });
 
   it('enriches an OpenAlex open-access landing page when full text is available', async () => {
     globalThis.fetch = (async (input: RequestInfo | URL) => {
