@@ -13,15 +13,13 @@ import { getDigitalLibraryContextPrompt } from '../services/digital-library-cont
 import { generateDynamicAcademicFallback } from '../services/dynamic-academic-fallback.service';
 import { humanScholarlyProseService } from '../services/human-scholarly-prose.service';
 import { disciplineProfileService } from '../services/discipline-profile.service';
-import { evidenceGroundingService } from '../services/evidence-grounding.service';
-import { downgradeUntrustedEvidence } from '../services/untrusted-evidence';
+import { createGroundedGenerationRouter } from './grounded-generation.routes';
 import { validateRequest } from '../../middleware/validate.middleware';
 import {
   thesisRefineSchema,
   structureReviewSchema,
   chapterGenerationSchema,
-  glossaryExpansionSchema,
-  groundedGenerationSchema
+  glossaryExpansionSchema
 } from '../utils/thesis-writing.schemas';
 
 export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): Router {
@@ -473,54 +471,7 @@ ${comparisonPrompt}
     }
   });
 
-  /**
-   * P5 Evidence Intelligence & Grounded Content Generation Endpoint
-   */
-  router.post('/grounded_generate', validateRequest(groundedGenerationSchema), async (req, res) => {
-    try {
-      const { topic, prompt, evidenceChunks } = req.body;
-      if (!topic || !prompt) {
-        res.status(400).json({ error: 'تەوەرە (topic) و داواکاری (prompt) پێویستن.' });
-        return;
-      }
-
-      // Evidence chunks arrive from the browser, so all verification flags and
-      // provenance fields must be discarded and recomputed by trusted server code.
-      const safeEvidenceChunks = (Array.isArray(evidenceChunks) ? evidenceChunks : [])
-        .filter((item: unknown): item is Record<string, unknown> =>
-          Boolean(item && typeof item === 'object' && !Array.isArray(item))
-        )
-        .map((item: Record<string, unknown>) => {
-          const source = downgradeUntrustedEvidence(item);
-          return {
-            sourceId: String(source['sourceId'] || ''),
-            sourceTitle: String(source['sourceTitle'] || ''),
-            chunkText: String(source['chunkText'] || ''),
-            verificationStatus: 'unverified' as const,
-            pageNumber: source['pageNumber'] == null ? undefined : String(source['pageNumber']),
-            author: typeof source['author'] === 'string' ? source['author'] : undefined,
-            year: source['year'] == null ? undefined : String(source['year']),
-            evidenceType: 'snippet' as const,
-            provenance: 'user-supplied-content' as const
-          };
-        })
-        .filter((item: { sourceId: string; sourceTitle: string; chunkText: string }) =>
-          item.sourceId.trim() !== '' && item.sourceTitle.trim() !== '' && item.chunkText.trim() !== ''
-        );
-
-      const result = await evidenceGroundingService.generateGroundedContent(
-        topic,
-        prompt,
-        safeEvidenceChunks,
-        getGeminiClient
-      );
-
-      res.json(result);
-    } catch (err: unknown) {
-      console.error('Grounded generate error:', err);
-      res.status(500).json({ error: 'کێشەیەک لە دروستکردنی دەقی بنەماپێدراو لەسەر بەڵگەکان ڕوویدا.' });
-    }
-  });
+  router.use(createGroundedGenerationRouter(getGeminiClient));
 
   return router;
 }
