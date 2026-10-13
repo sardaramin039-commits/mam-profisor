@@ -274,7 +274,21 @@ async function searchCrossrefByMetadata(
       }
     }
 
-    if (!best || best.score < 0.82 || best.authorScore < 0.5 || !best.yearMatch) {
+    const hasAuthorInput = Boolean(sourceAuthorString(source));
+    const sourceYear = Number(source.year);
+    const hasComparableYear = Number.isFinite(sourceYear) && sourceYear > 0;
+
+    // A fuzzy title search alone is not enough to establish source identity.
+    // Require at least one independent metadata cross-check: author or year.
+    // If a year was supplied, the matched Crossref record must include a matching year.
+    if (
+      !best ||
+      best.score < 0.82 ||
+      best.authorScore < 0.5 ||
+      !best.yearMatch ||
+      (!hasAuthorInput && !hasComparableYear) ||
+      (hasComparableYear && !best.candidate.year)
+    ) {
       return undefined;
     }
 
