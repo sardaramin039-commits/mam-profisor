@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { ExtendedAuthRequest, requireRole } from '../middleware/rbac.middleware';
+import { requireAuth } from '../../middleware/auth';
 import { claimEvidenceGraphService } from '../services/claim-evidence-graph.service';
 import { sourceVerificationService } from '../services/source-verification.service';
 import { academicWritingEngineService } from '../services/academic-writing-engine.service';
@@ -58,6 +59,10 @@ const modelRouterSchema = z.object({ taskType: z.enum(['fast', 'reasoning', 'lon
 
 export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+
+  // Every endpoint in this router is an academic AI/evidence operation or
+  // privileged telemetry/configuration surface. Require a verified Firebase ID token first.
+  router.use(requireAuth);
 
   // 1. Claim-Evidence Graph Engine
   router.post('/evidence-graph', async (req: ExtendedAuthRequest, res: Response): Promise<void> => {
