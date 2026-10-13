@@ -166,7 +166,8 @@ function buildBaseReport(
       evidence.status,
       Boolean(readEvidence(source)),
       source.evidenceType,
-      source.evidenceProvenance
+      source.evidenceProvenance,
+      source
     );
 
   return {
