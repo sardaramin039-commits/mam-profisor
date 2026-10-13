@@ -1,6 +1,10 @@
-import express from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import type { Server } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const authMocks = vi.hoisted(() => ({ requireAuth: vi.fn() }));
+vi.mock('../../middleware/auth', () => ({ requireAuth: authMocks.requireAuth }));
+
 import { createPlagiarismRouter } from './plagiarism.routes';
 
 let server: Server | undefined;
@@ -27,6 +31,18 @@ async function baseUrl(): Promise<string> {
 }
 
 beforeEach(async () => {
+  authMocks.requireAuth.mockImplementation((
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    if (req.headers.authorization !== 'Bearer test-token') {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    (req as Request & { user?: { uid: string } }).user = { uid: 'test-user' };
+    next();
+  });
   generateContent = vi.fn().mockRejectedValue(new Error('provider unavailable'));
   server = await startServer();
 });
@@ -43,7 +59,7 @@ describe('plagiarism screening factuality', () => {
   it('does not report a fabricated originality score when AI is unavailable and no corpus is connected', async () => {
     const response = await fetch(`${await baseUrl()}/api/plagiarism_check`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
       body: JSON.stringify({
         title: 'Test document',
         content: 'A sufficiently long academic text that must not be labelled as original without comparing against any real reference corpus.'
