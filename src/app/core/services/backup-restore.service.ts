@@ -2,7 +2,9 @@ import { Injectable, signal } from '@angular/core';
 import {
   APP_BACKUP_VERSION,
   MAX_BACKUP_BYTES,
+  MAX_BACKUP_ENTRIES,
   filterBackupEntries,
+  isAllowedBackupKey,
   validateBackupPayload,
   type AppBackupData
 } from './backup-restore-policy';
@@ -29,9 +31,10 @@ export class BackupRestoreService {
       const dump: Record<string, string> = Object.create(null) as Record<string, string>;
       for (let i = 0; i < window.localStorage.length; i++) {
         const key = window.localStorage.key(i);
-        if (!key) continue;
+        if (!key || !isAllowedBackupKey(key)) continue;
         const value = window.localStorage.getItem(key);
         if (value !== null) dump[key] = value;
+        if (Object.keys(dump).length >= MAX_BACKUP_ENTRIES) break;
       }
 
       const localStorageDump = filterBackupEntries(dump);
