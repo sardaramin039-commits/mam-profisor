@@ -22,7 +22,7 @@ export interface WordFrequencyResult {
 }
 
 export interface KurdishReadabilityResult {
-  score: number; // 0 - 100
+  score: number | null; // null when the text is too short to assess
   levelLabel: string;
   gradeLevel: string;
   avgSentenceLength: number; // words per sentence
@@ -129,9 +129,9 @@ export function calculateKurdishWordFrequency(
 export function calculateKurdishAcademicReadability(text: string): KurdishReadabilityResult {
   if (!text || text.trim().length < 20) {
     return {
-      score: 50,
-      levelLabel: 'لە سەرەتادایە',
-      gradeLevel: 'دەستی پێنەکردووە',
+      score: null,
+      levelLabel: 'دەق بۆ هەڵسەنگاندن بەس نییە',
+      gradeLevel: 'نادیار',
       avgSentenceLength: 0,
       avgWordLength: 0,
       badgeClass: 'bg-stone-100 text-stone-700 border-stone-300',
