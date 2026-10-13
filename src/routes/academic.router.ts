@@ -33,6 +33,7 @@ const vectorIndexSchema = z.object({
 // گەڕانی فرە-ناوەندی لەناو هەموو داتابەیسە جیهانییەکان بە Zod Validation
 academicRouter.get(
   '/search',
+  requireAuth,
   validateRequest(searchSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -59,6 +60,7 @@ academicRouter.get(
 // گەڕان تەنها لە OpenAlex
 academicRouter.get(
   '/openalex',
+  requireAuth,
   validateRequest(searchSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -75,6 +77,7 @@ academicRouter.get(
 // گەڕان تەنها لە Crossref
 academicRouter.get(
   '/crossref',
+  requireAuth,
   validateRequest(searchSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -91,6 +94,7 @@ academicRouter.get(
 // گەڕان تەنها لە Google Books
 academicRouter.get(
   '/google-books',
+  requireAuth,
   validateRequest(searchSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -165,6 +169,7 @@ academicRouter.post(
 // پشکنینی دۆخی تەندروستی و بەردەستبوونی APIـە ئەکادیمییەکان (Crossref, OpenAlex, Google Books)
 academicRouter.get(
   '/apis-health',
+  requireAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const health = await academicSearchService.checkApisHealth();
