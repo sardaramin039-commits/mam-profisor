@@ -151,15 +151,19 @@ function buildBaseReport(
   rejectedAsFabricated = false,
   rejectionReasonKurdish?: string
 ): SourceVerificationReport {
-  const evidence = assessEvidenceVerification(source);
-  const citationEligible =
-    identityStatus === 'verified' &&
-    isCitationEligibleEvidence(
-      evidence.status,
-      Boolean(readEvidence(source)),
-      source.evidenceType,
-      source.evidenceProvenance
-    );
+  const suppliedEvidenceText = readEvidence(source);
+  // verifySources can be called with client-submitted records. Neither an exact
+  // substring match nor client-set evidenceType/provenance proves server retrieval.
+  // No authoritative full-text retrieval is currently wired into this service, so
+  // supplied evidence remains unverified and cannot become citation-eligible here.
+  const evidenceStatus: EvidenceVerificationStatus = suppliedEvidenceText ? 'unverified' : 'not_available';
+  const evidenceType: EvidenceType = source.evidenceType === 'abstract' && !suppliedEvidenceText
+    ? 'abstract'
+    : suppliedEvidenceText ? 'snippet' : 'snippet';
+  const evidenceProvenance: EvidenceProvenance = suppliedEvidenceText
+    ? 'user-supplied-content'
+    : 'unknown';
+  const citationEligible = false;
 
   return {
     sourceId,
@@ -173,12 +177,12 @@ function buildBaseReport(
     trustLevel,
     existenceVerified: identityStatus === 'verified',
     identityStatus,
-    evidenceStatus: evidence.status,
+    evidenceStatus,
     citationEligible,
-    evidenceVerificationMethod: evidence.method,
-    evidenceText: readEvidence(source) || undefined,
-    evidenceType: source.evidenceType,
-    evidenceProvenance: source.evidenceProvenance || 'unknown',
+    evidenceVerificationMethod: undefined,
+    evidenceText: suppliedEvidenceText || undefined,
+    evidenceType,
+    evidenceProvenance,
     pageNumber: source.pageNumber ?? null,
     metadataAccuracy,
     peerReviewed: false,
