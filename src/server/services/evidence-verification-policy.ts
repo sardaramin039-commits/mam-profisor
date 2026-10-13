@@ -5,6 +5,31 @@ export type EvidenceProvenance =
   | 'user-supplied-content'
   | 'unknown';
 
+const SERVER_VERIFIED_FULLTEXT = Symbol('mam-professor.server-verified-fulltext');
+
+/**
+ * Call only after the server itself has fetched and validated the source full text.
+ * JSON clients cannot create this non-serializable trust marker.
+ */
+export function markServerVerifiedFullText<T extends object>(source: T): T {
+  Object.assign(source, {
+    evidenceType: 'full-text',
+    evidenceProvenance: 'server-verified-fulltext'
+  });
+  Object.defineProperty(source, SERVER_VERIFIED_FULLTEXT, {
+    value: true,
+    enumerable: true,
+    configurable: false,
+    writable: false
+  });
+  return source;
+}
+
+export function isServerVerifiedFullText(source: unknown): boolean {
+  if (!source || typeof source !== 'object') return false;
+  return (source as Record<PropertyKey, unknown>)[SERVER_VERIFIED_FULLTEXT] === true;
+}
+
 function normalize(value: string): string {
   return value
     .toLocaleLowerCase()
