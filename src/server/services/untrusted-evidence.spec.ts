@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { downgradeUntrustedEvidence, downgradeUntrustedEvidenceList } from './untrusted-evidence';
+import { isServerVerifiedFullText, markServerVerifiedFullText } from './evidence-verification-policy';
 
 describe('untrusted evidence boundary', () => {
   it('overrides client-supplied verification and full-text provenance flags', () => {
@@ -26,6 +27,19 @@ describe('untrusted evidence boundary', () => {
     expect(result.citationEligible).toBe(false);
     expect(result.existenceVerified).toBe(false);
     expect(result.content).toBe('Client can control this content.');
+  });
+
+  it('removes a server-only trust marker when evidence crosses an untrusted boundary', () => {
+    const trusted = markServerVerifiedFullText({
+      title: 'Server-fetched source',
+      content: 'This is the server-fetched full text.'
+    });
+    expect(isServerVerifiedFullText(trusted)).toBe(true);
+
+    const downgraded = downgradeUntrustedEvidence(trusted);
+    expect(isServerVerifiedFullText(downgraded)).toBe(false);
+    expect(downgraded.verificationStatus).toBe('unverified');
+    expect(downgraded.evidenceProvenance).toBe('user-supplied-content');
   });
 
   it('does not allow non-object array items through the evidence boundary', () => {
