@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { requireAuth } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import {
   SYSTEM_PROMPT_REFINE
@@ -23,6 +24,7 @@ import { sourceVerificationService } from '../services/source-verification.servi
 
 export function createAcademicRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+  router.use(requireAuth);
 
   // /api/refine
   router.post('/refine', async (req: Request, res: Response) => {
