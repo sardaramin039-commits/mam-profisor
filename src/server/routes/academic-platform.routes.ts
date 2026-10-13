@@ -43,7 +43,7 @@ const verificationSourceSchema = z.object({
 });
 const verificationSourceArray = z.array(verificationSourceSchema).max(100);
 
-const evidenceGraphSchema = z.object({ topic: textField(500), draftText: z.string().max(250_000).default(''), sources: rawSourceArray.default([]) }).strict();
+const evidenceGraphSchema = z.object({ topic: textField(500), draftText: z.string().max(250_000).default(''), sources: verificationSourceArray.default([]) }).strict();
 const sourceVerificationSchema = z.object({ sources: verificationSourceArray.default([]) }).strict();
 const academicReviewSchema = z.object({
   draftText: textField(250_000),
@@ -72,7 +72,7 @@ async function verifySourcesWithServerEvidence(
   const enriched = await Promise.all(candidates.map(async source => {
     const claim = [
       source['claimText'], source['evidenceText'], source['content'],
-      source['fullText'], source['text'], source['chunkText'], source['title']
+      source['chunkText'], source['text']
     ].find(value => typeof value === 'string' && value.trim().length >= 20);
     if (typeof claim !== 'string') return source;
     const [result] = await enrichSourcesWithFullText([source as never], [claim.slice(0, 2000)]);
@@ -86,28 +86,6 @@ async function verifySourcesWithServerEvidence(
 }
 
 
-
-// Evidence labels arrive in a client request and are therefore claims, not trust anchors.
-// Only server-owned retrieval/verification code may grant these fields.
-const CLIENT_CONTROLLED_EVIDENCE_FIELDS = [
-  'verificationStatus', 'identityStatus', 'evidenceStatus', 'evidenceType',
-  'evidenceProvenance', 'provenance', 'trustLevel', 'existenceVerified',
-  'citationEligible', 'rejectedAsFabricated', 'isVerified', 'verified',
-  'sourceVerified', 'verifiedAt', 'metadataAccuracy', 'integrityScore',
-  'evidenceVerificationMethod'
-] as const;
-
-function stripClientEvidenceTrustClaims(
-  sources: Array<Record<string, unknown>>
-): Array<Record<string, unknown>> {
-  return sources.map(source => {
-    const safeSource = { ...source };
-    for (const field of CLIENT_CONTROLLED_EVIDENCE_FIELDS) {
-      delete safeSource[field];
-    }
-    return safeSource;
-  });
-}
 
 export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -125,15 +103,46 @@ export function createAcademicPlatformRouter(getGeminiClient: () => GoogleGenAI)
         return;
       }
       const { topic, draftText, sources } = evidenceGraphSchemaParsed.data;
-      // Never accept client-provided verification/provenance flags as proof of full-text evidence.
-      const untrustedSources = stripClientEvidenceTrustClaims(sources || []);
+      const verification = await verifySourcesWithServerEvidence(
+        (sources || []) as unknown as Array<Record<string, unknown>>,
+        getGeminiClient
+      );
+      // The graph receives only server-verified full-text excerpts. Client flags and
+      // caller-supplied full text never become evidence simply by being in this request.
+      const graphSources = verification.allReports.map(report => {
+        const eligible = report.citationEligible === true;
+        const evidenceText = eligible ? String(report.evidenceText || '') : '';
+        return {
+          id: report.sourceId,
+          sourceId: report.sourceId,
+          title: report.sourceTitle,
+          content: evidenceText,
+          fullText: evidenceText,
+          evidenceText,
+          verificationStatus: report.identityStatus,
+          identityStatus: report.identityStatus,
+          evidenceStatus: report.evidenceStatus,
+          evidenceType: report.evidenceType,
+          evidenceProvenance: report.evidenceProvenance,
+          trustLevel: report.trustLevel,
+          rejectedAsFabricated: report.rejectedAsFabricated
+        };
+      });
       const graph = await claimEvidenceGraphService.buildGraph(
         topic || 'تێزی زانستی',
         draftText || '',
-        untrustedSources,
+        graphSources,
         getGeminiClient
       );
-      res.json({ success: true, graph });
+      res.json({
+        success: true,
+        graph,
+        sourceVerification: {
+          citationEligibleSourceCount: verification.citationEligibleSources.length,
+          identityVerifiedSourceCount: verification.verifiedSources.length,
+          unverifiedSourceCount: verification.unverifiedSources.length
+        }
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'خەتای دروستکردنی گرافی بەڵگەکان' });
     }
