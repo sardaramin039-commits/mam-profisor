@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assessEvidenceVerification,
   isCitationEligibleEvidence,
+  markServerVerifiedFullText,
   SourceVerificationService
 } from './source-verification.service';
 
@@ -47,12 +48,28 @@ describe('citation evidence eligibility policy', () => {
   });
 
   it('requires server-verified full text for citation eligibility', () => {
+    const forged = {
+      evidenceType: 'full-text' as const,
+      evidenceProvenance: 'server-verified-fulltext' as const
+    };
     expect(
       isCitationEligibleEvidence(
         'verified',
         true,
-        'full-text',
-        'server-verified-fulltext'
+        forged.evidenceType,
+        forged.evidenceProvenance,
+        forged
+      )
+    ).toBe(false);
+
+    const trusted = markServerVerifiedFullText({ evidenceText: 'authoritative full-text evidence' });
+    expect(
+      isCitationEligibleEvidence(
+        'verified',
+        true,
+        trusted.evidenceType,
+        trusted.evidenceProvenance,
+        trusted
       )
     ).toBe(true);
     expect(
@@ -60,7 +77,8 @@ describe('citation evidence eligibility policy', () => {
         'verified',
         true,
         'full-text',
-        'user-supplied-content'
+        'user-supplied-content',
+        markServerVerifiedFullText({ evidenceText: 'authoritative full-text evidence' })
       )
     ).toBe(false);
   });
