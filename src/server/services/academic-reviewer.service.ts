@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 
 export interface EvaluationCriterion {
   category: string;
-  score: number;
+  score: number | null;
   severity: 'low' | 'medium' | 'high' | 'critical';
   findingKurdish: string;
   evidenceQuoteKurdish: string;
@@ -22,8 +22,9 @@ export interface ReviewerSourceContext {
 }
 
 export interface ReviewerReport {
-  overallScore: number;
-  thesisDefenseSimulatedPassed: boolean;
+  status: 'generated' | 'degraded';
+  overallScore: number | null;
+  thesisDefenseSimulatedPassed: boolean | null;
   criteria: EvaluationCriterion[];
   summaryCritiqueKurdish: string;
 }
@@ -125,9 +126,14 @@ ${JSON.stringify(sourceContext, null, 2)}
           ? severityValue as EvaluationCriterion['severity']
           : 'medium';
 
+        const rawScore = item['score'];
+        const numericScore = typeof rawScore === 'number' && Number.isFinite(rawScore)
+          ? Math.max(0, Math.min(10, rawScore))
+          : null;
+
         return {
           category: String(item['category'] || 'Unclassified'),
-          score: Math.max(0, Math.min(10, Number(item['score']) || 0)),
+          score: numericScore,
           severity,
           findingKurdish: finding || 'هیچ دۆزینەوەیەکی پشتڕاستکراو نییە.',
           evidenceQuoteKurdish,
@@ -139,14 +145,18 @@ ${JSON.stringify(sourceContext, null, 2)}
         throw new Error('Reviewer returned no usable evaluation');
       }
 
-      const overallScore = Math.max(
-        0,
-        Math.min(10, Number(parsed['overallScore']) || 0)
-      );
+      const rawOverallScore = parsed['overallScore'];
+      const overallScore = typeof rawOverallScore === 'number' && Number.isFinite(rawOverallScore)
+        ? Math.max(0, Math.min(10, rawOverallScore))
+        : null;
+      const defensePassed = typeof parsed['thesisDefenseSimulatedPassed'] === 'boolean'
+        ? parsed['thesisDefenseSimulatedPassed']
+        : null;
 
       return {
+        status: 'generated',
         overallScore,
-        thesisDefenseSimulatedPassed: parsed['thesisDefenseSimulatedPassed'] === true,
+        thesisDefenseSimulatedPassed: defensePassed,
         summaryCritiqueKurdish: String(
           parsed['summaryCritiqueKurdish'] ||
           'هەڵسەنگاندنەکە بەردەستە، بەڵام پێویستی بە پشکنینی توێژەر هەیە.'
@@ -156,19 +166,11 @@ ${JSON.stringify(sourceContext, null, 2)}
     } catch (err: unknown) {
       console.error('Error in AcademicReviewerService:', err);
       return {
-        overallScore: 0,
-        thesisDefenseSimulatedPassed: false,
-        summaryCritiqueKurdish: 'موتۆری هەڵسەنگاندن وەڵامی پشتڕاستکراوی نەدا؛ نمرەکە نابێت وەک هەڵسەنگاندنی دەرەکی لێک بدرێتەوە.',
-        criteria: [
-          {
-            category: 'Reviewer Availability',
-            score: 0,
-            severity: 'critical',
-            findingKurdish: 'موتۆری Reviewer وەڵامی پشتڕاستکراوی نەدا.',
-            evidenceQuoteKurdish: '',
-            recommendationKurdish: 'پێداچوونەوەی Reviewer دووبارە بکەوە پێش بەکارهێنانی ئەنجامەکە.'
-          }
-        ]
+        status: 'degraded',
+        overallScore: null,
+        thesisDefenseSimulatedPassed: null,
+        summaryCritiqueKurdish: 'هەڵسەنگاندنی Reviewer تەواو نەبوو؛ هیچ نمرە یان بڕیاری بەرگری دروست نەکرا. دوای بەردەستبوونی AI دووبارە هەوڵ بدە.',
+        criteria: []
       };
     }
   }
