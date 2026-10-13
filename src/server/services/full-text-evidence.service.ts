@@ -1,3 +1,5 @@
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 import { markServerVerifiedFullText } from './evidence-verification-policy';
 import type { EvidenceProvenance, EvidenceType } from './evidence-verification-policy';
 
@@ -190,23 +192,71 @@ async function resolveOpenAlexFullTextLocation(
     if (!matchesAuthoritativeMetadata(source, authoritative)) return undefined;
 
     const url = location.landing_page_url.trim();
-    if (!isSafeExternalHttpsUrl(url)) return undefined;
+    if (!(await isSafeExternalHttpsUrl(url))) return undefined;
     return { url, title: data.title, doi: data.doi || undefined, publicationYear: data.publication_year };
   } catch {
     return undefined;
   }
 }
 
-function isSafeExternalHttpsUrl(rawUrl: string): boolean {
+function isPublicAddress(address: string, family: number): boolean {
+  if (family === 4) {
+    const octets = address.split('.').map(Number);
+    if (octets.length !== 4 || octets.some(value => !Number.isInteger(value) || value < 0 || value > 255)) {
+      return false;
+    }
+
+    const [a, b, c] = octets;
+    return !(
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      a >= 224 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && (b === 0 || b === 2 || b === 168)) ||
+      (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) ||
+      (a === 203 && b === 0 && c === 113)
+    );
+  }
+
+  if (family === 6) {
+    const normalized = address.toLocaleLowerCase();
+    return !(
+      normalized === '::' ||
+      normalized === '::1' ||
+      normalized.startsWith('::ffff:') ||
+      normalized.startsWith('fc') ||
+      normalized.startsWith('fd') ||
+      /^fe[89ab]/i.test(normalized) ||
+      normalized.startsWith('ff')
+    );
+  }
+
+  return false;
+}
+
+export async function isSafeExternalHttpsUrl(rawUrl: string): Promise<boolean> {
   try {
     const url = new URL(rawUrl);
     const hostname = url.hostname.toLocaleLowerCase().replace(/\.$/, '');
     if (url.protocol !== 'https:' || url.username || url.password) return false;
     if (url.port && url.port !== '443') return false;
-    if (hostname === 'localhost' || hostname.endsWith('.localhost') || hostname.endsWith('.local')
-      || hostname.endsWith('.internal') || hostname === 'metadata.google.internal') return false;
-    if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname) || hostname.includes(':')) return false;
-    return true;
+    if (
+      hostname === 'localhost' ||
+      hostname.endsWith('.localhost') ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal') ||
+      hostname === 'metadata.google.internal' ||
+      hostname.includes(':') ||
+      isIP(hostname) !== 0
+    ) {
+      return false;
+    }
+
+    const addresses = await lookup(hostname, { all: true, verbatim: true });
+    return addresses.length > 0 && addresses.every(item => isPublicAddress(item.address, item.family));
   } catch {
     return false;
   }
@@ -230,7 +280,7 @@ function looksLikeFullTextHtml(body: string, text: string): boolean {
 }
 
 async function readHtmlText(url: string): Promise<string> {
-  if (!url || !isSafeExternalHttpsUrl(url)) return '';
+  if (!url || !(await isSafeExternalHttpsUrl(url))) return '';
 
   try {
     const response = await fetch(url, {
@@ -364,7 +414,7 @@ export async function enrichSourcesWithFullText<T extends FullTextEnrichmentSour
         authoritativeYear = Number.isFinite(sourceYear) && sourceYear > 0 ? sourceYear : undefined;
       }
 
-      if (!htmlUrl || !authoritativeTitle || !isSafeExternalHttpsUrl(htmlUrl)) return source;
+      if (!htmlUrl || !authoritativeTitle || !(await isSafeExternalHttpsUrl(htmlUrl))) return source;
       const htmlText = await readHtmlText(htmlUrl);
       const htmlMatch = findExcerpts(htmlText, claims);
       if (!htmlMatch.excerpt) return source;
