@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { searchCrossrefByMetadata, type CrossrefCandidate } from './crossref-metadata-verification';
 import { lookupIsbn, lookupIssn, resolveDoi } from '../../helpers/extended-academic-tools';
 import {
   assessEvidenceVerification,
@@ -197,102 +198,6 @@ function buildBaseReport(
     kurdishVerificationDetails: details
   };
   return trustedFullText ? markServerVerifiedFullText(report) : report;
-}
-
-type CrossrefCandidate = {
-  title: string;
-  authors: string[];
-  publisher: string;
-  year: string;
-  doi: string;
-};
-
-async function searchCrossrefByMetadata(
-  source: InputSource
-): Promise<CrossrefCandidate | undefined> {
-  const query = [source.title, sourceAuthorString(source), source.publisher]
-    .filter(Boolean)
-    .join(' ')
-    .trim();
-  if (!query) return undefined;
-
-  try {
-    const response = await fetch(
-      `https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(query)}&rows=5`,
-      {
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': 'Mam-Professor-Academic-Platform/1.0'
-        },
-        signal: AbortSignal.timeout(5000)
-      }
-    );
-    if (!response.ok) return undefined;
-
-    const data = await response.json() as {
-      message?: {
-        items?: Array<{
-          title?: string[];
-          author?: Array<{ given?: string; family?: string }>;
-          publisher?: string;
-          DOI?: string;
-          published?: { 'date-parts'?: number[][] };
-          issued?: { 'date-parts'?: number[][] };
-        }>
-      }
-    };
-
-    const items = Array.isArray(data.message?.items) ? data.message.items : [];
-    let best:
-      | { candidate: CrossrefCandidate; score: number; authorScore: number; yearMatch: boolean }
-      | undefined;
-
-    for (const item of items) {
-      const title = item.title?.[0]?.trim() || '';
-      if (!title) continue;
-
-      const authors = (item.author || [])
-        .map(author => [author.given, author.family].filter(Boolean).join(' ').trim())
-        .filter(Boolean);
-
-      const score = titleSimilarity(source.title, title);
-      const authorText = sourceAuthorString(source);
-      const authorScore = authorText ? authorOverlap(authorText, authors) : 1;
-      const sourceYear = Number(source.year);
-      const itemYear = Number(
-        item.published?.['date-parts']?.[0]?.[0] ??
-        item.issued?.['date-parts']?.[0]?.[0] ??
-        0
-      );
-      const yearMatch =
-        !Number.isFinite(sourceYear) || !sourceYear || !itemYear
-          ? true
-          : Math.abs(sourceYear - itemYear) <= 1;
-
-      if (!best || score + authorScore * 0.1 > best.score + best.authorScore * 0.1) {
-        best = {
-          candidate: {
-            title,
-            authors,
-            publisher: item.publisher || '',
-            year: itemYear ? String(itemYear) : '',
-            doi: item.DOI || ''
-          },
-          score,
-          authorScore,
-          yearMatch
-        };
-      }
-    }
-
-    if (!best || best.score < 0.82 || best.authorScore < 0.5 || !best.yearMatch) {
-      return undefined;
-    }
-
-    return best.candidate;
-  } catch {
-    return undefined;
-  }
 }
 
 export class SourceVerificationService {
