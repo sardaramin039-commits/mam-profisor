@@ -18,7 +18,7 @@
     "line-limit": "node scripts/verify-file-line-limits.mjs",
     "release:check": "node scripts/release-readiness-check.mjs",
     "release:smoke": "node scripts/release-smoke-check.mjs",
-    "test:server": "vitest run src/server/middleware/rbac.middleware.spec.ts src/server/services/untrusted-evidence.spec.ts src/server/routes/publication-submission-editorial.routes.spec.ts src/server/routes/publication-submission-resubmit.routes.spec.ts",
+    "test:server": "vitest run src/server/middleware/rbac.middleware.spec.ts src/server/services/untrusted-evidence.spec.ts src/server/services/evidence-verification-policy.spec.ts src/server/routes/publication-submission-editorial.routes.spec.ts src/server/routes/publication-submission-resubmit.routes.spec.ts",
     "e2e": "npm run build && npm run e2e:ci",
     "e2e:ci": "playwright test"
   },
