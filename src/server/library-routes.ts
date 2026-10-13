@@ -107,7 +107,7 @@ export function createLibraryRouter(getGeminiClient: () => GoogleGenAI): Router 
   });
 
   // 5. POST /api/library/ocr - OCR from a real page image
-  router.post('/ocr', requireAuth, async (req: Request, res: Response) => {
+  router.post('/ocr', async (req: Request, res: Response) => {
     try {
       const { imageDataUrl } = req.body || {};
       if (typeof imageDataUrl !== 'string' || imageDataUrl.length > 11_200_000) {
