@@ -306,13 +306,15 @@ export function createAiToolsRouter(getGeminiClient: () => GoogleGenAI): Router 
         academicLevel: options?.academicLevel
       });
 
-      res.json({
-        success: true,
+      res.status(503).json({
+        success: false,
+        status: 'degraded',
         toolId,
         variantUsed: selectedVariant,
         output: fallbackOutput,
         isFallback: true,
-        degraded: true
+        degraded: true,
+        providerStatus: 'unavailable'
       });
     }
   });
