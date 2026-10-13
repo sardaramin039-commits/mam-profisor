@@ -120,6 +120,24 @@ export function authenticatedRateLimiterMiddleware(req: Request, res: Response, 
   const key = `uid:${uid}:${aiRequest ? 'ai' : 'default'}`;
   const maxRequests = aiRequest ? AUTHENTICATED_AI_MAX_REQUESTS : AUTHENTICATED_MAX_REQUESTS;
   const now = Date.now();
+
+  // Expire stale authenticated-user keys too; otherwise a high number of distinct UIDs
+  // can grow this process-local map forever. Fail closed if it still cannot accept a key.
+  if (authenticatedRateLimitMap.size >= MAX_TRACKED_CLIENTS) {
+    for (const [trackedKey, info] of authenticatedRateLimitMap) {
+      if (now - info.lastReset > RATE_LIMIT_WINDOW_MS) {
+        authenticatedRateLimitMap.delete(trackedKey);
+      }
+    }
+  }
+  if (!authenticatedRateLimitMap.has(key) && authenticatedRateLimitMap.size >= MAX_TRACKED_CLIENTS) {
+    res.status(503).json({
+      success: false,
+      error: 'خزمەتگوزاریی سنووردارکردنی داواکارییەکان لە کاتییەوە بەردەست نییە. دواتر هەوڵ بدەرەوە.'
+    });
+    return;
+  }
+
   let rateInfo = authenticatedRateLimitMap.get(key);
 
   if (!rateInfo || now - rateInfo.lastReset > RATE_LIMIT_WINDOW_MS) {
