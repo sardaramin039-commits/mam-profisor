@@ -40,7 +40,7 @@ const verificationSourceSchema = z.object({
   sourceType: z.string().max(100).optional(),
   url: z.string().url().max(2000).optional(),
   evidenceUrl: z.string().url().max(2000).optional()
-}).strict();
+});
 const verificationSourceArray = z.array(verificationSourceSchema).max(100);
 
 const evidenceGraphSchema = z.object({ topic: textField(500), draftText: z.string().max(250_000).default(''), sources: rawSourceArray.default([]) }).strict();
