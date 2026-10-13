@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const ROOT = process.cwd();
-const TARGET_DIRS = ['src/server', 'src/app', 'src/helpers'];
+const TARGET_DIRS = ['src/server', 'src/app', 'src/helpers', 'src/routes', 'src/services', 'app/applet/src'];
 const EXTENSIONS = new Set(['.ts', '.html', '.js', '.mjs']);
 
 const rules = [
