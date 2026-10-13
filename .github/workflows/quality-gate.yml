@@ -34,6 +34,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Server security and lifecycle tests
+        run: npm run test:server
+
       - name: Source file line-limit
         run: npm run line-limit
 
