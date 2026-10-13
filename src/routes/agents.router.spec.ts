@@ -98,9 +98,19 @@ describe('Academic agent API protection', () => {
       headers,
       body: JSON.stringify({ agentId: 'literature-review', prompt: 'پ'.repeat(20_001) })
     });
+    const oversizedContext = await fetch(`${await baseUrl()}/api/agents/run`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        agentId: 'literature-review',
+        prompt: 'پرسیاری تاقیکردنەوە',
+        context: 'پ'.repeat(40_001)
+      })
+    });
 
     expect(unknownAgent.status).toBe(400);
     expect(oversizedPrompt.status).toBe(400);
+    expect(oversizedContext.status).toBe(400);
     expect(mocks.runAgent).not.toHaveBeenCalled();
   });
 
