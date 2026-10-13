@@ -384,10 +384,15 @@ JSON:
       ? factCheck.claims.map((item: any) => String(item?.claim || '').trim()).filter(Boolean)
       : [];
 
-    const enrichedSources = await enrichSourcesWithFullText(
-      verificationSources,
-      claimTexts
-    );
+    // Raw source records can be submitted by the client. Never fetch their URLs;
+    // only server-discovered records may enter the full-text acquisition pipeline.
+    const enrichedSources = providedSources.length
+      ? verificationSources
+      : await enrichSourcesWithFullText(
+          verificationSources,
+          claimTexts,
+          { allowDiscoveredProviderUrls: true }
+        );
 
     try {
       verification = await sourceVerificationService.verifySources(
