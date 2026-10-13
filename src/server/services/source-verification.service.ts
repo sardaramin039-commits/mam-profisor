@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { isServerVerifiedFullTextSource, preserveServerVerifiedFullText } from './full-text-evidence.service';
 import { lookupIsbn, lookupIssn, resolveDoi } from '../../helpers/extended-academic-tools';
 import {
   assessEvidenceVerification,
@@ -152,18 +153,28 @@ function buildBaseReport(
   rejectionReasonKurdish?: string
 ): SourceVerificationReport {
   const suppliedEvidenceText = readEvidence(source);
-  // verifySources can be called with client-submitted records. Neither an exact
-  // substring match nor client-set evidenceType/provenance proves server retrieval.
-  // No authoritative full-text retrieval is currently wired into this service, so
-  // supplied evidence remains unverified and cannot become citation-eligible here.
-  const evidenceStatus: EvidenceVerificationStatus = suppliedEvidenceText ? 'unverified' : 'not_available';
-  const evidenceType: EvidenceType = source.evidenceType === 'abstract' && !suppliedEvidenceText
-    ? 'abstract'
-    : suppliedEvidenceText ? 'snippet' : 'snippet';
-  const evidenceProvenance: EvidenceProvenance = suppliedEvidenceText
-    ? 'user-supplied-content'
-    : 'unknown';
-  const citationEligible = false;
+  // Only object identity registered by the server full-text retriever can prove
+  // provenance. JSON flags like evidenceProvenance='server-verified-fulltext' do not.
+  const serverRetrievedFullText = isServerVerifiedFullTextSource(source) && Boolean(suppliedEvidenceText);
+  const assessedEvidence = serverRetrievedFullText
+    ? assessEvidenceVerification(source)
+    : { status: suppliedEvidenceText ? 'unverified' as const : 'not_available' as const };
+  const evidenceStatus: EvidenceVerificationStatus = assessedEvidence.status;
+  const evidenceType: EvidenceType = serverRetrievedFullText
+    ? 'full-text'
+    : suppliedEvidenceText ? 'snippet' : source.evidenceType === 'abstract' ? 'abstract' : 'snippet';
+  const evidenceProvenance: EvidenceProvenance = serverRetrievedFullText
+    ? 'server-verified-fulltext'
+    : suppliedEvidenceText ? 'user-supplied-content' : 'unknown';
+  const citationEligible =
+    identityStatus === 'verified' &&
+    serverRetrievedFullText &&
+    isCitationEligibleEvidence(
+      evidenceStatus,
+      Boolean(suppliedEvidenceText),
+      evidenceType,
+      evidenceProvenance
+    );
 
   return {
     sourceId,
@@ -179,7 +190,7 @@ function buildBaseReport(
     identityStatus,
     evidenceStatus,
     citationEligible,
-    evidenceVerificationMethod: undefined,
+    evidenceVerificationMethod: serverRetrievedFullText ? assessedEvidence.method : undefined,
     evidenceText: suppliedEvidenceText || undefined,
     evidenceType,
     evidenceProvenance,
