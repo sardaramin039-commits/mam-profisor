@@ -1,12 +1,16 @@
-name: Academic Integrity CI
+name: Academic Integrity CI (Manual)
 
+# These checks are part of the canonical automated quality.yml workflow.
+# Keep a manual entry point, but do not spend CI minutes on a duplicate PR run.
 on:
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: academic-integrity-manual-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
@@ -43,15 +47,15 @@ jobs:
 
       - name: P6 multi-agent orchestration contract
         run: node scripts/p6-multi-agent-orchestration-test.mjs
-      - name: Integrated P7-P10 research chain contract
+
+      - name: Integrated P7-P10 research chain
         run: node scripts/p7-p10-research-chain-test.mjs
 
-      - name: Integrated P11-P15 publication chain contract
+      - name: Integrated P11-P15 publication chain
         run: node scripts/p11-p15-publication-chain-test.mjs
 
-      - name: Integrated P16-P20 submission chain contract
+      - name: Integrated P16-P20 submission chain
         run: node scripts/p16-p20-submission-chain-test.mjs
-
 
       - name: File line limits
         run: npm run line-limit

@@ -9,6 +9,13 @@ updates:
       timezone: "UTC"
     open-pull-requests-limit: 10
     versioning-strategy: increase
+    # Automate non-breaking version updates only. Major upgrades need a planned migration
+    # and successful CI review; security updates remain enabled by Dependabot.
+    allow:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
     groups:
       angular:
         patterns:

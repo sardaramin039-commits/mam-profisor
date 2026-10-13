@@ -5,24 +5,36 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'app/applet/**'
+      - 'public/**'
       - 'e2e/**'
+      - 'firestore.rules'
+      - 'firebase.json'
+      - 'playwright.config.ts'
+      - 'vitest.config.*'
       - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
       - 'angular.json'
       - 'tsconfig*.json'
-      - '.github/workflows/**'
+      - '.github/**'
   pull_request:
     branches: [main]
     paths:
       - 'src/**'
+      - 'app/applet/**'
+      - 'public/**'
       - 'e2e/**'
+      - 'firestore.rules'
+      - 'firebase.json'
+      - 'playwright.config.ts'
+      - 'vitest.config.*'
       - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
       - 'angular.json'
       - 'tsconfig*.json'
-      - '.github/workflows/**'
+      - '.github/**'
   workflow_dispatch:
 
 concurrency:
@@ -46,6 +58,7 @@ jobs:
         with:
           node-version: 22.22.2
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install locked dependencies
         run: npm ci
@@ -60,10 +73,19 @@ jobs:
         run: npm run typecheck
 
       - name: Unit tests
-        run: npm test -- --watch=false
+        run: npm test
 
       - name: Node route contract tests
         run: npm run test:server
+
+      - name: Academic integrity audit
+        run: npm run integrity:audit
+
+      - name: P5 evidence intelligence contract
+        run: node scripts/p5-evidence-intelligence-test.mjs
+
+      - name: P6 multi-agent orchestration contract
+        run: node scripts/p6-multi-agent-orchestration-test.mjs
 
       - name: Integrated P7-P10 research chain
         run: node scripts/p7-p10-research-chain-test.mjs
@@ -73,6 +95,12 @@ jobs:
 
       - name: Integrated P16-P20 submission chain
         run: node scripts/p16-p20-submission-chain-test.mjs
+
+      - name: Digital library factuality audit
+        run: node scripts/library-integrity-audit.mjs
+
+      - name: Secret audit
+        run: node scripts/security-secret-audit.mjs
 
       - name: Lint
         run: npm run lint

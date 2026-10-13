@@ -1,22 +1,21 @@
-name: Quality Gate
+name: Quality Gate (Manual)
 
+# The canonical automated pull-request/push workflow is quality.yml.
+# Keep this workflow available for manual diagnosis without running duplicate CI.
 on:
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: quality-gate-${{ github.ref }}
+  group: quality-gate-manual-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,15 +47,18 @@ jobs:
 
       - name: P5 evidence intelligence contract
         run: node scripts/p5-evidence-intelligence-test.mjs
-      - name: Integrated P7-P10 research chain contract
+
+      - name: P6 multi-agent orchestration contract
+        run: node scripts/p6-multi-agent-orchestration-test.mjs
+
+      - name: Integrated P7-P10 research chain
         run: node scripts/p7-p10-research-chain-test.mjs
 
-      - name: Integrated P11-P15 publication chain contract
+      - name: Integrated P11-P15 publication chain
         run: node scripts/p11-p15-publication-chain-test.mjs
 
-      - name: Integrated P16-P20 submission chain contract
+      - name: Integrated P16-P20 submission chain
         run: node scripts/p16-p20-submission-chain-test.mjs
-
 
       - name: Digital library factuality audit
         run: node scripts/library-integrity-audit.mjs
