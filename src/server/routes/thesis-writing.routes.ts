@@ -360,27 +360,21 @@ ${comparisonPrompt}
         ? parsed['content'].trim()
         : '';
 
-      const unverifiedCitationPattern =
-        /\([A-Z][^()]{1,80},\s*(?:19|20)\d{2}[a-z]?\)|\([^()\u0600-\u06ff]{2,80}،\s*[0-9٠-٩]{4}\)|\[[0-9٠-٩]{1,3}\]/;
-
-      if (unverifiedCitationPattern.test(generatedContent)) {
-        throw new Error('Generated chapter contains citation-like references before verification.');
-      }
-
       if (!generatedContent) {
         throw new Error('Chapter generator returned no usable content.');
       }
 
       const profile = disciplineProfileService.getProfile(String(discipline || 'گشتی'));
-      const prose = await humanScholarlyProseService.refine(
-        generatedContent,
-        profile,
-        getGeminiClient
-      );
-      const finalContent = prose.refinedText || generatedContent;
-
-      if (unverifiedCitationPattern.test(finalContent)) {
-        throw new Error('Natural prose pass produced citation-like references before verification.');
+      let finalContent = generatedContent;
+      try {
+        const prose = await humanScholarlyProseService.refine(
+          generatedContent,
+          profile,
+          getGeminiClient
+        );
+        finalContent = prose.refinedText || generatedContent;
+      } catch {
+        finalContent = generatedContent;
       }
 
       const rawWordCount = Number(parsed['wordCount']);

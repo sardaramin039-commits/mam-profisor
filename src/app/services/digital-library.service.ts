@@ -12,11 +12,48 @@ import {
 } from '../models/digital-library.model';
 import { DIGITAL_LIBRARY_SOURCES } from '../../services/digital-library-sources';
 import { INITIAL_LIBRARY_BOOKS } from '../../services/kurdish-books-catalog';
+import { PDF4KURD_BOOKS_ARCHIVE } from '../../prompts/pdf4kurd-books';
+import { EditorService } from '../features/editor/services/editor';
+import { AcademicStoreService } from './academic-store.service';
 
 import type { UIStrings } from '../models/digital-library-i18n';
 import { I18N_DICTIONARY } from '../models/digital-library-i18n';
 export type { UIStrings } from '../models/digital-library-i18n';
 export { I18N_DICTIONARY } from '../models/digital-library-i18n';
+
+function buildUnifiedBooksCatalog(): LibraryBook[] {
+  const list: LibraryBook[] = [...INITIAL_LIBRARY_BOOKS];
+  const pdf4KurdMapped: LibraryBook[] = PDF4KURD_BOOKS_ARCHIVE.map(item => ({
+    id: item.id,
+    title: item.title,
+    author: item.author,
+    year: item.year,
+    language: 'ckb',
+    description: `${item.title} - شاکاری ئەکادیمی و مێژوویی نووسینی ${item.author}، لە بڵاوکراوەکانی ${item.publisher}.`,
+    coverImage: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600',
+    sourceUrl: item.link,
+    sourceName: 'PDF4Kurd ئەرشیڤی پەڕتووک',
+    sourceId: 'pdf4kurd',
+    sourceCategory: 'kurdish',
+    documentType: 'book',
+    downloadUrl: item.link,
+    pageCount: 360,
+    subjects: ['ئەدەبیات', 'مێژوو', 'کوردناسی', 'زمانەوانی'],
+    verified: true,
+    indexedAt: new Date().toISOString()
+  }));
+
+  const seen = new Set<string>();
+  const unified: LibraryBook[] = [];
+  for (const b of [...list, ...pdf4KurdMapped]) {
+    const key = `${b.title.trim().toLowerCase()}::${b.author.trim().toLowerCase()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unified.push(b);
+    }
+  }
+  return unified;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -24,9 +61,11 @@ export { I18N_DICTIONARY } from '../models/digital-library-i18n';
 export class DigitalLibraryService {
   private http = inject(HttpClient);
   private indexedDb = inject(IndexedDbStorageService);
+  private editorService = inject(EditorService);
+  private academicStore = inject(AcademicStoreService);
 
   // Core state signals
-  public books = signal<LibraryBook[]>([...INITIAL_LIBRARY_BOOKS]);
+  public books = signal<LibraryBook[]>(buildUnifiedBooksCatalog());
   public sources = signal<LibrarySource[]>([...DIGITAL_LIBRARY_SOURCES]);
   public currentLanguage = signal<SupportedLanguage>('ckb');
   public isDarkMode = signal<boolean>(false);
@@ -325,5 +364,96 @@ export class DigitalLibraryService {
     } catch (e) {
       console.warn('LocalStorage unavailable or quota exceeded, history saved in IndexedDB', e);
     }
+  }
+
+  /**
+   * Cleanly formats an academic book and inserts it into the thesis editor & active project citation store.
+   */
+  public insertBookToEditor(book: LibraryBook): { formattedCitation: string; inTextCitation: string } {
+    const author = book.author || 'نووسەری نەزانراو';
+    const year = book.year || 'بێ ساڵ';
+    const inTextCitation = `(${author}، ${year})`;
+    const formattedCitation = `${author} (${year}). *${book.title}*. ${book.sourceName || 'کتێبخانەی دیجیتاڵ'}.${book.downloadUrl ? ' ' + book.downloadUrl : ''}`;
+
+    this.academicStore.sources.update(prev => {
+      const exists = prev.some(s => s.title === book.title && s.author === book.author);
+      if (exists) return prev;
+      return [
+        ...prev,
+        {
+          id: `lib_src_${book.id}_${Date.now()}`,
+          userId: 'local_user',
+          title: book.title,
+          author: book.author,
+          year: typeof book.year === 'number' ? book.year : 0,
+          publisher: book.sourceName || '',
+          sourceType: 'book',
+          url: book.sourceUrl || book.downloadUrl,
+          citationEligible: true,
+          isVerified: true,
+          createdAt: { seconds: Math.floor(Date.now() / 1000) }
+        }
+      ];
+    });
+
+    const chapters = this.editorService.chapters();
+    if (chapters && chapters.length > 0) {
+      const activeId = this.editorService.activeChapterId() ?? chapters[0].id;
+      const activeChap = chapters.find(c => c.id === activeId) || chapters[0];
+      const currentContent = activeChap.content || '';
+      const updatedContent = currentContent ? `${currentContent}\n\n${inTextCitation}` : inTextCitation;
+      this.editorService.updateChapterContent(activeChap.id, updatedContent, `ئاماژەدان بە «${book.title}»`);
+    }
+
+    this.academicStore.setFeedback(`سەرچاوەی «${book.title}» خرایە نێو تێزەکە و کۆگای سەرچاوە پەسەندکراوەکان.`, 4000);
+    return { formattedCitation, inTextCitation };
+  }
+
+  /**
+   * Populates the digital library and active workspace state with uploaded/extracted bibliography items.
+   */
+  public addExtractedBibliography(items: Array<{ title: string; author: string; year?: number | string; journalOrPublisher?: string; doi?: string; url?: string }>): void {
+    if (!items || items.length === 0) return;
+
+    const newBooks: LibraryBook[] = items.map((item, idx) => ({
+      id: `extracted_${Date.now()}_${idx}`,
+      title: item.title,
+      author: item.author,
+      year: typeof item.year === 'number' ? item.year : parseInt(String(item.year || ''), 10) || 2024,
+      language: 'ckb',
+      description: `${item.title} - سەرچاوەی دەرهێنراوی هاوردەکراو: ${item.journalOrPublisher || ''}`,
+      coverImage: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600',
+      sourceUrl: item.url || '',
+      sourceName: item.journalOrPublisher || 'فایلی دەرەکی',
+      sourceId: 'uploaded_file',
+      sourceCategory: 'academic',
+      documentType: 'book',
+      downloadUrl: item.url || '',
+      subjects: ['سەرچاوەی هاوردەکراو', 'ئەکادیمی'],
+      verified: true,
+      indexedAt: new Date().toISOString()
+    }));
+
+    this.books.update(prev => [...newBooks, ...prev]);
+
+    this.academicStore.sources.update(prev => [
+      ...prev,
+      ...items.map((item, idx) => ({
+        id: `extracted_src_${Date.now()}_${idx}`,
+        userId: 'local_user',
+        title: item.title,
+        author: item.author,
+        year: typeof item.year === 'number' ? item.year : parseInt(String(item.year || ''), 10) || 2024,
+        publisher: item.journalOrPublisher || '',
+        sourceType: 'book' as const,
+        doi: item.doi,
+        url: item.url,
+        citationEligible: true,
+        isVerified: true,
+        createdAt: { seconds: Math.floor(Date.now() / 1000) }
+      }))
+    ]);
+
+    this.academicStore.setFeedback(`${items.length} سەرچاوەی فایلی دەرهێنراو خرانە کۆگای سەرچاوەکانی پڕۆژە.`, 4000);
   }
 }

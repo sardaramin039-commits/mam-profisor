@@ -20,6 +20,14 @@ function clean(value: string, max = 500): string {
   return trimmed.length > max ? trimmed.slice(0, max) + '…' : trimmed;
 }
 
+export function isMockResponseDisabled(): boolean {
+  return true;
+}
+
+export function getKurdishNetworkError(): string {
+  return 'پەیوەندی لەگەڵ بزوێنەری ئەکادیمی لەم ساتەدا پچڕاوە یان کلیل چالاک نییە. بەپێی یاساکانی ئەمانەتی زانستی، هیچ دەقێکی ساختە یان دروستکراو بەبێ مۆدێل دانانرێت.';
+}
+
 export function generateDynamicAcademicFallback(params: FallbackParams): {
   content: string;
   wordCount: number;
@@ -29,36 +37,14 @@ export function generateDynamicAcademicFallback(params: FallbackParams): {
   const discipline = clean(params.discipline, 120);
   const academicLevel = clean(params.academicLevel, 120);
   const documentTitle = clean(params.documentTitle, 300);
-  const targetWords = Number.isFinite(params.targetWords) && params.targetWords > 0
-    ? Math.round(params.targetWords)
-    : 0;
 
-  const content = `[OFFLINE FALLBACK — EVIDENCE SAFE]
-
-ناونیشانی بەش: «${chapterTitle || 'دیارینەکراو'}»
-کایەی زانستی: «${discipline || 'دیارینەکراو'}»
-ئاستی ئەکادیمی: «${academicLevel || 'دیارینەکراو'}»
-ناونیشانی کار: «${documentTitle || 'دیارینەکراو'}»
-
-ئەم دەقە ڕەشنووسێکی پڕۆسەییە، نەک دەقی زانستیی کۆتایی. لە کاتی نەبوونی خزمەتگوزاریی ژیریی دەستکرد، سیستەم بە ئەنقەست هیچ بانگەشەیەکی پەسەندکراوی زانستی، citation، quote، ئامار، دەرئەنجام، یان سەرچاوەی نوێ دروست ناکات.
-
-پێکهاتەی پێشنیارکراو بۆ پڕکردنەوە:
-١. پێناسە و سنووری بابەت: ______________________________
-٢. چەمکە سەرەکییەکان: _________________________________
-٣. چوارچێوەی تیۆری و سەرچاوەی پشتیوان: __________________
-٤. مێتۆد و داتا: ________________________________________
-٥. شیکردنەوە و بەڵگە: __________________________________
-٦. دەرئەنجامە پشتڕاستکراوەکان: __________________________
-٧. سنووردارییەکان: ______________________________________
-٨. citation ـە پشتڕاستکراوەکان: __________________________
-
-ئامانجی وشە: ${targetWords > 0 ? targetWords : 'دیارینەکراو'}
-ژمارەی بەشی کار: ${Number.isFinite(params.currentChapterIndex) ? params.currentChapterIndex : 0}
-`;
+  const content = `[ئاگاداریی ئەمانەتی زانستی]:
+پەیوەندی لەگەڵ مۆدێلی ژیریی دەستکرد لەم ساتەدا بەردەست نییە بۆ نووسینی تەواوی بەشی «${chapterTitle || 'توێژینەوە'}» لە کایەی «${discipline || 'گشتی'}».
+بۆ پاراستنی ڕەسەنایەتی و دەستپاکی، سیستەم هیچ تێکستێکی خەیاڵی یان دروستکراوی ئەزموونی لە خۆیەوە تۆمار ناکات. تکایە دوای دڵنیابوونەوە لە هێڵی ئینتەرنێت، دووبارە فەرمانی داڕشتن ئەنجام بدەرەوە.`;
 
   return {
     content,
     wordCount: content.trim().split(/\s+/).filter(Boolean).length,
-    academicNotes: 'Offline fallback بە مەبەستی پاراستنی ئەمانەتی زانستی تەنها scaffold دروست دەکات؛ هیچ سەرچاوە یان بانگەشەی نوێ لێی پشتڕاست نەکراوە.'
+    academicNotes: getKurdishNetworkError()
   };
 }

@@ -4,7 +4,7 @@ import { SplashScreenComponent } from './features/splash/splash-screen.component
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { SearchEngineComponent } from './features/search-engine/search-engine';
-import { PlagiarismComponent } from './features/plagiarism/plagiarism';
+import { AcademicPlagiarismCheckerComponent as PlagiarismComponent } from './features/academic-suite/academic-plagiarism-checker.component';
 import { PythonSandboxComponent } from './features/python-sandbox/python-sandbox';
 import { HarvardReviewComponent } from './features/harvard-review/harvard-review';
 import { EliteReviewComponent } from './features/elite-review/elite-review';
@@ -13,7 +13,7 @@ import { GlossaryComponent } from './features/glossary/glossary';
 import { ExportWordComponent } from './features/export-word/export-word';
 import { LatexComponent } from './features/latex/latex';
 import { CitationFeatureComponent } from './features/citation-manager/citation.component';
-import { VivaSimulationComponent } from './features/viva-simulation/viva-simulation';
+import { ThesisDefenseSimulatorComponent as VivaSimulationComponent } from './features/academic-suite/thesis-defense-simulator.component';
 import { LiteratureGapComponent } from './features/literature-gap/literature-gap';
 import { AdvancedResearchHubComponent } from './features/advanced-research/advanced-research.component';
 import { SystemMaintenancePanelComponent } from './core/components/system-maintenance-panel.component';

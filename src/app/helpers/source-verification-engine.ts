@@ -5,86 +5,44 @@ export type SourceTierLevel = 'Tier 1' | 'Tier 2' | 'Tier 3';
 export type ContentKind = 'SOURCE-BASED' | 'SYNTHESIS' | 'AI-INFERENCE';
 export type EvidenceType = 'abstract' | 'snippet' | 'full-text';
 export type EvidenceProvenance = 'server-verified-fulltext' | 'user-supplied-content' | 'unknown';
+
 export interface SourceIdentifiers {
-  doi?: string;
-  isbn?: string;
-  pmid?: string;
-  openAlexId?: string;
-  crossrefId?: string;
-  semanticScholarId?: string;
-  url?: string;
+  doi?: string; isbn?: string; pmid?: string; openAlexId?: string; crossrefId?: string; semanticScholarId?: string; url?: string;
 }
+
 export interface VerifiedCitationRecord {
-  id: string;
-  claimText?: string;
-  title: string;
-  author: string;
-  publicationYear: number | null;
-  publisherOrJournal: string;
-  identifiers: SourceIdentifiers;
-  doiOrUrl?: string;
-  pageNumber?: number | string | null;
-  exactEvidenceSnippet: string;
-  sourceUrl?: string;
-  verificationStatus: VerificationStatus;
-  identityStatus: IdentityVerificationStatus;
-  evidenceStatus: EvidenceVerificationStatus;
-  evidenceType: EvidenceType;
-  evidenceProvenance: EvidenceProvenance;
-  citationEligible: boolean;
-  verificationNotes?: string;
-  auditDate: string;
-  tier: SourceTierLevel;
-  tierName: string;
-  reliabilityScore: number;
-  canonicalSource: boolean;
-  duplicateOf: string | null;
-  mirrorsCount: number;
-  workflowStepsCompleted: {
-    searched: boolean;
-    retrieved: boolean;
-    read: boolean;
-    verified: boolean;
-    cited: boolean;
-  };
+  id: string; claimText?: string; title: string; author: string; publicationYear: number | null;
+  publisherOrJournal: string; identifiers: SourceIdentifiers; doiOrUrl?: string; pageNumber?: number | string | null;
+  exactEvidenceSnippet: string; sourceUrl?: string; verificationStatus: VerificationStatus;
+  identityStatus: IdentityVerificationStatus; evidenceStatus: EvidenceVerificationStatus; evidenceType: EvidenceType;
+  evidenceProvenance: EvidenceProvenance; citationEligible: boolean; verificationNotes?: string; auditDate: string;
+  tier: SourceTierLevel; tierName: string; reliabilityScore: number; canonicalSource: boolean; duplicateOf: string | null;
+  mirrorsCount: number; workflowStepsCompleted: { searched: boolean; retrieved: boolean; read: boolean; verified: boolean; cited: boolean };
 }
+
 export interface EvidenceLinkedClaim {
-  claimId: string;
-  claimText: string;
-  sourceId: string;
-  sourceTitle: string;
-  author: string;
-  publicationYear: number | null;
-  pageNumber: number | string | null;
-  evidenceText: string;
-  sourceURL?: string;
-  verificationStatus: VerificationStatus;
-  confidenceScore: number;
-  contentKind: ContentKind;
-  badges: {
-    primary: string;
-    secondary: string;
-  };
+  claimId: string; claimText: string; sourceId: string; sourceTitle: string; author: string;
+  publicationYear: number | null; pageNumber: number | string | null; evidenceText: string; sourceURL?: string;
+  verificationStatus: VerificationStatus; confidenceScore: number; contentKind: ContentKind; badges: { primary: string; secondary: string };
 }
+
 export interface ResearchGateAuditResult {
-  passed: boolean;
-  score: number;
-  insufficientReason?: string;
-  missingClaims: string[];
-  missingEvidence: string[];
-  unverifiedSources: string[];
-  recommendedSources: string[];
-  canonicalSourceCount: number;
-  verifiedSourceCount: number;
+  passed: boolean; score: number; insufficientReason?: string; missingClaims: string[];
+  missingEvidence: string[]; unverifiedSources: string[]; recommendedSources: string[];
+  canonicalSourceCount: number; verifiedSourceCount: number;
 }
+
 export interface VerificationAuditReport {
-  verifiedCount: number;
-  partiallyVerifiedCount: number;
-  unverifiedCount: number;
-  verifiedSources: VerifiedCitationRecord[];
-  partiallyVerifiedSources: VerifiedCitationRecord[];
-  unverifiedClaims: VerifiedCitationRecord[];
-  formattedSummaryMarkdown: string;
+  verifiedCount: number; partiallyVerifiedCount: number; unverifiedCount: number;
+  verifiedSources: VerifiedCitationRecord[]; partiallyVerifiedSources: VerifiedCitationRecord[];
+  unverifiedClaims: VerifiedCitationRecord[]; formattedSummaryMarkdown: string;
+}
+
+export interface CitationConsistencyAuditResult {
+  isConsistent: boolean; score: number; totalInText: number; totalBibliography: number; matchedCount: number;
+  unmatchedInText: Array<{ citation: string; author: string; year?: number }>;
+  unreferencedBibliography: Array<{ title: string; author: string; year?: number | null }>;
+  formattedReport: string;
 }
 
 function normalize(value: string): string {
@@ -316,38 +274,11 @@ export class SourceVerificationEngine {
       const existing = canonicalMap.get(fingerprint);
       if (existing) {
         existing.mirrorsCount += 1;
-        const sourceFullyVerified =
-          source.verificationStatus === 'VERIFIED' &&
-          source.identityStatus === 'verified' &&
-          source.evidenceStatus === 'verified' &&
-          source.evidenceType === 'full-text' &&
-          source.evidenceProvenance === 'server-verified-fulltext' &&
-          source.citationEligible === true &&
-          source.exactEvidenceSnippet.trim().length > 0 &&
-          source.workflowStepsCompleted.retrieved === true &&
-          source.workflowStepsCompleted.read === true &&
-          source.workflowStepsCompleted.verified === true;
-
-        if (sourceFullyVerified && !existing.citationEligible) {
-          existing.title = source.title;
-          existing.author = source.author;
-          existing.publicationYear = source.publicationYear;
-          existing.publisherOrJournal = source.publisherOrJournal;
-          existing.identifiers = { ...source.identifiers };
-          existing.doiOrUrl = source.doiOrUrl;
-          existing.pageNumber = source.pageNumber;
-          existing.exactEvidenceSnippet = source.exactEvidenceSnippet;
-          existing.sourceUrl = source.sourceUrl;
-          existing.verificationStatus = 'VERIFIED';
-          existing.identityStatus = 'verified';
-          existing.evidenceStatus = 'verified';
-          existing.citationEligible = true;
-          existing.verificationNotes = source.verificationNotes;
-          existing.auditDate = source.auditDate;
-          existing.tier = source.tier;
-          existing.tierName = source.tierName;
-          existing.reliabilityScore = source.reliabilityScore;
-          existing.workflowStepsCompleted = { ...source.workflowStepsCompleted };
+        if (hasStrictCitationEvidence(source) && !existing.citationEligible) {
+          Object.assign(existing, source, {
+            identifiers: { ...source.identifiers },
+            workflowStepsCompleted: { ...source.workflowStepsCompleted }
+          });
         }
         existing.reliabilityScore = Math.max(existing.reliabilityScore, source.reliabilityScore);
       } else {
@@ -467,23 +398,12 @@ export class SourceVerificationEngine {
     }
 
     markdown += '#### 🟡 Partially Verified Sources\n';
-    if (partiallyVerifiedSources.length === 0) {
-      markdown += '* هیچ source ـێکی بەشێکی پشتڕاستکراو نییە.\n\n';
-    } else {
-      for (const source of partiallyVerifiedSources) {
-        markdown += `- **${source.title}** — ${source.verificationNotes || 'پێویستی بە پشتڕاستکردنەوەی زیاتر هەیە.'}\n`;
-      }
-      markdown += '\n';
-    }
+    markdown += partiallyVerifiedSources.length === 0 ? '* هیچ سەرچاوەیەکی نیوەپشکنراو نییە.\n\n' :
+      partiallyVerifiedSources.map(s => `- **${s.title}** — ${s.verificationNotes || 'پێویستی بە پشتڕاستکردنەوەیە.'}`).join('\n') + '\n\n';
 
     markdown += '#### 🔴 Unverified Claims\n';
-    if (unverifiedClaims.length === 0) {
-      markdown += '* هیچ claim ـێکی UNVERIFIED نییە.\n';
-    } else {
-      for (const claim of unverifiedClaims) {
-        markdown += `- **${claim.title}** — ${claim.verificationNotes || 'پشتڕاست نەکراوە.'}\n`;
-      }
-    }
+    markdown += unverifiedClaims.length === 0 ? '* هیچ بانگەشەیەکی پشتڕاستنەکراو نییە.\n' :
+      unverifiedClaims.map(c => `- **${c.title}** — ${c.verificationNotes || 'پشتڕاست نەکراوە.'}`).join('\n') + '\n';
 
     return {
       verifiedCount: verifiedSources.length,
@@ -494,5 +414,56 @@ export class SourceVerificationEngine {
       unverifiedClaims,
       formattedSummaryMarkdown: markdown
     };
+  }
+
+  /**
+   * Cross-checks in-text citations against bibliography list to ensure 100% two-way consistency.
+   */
+  public static crossCheckCitationsAgainstBibliography(
+    bodyText: string,
+    bibliography: Array<{ id?: string; title: string; author: string; publicationYear?: number | null }>
+  ): CitationConsistencyAuditResult {
+    const text = bodyText || '';
+    const citeRegex = /(?:\(([\u0600-\u06FFa-zA-Z\s.-]+?)[،,]\s*(\d{4}|[\u0660-\u0669]{4}|n\.d\.)\)|\b([\u0600-\u06FFa-zA-Z.-]+)\s*\((19\d\d|20\d\d)\))/g;
+    const inText: Array<{ citation: string; author: string; year?: number }> = [];
+    const skipWords = new Set(['بڕوانە', 'وەکو', 'سەیربکە', 'لاپەڕە', 'see', 'note']);
+    let m: RegExpExecArray | null;
+
+    while ((m = citeRegex.exec(text)) !== null) {
+      const author = (m[1] || m[3] || '').trim();
+      const rawYear = (m[2] || m[4] || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+      if (author && !skipWords.has(author.toLowerCase())) {
+        inText.push({ citation: m[0], author, year: parseInt(rawYear, 10) || undefined });
+      }
+    }
+
+    const matched: any[] = [];
+    const unmatchedInText: Array<{ citation: string; author: string; year?: number }> = [];
+    const citedBibIds = new Set<string>();
+
+    for (const item of inText) {
+      const normA = normalize(item.author);
+      const hit = bibliography.find(b => {
+        const normB = normalize(b.author);
+        return (normA.includes(normB) || normB.includes(normA)) && (!item.year || !b.publicationYear || item.year === b.publicationYear);
+      });
+      if (hit) {
+        matched.push({ citation: item.citation, author: item.author, match: hit });
+        if (hit.id) citedBibIds.add(hit.id);
+      } else {
+        unmatchedInText.push(item);
+      }
+    }
+
+    const unreferenced = bibliography.filter(b => b.id ? !citedBibIds.has(b.id) : true);
+    const score = inText.length === 0 ? 100 : Math.round((matched.length / inText.length) * 100);
+    const isConsistent = unmatchedInText.length === 0 && (inText.length === 0 || unreferenced.length === 0);
+
+    let report = `### پشکنینی تەبایی سەرچاوە و دەق (100% Citation Cross-Check)\n`;
+    report += `- پلەی تەبایی: ${score}%\n- هاوتاکراو لە نێودەق: ${matched.length}/${inText.length}\n`;
+    if (unmatchedInText.length) report += `⚠️ **ئاماژەی بێ سەرچاوە:** ${unmatchedInText.map(u => u.citation).join(', ')}\n`;
+    if (unreferenced.length) report += `📌 **سەرچاوەی بێ ئاماژە:** ${unreferenced.map(b => b.author).join(', ')}\n`;
+
+    return { isConsistent, score, totalInText: inText.length, totalBibliography: bibliography.length, matchedCount: matched.length, unmatchedInText, unreferencedBibliography: unreferenced, formattedReport: report };
   }
 }

@@ -100,6 +100,17 @@ import { DigitalLibraryService } from '../../../services/digital-library.service
             <span>{{ lib.t().readOnline }}</span>
           </button>
 
+          <!-- Insert to Thesis / Cite Button -->
+          <button
+            type="button"
+            (click)="lib.insertBookToEditor(book()); $event.stopPropagation()"
+            class="py-2 px-2.5 bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-amber-300 font-sans font-bold text-xs rounded-xl border border-stone-700 transition-colors flex items-center justify-center gap-1 shadow-sm cursor-pointer"
+            title="ئاماژەدان لە دەقی تێزدا و تۆمارکردن لە کۆگای سەرچاوەکان"
+          >
+            <mat-icon class="!w-4 !h-4 text-amber-400">format_quote</mat-icon>
+            <span class="hidden sm:inline">ئاماژەدان</span>
+          </button>
+
           <!-- Download is only offered after authoritative verification. -->
           @if (book().verified && book().downloadUrl) {
             <a

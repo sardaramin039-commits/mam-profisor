@@ -7,6 +7,7 @@ import { AcademicStyle } from '../../../domain/enums';
 import { EditorService } from '../../editor/services/editor';
 import { CitationManagerService } from '../services/citation-manager';
 import { AppNotificationsService } from '../../../core/app.notifications';
+import { DigitalLibraryService } from '../../../services/digital-library.service';
 
 @Component({
   selector: 'app-bibliography-file-extractor',
@@ -215,6 +216,7 @@ export class BibliographyFileExtractorComponent {
   private editorService = inject(EditorService);
   private citationManager = inject(CitationManagerService);
   private notifications = inject(AppNotificationsService);
+  private digitalLibrary = inject(DigitalLibraryService);
 
   readonly rawInputText = signal<string>('');
   readonly uploadedFileName = signal<string>('');
@@ -285,6 +287,10 @@ export class BibliographyFileExtractorComponent {
 
     const result = BibliographyFileExtractor.extractAndFormat(text, this.selectedStyle());
     this.extractionResult.set(result);
+    if (result.items && result.items.length > 0) {
+      this.importToProjectSources(result.items);
+      this.digitalLibrary.addExtractedBibliography(result.items);
+    }
   }
 
   copyAllFormatted(text: string) {

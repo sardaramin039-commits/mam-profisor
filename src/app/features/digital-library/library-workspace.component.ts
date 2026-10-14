@@ -82,7 +82,7 @@ import { LibraryReaderModalComponent } from './components/library-reader-modal.c
               </div>
               <div class="flex items-start gap-3 rounded-xl bg-stone-950/70 border border-stone-800 p-3">
                 <span class="w-6 h-6 shrink-0 rounded-full bg-sky-500 text-stone-950 grid place-items-center text-[10px] font-black">٣</span>
-                <p class="text-[11px] text-stone-300 leading-6">پاشان سەرچاوەکە لە کارەکەتدا بەکاربهێنە.</p>
+                <p class="text-[11px] text-stone-300 leading-6">بە دوگمەی «ئاماژەدان» ڕاستەوخۆ بیخە نێو تێز و کۆگای سەرچاوە ڕاستەقینەکان.</p>
               </div>
             </div>
           </div>

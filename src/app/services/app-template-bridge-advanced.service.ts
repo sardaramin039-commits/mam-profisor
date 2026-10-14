@@ -22,8 +22,6 @@ import { AcademicLexiconStandardsService } from './academic-lexicon-standards.se
 
 @Injectable()
 export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingService {
-  readonly toulminService = inject(AcademicToulminArgumentService);
-  readonly hedgingService = inject(AcademicHedgingStanceService);
   readonly lexiconService = inject(AcademicLexiconStandardsService);
 
   anonymizeActiveChapterData(chapter: any) {
@@ -76,7 +74,28 @@ export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingSe
       }
     });
   }
-  generateAcademicAdditions(chapter: any) {}
+  generateAcademicAdditions(chapter: any) {
+    if (!chapter) return;
+    const content = (chapter.content || '').trim();
+    if (!content) return;
+    this.http.post<any>('/api/ai-tools/execute', {
+      toolId: 'argument_builder',
+      inputText: `تێزی سەرەکی: ${chapter.title || 'تێز'}\nدەق: ${content.slice(0, 10000)}`,
+      options: {
+        academicLevel: 'دکتۆرا',
+        discipline: this.consultationAction() || 'گشتی',
+        tone: 'formal_academic'
+      }
+    }).subscribe({
+      next: result => {
+        const text = typeof result?.output === 'string' ? result.output.trim() : '';
+        if (text) {
+          this.appendAdditionsToChapter(chapter, text);
+        }
+      },
+      error: err => console.error('Academic additions error:', err)
+    });
+  }
   appendAdditionsToChapter(chapter: any, addition: any) {
     const text = String(addition || '').trim();
     if (!chapter || !text) return;
@@ -149,14 +168,49 @@ export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingSe
       IEEE: CitationBuilder.formatIEEE(source)
     });
   }
-  checkChapterPlagiarism(chapter: any) {}
+  checkChapterPlagiarism(chapter: any) {
+    if (!chapter) return;
+    const content = (chapter.content || '').trim();
+    if (!content) return;
+    this.http.post<any>('/api/plagiarism_check', {
+      title: chapter.title || 'بەشی تێز',
+      content: content.slice(0, 20000)
+    }).subscribe({
+      next: result => {
+        if (result?.similarityScore !== undefined) {
+          this.editorService.updateChapterContent(
+            chapter.id,
+            chapter.content,
+            `پشکنینی ڕەسەنایەتی: نمرەی هاوشێوەیی ${result.similarityScore}%`
+          );
+        }
+      },
+      error: err => console.error('Plagiarism check error:', err)
+    });
+  }
   exportSandboxPDF() {}
   appendPythonSandboxOutputToChapter(chapter: any) {}
   executePythonDatasetInterpreter(chapter: any) {}
   copyLatexCode(code: string) {
     if (code) navigator.clipboard.writeText(code);
   }
-  generateEliteAcademicAssessment(chapter: any) {}
+  generateEliteAcademicAssessment(chapter: any) {
+    if (!chapter) return;
+    const content = (chapter.content || '').trim();
+    if (!content) return;
+    this.http.post<any>('/api/analyze_academic_rigor', {
+      title: chapter.title || 'بەشی توێژینەوە',
+      content: content.slice(0, 20000),
+      discipline: this.consultationAction() || 'گشتی',
+      theoreticalFramework: 'epistemological_realism',
+      academicStyle: 'apa7'
+    }).subscribe({
+      next: result => {
+        this.activeAcademicDiagnostic.set(result);
+      },
+      error: err => console.error('Elite assessment error:', err)
+    });
+  }
   copyCitationsToClipboard(txt: string) {
     if (txt) navigator.clipboard.writeText(txt);
   }

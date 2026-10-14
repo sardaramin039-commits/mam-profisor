@@ -13,10 +13,13 @@ import { AcademicIndexSearchComponent } from './academic-index-search.component'
 import { DialecticalThesisEngineComponent } from './dialectical-thesis-engine.component';
 import { AcademicPlagiarismCheckerComponent } from './academic-plagiarism-checker.component';
 import { AcademicResearchArchitectureComponent } from './academic-research-architecture.component';
-import { KurdishTerminologyRefinerComponent } from './kurdish-terminology-refiner.component';
 import { InTextCitationPrompterComponent } from './in-text-citation-prompter.component';
 import { ProjectCitationManagerComponent } from './project-citation-manager.component';
 import { AdvancedAcademicSearchComponent } from './advanced-academic-search.component';
+import { ThesisDefenseSimulatorComponent } from './thesis-defense-simulator.component';
+import { ThesisAppendicesGeneratorComponent } from './thesis-appendices-generator.component';
+import { UniversityLayoutFormatterComponent } from './university-layout-formatter.component';
+import { AcademicToneAnalyzerComponent } from './academic-tone-analyzer.component';
 import { ChapterItemModel as ChapterItem } from '../../domain/models';
 
 export interface EssentialAcademicTool {
@@ -109,10 +112,13 @@ const FIFTY_TOOLS_DATA: EssentialAcademicTool[] = [
     DialecticalThesisEngineComponent,
     AcademicPlagiarismCheckerComponent,
     AcademicResearchArchitectureComponent,
-    KurdishTerminologyRefinerComponent,
     InTextCitationPrompterComponent,
     ProjectCitationManagerComponent,
-    AdvancedAcademicSearchComponent
+    AdvancedAcademicSearchComponent,
+    ThesisDefenseSimulatorComponent,
+    ThesisAppendicesGeneratorComponent,
+    UniversityLayoutFormatterComponent,
+    AcademicToneAnalyzerComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -243,7 +249,7 @@ const FIFTY_TOOLS_DATA: EssentialAcademicTool[] = [
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'refiner') {
-          <app-kurdish-terminology-refiner [activeChapter]="activeChapter()"></app-kurdish-terminology-refiner>
+          <app-kurdish-terminology-manager [activeChapter]="activeChapter()"></app-kurdish-terminology-manager>
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'citation_linker') {
@@ -275,7 +281,7 @@ const FIFTY_TOOLS_DATA: EssentialAcademicTool[] = [
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'terminology_manager') {
-          <app-academic-terminology-manager [activeChapter]="activeChapter()"></app-academic-terminology-manager>
+          <app-kurdish-terminology-manager [chapters]="activeChapter() ? [activeChapter()!] : []" [activeChapter]="activeChapter()"></app-kurdish-terminology-manager>
         }
 
         @if (activeToolTab() === 'all') {

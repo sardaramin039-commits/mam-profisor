@@ -1,11 +1,18 @@
 import { inject, Injectable } from '@angular/core';
 import { VipAcademicLevel, VipDiscipline, VipWritingQualityService } from '../../editor/components/vip-writing-quality.service';
+import { GeminiRequestManagerService } from '../../../services/gemini-request-manager.service';
+import { AcademicToulminArgumentService } from '../../../services/academic-toulmin-argument.service';
+import { AcademicHedgingStanceService } from '../../../services/academic-hedging-stance.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AiAssistantService {
   private vipQuality = inject(VipWritingQualityService);
+  private requestManager = inject(GeminiRequestManagerService);
+  private toulminService = inject(AcademicToulminArgumentService);
+  private hedgingService = inject(AcademicHedgingStanceService);
+
   buildMasterAcademicPrompt(
     userQuery: string,
     contextData: string,
@@ -17,7 +24,7 @@ export class AiAssistantService {
     const directives = this.vipQuality.getGenerationDirectives(level, domain);
 
     return `
-تۆ پڕۆفیسۆر، توێژەر و نووسەرێکی ئەکادیمیت. دەبێت ناوەڕۆکی خوارەوە بە شێوەی ورد، بەڵگەدار و سروشتی بنووسیت، بەبێ دروستکردنی سەرچاوە یان داتای ساختە.
+تو پڕۆفیسۆر، توێژەر و نووسەرێکی ئەکادیمیت. دەبێت ناوەڕۆکی خوارەوە بە شێوەی ورد، بەڵگەدار و سروشتی بنووسیت، بەبێ دروستکردنی سەرچاوە یان داتای ساختە.
 
 ڕشتەی زانستی: ${discipline}
 ئاستی ئەکادیمی: ${academicLevel}
@@ -26,20 +33,45 @@ export class AiAssistantService {
 سەرچاوەکانی هاتوو لە retrieval ـەوە:
 ${context_data_sanitized(contextData)}
 
-یاسای پشتڕاستیی سەرچاوە:
-تۆمارێک کە تەنها لە index ـێک هاتووە، بە خۆی بەڵگەی citation ـی پشتڕاستکراو نییە.
-تەنها تۆمارێک کە بە ڕوونی VERIFIED دیاریکراوە و evidence ـی پەیوەندیداری هەیە، وەک سەرچاوەی پشتڕاستکراو بەکاربهێنە.
-retrieved، partially_verified، unverified یان metadata-only تەنها وەک leads بن، نەک وەک citationی کۆتایی.
-هیچ DOI، نووسەر، ساڵ، لاپەڕە، ئامار یان دەرئەنجامێک لە خۆتەوە پڕ مەکە.
-${context_data_sanitized(contextData)}
-
 یاساکانی VIP Pro بۆ ئەم ئاست و بوارە:
 ${directives.map((item, index) => `${index + 1}. ${item}`).join('\n')}
 
-یاسای کۆتایی: ئەگەر بەڵگەی پێویست نییە، مەکۆڵە؛ بڵێ زانیاریی پشتڕاستنەکراوە و پێویستی بە سەرچاوەی دڵنیابەخش هەیە. دووبارەبوونەوە، کڵێشە، درێژکردنی بێ مەبەست و تۆنی گفتوگۆیی کەم بکە.
-
 وەڵامی ئەکادیمی و بۆ ئەم ئاستە گونجاو بنووسە:
 `.trim();
+  }
+
+  async generateScholarlyChapter(payload: {
+    title: string;
+    chapterTitle: string;
+    discipline: string;
+    academicLevel: string;
+    targetWords: number;
+    outlineHeadings?: string[];
+    contextData?: string;
+  }): Promise<{ content: string; wordCount: number }> {
+    const targetWords = payload.targetWords || 2000;
+    const toulminRules = this.toulminService.getToulminDirectives();
+    const hedgingRules = this.hedgingService.getHedgingDirectives();
+
+    const academicPrompt = `[نووسینی بەشی تێزی زانستی لەسەر ئاستی ${payload.academicLevel || 'دکتۆرا'}]:
+ناونیشانی گشتی: «${payload.title}»
+تەوەرەی ئەم بەشە: «${payload.chapterTitle}»
+کایەی زانستی: «${payload.discipline || 'گشتی'}»
+ئامانجی وشەکان: لانیکەم ${targetWords} وشەی ئەکادیمی بە زمانی کوردیی سۆرانیی فەرمی.
+
+سەرچاوە و زانیاریی پاشخان:
+${payload.contextData || 'بەپێی مێتۆدی زانستی و ستانداردی APA-7'}
+
+${toulminRules}
+
+${hedgingRules}
+
+ڕێنمایی زۆر گرنگ:
+- زمانی کەسی سێیەمی بێلایەن بەبێ هیچ دەربڕینێکی وتاری یان ڕۆژنامەوانی.
+- پاراستنی یاسای واوی درێژ «وو» وەک یەک پیت لە هەموو لێکراوەکاندا.
+- قەدەغەکردنی ڕەهای کورتەخاڵ و پوختەکاری؛ هەمووی بە پەڕەگرافی ئەکادیمی بنووسە.`;
+
+    return this.requestManager.generateLongAcademicSection(academicPrompt, targetWords);
   }
 
   async simulateViva(payload: { title: string; content: string; discipline: string; academicLevel: string; questions?: unknown[]; userDefense?: string }) {

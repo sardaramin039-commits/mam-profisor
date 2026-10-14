@@ -15,38 +15,48 @@ function createSnapshotHash(text: string): string {
   }
   return (hash >>> 0).toString(16).padStart(8, '0');
 }
+import { firstValueFrom } from 'rxjs';
 import { AppTemplateBridgeStateService } from './app-template-bridge-state.service';
+import { GeminiRequestManagerService } from './gemini-request-manager.service';
+import { AcademicToulminArgumentService } from './academic-toulmin-argument.service';
+import { AcademicHedgingStanceService } from './academic-hedging-stance.service';
+import { SourceVerificationEngine } from '../helpers/source-verification-engine';
 
 @Injectable()
 export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateService {
+  readonly requestManager = inject(GeminiRequestManagerService);
+  readonly toulminService = inject(AcademicToulminArgumentService);
+  readonly hedgingService = inject(AcademicHedgingStanceService);
+  readonly writingWordProgress = this.requestManager.currentWordCountProgress;
+
   writeSingleChapter(id: number) {
     const chapter = this.getChapterById(id);
     if (!chapter) return;
 
-    this.http.post<any>('/api/generate_chapter', {
-      title: chapter.title || 'توێژینەوەی ئەکادیمی',
-      discipline: 'گشتی',
-      writingType: 'academic',
-      academicLevel: 'ماستەر',
-      pages: 1,
-      targetPages: 1,
-      targetWordsPerChapter: 1200,
-      currentChapterIndex: id,
-      chapterTitle: chapter.title || 'بەشی نوێ',
-      previousChapterContent: '',
-      academicStyle: 'apa7',
-      role: 'student',
-      dialect: 'sorani',
-      thinkingTokens: Number(this.refineForm?.get('thinkingTokens')?.value) || 2048,
-      writingTokens: Number(this.refineForm?.get('writingTokens')?.value) || 8192
-    }).subscribe({
-      next: result => {
-        const content = String(result?.content || '').trim();
-        if (content) {
-          this.editorService.updateChapterContent(chapter.id, content, 'دروستکردنی بەشی ئەکادیمی');
-        }
-      },
-      error: error => console.error('Chapter generation error:', error)
+    const rawTargetWords = Number(this.refineForm?.get('targetWords')?.value) || 1800;
+    const targetWords = Math.max(1200, rawTargetWords);
+
+    const toulminDirectives = this.toulminService.getToulminDirectives();
+    const hedgingDirectives = this.hedgingService.getHedgingDirectives();
+
+    const fullPrompt = `${chapter.title || 'بەشی توێژینەوەی ئەکادیمی'}\n\n${toulminDirectives}\n\n${hedgingDirectives}`;
+
+    this.requestManager.generateLongAcademicSection(
+      fullPrompt,
+      targetWords,
+      progress => {
+        // Live progress tracked by writingWordProgress signal
+      }
+    ).then(result => {
+      if (result?.content) {
+        this.editorService.updateChapterContent(
+          chapter.id,
+          result.content,
+          'داڕشتنی بەشی ئەکادیمی (Toulmin & Multi-Pass)'
+        );
+      }
+    }).catch(error => {
+      console.error('Multi-pass chapter generation error:', error);
     });
   }
 
@@ -403,7 +413,15 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
     textarea.focus();
     textarea.setSelectionRange(index, index + text.length);
   }
-  verifyCitationsLive(c: any) {}
+  verifyCitationsLive(c: any) {
+    if (!c?.content) return;
+    const sources = this.data.sourcesList() || [];
+    const report = SourceVerificationEngine.crossCheckCitationsAgainstBibliography(c.content, sources);
+    this.sourceMessage.set({
+      type: report.isConsistent ? 'success' : 'error',
+      text: `پشکنینی سەرچاوە: ${report.score}% هاوتایی. ${report.unmatchedInText.length ? report.unmatchedInText.length + ' ئاماژەی بێ سەرچاوە دۆزرایەوە.' : 'سەرجەم ئاماژەکان پشتڕاستکراون.'}`
+    });
+  }
   runAcademicConsultation() {
     const question = this.consultationTextToProofread().trim() || this.consultationTopic().trim();
     if (!question) return;

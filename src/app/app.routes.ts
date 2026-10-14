@@ -43,14 +43,18 @@ export const routes: Routes = [
   {
     path: 'viva',
     loadComponent: () =>
-      import('./features/viva-simulation/viva-simulation').then(m => m.VivaSimulationComponent),
-    title: 'تاقیکردنەوەی ڤیڤا | مام',
+      import('./features/academic-suite/thesis-defense-simulator.component').then(
+        m => m.ThesisDefenseSimulatorComponent
+      ),
+    title: 'تاقیکردنەوەی بەرگری و ڤیڤا | مام',
   },
   {
     path: 'plagiarism',
     loadComponent: () =>
-      import('./features/plagiarism/plagiarism').then(m => m.PlagiarismComponent),
-    title: 'پشکنینی کۆپیکردن | مام',
+      import('./features/academic-suite/academic-plagiarism-checker.component').then(
+        m => m.AcademicPlagiarismCheckerComponent
+      ),
+    title: 'پشکنینی دزینی ئەدەبی و لێکچوون | مام',
   },
   {
     path: 'glossary',
