@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, input, output, signal, computed } f
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, FormGroup } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { toSoraniNumber } from '../../../pipes/sorani-number.pipe';
 
 export type CitationStyle = 'APA' | 'MLA' | 'HARVARD' | 'CHICAGO' | 'LC_APA';
 
@@ -149,10 +150,29 @@ export interface MarkupOption {
             <div class="flex items-center gap-1.5 flex-wrap">
               <button 
                 type="button"
+                (click)="insertFootnoteCitation()"
+                class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
+                title="تێخستنی پەراوێزی خوارەوە بە ژمارەی کوردی [١] و دروستکردنی پەراوێز">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">format_list_numbered_rtl</mat-icon>
+                <span>پەراوێزی خوارەوە (Footnote [١])</span>
+              </button>
+
+              <button 
+                type="button"
                 (click)="insertInTextCitation()"
-                class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95">
+                class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
+                title="سەرچاوەی ناو دەق بەپێی APA و ژمارەی لاپەڕە (نووسەر، ساڵ: لاپەڕە)">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5">add_link</mat-icon>
-                <span>تێخستنی لەناو دەق (In-Text)</span>
+                <span>سەرچاوەی ناو دەق (APA)</span>
+              </button>
+
+              <button 
+                type="button"
+                (click)="insertExplanatoryNote()"
+                class="px-3 py-1.5 bg-stone-800 hover:bg-stone-750 text-amber-300 font-bold text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer border border-stone-700 active:scale-95"
+                title="پەراوێزی ڕوونکردنەوە و ساغکردنەوەی زاراوە یان دەستنووس">
+                <mat-icon class="!text-xs !w-3.5 !h-3.5">help_outline</mat-icon>
+                <span>پەراوێزی ڕوونکردنەوە</span>
               </button>
 
               <button 
@@ -160,7 +180,7 @@ export interface MarkupOption {
                 (click)="insertBibliographyEntry()"
                 class="px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs rounded-lg transition-all flex items-center gap-1 cursor-pointer border border-stone-700 active:scale-95">
                 <mat-icon class="!text-xs !w-3.5 !h-3.5 text-amber-400">library_books</mat-icon>
-                <span>تێخستنی سەرچاوەنامە (Bibliography)</span>
+                <span>تێخستنی سەرچاوەنامە</span>
               </button>
             </div>
 
@@ -333,6 +353,49 @@ export class FloatingAcademicToolbarComponent {
   onStyleChange(event: Event): void {
     const val = (event.target as HTMLSelectElement).value as CitationStyle;
     if (val) this.selectStyle(val);
+  }
+
+  insertFootnoteCitation(): void {
+    const a = this.citationForm.controls.author.value || 'نووسەر';
+    const y = this.citationForm.controls.year.value || '2026';
+    const t = this.citationForm.controls.title.value || 'ناونیشانی سەرچاوە';
+    const p = this.citationForm.controls.page.value || '45';
+
+    const textarea = this.targetTextarea();
+    const content = textarea?.value || '';
+    const existing = (content.match(/\[([\u0660-\u0669\d]+)\]/g) || []).length;
+    const nextNum = existing + 1;
+    const marker = `[${toSoraniNumber(nextNum)}]`;
+    const footnoteEntry = `${marker} ${a}، «${t}» (${toSoraniNumber(y)})، ل. ${toSoraniNumber(p)}.`;
+
+    this.insertMarkup(marker);
+    if (textarea) {
+      if (!textarea.value.includes('پەراوێزەکان')) {
+        textarea.value += '\n\n---\n### پەراوێزەکان (Footnotes):\n' + footnoteEntry;
+      } else {
+        textarea.value += '\n' + footnoteEntry;
+      }
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  insertExplanatoryNote(): void {
+    const textarea = this.targetTextarea();
+    const content = textarea?.value || '';
+    const existing = (content.match(/\[([\u0660-\u0669\d]+)\]/g) || []).length;
+    const nextNum = existing + 1;
+    const marker = `[${toSoraniNumber(nextNum)}]`;
+    const noteEntry = `${marker} تێبینیی ڕوونکردنەوە و ساغکردنەوە: [ڕاڤەی زاراوە یان دەستنووس لێرە بنووسە].`;
+
+    this.insertMarkup(marker);
+    if (textarea) {
+      if (!textarea.value.includes('پەراوێزەکان')) {
+        textarea.value += '\n\n---\n### پەراوێزەکان (Footnotes):\n' + noteEntry;
+      } else {
+        textarea.value += '\n' + noteEntry;
+      }
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
   }
 
   insertInTextCitation(): void {

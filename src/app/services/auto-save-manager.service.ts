@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, effect } from '@angular/core';
 import { IndexedDbStorageService } from './indexed-db-storage.service';
 import { AppStateFacadeService } from './app-state-facade.service';
 import { EditorService } from '../features/editor/services/editor';
@@ -28,6 +28,19 @@ export class AutoSaveManagerService {
 
   private autoSaveTimerId: any = null;
   private lastSavedContentHash = '';
+
+  constructor() {
+    // Automatically debounce and auto-save within 1 second whenever chapters signal changes
+    effect(() => {
+      const current = this.editorService.chapters();
+      if (current && current.length > 0) {
+        const hasText = current.some(c => (c.content || '').trim().length > 0);
+        if (hasText) {
+          this.queueDebouncedAutoSave(current, undefined, 1000);
+        }
+      }
+    });
+  }
 
   /**
    * Initializes periodic auto-save checking and checks if an existing draft is available in IndexedDB.
@@ -99,8 +112,23 @@ export class AutoSaveManagerService {
     }, intervalMs);
   }
 
+  private debounceTimer: any = null;
+
   /**
-   * Immediately saves the current thesis draft to IndexedDB.
+   * Enqueues a debounced auto-save executed strictly within 1 second of user edits.
+   */
+  queueDebouncedAutoSave(chapters: ChapterItemModel[], formState?: any, delayMs = 1000): void {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+    this.saveStatusMessage.set('ئامادەکاری بۆ پاشەکەوتکردن...');
+    this.debounceTimer = setTimeout(async () => {
+      await this.saveDraft(chapters, formState);
+    }, delayMs);
+  }
+
+  /**
+   * Immediately saves the current thesis draft to IndexedDB with LocalStorage metadata synchronization.
    */
   async saveDraft(chapters: ChapterItemModel[], formState?: any): Promise<boolean> {
     if (!chapters || chapters.length === 0) return false;
@@ -126,10 +154,29 @@ export class AutoSaveManagerService {
         activeChapterId: this.editorService.activeChapterId()
       };
 
-      // 1. Save directly to IndexedDB
+      // 1. Primary storage: IndexedDB for complete chapters and draft payload
       const success = await this.indexedDb.saveThesisDraft(payload);
 
-      // 2. Also cache through AppStateFacade for redundancy
+      // 2. LocalStorage sync for metadata, active chapter ID and blueprint settings
+      try {
+        const metadataSync = {
+          timestamp: payload.timestamp,
+          wordCount,
+          activeChapterId: payload.activeChapterId,
+          chapterCount: chapters.length,
+          title: formState?.title || '',
+          discipline: formState?.discipline || '',
+          academicLevel: formState?.academicLevel || ''
+        };
+        localStorage.setItem('mam_thesis_metadata_sync', JSON.stringify(metadataSync));
+        if (formState) {
+          localStorage.setItem('mam_thesis_blueprint_settings', JSON.stringify(formState));
+        }
+      } catch (err) {
+        console.warn('LocalStorage metadata sync warning:', err);
+      }
+
+      // 3. Redundancy fallback through AppStateFacade
       await this.appStateFacade.saveDraftToLocalStorage(formState, chapters);
 
       if (success) {

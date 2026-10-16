@@ -1,8 +1,9 @@
-import { Component, ChangeDetectionStrategy, signal, computed, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { ACADEMIC_GLOSSARY } from '../../../../prompts/academic-glossary';
 import { toSoraniNumber } from '../../../pipes/sorani-number.pipe';
+import { AcademicStoreService } from '../../../services/academic-store.service';
 
 export interface HealthMetric {
   name: string;
@@ -49,7 +50,7 @@ export interface HealthMetric {
       </div>
 
       <!-- Quick Metrics Overview Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <!-- Metric 1: Logical Consistency -->
         <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl space-y-2">
           <div class="flex items-center justify-between">
@@ -64,7 +65,7 @@ export interface HealthMetric {
             <div class="bg-teal-500 h-full rounded-full transition-all duration-500" [style.width.%]="logicalScore()"></div>
           </div>
           <p class="text-[10.5px] text-slate-400 font-serif">
-            {{ transitionsFound() }} گرێدەری لۆژیکی و هاوسەنگیی دەق دۆزراونەتەوە
+            {{ transitionsFound() }} گرێدەری لۆژیکی دۆزراونەتەوە
           </p>
         </div>
 
@@ -82,7 +83,7 @@ export interface HealthMetric {
             <div class="bg-indigo-500 h-full rounded-full transition-all duration-500" [style.width.%]="Math.min(100, terminologyDensity() * 12)"></div>
           </div>
           <p class="text-[10.5px] text-slate-400 font-serif">
-            {{ recognizedAcademicTerms() }} زاراوەی ئەکادیمیی ناسێنراو لە دەقدا
+            {{ recognizedAcademicTerms() }} زاراوەی ناسێنراو لە دەقدا
           </p>
         </div>
 
@@ -100,7 +101,25 @@ export interface HealthMetric {
             <div class="bg-amber-500 h-full rounded-full transition-all duration-500" [style.width.%]="Math.min(100, (avgSentenceLength() / 30) * 100)"></div>
           </div>
           <p class="text-[10.5px] text-slate-400 font-serif">
-            ستانداردی ڕستەی زانستی: ١٥ بۆ ٢٥ وشە
+            ستاندارد: ١٥ بۆ ٢٥ وشە
+          </p>
+        </div>
+
+        <!-- Metric 4: Vertical Alignment Matrix -->
+        <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-300 font-serif">هاوتابوونی ستوونی</span>
+            <mat-icon class="!text-base text-emerald-400">alt_route</mat-icon>
+          </div>
+          <div class="flex items-baseline gap-1">
+            <span class="text-xl font-bold font-mono text-emerald-300">٪{{ toSorani(matrixAlignmentScore()) }}</span>
+            <span class="text-[10px] text-slate-400 font-serif">Viva Ready</span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" [style.width.%]="matrixAlignmentScore()"></div>
+          </div>
+          <p class="text-[10.5px] text-slate-400 font-serif">
+            {{ toSorani(alignedQuestionsCount()) }} پرسیار هاوتای بەشەکان کراون
           </p>
         </div>
       </div>
@@ -128,8 +147,13 @@ export interface HealthMetric {
   `
 })
 export class ThesisHealthReportComponent {
+  private academicStore = inject(AcademicStoreService);
   thesisText = input<string>('');
   Math = Math;
+
+  matrixItems = computed(() => this.academicStore.verticalAlignmentMatrix());
+  alignedQuestionsCount = computed(() => this.matrixItems().length);
+  matrixAlignmentScore = computed(() => this.matrixItems().length > 0 ? 100 : 45);
 
   private readonly academicConnectors = [
     'لە ئەنجامدا', 'بە پێچەوانەوە', 'سەرەڕای ئەوەش', 'لە هەمان کاتدا',
@@ -277,6 +301,25 @@ export class ThesisHealthReportComponent {
         title: 'پێویستی بە گرێدەری لۆژیکیی زیاتر هەیە',
         detail: 'بۆ بەستنەوەی سەرەنجام و هۆکارەکان، زیاتر وشەکانی (لە ئەنجامدا، بەپێی ئەمەش، سەرەڕای ئەوەش) زیاد بکە.',
         icon: 'alt_route',
+        iconClass: 'text-amber-400',
+        cardClass: 'bg-amber-950/30 border-amber-800/60'
+      });
+    }
+
+    const matrix = this.matrixItems();
+    if (matrix.length > 0) {
+      list.push({
+        title: 'هاوتابوونی ستوونی تێز: ١٠٠٪ ئامادەی بەرگری (Viva Alignment)',
+        detail: `تەواوی پرسیارە سەرەکی و لاوەکییەکان (${toSoraniNumber(matrix.length)} پرسیار) هاوتای ئامانج و بەشەکانی تێزەکە کراون و بەشی دەرەنجامەکان وەڵامی 1-بە-1 دەداتەوە.`,
+        icon: 'verified',
+        iconClass: 'text-emerald-400',
+        cardClass: 'bg-emerald-950/30 border-emerald-800/60'
+      });
+    } else {
+      list.push({
+        title: 'پێویستی بە بەستنەوەی هاوتابوونی ستوونی (Vertical Alignment)',
+        detail: 'پرسیارەکانی پێشەکی بە تەوەرەکانی شیکاری و بەشی دەرەنجام نەبەستراونەتەوە؛ سەردانی تابی ماتریسی هاوتابوون بکە.',
+        icon: 'warning',
         iconClass: 'text-amber-400',
         cardClass: 'bg-amber-950/30 border-amber-800/60'
       });

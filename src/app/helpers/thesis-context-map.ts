@@ -101,3 +101,100 @@ export function parseThesisContextMapFile(file: File): Promise<ThesisContextMapM
     reader.readAsText(file);
   });
 }
+
+/**
+ * Primary Corpus & Research Cards Box (سندوقی دەقی بنەڕەتی و فیشەکانی خوێندنەوە)
+ */
+export interface ResearchCorpusCard {
+  id: string;
+  sourceTitle: string;
+  author: string;
+  pageNumber: string | number;
+  targetChapterId: number;
+  excerptText: string;
+  analyticalNote: string;
+  createdAt: string;
+  category?: 'literary_passage' | 'poetry' | 'travelogue' | 'archival' | 'field_data';
+  tags?: string[];
+}
+
+/**
+ * Vertical Alignment Matrix Item (هاوتابوونی ستوونیی تێز: پرسیار ⬅️ ئامانج ⬅️ تەوەر ⬅️ دەرئەنجام)
+ */
+export interface VerticalAlignmentMatrixItem {
+  id: string;
+  questionNumber: number;
+  questionText: string;
+  objectiveText: string;
+  targetChapterId: number;
+  targetChapterTitle: string;
+  expectedFindingSummary?: string;
+  status?: 'aligned' | 'in_progress';
+}
+
+/**
+ * Injects assigned Corpus Cards into the writing prompt, mandating close textual & discourse analysis.
+ */
+export function buildChapterCorpusPromptContext(cards: ResearchCorpusCard[], targetChapterId: number): string {
+  const chapterCards = (cards || []).filter(c => c.targetChapterId === targetChapterId);
+  if (chapterCards.length === 0) return '';
+
+  const formatted = chapterCards.map((c, idx) => 
+    `[فیشی ژمارە ${idx + 1} - دەقی سەرەکیی کۆرپەس]:
+سەرچاوە: «${c.sourceTitle}» (${c.author}، لاپەڕە: ${c.pageNumber})
+دەقی دەقاودەقی وەرگیراو:
+«${c.excerptText}»
+تێبینیی شیکاری و مەبەستی توێژەر: ${c.analyticalNote}`
+  ).join('\n---\n');
+
+  return `
+[سندوقی دەقی بنەڕەتی و فیشەکانی کۆرپەس - PRIMARY CORPUS & RESEARCH CARDS]:
+تێبینیی گرنگ بۆ شیکاریی پراکتیکی: پێویستە لەم بەشەدا شیکاریی وردی دەق و گوتار (Close Textual & Discourse Analysis) ڕاستەوخۆ لەسەر ئەم دەقە بنەڕەتییانەی خوارەوە ئەنجام بدەیت نەک گشتاندنی گشتی و ناڕوون. هەر فیشێک بە وەرگرتنی دەقاودەق «...» بهێنە ناو دەق و لەسەر مۆرفۆلۆژیا، مانای دەلالەت، و گوتاری دەقەکە ڕابوەستە:
+${formatted}
+`.trim();
+}
+
+/**
+ * Enforces 1-to-1 Vertical Alignment between Research Questions, Objectives, Chapters, and Conclusions.
+ */
+export function buildVerticalAlignmentConclusionsPromptDirectives(matrix: VerticalAlignmentMatrixItem[]): string {
+  if (!matrix || matrix.length === 0) return '';
+  const rows = matrix.map(m => 
+    `پرسیاری ${m.questionNumber}: «${m.questionText}»
+ئامانجی پەیوەست: «${m.objectiveText}»
+تەوەر/بەشی لێکۆڵینەوە: بەشی ${m.targetChapterId} («${m.targetChapterTitle}»)`
+  ).join('\n---\n');
+
+  return `
+[ماتریسی هاوتابوونی ستوونیی تێز - VERTICAL ALIGNMENT MATRIX (پرسیار ⬅️ ئامانج ⬅️ تەوەر ⬅️ دەرئەنجام)]:
+پێویستە بەشی ئەنجامەکان (Findings & Conclusions) بە شێوەیەکی نەگۆڕ لە وەڵامێکی ڕاستەوخۆ و ژمارەیی 1-بە-1 بۆ هەریەک لە پرسیارە سەرەکی و لاوەکییەکان دابڕێژرێت:
+${rows}
+
+ڕێسای زانستیی لیژنەی بەرگری (Viva Alignment):
+- بۆ هەر پرسیارێک بڕگەیەکی جیاواز دابنێ بەم شێوازە: «لە وەڵامی پرسیاری ژمارە (...)ی توێژینەوەدا سەبارەت بە (...): دەرەنجامە مەیدانی و تیۆرییەکان دەریانخست کە...».
+- دەبێت هاوتابوونی سەدا سەد لە نێوان پرسیاری دەروازە و ئەنجامی کۆتایی هەبێت بەبێ لادان لە سنووری پرسیارەکان.
+`.trim();
+}
+
+/**
+ * Cross-Chapter Rolling Memory (یادگەی زنجیرەیی نێوان بەشەکان)
+ * Maintains compact summary of key arguments written in previous chapters,
+ * forbids repeating earlier definitions, and mandates scholarly cross-referencing.
+ */
+export function buildCrossChapterRollingMemory(chapters: ChapterItemModel[], currentChapterId: number): string {
+  const previousChapters = (chapters || []).filter(c => c.id < currentChapterId && (c.content || '').trim().length > 50);
+  if (previousChapters.length === 0) return '';
+
+  const summaries = previousChapters.map(c => {
+    const words = (c.content || '').trim().split(/\s+/).slice(0, 80).join(' ');
+    return `- لە «${c.title}» (بەشی ${c.id}): بنەمای تیۆری و شیکاری دانراوە (${words.slice(0, 100)}...).`;
+  }).join('\n');
+
+  return `
+[یادگەی زنجیرەیی نێوان بەشەکان - CROSS-CHAPTER ROLLING MEMORY]:
+ئەم تەوەرانەی خوارەوە لە بەشەکانی پێشوودا شی کراونەتەوە:
+${summaries}
+قەدەغەکردنی ڕەها: بە هیچ شێوەیەک پێناسە و چەمکە تیۆرییە شیکراوەکانی بەشەکانی پێشوو دووبارە مەکەرەوە. بەڵکو بەستەری ئەکادیمی بدە (نموونە: «بە پشتبەستن بەو چوارچێوە تیۆرییەی لە بەشەکانی پێشوودا شی کرایەوە...»).
+`.trim();
+}
+

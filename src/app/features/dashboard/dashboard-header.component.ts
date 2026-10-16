@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { BackupRestoreService } from '../../core/services/backup-restore.service';
 
 type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_drive' | 'platform';
 
@@ -27,39 +28,42 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
         <span>پڕۆژەی نوێ</span>
       </button>
 
-      <nav class="mam-nav" aria-label="بەشە سەرەکییەکان">
-        <p class="mam-nav-label">کار</p>
+      <nav class="mam-nav" aria-label="هەنگاوەکانی پێڕەوی ئەکادیمی">
+        <p class="mam-nav-label">پێڕەوی ٥ هەنگاوی ئەکادیمی</p>
+
+        <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'advanced_research'"
+                (click)="selectTab.emit('advanced_research'); closeMobileNav()">
+          <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">١</span>
+          <mat-icon class="!text-lg !w-4 !h-4">architecture</mat-icon>
+          <span><b>نەخشەسازیی توێژینەوە</b><small>Blueprint & Setup - ئامادەکاری و میتۆد</small></span>
+        </button>
 
         <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'library'"
                 (click)="selectTab.emit('library'); closeMobileNav()">
-          <mat-icon>auto_stories</mat-icon>
-          <span><b>بەڵگە و سەرچاوە</b><small>کتێبخانە، source و تۆمارەکان</small></span>
+          <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">٢</span>
+          <mat-icon class="!text-lg !w-4 !h-4">auto_stories</mat-icon>
+          <span><b>کتێبخانە و سەرچاوەکان</b><small>Digital Library & Citations - بەڵگە و ژێدەر</small></span>
         </button>
 
         <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'editor'"
                 (click)="selectTab.emit('editor'); closeMobileNav()">
-          <mat-icon>history_edu</mat-icon>
-          <span><b>نووسین</b><small>تێز، وتار و کتێب</small></span>
+          <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">٣</span>
+          <mat-icon class="!text-lg !w-4 !h-4">history_edu</mat-icon>
+          <span><b>نووسینگە و دەستنووس</b><small>Thesis Editor & Copilot - داڕشتنی بەشەکان</small></span>
         </button>
-
-        <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'advanced_research'"
-                (click)="selectTab.emit('advanced_research'); closeMobileNav()">
-          <mat-icon>hub</mat-icon>
-          <span><b>توێژینەوە</b><small>ڕەچاوکردن و بەڵگە</small></span>
-        </button>
-
-        <p class="mam-nav-label">پشکنین و هەناردە</p>
 
         <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'platform'"
                 (click)="selectTab.emit('platform'); closeMobileNav()">
-          <mat-icon>fact_check</mat-icon>
-          <span><b>پشکنین و بڕواپێکراوی</b><small>QA، integrity و دۆخی بەڵگە</small></span>
+          <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">٤</span>
+          <mat-icon class="!text-lg !w-4 !h-4">fact_check</mat-icon>
+          <span><b>پشکنینی زانستی و زمانەوانی</b><small>Quality, Tone & Plagiarism Audit</small></span>
         </button>
 
         <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'suite'"
                 (click)="selectTab.emit('suite'); closeMobileNav()">
-          <mat-icon>file_present</mat-icon>
-          <span><b>ئامراز و هەناردە</b><small>ئامرازە هەڵبژێردراوەکان</small></span>
+          <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">٥</span>
+          <mat-icon class="!text-lg !w-4 !h-4">school</mat-icon>
+          <span><b>چاپ و بەرگریی تێز</b><small>Formatting, Export & Viva Defense</small></span>
         </button>
       </nav>
 
@@ -83,6 +87,18 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
           <mat-icon>{{ academicDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
           <span>{{ academicDarkMode() ? 'ڕووناکی' : 'تاریکی' }}</span>
         </button>
+
+        <button type="button" class="mam-sidebar-action" (click)="backupService.exportFullBackup()">
+          <mat-icon>download</mat-icon>
+          <span>داگرتنی فایلی پڕۆژە (.json)</span>
+        </button>
+
+        <button type="button" class="mam-sidebar-action" (click)="backupFileInput.click()">
+          <mat-icon>upload_file</mat-icon>
+          <span>گەڕاندنەوەی پڕۆژە</span>
+        </button>
+
+        <input type="file" #backupFileInput class="hidden" accept=".json" (change)="onBackupFileSelected($event)" />
 
         <button type="button" class="mam-sidebar-action danger" (click)="clearEditor.emit(); closeMobileNav()">
           <mat-icon>restart_alt</mat-icon>
@@ -131,10 +147,17 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
           <span>ئاستی پڕۆ • Pro Active</span>
         </div>
 
-        <div class="mam-trust-badge">
-          <mat-icon>verified_user</mat-icon>
-          <span>جریانەی بەڵگە و پشکنین</span>
-        </div>
+        <!-- 1-Click Backup / Restore Action Buttons in Topbar -->
+        <button type="button" class="mam-top-action" (click)="backupService.exportFullBackup()" title="داگرتنی هەموو داتاکانی تێز بە فایلی JSON">
+          <mat-icon>download</mat-icon>
+          <span>داگرتنی فایلی پڕۆژە (.json)</span>
+        </button>
+
+        <button type="button" class="mam-top-action" (click)="topbarFileInput.click()" title="گەڕاندنەوەی تێز لە فایلی JSON">
+          <mat-icon>upload_file</mat-icon>
+          <span>گەڕاندنەوەی پڕۆژە</span>
+        </button>
+        <input type="file" #topbarFileInput class="hidden" accept=".json" (change)="onBackupFileSelected($event)" />
 
         <button type="button" class="mam-top-action" [class.primary]="isFocusMode()" (click)="toggleFocusMode.emit()" title="دۆخی سەرنج (Focus Mode) - نووسینی ئارام و بێ بەربەست">
           <mat-icon>{{ isFocusMode() ? 'fullscreen_exit' : 'center_focus_strong' }}</mat-icon>
@@ -162,6 +185,8 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
   `
 })
 export class DashboardHeaderComponent {
+  readonly backupService = inject(BackupRestoreService);
+
   mainTab = input<MainTab>('editor');
   currentUser = input<any>(null);
   academicDarkMode = input(false);
@@ -184,6 +209,14 @@ export class DashboardHeaderComponent {
 
   closeMobileNav(): void {
     this.mobileNavOpen.set(false);
+  }
+
+  async onBackupFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      await this.backupService.restoreFromFile(input.files[0]);
+      input.value = '';
+    }
   }
 
   tabLabel(tab: MainTab): string {

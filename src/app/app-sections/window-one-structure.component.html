@@ -1,4 +1,54 @@
 <div [formGroup]="refineForm">
+            <!-- DISCIPLINE-SPECIFIC THESIS STRUCTURE SELECTOR -->
+            <div class="space-y-2 p-3.5 bg-stone-900 text-white border border-amber-600/40 rounded-xl mb-3 shadow-md">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-amber-300 font-serif flex items-center gap-1.5">
+                  <mat-icon class="!text-sm text-amber-400">schema</mat-icon>
+                  پەیکەری تێز و نامەی ماستەر لە زانکۆکانی کوردستان:
+                </span>
+                <span class="text-[9.5px] px-2 py-0.5 rounded-full font-mono font-bold bg-amber-950 text-amber-300 border border-amber-700">
+                  {{ refineForm.get('thesisStructureType')?.value === 'empirical' ? 'زانستە ئەزموونییەکان' : 'زانستە مرۆڤایەتییەکان' }}
+                </span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-serif pt-1">
+                <!-- Option A: Humanities Structure -->
+                <div 
+                  tabindex="0"
+                  role="button"
+                  (click)="refineForm.get('thesisStructureType')?.setValue('humanities')"
+                  (keyup.enter)="refineForm.get('thesisStructureType')?.setValue('humanities')"
+                  [class]="refineForm.get('thesisStructureType')?.value !== 'empirical'
+                    ? 'p-2.5 bg-amber-500/20 border-2 border-amber-400 rounded-lg cursor-pointer shadow-xs text-white'
+                    : 'p-2.5 bg-stone-800 border border-stone-700 text-stone-300 rounded-lg cursor-pointer hover:border-amber-400/60'">
+                  <div class="flex items-center justify-between">
+                    <strong class="text-amber-200 font-bold">پەیکەری زانستە مرۆڤایەتییەکان</strong>
+                    <span class="text-[8.5px] bg-amber-600 text-stone-950 px-1.5 py-0.2 rounded font-extrabold">ئەدەب، زمان، مێژوو</span>
+                  </div>
+                  <p class="text-[10px] text-stone-300 mt-1 leading-snug">
+                    دەروازە + بەشی تیۆری + دوو بەشی شیکاریی دەقەکان + ئەنجام، پوختەی عەرەبی/ئینگلیزی و سەرچاوە.
+                  </p>
+                </div>
+
+                <!-- Option B: Empirical 5-Chapter Structure -->
+                <div 
+                  tabindex="0"
+                  role="button"
+                  (click)="refineForm.get('thesisStructureType')?.setValue('empirical')"
+                  (keyup.enter)="refineForm.get('thesisStructureType')?.setValue('empirical')"
+                  [class]="refineForm.get('thesisStructureType')?.value === 'empirical'
+                    ? 'p-2.5 bg-amber-500/20 border-2 border-amber-400 rounded-lg cursor-pointer shadow-xs text-white'
+                    : 'p-2.5 bg-stone-800 border border-stone-700 text-stone-300 rounded-lg cursor-pointer hover:border-amber-400/60'">
+                  <div class="flex items-center justify-between">
+                    <strong class="text-amber-200 font-bold">پەیکەری پەروەردەیی و ئەزموونی</strong>
+                    <span class="text-[8.5px] bg-cyan-700 text-white px-1.5 py-0.2 rounded font-extrabold">٥ بەشی ستاندارد</span>
+                  </div>
+                  <p class="text-[10px] text-stone-300 mt-1 leading-snug">
+                    چوارچێوەی گشتی + ئەدەبیاتی پێشینە + میتۆدۆلۆژیا + شیکاریی داتاکان + تاوتوێ و ئەنجام.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- ADVANCED ACADEMIC DOCUMENT STRUCTURE COMPONENTS -->
             <div class="space-y-2.5 pt-2 border-t border-gray-100">
               <span class="block text-xs font-bold text-gray-700 flex items-center gap-1.5">

@@ -2,6 +2,10 @@ import { Injectable, inject, signal } from '@angular/core';
 import { AppNotificationsService } from '../core/app.notifications';
 import { AcademicStoreService } from './academic-store.service';
 import { DigitalLibraryService } from './digital-library.service';
+import { buildRealSourcesPromptContext, sanitizeCitationMatches } from '../helpers/real-sources-prompt.helper';
+import { POLYPHONIC_SYNTHESIS_DIRECTIVES } from '../helpers/polyphonic-synthesis.helper';
+import { buildTerminologyLockPromptContext } from '../helpers/terminology-consistency-checker';
+import { buildPhase3PromptEnrichment } from '../helpers/thesis-enrichment.helper';
 
 export interface ChunkProgress {
   currentChunk: number;
@@ -32,6 +36,46 @@ export class GeminiRequestManagerService {
     currentHeading: string;
   } | null>(null);
   public lastWarning = signal<string | null>(null);
+
+  readonly apiKeys = signal<string[]>(this.loadApiKeysFromStorage());
+  readonly preferredModel = signal<'gemini-2.5-flash' | 'gemini-2.5-pro'>(this.loadModelFromStorage());
+  readonly currentKeyIndex = signal<number>(0);
+
+  private loadApiKeysFromStorage(): string[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      return (localStorage.getItem('MAM_GEMINI_API_KEYS') || '').split(/[\s,;]+/).map(k => k.trim()).filter(Boolean);
+    } catch { return []; }
+  }
+
+  private loadModelFromStorage(): 'gemini-2.5-flash' | 'gemini-2.5-pro' {
+    if (typeof window === 'undefined') return 'gemini-2.5-flash';
+    try {
+      return localStorage.getItem('MAM_GEMINI_MODEL') === 'gemini-2.5-pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+    } catch { return 'gemini-2.5-flash'; }
+  }
+
+  public setApiKeys(keysInput: string | string[]): void {
+    const list = Array.isArray(keysInput) ? keysInput.map(k => k.trim()).filter(Boolean) : keysInput.split(/[\s,;]+/).map(k => k.trim()).filter(Boolean);
+    const unique = Array.from(new Set(list));
+    this.apiKeys.set(unique);
+    this.currentKeyIndex.set(0);
+    if (typeof window !== 'undefined') localStorage.setItem('MAM_GEMINI_API_KEYS', unique.join(','));
+  }
+
+  public setPreferredModel(model: 'gemini-2.5-flash' | 'gemini-2.5-pro'): void {
+    this.preferredModel.set(model);
+    if (typeof window !== 'undefined') localStorage.setItem('MAM_GEMINI_MODEL', model);
+  }
+
+  public rotateToNextKey(): string | null {
+    const keys = this.apiKeys();
+    if (keys.length <= 1) return keys[0] || null;
+    const nextIdx = (this.currentKeyIndex() + 1) % keys.length;
+    this.currentKeyIndex.set(nextIdx);
+    this.notifications.showWarning('خولانەوەی کلیلی API', `بەهۆی بەربەستی کوۆتا (429)، کلیلی ژمارە ${nextIdx + 1} چالاک کرا.`);
+    return keys[nextIdx];
+  }
 
   /**
    * Splits long Kurdish academic text into manageable semantic chunks to prevent 30s gateway timeouts.
@@ -254,44 +298,89 @@ export class GeminiRequestManagerService {
     }
 
     finalWords = accumulatedText.trim().split(/\s+/).filter(Boolean).length;
-    this.currentWordCountProgress.set({
-      currentWords: finalWords,
-      targetWords,
-      percent: 100,
-      currentHeading: 'تەواو بوو'
-    });
+    finalWords = accumulatedText.trim().split(/\s+/).filter(Boolean).length;
+    this.currentWordCountProgress.set({ currentWords: finalWords, targetWords, percent: 100, currentHeading: 'تەواو بوو' });
     this.isProcessing.set(false);
-
-    // Reset progress after brief display
-    setTimeout(() => {
-      this.currentWordCountProgress.set(null);
-    }, 4000);
-
-    return {
-      content: accumulatedText,
-      wordCount: finalWords
-    };
+    setTimeout(() => this.currentWordCountProgress.set(null), 4000);
+    return { content: accumulatedText, wordCount: finalWords };
   }
 
-  private async fetchChapterChunk(title: string, chapterTitle: string, words: number): Promise<string> {
+  public async callGeminiApi(contents: any, systemInstruction?: string, retryCount = 0): Promise<string> {
+    const keys = this.apiKeys();
+    const model = this.preferredModel();
+
+    if (keys.length > 0) {
+      const currentKey = keys[this.currentKeyIndex() % keys.length];
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`;
+      const payload: any = {
+        contents: Array.isArray(contents) ? contents : [{ role: 'user', parts: [{ text: String(contents) }] }],
+        generationConfig: { temperature: 0.35, maxOutputTokens: 8192 }
+      };
+      if (systemInstruction) {
+        payload.systemInstruction = { parts: [{ text: systemInstruction }] };
+      }
+
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (resp.status === 429 || resp.status === 503) {
+          this.notifications.showWarning('بەربەستی کوۆتا', `کێشەی (${resp.status}) - خولانەوە بۆ کلیلی دواتر`);
+          this.rotateToNextKey();
+          if (retryCount < keys.length) {
+            return this.callGeminiApi(contents, systemInstruction, retryCount + 1);
+          }
+        }
+
+        if (resp.ok) {
+          const data = await resp.json();
+          const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (typeof txt === 'string' && txt.trim().length > 0) return txt.trim();
+        } else {
+          const errBody = await resp.text().catch(() => '');
+          if ((errBody.includes('RESOURCE_EXHAUSTED') || errBody.includes('Quota')) && retryCount < keys.length) {
+            this.notifications.showWarning('سنووری کوۆتا', 'خولانەوە بۆ کلیلی دواتر لە حەوزی API');
+            this.rotateToNextKey();
+            return this.callGeminiApi(contents, systemInstruction, retryCount + 1);
+          }
+        }
+      } catch (err) {
+        if (retryCount < keys.length - 1) {
+          this.rotateToNextKey();
+          return this.callGeminiApi(contents, systemInstruction, retryCount + 1);
+        }
+      }
+    }
+
+    // Server proxy fallback
     try {
+      const promptText = typeof contents === 'string' ? contents : JSON.stringify(contents);
       const resp = await fetch('/api/generate_chapter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: title.slice(0, 100), chapterTitle, discipline: 'گشتی', writingType: 'academic',
-          academicLevel: 'دکتۆرا', targetWordsPerChapter: words, temperature: 0.35,
-          maxOutputTokens: 65536, thinkingTokens: 4096, writingTokens: 32768
+          title: promptText.slice(0, 100),
+          chapterTitle: promptText.slice(0, 80),
+          discipline: 'ئەکادیمی',
+          writingType: 'academic',
+          academicLevel: 'ماستەر',
+          targetWordsPerChapter: 1200
         })
       });
       if (resp.ok) {
         const data = await resp.json();
         return typeof data?.content === 'string' ? data.content.trim() : '';
       }
-    } catch (err) {
-      console.warn(`Chapter chunk request failed (${chapterTitle}):`, err);
-    }
+    } catch {}
     return '';
+  }
+
+  private async fetchChapterChunk(title: string, chapterTitle: string, words: number): Promise<string> {
+    const prompt = `تکایە بەشێکی زانستیی دەوڵەمەند بۆ نامەی ماستەر لەسەر: «${title} - ${chapterTitle}» بنووسە. ئامانجی وشە نزیکەی ${words} وشەیە بە کوردیی سۆرانیی پێوەر و زاراوەی ئەکادیمی.`;
+    return this.callGeminiApi(prompt);
   }
 
   /**
@@ -300,16 +389,7 @@ export class GeminiRequestManagerService {
   public getRealSourcesPromptContext(): string {
     const projectSources = this.academicStore.sources() || [];
     const libraryBooks = this.digitalLibrary.books() || [];
-    const known = [
-      ...projectSources.map(s => `- ${s.author} (${s.year || 'n.d.'}): «${s.title}»`),
-      ...libraryBooks.slice(0, 12).map(b => `- ${b.author} (${b.year || 'n.d.'}): «${b.title}»`)
-    ];
-
-    if (known.length === 0) {
-      return `\n[ڕێسای سەرچاوە زانستییەکان - ZERO HALLUCINATION POLICY]:\nهیچ سەرچاوەیەکی دەرەکی ساختە یان نووسەری خەیاڵی لەنێو کەوانەدا مەنوسە. لەکاتی نەبوونی سەرچاوەی دیاریکراو، بە چەمکسازیی لۆژیکی و چوارچێوەی ئیپستۆمۆلۆژی بابەتەکە شیکار بکە.`;
-    }
-
-    return `\n[سەرچاوە ڕاستەقینە باوەڕپێکراوەکان - ZERO HALLUCINATION POLICY]:\nتەنها و تەنها ڕێگەپێدراوە لەم سەرچاوانەی خوارەوە ئاماژەی کەوانەیی (نووسەر، ساڵ) بەکاربهێنیت:\n${known.slice(0, 15).join('\n')}\nقەدەغەکردنی ڕەها: دانانی هەر سەرچاوە، نووسەر، یان ساڵێکی ساختە بە توندی قەدەغەیە؛ ئەگەر پێویست بوو بنووسە: [پێویستی بە سەرچاوە: تێزی توێژەر].`;
+    return buildRealSourcesPromptContext(projectSources, libraryBooks);
   }
 
   /**
@@ -324,30 +404,32 @@ export class GeminiRequestManagerService {
       ...libraryBooks.map(b => (b.author || '').toLowerCase())
     ];
 
-    const citeRegex = /\(([\u0600-\u06FFa-zA-Z\s.-]+?)[،,]\s*(\d{4}|[\u0660-\u0669]{4}|n\.d\.)\)/g;
-    const skip = new Set(['بڕوانە', 'وەکو', 'سەیربکە', 'لاپەڕە', 'see', 'note']);
-
-    return text.replace(citeRegex, (match, author) => {
-      const trimmed = author.trim();
-      if (skip.has(trimmed.toLowerCase())) return match;
-      const isKnown = allKnown.some(ka => ka && (ka.includes(trimmed.toLowerCase()) || trimmed.toLowerCase().includes(ka)));
-      if (isKnown || allKnown.length === 0) return match;
-      this.academicStore.addLog(`[پشکنینی سەرچاوە] ئاماژەی نادۆزراوە «${match}» دەستنیشانکرا.`);
-      return `[پێویستی بە سەرچاوەی پشتڕاستکراوەیە: ${trimmed}]`;
+    return sanitizeCitationMatches(text, allKnown, (unmatched) => {
+      this.academicStore.addLog(`[پشکنینی سەرچاوە] ئاماژەی نادۆزراوە «${unmatched}» دەستنیشانکرا.`);
     });
   }
 
   /**
    * Generates a long academic section by measuring actual Kurdish word count, enforcing real sources,
-   * and executing multi-pass sub-axis expansions when targetWordCount > 900 or output is under 90% of target.
+   * polyphonic literature synthesis, locked terminology, and multi-pass sub-axis expansions.
    */
   public async generateLongAcademicSection(
     prompt: string,
     targetWordCount: number = 1500,
-    onProgressCallback?: (progress: { currentWords: number; targetWords: number; percent: number }) => void
+    onProgressCallback?: (progress: { currentWords: number; targetWords: number; percent: number }) => void,
+    chapterContext?: { chapterId?: number; chapterTitle?: string }
   ): Promise<{ content: string; wordCount: number }> {
     const targetWords = Math.max(300, targetWordCount);
-    const enrichedPrompt = `${prompt}\n${this.getRealSourcesPromptContext()}`;
+    const sourcesContext = this.getRealSourcesPromptContext();
+    const terminologyLock = buildTerminologyLockPromptContext();
+    const phase3Directives = buildPhase3PromptEnrichment({
+      chapterId: chapterContext?.chapterId ?? 1,
+      chapterTitle: chapterContext?.chapterTitle,
+      corpusCards: this.academicStore.researchCorpusCards(),
+      matrix: this.academicStore.verticalAlignmentMatrix(),
+      chapters: this.academicStore.chapters()
+    });
+    const enrichedPrompt = [prompt, sourcesContext, POLYPHONIC_SYNTHESIS_DIRECTIVES, terminologyLock, phase3Directives].filter(Boolean).join('\n\n');
     let accumulatedContent = '';
 
     if (targetWords <= 900) {
@@ -360,10 +442,10 @@ export class GeminiRequestManagerService {
     if (targetWords > 900 || currentCount < targetWords * 0.90) {
       const subAxes = [
         'تەوەری یەکەم: چوارچێوەی ئیپستۆمۆلۆژی، چەمکسازی و کێشەی توێژینەوە',
-        'تەوەری دووەم: پێداچوونەوەی ڕەخنەگرانەی ئەدەبیاتی پێشوو و بۆشایی مەعریفی',
+        'تەوەری دووەم: پێداچوونەوەی ڕەخنەگرانەی فرەدەنگی ئەدەبیاتی پێشوو و دیالۆگی زانایان',
         'تەوەری سێیەم: شیکاریی بەڵگەمحوەر و بونیاتنانی ئەرگیومێنت بە مۆدێلی تولمین',
         'تەوەری چوارەم: خستنەڕووی بۆچوونی جیاواز، ڕەخنەگری و وەڵامدانەوەی زانستی',
-        'تەوەری پێنجەم: دەرەنجامگیری، هاوسەنگیی دیالێکتیکی و لێکەوتە زانستییەکان'
+        'تەوەری پێنجەم: دەرەنجامگیری، سەنتێزی کەسیی توێژەر و لێکەوتە زانستییەکان'
       ];
 
       const remainingBudget = Math.max(targetWords - currentCount, targetWords);
@@ -377,7 +459,7 @@ export class GeminiRequestManagerService {
         this.currentWordCountProgress.set({ currentWords: currentCount, targetWords, percent, currentHeading: axis });
         onProgressCallback?.({ currentWords: currentCount, targetWords, percent });
 
-        const axisPrompt = `${enrichedPrompt}\n\n[پڕۆتۆکۆڵی داڕشتنی دکتۆرا بە تولمین و سۆرانیی پاراو]:\nتەوەر: «${axis}»\nئامانجی وشە: لانیکەم ${sectionWords} وشە.\nپاشخانی پێشوو:\n${accumulatedContent.slice(-800)}`;
+        const axisPrompt = `${enrichedPrompt}\n\n[پڕۆتۆکۆڵی داڕشتنی دکتۆرا بە فرەدەنگی، تولمین و سۆرانیی پاراو]:\nتەوەر: «${axis}»\nئامانجی وشە: لانیکەم ${sectionWords} وشە.\nپاشخانی پێشوو:\n${accumulatedContent.slice(-800)}`;
         const text = await this.fetchChapterChunk(axisPrompt, axis, sectionWords);
         if (text) accumulatedContent += (accumulatedContent ? '\n\n' : '') + text;
       }

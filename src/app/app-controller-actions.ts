@@ -326,7 +326,8 @@ export abstract class AppControllerActions extends AppControllerBase {
       customTOCOn: val.customTOCOn,
       customTOCText: val.customTOCText,
       fieldWorkOn: val.fieldWorkOn,
-      fieldWorkText: val.fieldWorkText
+      fieldWorkText: val.fieldWorkText,
+      thesisStructureType: val.thesisStructureType
     });
     this.chapters.set(newChapters);
     this.editorService.setChapters(newChapters);

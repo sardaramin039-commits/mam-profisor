@@ -140,13 +140,58 @@ export class SoraniSpellingCorrector {
   }
 
   /**
+   * Detects specific orthographic and spelling issues in the given text.
+   */
+  public static detectOrthographyIssues(text: string): { original: string; suggested: string; reason: string; index: number }[] {
+    if (!text || !text.trim()) return [];
+    const issues: { original: string; suggested: string; reason: string; index: number }[] = [];
+
+    const checks: { regex: RegExp; replace: string; reason: string }[] = [
+      { regex: /\bلەگەل\b/g, replace: 'لەگەڵ', reason: 'نەنووسینی لامی قەڵەو (ڵ)' },
+      { regex: /\bنیە\b/g, replace: 'نییە', reason: 'نەنووسینی دوو پیتی یاء (یی)' },
+      { regex: /\bشتیک\b/g, replace: 'شتێک', reason: 'هەڵەی پیتی ێ' },
+      { regex: /\bکتێبیک\b/g, replace: 'کتێبێک', reason: 'هەڵەی پیتی ێ' },
+      { regex: /\bشیوە\b/g, replace: 'شێوە', reason: 'هەڵەی پیتی ێ' },
+      { regex: /\bنیوان\b/g, replace: 'نێوان', reason: 'هەڵەی پیتی ێ' },
+      { regex: /\bلاپەرا\b/g, replace: 'لاپەڕە', reason: 'هەڵەی پیتی ڕای قەڵەو و ە' },
+      { regex: /\bزور\b/g, replace: 'زۆر', reason: 'هەڵەی پیتی ۆ' },
+      { regex: /\bبووچون\b/g, replace: 'بۆچوون', reason: 'هەڵەی واوی درێژ و ۆ' },
+      { regex: /\bپیویست\b/g, replace: 'پێویست', reason: 'هەڵەی پیتی ێ' },
+      { regex: /\bحكومەت\b/g, replace: 'حکوومەت', reason: 'نەبوونی واوی دووانەی کوردی' },
+      { regex: /\bدەولەت\b/g, replace: 'دەوڵەت', reason: 'نەنووسینی لامی قەڵەو' },
+      { regex: /\bئەکات\b/g, replace: 'دەکات', reason: 'شێوەزاری ناکۆکراوە (ئە- بۆ دە- لە سۆرانیی ئەکادیمی)' },
+      { regex: /\bئەبێت\b/g, replace: 'دەبێت', reason: 'شێوەزاری ناکۆکراوە (ئە- بۆ دە- لە سۆرانیی ئەکادیمی)' },
+      { regex: /\bئەبێ\b/g, replace: 'دەبێت', reason: 'شێوەزاری ناکۆکراوە بەبێ تائی کۆتایی' },
+      { regex: /ك/g, replace: 'ک', reason: 'پیتی کافی عەرەبی لەبری کوردی' },
+      { regex: /ي/g, replace: 'ی', reason: 'پیتی یاءی عەرەبی دوو خاڵدار' },
+      { regex: /ة/g, replace: 'ە', reason: 'تای مەربوتەی عەرەبی' }
+    ];
+
+    for (const check of checks) {
+      let match: RegExpExecArray | null;
+      const re = new RegExp(check.regex);
+      while ((match = re.exec(text)) !== null) {
+        issues.push({
+          original: match[0],
+          suggested: check.replace,
+          reason: check.reason,
+          index: match.index
+        });
+        if (issues.length >= 25) break;
+      }
+      if (issues.length >= 25) break;
+    }
+
+    return issues;
+  }
+
+  /**
    * Calculates how many changes were made between original and corrected text.
    */
   public static processAndCount(text: string): SoraniCorrectionResult {
     const corrected = this.fixSoraniText(text);
     let count = 0;
     if (text !== corrected) {
-      // Rough word level difference count
       const origWords = text.trim().split(/\s+/);
       const corrWords = corrected.trim().split(/\s+/);
       for (let i = 0; i < Math.max(origWords.length, corrWords.length); i++) {
@@ -154,7 +199,7 @@ export class SoraniSpellingCorrector {
           count++;
         }
       }
-      if (count === 0) count = 1; // at least 1 change
+      if (count === 0) count = 1;
     }
     return {
       originalText: text,
@@ -163,3 +208,4 @@ export class SoraniSpellingCorrector {
     };
   }
 }
+

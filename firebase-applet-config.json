@@ -3,10 +3,10 @@
   "appId": "1:314215250661:web:7d19eaa38f22bd3d70f20c",
   "apiKey": "AIzaSyCrnT3-6AS8Rpsd6sqa-mV2A-MpT5gONes",
   "authDomain": "annular-xenolalia-x71nt.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-3984862a-e9c8-44c7-b050-ed211c9fa922",
   "storageBucket": "annular-xenolalia-x71nt.firebasestorage.app",
   "messagingSenderId": "314215250661",
   "measurementId": "",
   "oAuthClientId": "314215250661-8a0qpe6klnva3icc8b92ekm3v09pcipc.apps.googleusercontent.com",
-  "recaptchaSiteKey": "",
-  "firestoreDatabaseId": "ai-studio-3984862a-e9c8-44c7-b050-ed211c9fa922"
+  "recaptchaSiteKey": ""
 }

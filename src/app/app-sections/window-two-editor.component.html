@@ -244,7 +244,12 @@
                               </span>
 
                               <span class="text-[10px] font-mono font-semibold text-stone-600 bg-white/80 px-2 py-0.5 rounded border border-stone-200">
-                                📊 {{ c.wordCount || 0 }} / {{ wStatus.targetWords }} وشە (ئاستی لاپەڕە: {{ wStatus.currentPages }} / {{ wStatus.targetPages }} لاپەڕە)
+                                📊 {{ c.wordCount || 0 }} / {{ wStatus.targetWords }} وشە ({{ wStatus.currentPages }} / {{ wStatus.targetPages }} لاپەڕە)
+                              </span>
+
+                              <span class="text-[10px] font-mono font-bold text-amber-900 bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1" title="ژمارەی سەرچاوە و پەراوێزە سەلمێنراوەکان">
+                                <mat-icon class="!text-[11px] !w-3 !h-3">bookmark</mat-icon>
+                                <span>{{ wStatus.citationCount }} سەرچاوە/پەراوێز</span>
                               </span>
                             </div>
 
@@ -265,13 +270,13 @@
                           <div class="flex items-center gap-3">
                             <div class="flex-1 bg-stone-200/90 h-2 rounded-full overflow-hidden shadow-inner">
                               <div class="h-full rounded-full transition-all duration-500"
-                                [style.width.%]="Math.min(100, wStatus.pct)"
+                                [style.width.%]="Math.min(100, wStatus.completionPct)"
                                 [style.background-color]="wStatus.progressBarBg">
                               </div>
                             </div>
                             
-                            <span class="text-[11px] font-mono font-extrabold shrink-0" [class]="wStatus.textColor">
-                              {{ wStatus.pct }}%
+                            <span class="text-[11px] font-mono font-extrabold shrink-0" [class]="wStatus.textColor" title="ڕێژەی تەواوبوونی زانستی">
+                              تەواوبوون: {{ wStatus.completionPct }}٪
                             </span>
                           </div>
 

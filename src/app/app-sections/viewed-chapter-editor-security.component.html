@@ -1,5 +1,5 @@
-          <!-- Column 1 & 2: Main Editor and Text Area (md:col-span-2) -->
-          <div class="md:col-span-2 flex flex-col justify-start space-y-3">
+          <!-- Column 1 & 2: Main Editor and Text Area (lg:col-span-2) -->
+          <div class="lg:col-span-2 col-span-1 flex flex-col justify-start space-y-3 w-full min-w-0">
             <div class="flex flex-col gap-3">
               <div class="flex items-center justify-between">
                 @if (viewedChapter()?.isLocked) {
@@ -32,72 +32,27 @@
               <!-- Toolbars above the textarea (Dynamic Academic Headings & Text Styling) -->
               @if (!viewedChapter()?.isLocked) {
                 <div class="flex flex-col gap-2 p-3 bg-stone-100 border border-stone-300 rounded-t-xl select-none animate-fade-in">
-                  <!-- Academic Headings Insertion Toolbar -->
-                  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-stone-300/80 pb-2">
-                    <span class="text-[11px] font-extrabold text-stone-850 font-serif flex items-center gap-1">
-                      <mat-icon class="!text-xs !w-4 !h-4 text-[#8C8273]">bookmark_add</mat-icon>
-                      سەرپەڕە ئەکادیمییەکان (Academic Headings):
-                    </span>
-                    <div class="flex flex-wrap items-center gap-1.5 font-serif">
-                      <button 
-                        type="button"
-                        (click)="insertAcademicHeading(chapterTextarea, 'methodology')"
-                        class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded font-bold transition flex items-center gap-1 cursor-pointer text-[10px]">
-                        <mat-icon class="!text-[11px] !w-3 !h-3 text-stone-500">science</mat-icon>
-                        Methodology / میتۆدۆلۆژی
-                      </button>
-                      <button 
-                        type="button"
-                        (click)="insertAcademicHeading(chapterTextarea, 'results')"
-                        class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded font-bold transition flex items-center gap-1 cursor-pointer text-[10px]">
-                        <mat-icon class="!text-[11px] !w-3 !h-3 text-stone-500">bar_chart</mat-icon>
-                        Results / ئەنجامەکان
-                      </button>
-                      <button 
-                        type="button"
-                        (click)="insertAcademicHeading(chapterTextarea, 'discussion')"
-                        class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded font-bold transition flex items-center gap-1 cursor-pointer text-[10px]">
-                        <mat-icon class="!text-[11px] !w-3 !h-3 text-stone-500">forum</mat-icon>
-                        Discussion / گفتوگۆ
-                      </button>
+                  <!-- Text Styling & Academic Headings Toolbar with horizontal scroll -->
+                  <div class="flex items-center justify-between gap-2 overflow-x-auto whitespace-nowrap mam-toolbar-scroll pb-1">
+                    <div class="flex items-center gap-1.5 font-serif font-bold shrink-0">
+                      <span class="text-[11px] font-extrabold text-stone-850 font-serif flex items-center gap-1 ml-1">
+                        <mat-icon class="!text-xs !w-4 !h-4 text-[#8C8273]">format_bold</mat-icon>
+                        شێواز:
+                      </span>
+                      <button type="button" (click)="applyTextFormatting(chapterTextarea, 'bold')" title="Bold text (**دەق**)" class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 text-stone-900 rounded font-extrabold text-[11px] cursor-pointer">B</button>
+                      <button type="button" (click)="applyTextFormatting(chapterTextarea, 'italic')" title="Italic text (*دەق*)" class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 text-stone-900 rounded italic text-[11px] cursor-pointer">I</button>
+                      <button type="button" (click)="insertAcademicHeading(chapterTextarea, 'h1')" title="Heading 1" class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 text-stone-900 rounded font-bold text-[10.5px] cursor-pointer">H1</button>
+                      <button type="button" (click)="insertAcademicHeading(chapterTextarea, 'h2')" title="Heading 2" class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 text-stone-900 rounded font-bold text-[10.5px] cursor-pointer">H2</button>
+                      <button type="button" (click)="insertAcademicHeading(chapterTextarea, 'h3')" title="Heading 3" class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 text-stone-900 rounded font-bold text-[10.5px] cursor-pointer">H3</button>
+                      <button type="button" (click)="insertAcademicHeading(chapterTextarea, 'table')" title="تێخستنی خشتەی ئاماری" class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 text-stone-900 rounded font-bold text-[10px] cursor-pointer flex items-center gap-1"><mat-icon class="!text-[11px] !w-3 !h-3 text-amber-700">table_chart</mat-icon><span>خشتەی ئاماری</span></button>
+                      <button type="button" (click)="applyTextFormatting(chapterTextarea, 'sub')" title="Subscript" class="px-2 py-1 bg-white hover:bg-stone-200 border border-stone-300 text-stone-900 rounded text-[10px] cursor-pointer">X<sub>sub</sub></button>
+                      <button type="button" (click)="applyTextFormatting(chapterTextarea, 'sup')" title="Superscript" class="px-2 py-1 bg-white hover:bg-stone-200 border border-stone-300 text-stone-900 rounded text-[10px] cursor-pointer">X<sup>sup</sup></button>
                     </div>
-                  </div>
 
-                  <!-- Text Styling Toolbar -->
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="text-[11px] font-extrabold text-stone-850 font-serif flex items-center gap-1">
-                      <mat-icon class="!text-xs !w-4 !h-4 text-[#8C8273]">format_bold</mat-icon>
-                      شێوازی نووسین (Text Styling Tools):
-                    </span>
-                    <div class="flex flex-wrap items-center gap-1.5 font-serif font-bold">
-                      <button 
-                        type="button"
-                        (click)="applyTextFormatting(chapterTextarea, 'bold')"
-                        title="Bold text (**دەق**)"
-                        class="px-3 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded transition flex items-center justify-center font-extrabold cursor-pointer text-[11px]">
-                        B
-                      </button>
-                      <button 
-                        type="button"
-                        (click)="applyTextFormatting(chapterTextarea, 'italic')"
-                        title="Italic text (*دەق*)"
-                        class="px-3 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded transition flex items-center justify-center italic cursor-pointer text-[11px]">
-                        I
-                      </button>
-                      <button 
-                        type="button"
-                        (click)="applyTextFormatting(chapterTextarea, 'sub')"
-                        title="Subscript (<sub>دەق</sub>)"
-                        class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded transition flex items-center justify-center cursor-pointer text-[10px]">
-                        X<sub>sub</sub>
-                      </button>
-                      <button 
-                        type="button"
-                        (click)="applyTextFormatting(chapterTextarea, 'sup')"
-                        title="Superscript (<sup>دەق</sup>)"
-                        class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 hover:border-stone-400 text-stone-900 rounded transition flex items-center justify-center cursor-pointer text-[10px]">
-                        X<sup>sup</sup>
-                      </button>
+                    <div class="flex items-center gap-1.5 font-serif shrink-0">
+                      <button type="button" (click)="insertAcademicHeading(chapterTextarea, 'methodology')" class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 text-stone-900 rounded font-bold transition flex items-center gap-1 cursor-pointer text-[10px]"><mat-icon class="!text-[11px] !w-3 !h-3 text-stone-500">science</mat-icon>Methodology</button>
+                      <button type="button" (click)="insertAcademicHeading(chapterTextarea, 'results')" class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 text-stone-900 rounded font-bold transition flex items-center gap-1 cursor-pointer text-[10px]"><mat-icon class="!text-[11px] !w-3 !h-3 text-stone-500">bar_chart</mat-icon>Results</button>
+                      <button type="button" (click)="insertAcademicHeading(chapterTextarea, 'discussion')" class="px-2.5 py-1 bg-white hover:bg-stone-200 border border-stone-300 text-stone-900 rounded font-bold transition flex items-center gap-1 cursor-pointer text-[10px]"><mat-icon class="!text-[11px] !w-3 !h-3 text-stone-500">forum</mat-icon>Discussion</button>
                     </div>
                   </div>
                 </div>
@@ -347,8 +302,8 @@
             </div>
           </div>
 
-          <!-- Column 3: Security Vault & Snapshots (md:col-span-1) -->
-          <div class="md:col-span-1 bg-stone-50 p-4 rounded-xl border border-stone-200 flex flex-col justify-start space-y-4">
+          <!-- Column 3: Security Vault & Snapshots (lg:col-span-1) -->
+          <div class="lg:col-span-1 col-span-1 bg-stone-50 p-4 rounded-xl border border-stone-200 flex flex-col justify-start space-y-4 w-full">
             
             <!-- Vault Header -->
             <div class="space-y-1 border-b border-stone-200 pb-2.5">

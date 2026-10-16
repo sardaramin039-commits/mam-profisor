@@ -273,6 +273,7 @@ export abstract class AppControllerBase implements OnInit {
     customTOCOn: [false], customTOCText: [''],
     includeDedication: [true], includeIntro: [true], includeTOC: [true],
     includeConclusion: [true], includeRecommendations: [true], includeReferences: [true],
+    thesisStructureType: ['humanities'],
     ragModel: ['gemini-3.1-pro-preview'], ragLimit: [8],
     temperature: [0.7], thinkingTokens: [2048], writingTokens: [8192],
     thesisDefense: [false]

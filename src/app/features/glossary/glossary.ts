@@ -38,8 +38,14 @@ interface D3ConceptLink extends d3.SimulationLinkDatum<D3ConceptNode> {
             <mat-icon class="!text-xl leading-none">account_tree</mat-icon>
           </div>
           <div>
-            <h3 class="text-base font-bold text-slate-100 font-serif">فەرهەنگی زاراوە ئەکادیمییەکان، نەخشەی چەمکسازی و شیکارکەر</h3>
-            <p class="text-xs text-slate-400 font-serif">پەیوەندی، تۆڕی زانستی و پشکنینی داینامیکیی بەشەکانی تێزەکە</p>
+            <h3 class="text-base font-bold text-slate-100 font-serif flex items-center gap-2 flex-wrap">
+              <span>فەرهەنگی زاراوە ئەکادیمییەکان و چەمکسازی</span>
+              <span class="text-[10px] bg-emerald-950/80 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full font-sans font-bold flex items-center gap-1" title="زاراوەکان لە سەرجەم بەشەکاندا قفڵکراون بەبێ لادانی هاوواتایی">
+                <mat-icon class="!text-xs !w-3 !h-3">lock</mat-icon>
+                <span>زاراوە قفڵکراوەکان (Terminology Locked)</span>
+              </span>
+            </h3>
+            <p class="text-xs text-slate-400 font-serif">پەیوەندی، تۆڕی زانستی و پشکنینی نەگۆڕی زاراوەکان لە بەشەکانی تێزدا</p>
           </div>
         </div>
 

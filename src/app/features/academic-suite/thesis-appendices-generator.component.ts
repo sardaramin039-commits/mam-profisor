@@ -14,7 +14,7 @@ export interface AppendixTemplate {
   contentTemplate: string;
 }
 
-const TEMPLATES: AppendixTemplate[] = [
+export const TEMPLATES: AppendixTemplate[] = [
   {
     id: 'app-consent',
     titleKurdish: 'فۆرمی ڕەزامەندیی زانیاریدەران (Informed Consent Form)',

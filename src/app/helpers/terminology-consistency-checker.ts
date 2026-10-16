@@ -207,6 +207,97 @@ export function standardizeTermAcrossChapters(
   return { updatedChapters, replacementsCount: count };
 }
 
+/**
+ * Key Canonical Academic Concept Pairs to Lock Across All Chapters (to prevent synonym drift)
+ */
+export const CANONICAL_LOCKED_CONCEPTS: { concept: string; lockedKurdish: string; variants: string[] }[] = [
+  { concept: 'Narrative Structure', lockedKurdish: 'بونیادی گێڕانەوە', variants: ['پێکهاتەی چیرۆک', 'داڕشتی حیکایەت', 'بونیادی ڕۆمان', 'پەیکەری گێڕانەوە'] },
+  { concept: 'Discourse of Power', lockedKurdish: 'گوتاری دەسەڵات', variants: ['وتاری هێز', 'زمانی حوکمڕانی', 'گوتاری باڵادەستی', 'دەربڕینی دەسەڵاتداری'] },
+  { concept: 'Conceptual Framework', lockedKurdish: 'چوارچێوەی چەمکی', variants: ['مەودای چەمکەکان', 'نەخشەی مەفاهیم', 'چوارچێوەی فیکری'] },
+  { concept: 'Methodology', lockedKurdish: 'میتۆدۆلۆژیا', variants: ['ڕێبازی توێژینەوە', 'تەریقەی کار', 'شێوازی ئیشکردن'] },
+  { concept: 'Content Validity', lockedKurdish: 'ڕەوایی نێوەڕۆک', variants: ['ڕاستیی ناوەڕۆک', 'دروستی ناوەرۆک', 'ڕەوایی ناوەڕۆک', 'سەحەتی ناوەڕۆک'] },
+  { concept: 'Reliability', lockedKurdish: 'جێگیریی پێوانە', variants: ['تەئکیدی پێوانە', 'نەگۆڕاوی پێوانە', 'جێگیری پێوانەکە', 'متمانەپێکراوی'] },
+  { concept: 'Triangulation', lockedKurdish: 'سێگۆشەسازیی بەڵگە', variants: ['سێگۆشەکردن', 'سێکوچکەکردنی داتا', 'سێ بەڵگەیی'] },
+  { concept: 'Theoretical Saturation', lockedKurdish: 'تێربوونی بیردۆزی', variants: ['تێربوونی تیۆری', 'پڕبوونی بیردۆز', 'تێربوون لە زانیاری'] },
+  { concept: 'Empirical', lockedKurdish: 'ئەزموونی', variants: ['تاقیکاری', 'تەجروبی', 'مەیدانی'] },
+  { concept: 'Epistemology', lockedKurdish: 'ئێپیستیمۆلۆژی', variants: ['زانینناسی', 'مەعریفەناسی', 'تیۆریی زانین'] },
+  { concept: 'Ontology', lockedKurdish: 'ئۆنتۆلۆژی', variants: ['بوونناسی', 'واقیعناسی'] },
+  { concept: 'Hermeneutics', lockedKurdish: 'هێرمۆنۆتیک', variants: ['لێکدانەوەی دەق', 'دەقناسیی تەئویلی'] },
+  { concept: 'Dialectic', lockedKurdish: 'دیالێکتیک', variants: ['لێکدژی لۆژیکی', 'دیالێکتیکی مادی'] },
+  { concept: 'Paradigm', lockedKurdish: 'پارادایم', variants: ['نەخشەی فیکری سەرەکی', 'مۆدێلی زانستی'] }
+];
+
+/**
+ * Builds mandatory Terminology Lock prompt context automatically injected into every Gemini writing prompt.
+ */
+export function buildTerminologyLockPromptContext(customTerms?: AcademicTerm[]): string {
+  const customList = (customTerms || []).map(t => `- «${t.kurdishTerm}» (${t.foreignTerm || 'زاراوەی ئەکادیمی'})`);
+  const canonicalList = CANONICAL_LOCKED_CONCEPTS.map(c => `- «${c.lockedKurdish}» (${c.concept})`);
+  const combined = [...new Set([...canonicalList, ...customList])].slice(0, 20);
+
+  return `
+[یاسای قفڵکردنی زاراوەسازیی تێز - MANDATORY TERMINOLOGY LOCK CONSTRAINT]:
+تەواوی دەقی بەشەکە دەبێت پابەندی ئەم زاراوە کوردییە پەسەندکراوانە بێت. بە هیچ شێوەیەک ڕێگە بە لادانی هاوواتایی (Synonym Drift) نادرێت.
+هەر زاراوەیەک لە بەشی یەکەم یان پێشەکی بەکارهات، دەبێت بە هەمان وشەسازی بمێنێتەوە:
+${combined.join('\n')}
+قەدەغەکردنی ڕەها: گۆڕینی زاراوە سەرەکییەکان بۆ وشەی هاوواتای لاواز یان ڕۆژنامەوانی قەدەغەیە.
+`.trim();
+}
+
+/**
+ * Detects terminology drift across chapters (e.g. concept introduced in Chapter 1 as
+ * "بونیادی گێڕانەوە" but drifting into "پەیکەری چیرۆک" or "پێکهاتەی ڕۆمان" in subsequent chapters).
+ */
+export function detectTerminologyDriftAcrossChapters(chapters: ChapterItem[]): {
+  driftsCount: number;
+  drifts: {
+    chapterId: number;
+    chapterTitle: string;
+    concept: string;
+    lockedTerm: string;
+    foundVariant: string;
+    snippet: string;
+  }[];
+} {
+  const drifts: {
+    chapterId: number;
+    chapterTitle: string;
+    concept: string;
+    lockedTerm: string;
+    foundVariant: string;
+    snippet: string;
+  }[] = [];
+
+  for (const item of CANONICAL_LOCKED_CONCEPTS) {
+    for (const ch of chapters) {
+      const content = ch.content || '';
+      if (!content.trim()) continue;
+
+      for (const variant of item.variants) {
+        if (content.includes(variant)) {
+          const index = content.indexOf(variant);
+          const start = Math.max(0, index - 30);
+          const end = Math.min(content.length, index + variant.length + 30);
+          drifts.push({
+            chapterId: ch.id,
+            chapterTitle: ch.title,
+            concept: item.concept,
+            lockedTerm: item.lockedKurdish,
+            foundVariant: variant,
+            snippet: `...${content.substring(start, end).trim()}...`
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    driftsCount: drifts.length,
+    drifts
+  };
+}
+
 function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+

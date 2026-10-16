@@ -225,80 +225,147 @@ const FIFTY_TOOLS_DATA: EssentialAcademicTool[] = [
         </div>
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'dialectics') {
-          <app-dialectical-thesis-engine [activeChapter]="activeChapter()"></app-dialectical-thesis-engine>
+          @defer (on viewport) {
+            <app-dialectical-thesis-engine [activeChapter]="activeChapter()"></app-dialectical-thesis-engine>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">ئامرازی تێز و دژەتێز خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'indexes') {
-          <app-academic-index-search [activeChapter]="activeChapter()"></app-academic-index-search>
+          @defer (on viewport) {
+            <app-academic-index-search [activeChapter]="activeChapter()"></app-academic-index-search>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">ئامرازی OpenAlex و Crossref خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'plagiarism') {
-          <app-academic-plagiarism-checker [activeChapter]="activeChapter()"></app-academic-plagiarism-checker>
+          @defer (on viewport) {
+            <app-academic-plagiarism-checker [activeChapter]="activeChapter()"></app-academic-plagiarism-checker>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">پشکنەری ڕەسەنایەتی خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'architecture') {
-          <app-academic-research-architecture [activeChapter]="activeChapter()"></app-academic-research-architecture>
+          @defer (on viewport) {
+            <app-academic-research-architecture [activeChapter]="activeChapter()"></app-academic-research-architecture>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">هاوتەریبیی لۆژیک و MEAL خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'outline_designer') {
-          <app-dynamic-book-outline-designer></app-dynamic-book-outline-designer>
+          @defer (on viewport) {
+            <app-dynamic-book-outline-designer></app-dynamic-book-outline-designer>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">پێڕستی داینامیکی خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'formatter') {
-          <app-bibliographic-reference-formatter [activeChapter]="activeChapter()"></app-bibliographic-reference-formatter>
+          @defer (on viewport) {
+            <app-bibliographic-reference-formatter [activeChapter]="activeChapter()"></app-bibliographic-reference-formatter>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">ڕێکخەری سەرچاوە خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'refiner') {
-          <app-kurdish-terminology-manager [activeChapter]="activeChapter()"></app-kurdish-terminology-manager>
+          @defer (on viewport) {
+            <app-kurdish-terminology-manager [activeChapter]="activeChapter()"></app-kurdish-terminology-manager>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">بژارکەری زاراوەسازی خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'citation_linker') {
-          <app-in-text-citation-prompter [activeChapter]="activeChapter()"></app-in-text-citation-prompter>
+          @defer (on viewport) {
+            <app-in-text-citation-prompter [activeChapter]="activeChapter()"></app-in-text-citation-prompter>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">هاوپێچی ژێدەر خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'citation_manager') {
-          <app-project-citation-manager [activeChapter]="activeChapter()"></app-project-citation-manager>
+          @defer (on viewport) {
+            <app-project-citation-manager [activeChapter]="activeChapter()"></app-project-citation-manager>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">بەڕێوەبەری سەرچاوەکان خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'advanced_search') {
-          <app-advanced-academic-search [activeChapter]="activeChapter()"></app-advanced-academic-search>
+          @defer (on viewport) {
+            <app-advanced-academic-search [activeChapter]="activeChapter()"></app-advanced-academic-search>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">گەڕانی پێشکەوتوو خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'defense_simulator') {
-          <app-thesis-defense-simulator [chapters]="activeChapter() ? [activeChapter()!] : []"></app-thesis-defense-simulator>
-        }
-
-        @if (activeToolTab() === 'all' || activeToolTab() === 'appendices') {
-          <app-thesis-appendices-generator [chapters]="activeChapter() ? [activeChapter()!] : []"></app-thesis-appendices-generator>
+          @defer (on viewport) {
+            <app-thesis-defense-simulator [chapters]="activeChapter() ? [activeChapter()!] : []"></app-thesis-defense-simulator>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">سیمولەیتەری بەرگری خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'uni_layout') {
-          <app-university-layout-formatter></app-university-layout-formatter>
+          @defer (on viewport) {
+            <app-university-layout-formatter></app-university-layout-formatter>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">پێوەرەکانی زانکۆ خەریکی ئامادەبوونە...</div>
+          }
+        }
+
+        @if (activeToolTab() === 'all' || activeToolTab() === 'appendices') {
+          @defer (on viewport) {
+            <app-thesis-appendices-generator [chapters]="activeChapter() ? [activeChapter()!] : []"></app-thesis-appendices-generator>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">دروستکەری پاشکۆکان خەریکی ئامادەبوونە...</div>
+          }
         }
 
         @if (activeToolTab() === 'all' || activeToolTab() === 'tone_analyzer') {
-          <app-academic-tone-analyzer [chapters]="activeChapter() ? [activeChapter()!] : []"></app-academic-tone-analyzer>
+          @defer (on viewport) {
+            <app-academic-tone-analyzer [chapters]="activeChapter() ? [activeChapter()!] : []"></app-academic-tone-analyzer>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">شیکەرەوەی تۆنی زانستی خەریکی ئامادەبوونە...</div>
+          }
         }
 
-        @if (activeToolTab() === 'all' || activeToolTab() === 'terminology_manager') {
-          <app-kurdish-terminology-manager [chapters]="activeChapter() ? [activeChapter()!] : []" [activeChapter]="activeChapter()"></app-kurdish-terminology-manager>
+        @if (activeToolTab() === 'all' || activeToolTab() === 'dictation') {
+          @defer (on viewport) {
+            <app-kurdish-academic-dictation [activeChapter]="activeChapter()"></app-kurdish-academic-dictation>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">دەنگنووسی کوردی خەریکی ئامادەبوونە...</div>
+          }
         }
 
-        @if (activeToolTab() === 'all') {
-          <!-- Voice Dictation -->
-          <app-kurdish-academic-dictation [activeChapter]="activeChapter()"></app-kurdish-academic-dictation>
+        @if (activeToolTab() === 'all' || activeToolTab() === 'citation_hub') {
+          @defer (on viewport) {
+            <app-academic-citation-hub [activeChapter]="activeChapter()"></app-academic-citation-hub>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">ناوەندی ژێدەر خەریکی ئامادەبوونە...</div>
+          }
+        }
 
-          <!-- Searchable Terminology -->
-          <app-kurdish-terminology-manager [activeChapter]="activeChapter()"></app-kurdish-terminology-manager>
+        @if (activeToolTab() === 'all' || activeToolTab() === 'citation_guide') {
+          @defer (on viewport) {
+            <app-citation-standards-guide></app-citation-standards-guide>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">ڕێبەری سەرچاوە خەریکی ئامادەبوونە...</div>
+          }
+        }
 
-          <!-- Citation DOI & Crossref -->
-          <app-academic-citation-hub [activeChapter]="activeChapter()"></app-academic-citation-hub>
-
-          <!-- Citation Standards & Guidance -->
-          <app-citation-standards-guide></app-citation-standards-guide>
-
-          <!-- Thesis Logical Structure Organizer -->
-          <app-thesis-structure-organizer></app-thesis-structure-organizer>
+        @if (activeToolTab() === 'all' || activeToolTab() === 'structure_organizer') {
+          @defer (on viewport) {
+            <app-thesis-structure-organizer></app-thesis-structure-organizer>
+          } @placeholder {
+            <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-center text-xs text-slate-400 font-serif">پەیکەرسازی تێز خەریکی ئامادەبوونە...</div>
+          }
         }
       </div>
 

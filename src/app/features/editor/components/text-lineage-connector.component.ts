@@ -1,7 +1,9 @@
-import { Component, ChangeDetectionStrategy, signal, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, input, output, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { AcademicStoreService } from '../../../services/academic-store.service';
+import { toSoraniNumber } from '../../../pipes/sorani-number.pipe';
 
 export interface TextLineageNode {
   id: string;
@@ -35,6 +37,28 @@ export interface TextLineageNode {
           Evolving Manuscript Chain
         </span>
       </div>
+
+      <!-- Vertical Alignment Lineage Quick Matrix Link -->
+      @if (matrixItems().length > 0) {
+        <div class="p-2.5 bg-teal-950/40 border border-teal-800/60 rounded-xl space-y-1.5 text-xs">
+          <div class="flex items-center justify-between text-[11px] text-teal-300 font-serif font-bold">
+            <span class="flex items-center gap-1">
+              <mat-icon class="!text-xs text-teal-400">alt_route</mat-icon>
+              هاوتابوونی ستوونی (Vertical Alignment Pipeline):
+            </span>
+            <span class="text-[9.5px] font-mono text-teal-400">پرسیار ⬅️ ئامانج ⬅️ تەوەر ⬅️ دەرئەنجام</span>
+          </div>
+
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 text-[10px] scrollbar-none font-serif">
+            @for (m of matrixItems(); track m.id) {
+              <div class="p-1.5 rounded-lg bg-slate-900 border border-teal-700/50 text-teal-200 shrink-0 max-w-[220px]">
+                <strong class="block text-teal-300">پرسیاری {{ toSorani(m.questionNumber) }} ⬅️ بەشی {{ toSorani(m.targetChapterId) }}</strong>
+                <span class="text-[9px] text-slate-400 truncate block">«{{ m.questionText }}»</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
 
       <!-- Parent Text Selector -->
       <div class="space-y-1.5">
@@ -78,6 +102,10 @@ export interface TextLineageNode {
   `
 })
 export class TextLineageConnectorComponent {
+  private academicStore = inject(AcademicStoreService);
+
+  matrixItems = computed(() => this.academicStore.verticalAlignmentMatrix());
+
   availableNodes = input<TextLineageNode[]>([
     {
       id: 'seq-1',
@@ -100,6 +128,10 @@ export class TextLineageConnectorComponent {
   parentSelected = output<TextLineageNode | null>();
 
   selectedParentNode = signal<TextLineageNode | null>(null);
+
+  toSorani(val: any): string {
+    return toSoraniNumber(val);
+  }
 
   onParentSelected(id: string): void {
     this.selectedParentId.set(id);

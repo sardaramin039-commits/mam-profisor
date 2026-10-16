@@ -7,6 +7,8 @@ export interface WordValidationStatus {
   currentPages: number;
   targetPages: number;
   deviationPct: number;
+  citationCount: number;
+  completionPct: number;
   status: 'ideal' | 'under_warning' | 'over_warning' | 'critical_short' | 'critical_over';
   label: string;
   badgeBg: string;
@@ -28,6 +30,8 @@ export function calculateWordValidationStatus(
       currentPages: 0,
       targetPages: 0,
       deviationPct: 0,
+      citationCount: 0,
+      completionPct: 0,
       status: 'critical_short',
       label: 'دەق نەنووسراوە',
       badgeBg: 'bg-stone-100',
@@ -45,6 +49,17 @@ export function calculateWordValidationStatus(
   const targetPages = Number((targetWords / 350).toFixed(1));
   const deviationPct = targetWords > 0 ? Math.round(((currentWords - targetWords) / targetWords) * 100) : 0;
 
+  const content = chapter.content || '';
+  const inTextMatches = content.match(/\(([\u0600-\u06FFa-zA-Z\s.-]+?)[،,]\s*(\d{4}|[\u0660-\u0669]{4}|n\.d\.)(?:[:\s]+([\u0660-\u0669\d-]+))?\)/g) || [];
+  const footnoteMatches = content.match(/\[([\u0660-\u0669\d]+)\]/g) || [];
+  const citationCount = inTextMatches.length + footnoteMatches.length;
+
+  const wordRatio = targetWords > 0 ? Math.min(1.0, currentWords / targetWords) : 0;
+  const citationRatio = Math.min(1.0, citationCount / 2);
+  const completionPct = currentWords > 0 
+    ? Math.min(100, Math.round((wordRatio * 80) + (citationRatio * 20)))
+    : 0;
+
   if (currentWords === 0) {
     return {
       pct: 0,
@@ -53,6 +68,8 @@ export function calculateWordValidationStatus(
       currentPages: 0,
       targetPages,
       deviationPct: -100,
+      citationCount: 0,
+      completionPct: 0,
       status: 'critical_short',
       label: 'دەق نەنووسراوە (سفر وشە)',
       badgeBg: 'bg-slate-100',
@@ -71,6 +88,8 @@ export function calculateWordValidationStatus(
       currentPages,
       targetPages,
       deviationPct,
+      citationCount,
+      completionPct,
       status: 'ideal',
       label: `لە ئامانجدایە (تەواو ${deviationPct >= 0 ? '+' : ''}${deviationPct}٪)`,
       badgeBg: 'bg-emerald-50',
@@ -87,6 +106,8 @@ export function calculateWordValidationStatus(
       currentPages,
       targetPages,
       deviationPct,
+      citationCount,
+      completionPct,
       status: 'under_warning',
       label: `کەمێک کەمترە لە ئامانج (${deviationPct}٪)`,
       badgeBg: 'bg-amber-50',
@@ -103,6 +124,8 @@ export function calculateWordValidationStatus(
       currentPages,
       targetPages,
       deviationPct,
+      citationCount,
+      completionPct,
       status: 'over_warning',
       label: `کەمێک زیاترە لە ئامانج (+${deviationPct}٪)`,
       badgeBg: 'bg-blue-50',
@@ -119,6 +142,8 @@ export function calculateWordValidationStatus(
       currentPages,
       targetPages,
       deviationPct,
+      citationCount,
+      completionPct,
       status: 'critical_short',
       label: `زۆر کەمترە لە ئامانج (${deviationPct}٪)`,
       badgeBg: 'bg-rose-50',
@@ -135,6 +160,8 @@ export function calculateWordValidationStatus(
       currentPages,
       targetPages,
       deviationPct,
+      citationCount,
+      completionPct,
       status: 'critical_over',
       label: `زۆر زیاترە لە ئامانج (+${deviationPct}٪)`,
       badgeBg: 'bg-purple-50',

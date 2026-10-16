@@ -1,23 +1,31 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { IndexedDbStorageService } from '../../services/indexed-db-storage.service';
 
 export interface AppBackupData {
   version: string;
   createdAt: string;
   localStorageDump: Record<string, string>;
+  indexedDbDump?: {
+    drafts?: any[];
+    books?: any[];
+    cache?: any[];
+  };
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class BackupRestoreService {
+  private indexedDb = inject(IndexedDbStorageService);
+
   public isExporting = signal<boolean>(false);
   public isImporting = signal<boolean>(false);
   public statusMessage = signal<string | null>(null);
 
   /**
-   * Generates a complete JSON backup file of all local application data
+   * Generates a complete JSON backup file of all local application data (IndexedDB + LocalStorage)
    */
-  exportFullBackup(): void {
+  async exportFullBackup(): Promise<void> {
     if (typeof window === 'undefined') return;
     this.isExporting.set(true);
     try {
@@ -31,10 +39,28 @@ export class BackupRestoreService {
         }
       }
 
+      // Collect IndexedDB stores
+      let drafts: any[] = [];
+      let books: any[] = [];
+      let cache: any[] = [];
+
+      try {
+        drafts = await this.indexedDb.getAll(this.indexedDb.STORES.DRAFTS);
+        books = await this.indexedDb.getAll(this.indexedDb.STORES.BOOKS);
+        cache = await this.indexedDb.getAll(this.indexedDb.STORES.CACHE);
+      } catch (idbErr) {
+        console.warn('[Backup] IndexedDB fetch warning:', idbErr);
+      }
+
       const backup: AppBackupData = {
-        version: '2.5.0',
+        version: '3.0.0',
         createdAt: new Date().toISOString(),
-        localStorageDump: dump
+        localStorageDump: dump,
+        indexedDbDump: {
+          drafts,
+          books,
+          cache
+        }
       };
 
       const jsonStr = JSON.stringify(backup, null, 2);
@@ -43,54 +69,83 @@ export class BackupRestoreService {
 
       const a = document.createElement('a');
       a.href = url;
-      a.download = `academic_research_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `academic_thesis_backup_${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
 
-      this.statusMessage.set('پاشەکەوتسازی (Backup) بە سەرکەوتوویی دابەزێنرا!');
+      this.statusMessage.set('پاشەکەوتسازیی تەواوی پڕۆژە (JSON) بە سەرکەوتوویی داگیرا!');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.statusMessage.set(`هەڵە لە پاشەکەوتسازی: ${msg}`);
+      this.statusMessage.set(`هەڵە لە دروستکردنی یەدەگ: ${msg}`);
     } finally {
       this.isExporting.set(false);
     }
   }
 
   /**
-   * Restores application data from a JSON backup file
+   * Restores application data from a JSON backup file (IndexedDB + LocalStorage)
    */
   restoreFromFile(file: File): Promise<boolean> {
     return new Promise((resolve, reject) => {
       this.isImporting.set(true);
       const reader = new FileReader();
 
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const content = e.target?.result as string;
           const data: AppBackupData = JSON.parse(content);
 
-          if (!data || !data.localStorageDump) {
+          if (!data || (!data.localStorageDump && !data.indexedDbDump)) {
             throw new Error('فایلی هەڵبژێردراو بنەمای پاشەکەوتسازی تێدا نییە.');
           }
 
           // Restore localStorage entries
-          Object.entries(data.localStorageDump).forEach(([key, val]) => {
-            localStorage.setItem(key, val);
-          });
+          if (data.localStorageDump) {
+            Object.entries(data.localStorageDump).forEach(([key, val]) => {
+              try {
+                localStorage.setItem(key, val);
+              } catch (lsErr) {
+                console.warn('LocalStorage restore key error:', key, lsErr);
+              }
+            });
+          }
 
-          this.statusMessage.set('داتاکان بە سەرکەوتوویی لە فایلی Backup گەڕێنرانەوە! تکایە پەڕەکە نوێ بکەرەوە.');
+          // Restore IndexedDB entries
+          if (data.indexedDbDump) {
+            if (Array.isArray(data.indexedDbDump.drafts)) {
+              for (const draft of data.indexedDbDump.drafts) {
+                if (draft?.key && draft?.data) {
+                  await this.indexedDb.setItem(this.indexedDb.STORES.DRAFTS, draft.key, draft.data, draft.wordCount);
+                }
+              }
+            }
+            if (Array.isArray(data.indexedDbDump.books)) {
+              for (const book of data.indexedDbDump.books) {
+                if (book?.key && book?.data) {
+                  await this.indexedDb.setItem(this.indexedDb.STORES.BOOKS, book.key, book.data);
+                }
+              }
+            }
+          }
+
+          this.statusMessage.set('داتاکان بە سەرکەوتوویی لە فایلی یەدەگ گەڕێنرانەوە! پەڕەکە دووبارە دەکەینەوە...');
           this.isImporting.set(false);
+          setTimeout(() => {
+            if (typeof window !== 'undefined') {
+              window.location.reload();
+            }
+          }, 1200);
           resolve(true);
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
-          this.statusMessage.set(`هەڵە لە هێنانی داتا: ${msg}`);
+          this.statusMessage.set(`هەڵە لە گەڕاندنەوەی داتا: ${msg}`);
           this.isImporting.set(false);
           reject(err);
         }
       };
 
       reader.onerror = () => {
-        this.statusMessage.set('خوێندنەوەی فایل سەرکەوتوو نەبوو.');
+        this.statusMessage.set('خوێندنەوەی فایلی یەدەگ سەرکەوتوو نەبوو.');
         this.isImporting.set(false);
         reject(new Error('File read error'));
       };

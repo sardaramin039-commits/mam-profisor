@@ -16,7 +16,7 @@ export interface UniversityFormatPreset {
   recommendedCoverColor: string;
 }
 
-const UNIVERSITIES: UniversityFormatPreset[] = [
+export const UNIVERSITIES: UniversityFormatPreset[] = [
   {
     id: 'salahaddin',
     nameKurdish: 'زانکۆی سەلاحەدین - هەولێر (Salahaddin University)',
@@ -198,17 +198,29 @@ export class UniversityLayoutFormatterComponent {
   spineThicknessMm = computed(() => {
     const pages = Number(this.pageCount()) || 100;
     const gsm = Number(this.paperGsm()) || 80;
-    const sheetFactor = gsm === 100 ? 0.065 : 0.052; // Thickness per sheet (double-sided or single)
-    const boardThickness = 3.5; // Hardcover board thickness
+    const sheetFactor = gsm === 100 ? 0.065 : 0.052;
+    const boardThickness = 3.5;
     const total = pages * sheetFactor + boardThickness;
     return total.toFixed(1);
   });
 
+  constructor() {
+    try {
+      const saved = localStorage.getItem('mam_selected_university');
+      if (saved && this.universities.some(u => u.id === saved)) {
+        this.selectedUniId.set(saved);
+      }
+    } catch {}
+  }
+
   applySettings() {
     const uni = this.currentUni();
+    try {
+      localStorage.setItem('mam_selected_university', uni.id);
+    } catch {}
     this.notifications.showSuccess(
       'پێوەرەکان جێگیرکران',
-      `پێوەرەکانی «${uni.nameKurdish}» بۆ چاپ و بەرگ پەسەند کران.`
+      `پێوەرەکانی «${uni.nameKurdish}» بۆ چاپ و بەرگ بە سەرکەوتوویی پەسەند کران.`
     );
   }
 }

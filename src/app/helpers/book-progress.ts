@@ -12,6 +12,7 @@ export interface BookProgressSummary {
   completedChaptersCount: number;
   totalTargetWords: number;
   totalCurrentWords: number;
+  totalVerifiedCitations: number;
   bookProgressPct: number;
   totalTargetPages: number;
   totalCurrentPages: number;
@@ -40,6 +41,7 @@ export function calculateBookProgressSummary(
   let idealSectionsCount = 0;
   let underTargetSectionsCount = 0;
   let overTargetSectionsCount = 0;
+  let totalVerifiedCitations = 0;
 
   const fallbackTotalTargetWords = (targetPagesInput || 10) * 350;
 
@@ -49,6 +51,11 @@ export function calculateBookProgressSummary(
     
     totalCurrentWords += words;
     totalTargetWords += target;
+
+    const content = c.content || '';
+    const inText = (content.match(/\(([\u0600-\u06FFa-zA-Z\s.-]+?)[،,]\s*(\d{4}|[\u0660-\u0669]{4}|n\.d\.)/g) || []).length;
+    const fn = (content.match(/\[([\u0660-\u0669\d]+)\]/g) || []).length;
+    totalVerifiedCitations += (inText + fn);
 
     if (c.status === 'completed' || words >= Math.round(target * 0.85)) {
       completedChaptersCount++;
@@ -69,7 +76,10 @@ export function calculateBookProgressSummary(
     totalTargetWords = fallbackTotalTargetWords;
   }
 
-  const bookProgressPct = totalTargetWords > 0 ? Math.min(200, Math.round((totalCurrentWords / totalTargetWords) * 100)) : 0;
+  const wordWeight = totalTargetWords > 0 ? (totalCurrentWords / totalTargetWords) * 80 : 0;
+  const citationTarget = Math.max(1, totalChapters * 2);
+  const citationWeight = Math.min(20, (totalVerifiedCitations / citationTarget) * 20);
+  const bookProgressPct = totalCurrentWords > 0 ? Math.min(100, Math.round(wordWeight + citationWeight)) : 0;
   const totalTargetPages = Number((totalTargetWords / 350).toFixed(1));
   const totalCurrentPages = Number((totalCurrentWords / 350).toFixed(1));
   
@@ -123,6 +133,7 @@ export function calculateBookProgressSummary(
     completedChaptersCount,
     totalTargetWords,
     totalCurrentWords,
+    totalVerifiedCitations,
     bookProgressPct,
     totalTargetPages,
     totalCurrentPages,

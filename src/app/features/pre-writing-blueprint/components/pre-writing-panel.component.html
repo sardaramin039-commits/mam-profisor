@@ -102,6 +102,17 @@
     </button>
     <button
       type="button"
+      (click)="activeStep.set('matrix')"
+      class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap flex items-center gap-1"
+      [class.bg-teal-900]="activeStep() === 'matrix'"
+      [class.text-white]="activeStep() === 'matrix'"
+      [class.bg-teal-100]="activeStep() !== 'matrix'"
+      [class.text-teal-900]="activeStep() !== 'matrix'">
+      <mat-icon class="!text-xs">alt_route</mat-icon>
+      <span>٦. ماتریسی هاوتابوونی ستوونی</span>
+    </button>
+    <button
+      type="button"
       (click)="activeStep.set('preview')"
       class="px-2.5 py-1 rounded-md transition-all cursor-pointer whitespace-nowrap"
       [class.bg-amber-800]="activeStep() === 'preview'"
@@ -349,6 +360,73 @@
         </div>
       </div>
       <pre class="p-3 bg-white border border-stone-300 rounded text-[11px] font-mono whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto">{{ proposalPreview() }}</pre>
+    </div>
+  }
+
+  <!-- STEP 6: VERTICAL ALIGNMENT MATRIX -->
+  @if (activeStep() === 'matrix') {
+    <div class="space-y-3 bg-white border border-teal-200 rounded-xl p-4">
+      <div class="flex items-center justify-between border-b border-stone-200 pb-2.5 flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 rounded-lg bg-teal-800 text-white">
+            <mat-icon class="!text-sm">alt_route</mat-icon>
+          </div>
+          <div>
+            <h5 class="text-xs font-bold text-stone-900">
+              ماتریسی هاوتابوونی ستوونی (Vertical Alignment Matrix)
+            </h5>
+            <p class="text-[10.5px] text-stone-600">
+              پرسیار ⬅️ ئامانج ⬅️ تەوەر/بەش ⬅️ دەرئەنجامی سەلمێنراو بۆ لیژنەی بەرگری (Viva)
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="syncVerticalAlignmentMatrix()"
+          class="px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg transition flex items-center gap-1 cursor-pointer shadow-xs">
+          <mat-icon class="!text-xs">sync</mat-icon>
+          <span>نوێکردنەوە و هاوتاکردنی پرسیارەکان</span>
+        </button>
+      </div>
+
+      <!-- Matrix Cards -->
+      <div class="space-y-2.5">
+        @for (item of verticalMatrix(); track item.id) {
+          <div class="p-3 bg-stone-50 border border-teal-300/80 rounded-xl space-y-2 text-xs">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-bold text-teal-800 flex items-center gap-1">
+                <mat-icon class="!text-xs">help_outline</mat-icon>
+                پرسیاری ژمارە {{ toSorani(item.questionNumber) }}
+              </span>
+              <span class="px-2 py-0.5 rounded-full bg-teal-100 text-teal-900 font-bold text-[10px]">
+                هاوتاکراو بە: بەشی {{ toSorani(item.targetChapterId) }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] pt-1 border-t border-stone-200">
+              <div class="space-y-0.5">
+                <span class="text-stone-500 font-bold block">دەقی پرسیار:</span>
+                <p class="text-stone-900 font-bold">«{{ item.questionText }}»</p>
+              </div>
+
+              <div class="space-y-0.5">
+                <span class="text-stone-500 font-bold block">ئامانجی هاوتا:</span>
+                <p class="text-teal-900">«{{ item.objectiveText }}»</p>
+              </div>
+            </div>
+
+            <div class="bg-white p-2 rounded border border-stone-200 text-[10.5px] text-stone-700 flex items-center gap-2">
+              <mat-icon class="!text-xs text-amber-600">verified</mat-icon>
+              <span><strong>ئەنجامی چاوەڕوانکراو لە دەرەنجامەکان:</strong> {{ item.expectedFindingSummary }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="text-center py-6 text-stone-500 text-xs">
+            تکایە سەرەتا لە بەشی پرسیارەکان پرسیاری سەرەکی و لاوەکی بنووسە پاشان کلیک لەسەر نوێکردنەوە بکە.
+          </div>
+        }
+      </div>
     </div>
   }
 </section>

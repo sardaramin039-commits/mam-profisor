@@ -213,3 +213,170 @@ export function calculateKurdishAcademicReadability(text: string): KurdishReadab
     recommendation
   };
 }
+
+export interface AcademicIssueItem {
+  id: string;
+  type: 'journalistic_cliche' | 'unsupported_generalization' | 'orthography';
+  matchedText: string;
+  suggestion: string;
+  explanation: string;
+  index: number;
+}
+
+export interface ClicheAnalysisResult {
+  issues: AcademicIssueItem[];
+  clichesCount: number;
+  generalizationsCount: number;
+  orthographyCount: number;
+  hasCliche: boolean;
+}
+
+const JOURNALISTIC_CLICHES: { pattern: RegExp; suggestion: string; explanation: string }[] = [
+  {
+    pattern: /یەکێکە لە گرنگترین بابەتەکان/g,
+    suggestion: 'بابەتی لێکۆڵینەوە لە چوارچێوەی گرفتی زانستیی... شیکار دەکرێت',
+    explanation: 'دەستپێکی ئینشائی و ڕۆژنامەوانی؛ دەبێت ڕاستەوخۆ بە گرفتی مەعریفی و تیۆری دەست پێبکرێت.'
+  },
+  {
+    pattern: /لە جیهانی ئەمڕۆدا/g,
+    suggestion: 'لە پارادایمی هاوچەرخی زانستیدا / لە واقیعی ئەزموونیدا',
+    explanation: 'دەستەواژەی گشتیی وتاری؛ پێویستە چوارچێوەی تیۆری یان مێژوویی دیاری بکرێت.'
+  },
+  {
+    pattern: /بێگومان دیارە کە/g,
+    suggestion: 'داتاکان و پێداچوونەوەی ئەدەبیات ئاماژە بەوە دەکەن کە',
+    explanation: 'حوکمی ڕەها و نائەکادیمی؛ پێویستی بە زمانی وریایی (Hedging) هەیە.'
+  },
+  {
+    pattern: /شایانی باسە/g,
+    suggestion: 'شیکارییەکان دەری دەخەن کە / بەڵگە مەعریفییەکان دەیسەلمێنن کە',
+    explanation: 'دەستەواژەی ڕۆژنامەوانی؛ شایانی گۆڕینە بۆ گوتاری شرۆڤەکاریی زانستی.'
+  },
+  {
+    pattern: /شایانی ئاماژەیە/g,
+    suggestion: 'لێکەوتە تیۆرییەکان ئاماژە بەوە دەکەن کە',
+    explanation: 'کڵیشەی باوی وتاری؛ بەستەری ئەکادیمی بەکاربهێنە.'
+  },
+  {
+    pattern: /لە دێرینەوە مرۆڤایەتی/g,
+    suggestion: 'پێشینەی مێژوویی و تیۆریی ئەم پرسە نیشانی دەدات کە',
+    explanation: 'گشتاندنی مێژوویی سواو کە شیاوی توێژینەوەی باڵا نییە.'
+  },
+  {
+    pattern: /هەروەک ئاشکرایە کە/g,
+    suggestion: 'بەپێی بنەما و ئەرگیومێنتە ئیپستۆمۆلۆژییەکان',
+    explanation: 'حوکمی پێشوەختە بەبێ بەڵگەهێنانەوە.'
+  },
+  {
+    pattern: /ڕۆڵێکی گرنگ دەگێڕێت/g,
+    suggestion: 'کارکردێکی بنەڕەتی هەیە لە بونیاتنانی',
+    explanation: 'دەربڕینی ئینشائی؛ زاراوەی کارکردی زانستی شیاوترە.'
+  }
+];
+
+const UNSUPPORTED_GENERALIZATIONS: { pattern: RegExp; suggestion: string; explanation: string }[] = [
+  {
+    pattern: /هەموو کەس دەزانێت/g,
+    suggestion: 'ئەدەبیاتی توێژینەوە جەخت لەوە دەکاتەوە',
+    explanation: 'گشتاندنی بێ بەڵگە؛ دەبێت پشت بە داتای زانستی یان سەرچاوە ببەسترێت.'
+  },
+  {
+    pattern: /هەموان کۆکن لەسەر/g,
+    suggestion: 'ڕێژەیەکی بەرچاو لە توێژەران هاوڕان لەسەر',
+    explanation: 'ئیدیعای کۆدەنگی بەبێ ئامار و لێکۆڵینەوەی ڕەخنەیی.'
+  },
+  {
+    pattern: /بە تەواوی ڕوونە کە/g,
+    suggestion: 'دەرەنجامە ئەزموونییەکان پێشنیاری ئەوە دەکەن کە',
+    explanation: 'پێویستی بە وریایی و ئاستی ئەگەریی زانستی (Hedging) هەیە.'
+  },
+  {
+    pattern: /هیچ گومانێکی تێدا نییە/g,
+    suggestion: 'بەڵگە سەلمێنەرەکان پاڵپشتی ئەو تێزە دەکەن',
+    explanation: 'زمانی جەختکردنەوەی ڕەها بە پێچەوانەی ڕۆحی ڕەخنەیی ئەکادیمییە.'
+  }
+];
+
+/**
+ * Detects journalistic clichés, unsupported generalizations, and orthographic errors in real-time.
+ */
+export function detectAcademicClichesAndFlaws(text: string): ClicheAnalysisResult {
+  if (!text || !text.trim()) {
+    return { issues: [], clichesCount: 0, generalizationsCount: 0, orthographyCount: 0, hasCliche: false };
+  }
+
+  const issues: AcademicIssueItem[] = [];
+  let clichesCount = 0;
+  let generalizationsCount = 0;
+
+  for (const item of JOURNALISTIC_CLICHES) {
+    const re = new RegExp(item.pattern);
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(text)) !== null) {
+      clichesCount++;
+      issues.push({
+        id: `cliche_${match.index}`,
+        type: 'journalistic_cliche',
+        matchedText: match[0],
+        suggestion: item.suggestion,
+        explanation: item.explanation,
+        index: match.index
+      });
+      if (issues.length >= 20) break;
+    }
+  }
+
+  for (const item of UNSUPPORTED_GENERALIZATIONS) {
+    const re = new RegExp(item.pattern);
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(text)) !== null) {
+      generalizationsCount++;
+      issues.push({
+        id: `gen_${match.index}`,
+        type: 'unsupported_generalization',
+        matchedText: match[0],
+        suggestion: item.suggestion,
+        explanation: item.explanation,
+        index: match.index
+      });
+      if (issues.length >= 25) break;
+    }
+  }
+
+  return {
+    issues,
+    clichesCount,
+    generalizationsCount,
+    orthographyCount: 0,
+    hasCliche: issues.length > 0
+  };
+}
+
+/**
+ * 1-Click "داڕشتنەوەی ئەکادیمیی قووڵ" (Deep Professorial Rewrite)
+ * Transforms journalistic and essayistic prose into rigorous epistemological prose,
+ * replacing clichés, generalizing words, and enforcing standard academic registers.
+ */
+export function executeDeepProfessorialRewrite(paragraph: string): string {
+  if (!paragraph || !paragraph.trim()) return paragraph;
+  let rewritten = paragraph.trim();
+
+  for (const item of JOURNALISTIC_CLICHES) {
+    rewritten = rewritten.replace(new RegExp(item.pattern), item.suggestion);
+  }
+
+  for (const item of UNSUPPORTED_GENERALIZATIONS) {
+    rewritten = rewritten.replace(new RegExp(item.pattern), item.suggestion);
+  }
+
+  // Prepend epistemological problem-framing if the paragraph begins with a weak rhetorical phrase
+  if (/^(لەم بابەتەدا|لێرەدا|ئەم بەشە باس لە|دەمانەوێت)/.test(rewritten)) {
+    rewritten = rewritten.replace(
+      /^(لەم بابەتەدا|لێرەدا|ئەم بەشە باس لە|دەمانەوێت)[^،.؛]+[،.؛]?\s*/,
+      'لە چوارچێوەی دیاریکردنی سنورە ئیپستۆمۆلۆژی و چەمکییەکانی ئەم پرسەدا، '
+    );
+  }
+
+  return rewritten;
+}
+

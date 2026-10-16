@@ -276,6 +276,134 @@ export class CitationBuilder {
     return `${authors}، *${title}*${pubInfo}${pageStr}.`;
   }
 
+  /**
+   * APA In-Text Kurdish Citation: (نازناوی نووسەر، ساڵ: لاپەڕە)
+   */
+  public static formatInTextAPA(author: string, year: string | number, page?: string | number): string {
+    const cleanAuthor = (author || '').trim();
+    const lastName = cleanAuthor.split(/[\s,]+/).pop() || cleanAuthor || 'نووسەر';
+    const yearStr = toSoraniNumber(year || 'n.d.');
+    if (page) {
+      return `(${lastName}، ${yearStr}: ${toSoraniNumber(page)})`;
+    }
+    return `(${lastName}، ${yearStr})`;
+  }
+
+  /**
+   * Generates Kurdish numeral footnote marker: [١], [٢], [٣]
+   */
+  public static formatFootnoteMarker(num: number): string {
+    return `[${toSoraniNumber(num)}]`;
+  }
+
+  /**
+   * Explanatory scholarly note / پەراوێزی ڕوونکردنەوە و ساغکردنەوە
+   */
+  public static formatExplanatoryNote(num: number, explanation: string): string {
+    return `[${toSoraniNumber(num)}] تێبینیی ڕوونکردنەوە: ${explanation}`;
+  }
+
+  /**
+   * Mode 1: وەرگرتنی دەقاودەقی کورت (Short Direct Quote < 40 words)
+   * Enclosed in Kurdish guillemets «...» followed immediately by (نازناو، ساڵ: لاپەڕە) or [ژمارە].
+   */
+  public static formatShortDirectQuote(
+    quoteText: string,
+    author: string,
+    year: string | number,
+    page: string | number,
+    citationStyle: 'intext' | 'footnote' = 'intext',
+    footnoteNum?: number
+  ): string {
+    const cleanQuote = quoteText.replace(/^[«"'\s]+|[»"'\s]+$/g, '').trim();
+    if (citationStyle === 'footnote' && footnoteNum) {
+      return `«${cleanQuote}» [${toSoraniNumber(footnoteNum)}]`;
+    }
+    const cite = this.formatInTextAPA(author, year, page);
+    return `«${cleanQuote}» ${cite}`;
+  }
+
+  /**
+   * Mode 2: وەرگرتنی دەقاودەقی درێژ (Block Quote > 40 words / > 3 lines)
+   * Formatted as an indented standalone block without quotation marks.
+   */
+  public static formatBlockQuote(
+    quoteText: string,
+    author: string,
+    year: string | number,
+    page: string | number
+  ): string {
+    const cleanQuote = quoteText.replace(/^[«"'\s]+|[»"'\s]+$/g, '').trim();
+    const cite = this.formatInTextAPA(author, year, page);
+    const lines = cleanQuote.split('\n').map(l => `> ${l.trim()}`).join('\n');
+    return `\n${lines}\n> ${cite}\n`;
+  }
+
+  /**
+   * Mode 3: وەرگرتنی بەمانا (Paraphrasing / داڕشتنەوەی زانستی)
+   * Written in researcher's academic voice with exact page citation.
+   */
+  public static formatParaphrase(
+    paraphrasedText: string,
+    author: string,
+    year: string | number,
+    page: string | number
+  ): string {
+    const cite = this.formatInTextAPA(author, year, page);
+    return `${paraphrasedText.trim()} ${cite}`;
+  }
+
+  /**
+   * Analyzes text to recommend short quote vs block quote based on word count (< 40 vs >= 40 words).
+   */
+  public static classifyQuotation(text: string): {
+    wordCount: number;
+    recommendedMode: 'short' | 'block';
+    descriptionKurdish: string;
+  } {
+    const words = (text || '').trim().split(/\s+/).filter(Boolean);
+    const count = words.length;
+    if (count < 40) {
+      return {
+        wordCount: count,
+        recommendedMode: 'short',
+        descriptionKurdish: `وەرگرتنی دەقاودەقی کورت (${toSoraniNumber(count)} وشە < ٤٠): بە کەوانەی «...» لەگەڵ لاپەڕە.`
+      };
+    }
+    return {
+      wordCount: count,
+      recommendedMode: 'block',
+      descriptionKurdish: `وەرگرتنی دەقاودەقی درێژ (${toSoraniNumber(count)} وشە >= ٤٠): وەک بلۆککوۆت (Blockquote) بەبێ کەوانە.`
+    };
+  }
+
+  /**
+   * Parses chapter content into body text and extracted footnotes list
+   */
+  public static parseChapterFootnotes(content: string): { bodyText: string; footnotes: string[] } {
+    if (!content) return { bodyText: '', footnotes: [] };
+    const lines = content.split('\n');
+    const bodyLines: string[] = [];
+    const footnotes: string[] = [];
+    let inFootnotesSection = false;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.includes('پەراوێزەکان') || trimmed.includes('Footnotes') || trimmed === '--- پەراوێز ---') {
+        inFootnotesSection = true;
+        continue;
+      }
+      if (inFootnotesSection) {
+        if (trimmed.length > 0) footnotes.push(trimmed);
+      } else if (/^\[([\u0660-\u0669\d]+)\]\s+/.test(trimmed)) {
+        footnotes.push(trimmed);
+      } else {
+        bodyLines.push(line);
+      }
+    }
+    return { bodyText: bodyLines.join('\n').trim(), footnotes };
+  }
+
   // --- Helper Author Formatters ---
 
   private static formatAPAAuthors(authorsStr: string): string {

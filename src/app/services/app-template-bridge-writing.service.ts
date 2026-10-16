@@ -21,6 +21,8 @@ import { GeminiRequestManagerService } from './gemini-request-manager.service';
 import { AcademicToulminArgumentService } from './academic-toulmin-argument.service';
 import { AcademicHedgingStanceService } from './academic-hedging-stance.service';
 import { SourceVerificationEngine } from '../helpers/source-verification-engine';
+import { POLYPHONIC_SYNTHESIS_DIRECTIVES } from '../helpers/polyphonic-synthesis.helper';
+import { buildTerminologyLockPromptContext } from '../helpers/terminology-consistency-checker';
 
 @Injectable()
 export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateService {
@@ -38,22 +40,18 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
 
     const toulminDirectives = this.toulminService.getToulminDirectives();
     const hedgingDirectives = this.hedgingService.getHedgingDirectives();
+    const terminologyLock = buildTerminologyLockPromptContext();
 
-    const fullPrompt = `${chapter.title || 'بەشی توێژینەوەی ئەکادیمی'}\n\n${toulminDirectives}\n\n${hedgingDirectives}`;
+    const fullPrompt = `${chapter.title || 'بەشی توێژینەوەی ئەکادیمی'}\n\n${toulminDirectives}\n\n${hedgingDirectives}\n\n${POLYPHONIC_SYNTHESIS_DIRECTIVES}\n\n${terminologyLock}`;
 
     this.requestManager.generateLongAcademicSection(
       fullPrompt,
       targetWords,
-      progress => {
-        // Live progress tracked by writingWordProgress signal
-      }
+      undefined,
+      { chapterId: chapter.id, chapterTitle: chapter.title }
     ).then(result => {
       if (result?.content) {
-        this.editorService.updateChapterContent(
-          chapter.id,
-          result.content,
-          'داڕشتنی بەشی ئەکادیمی (Toulmin & Multi-Pass)'
-        );
+        this.editorService.updateChapterContent(chapter.id, result.content, 'داڕشتنی بەشی ئەکادیمی (Toulmin & Multi-Pass)');
       }
     }).catch(error => {
       console.error('Multi-pass chapter generation error:', error);
@@ -369,7 +367,21 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
   updateCompareLeftText(v: string) { this.compareLeftText.set(v); }
   updateCompareRightText(v: string) { this.compareRightText.set(v); }
   insertAcademicHeading(textarea: HTMLTextAreaElement, level: string) {
-    if (textarea) textarea.value += `\n### ناونیشانی ئەکادیمی\n`;
+    if (!textarea) return;
+    const map: Record<string, string> = {
+      h1: '\n# سەرپەڕەی سەرەکی (Heading 1)\n',
+      h2: '\n## سەرپەڕەی دووەم (Heading 2)\n',
+      h3: '\n### تەوەری وردکراوە (Heading 3)\n',
+      table: '\n| پێوەر | ژمارە (N) | ڕێژە (٪) | ناوەند (Mean) |\n| :--- | :---: | :---: | :---: |\n| نموونە | ٥٠ | ٪٥٠ | ٤.٢٥ |\n',
+      methodology: '\n### میتۆدۆلۆژیا و ڕێکاری زانستی\n',
+      results: '\n### ئەنجامەکان و دۆزینەوەکان\n',
+      discussion: '\n### گفتوگۆ و تاوتوێکردنی بەڵگەدار\n'
+    };
+    const ins = map[level] || `\n### ${level}\n`;
+    const s = textarea.selectionStart ?? textarea.value.length;
+    textarea.value = textarea.value.substring(0, s) + ins + textarea.value.substring(s);
+    textarea.selectionStart = textarea.selectionEnd = s + ins.length;
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
   }
   applySoranispellFixInViewedChapter() {}
   encryptChapterInVault(c: any, pwd: any) {}
