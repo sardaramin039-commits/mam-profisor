@@ -197,17 +197,10 @@
       <section class="mam-page-head">
         <div><span class="mam-eyebrow">INTEGRATIONS</span><h1>هاوبەشی و فایل</h1><p>هێنان و بەڕێوەبردنی ناوەڕۆک لە خزمەتگوزارییە بەستراوەکان.</p></div>
       </section>
-      @defer (on idle) {
-        <div class="mam-integration-stack">
-          <app-google-drive-integration [thesisTitle]="manuscriptTitle()" [thesisContent]="activeChapter()?.content || ''"></app-google-drive-integration>
-          <app-gmail-integration [thesisContent]="activeChapter()?.content || ''"></app-gmail-integration>
-          <app-google-sheets-integration [thesisTitle]="manuscriptTitle()"></app-google-sheets-integration>
-          <app-google-keep-integration></app-google-keep-integration>
-          <app-google-tasks-integration></app-google-tasks-integration>
-        </div>
-      } @placeholder {
-        <div class="mam-defer-placeholder"><mat-icon>cloud</mat-icon><span>خزمەتگوزارییەکانی گووگڵ خەریکی ئامادەبوونن...</span></div>
-      }
+      <div class="mam-integration-stack p-4 rounded-xl border border-stone-300 bg-stone-50 text-right" dir="rtl">
+        <h2 class="font-bold">هاوردە و هەناردەی ناوخۆیی</h2>
+        <p class="text-sm mt-2">پەیوەندییە دەرەکییەکانی Google بە شێوەی mock نیشان نادرێن. بۆ ئێستا پاشەکەوت و گەڕاندنەوەی پڕۆژە بە فایلی JSON بەکاربهێنە؛ هەناردەی DOCX، PDF، BibTeX و CSV لە ئامرازەکانی هەناردە بەکاربهێنە کاتێک بەردەستن.</p>
+      </div>
     }
 
     @case ('suite') {
