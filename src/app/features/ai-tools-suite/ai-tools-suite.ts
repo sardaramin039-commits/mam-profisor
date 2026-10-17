@@ -5,7 +5,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { HttpClient } from '@angular/common/http';
 import { AI_TOOLS_CATALOG, AiToolItem } from './ai-tools-catalog';
 import { EditorService } from '../../services/editor.service';
-import { AcademicStoreService } from '../../services/academic-store.service';
 
 @Component({
   selector: 'app-ai-tools-suite',
@@ -286,7 +285,6 @@ import { AcademicStoreService } from '../../services/academic-store.service';
 export class AiToolsSuiteComponent {
   private http = inject(HttpClient);
   private editor = inject(EditorService);
-  private academicStore = inject(AcademicStoreService);
 
   private activeResearchContext(): string {
     const chapters = this.editor.chapters();
