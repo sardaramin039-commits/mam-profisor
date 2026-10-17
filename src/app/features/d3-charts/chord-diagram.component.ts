@@ -47,7 +47,7 @@ export interface ChapterCrossReferenceData {
   `
 })
 export class D3ChordDiagramComponent implements OnDestroy {
-  data = input<ChapterCrossReferenceData>();
+  data = input<ChapterCrossReferenceData>({ names: [], matrix: [] });
   chordContainer = viewChild<ElementRef<HTMLDivElement>>('chordContainer');
 
   constructor() {
@@ -68,13 +68,13 @@ export class D3ChordDiagramComponent implements OnDestroy {
     const outerRadius = Math.min(width, height) * 0.5 - 40;
     const innerRadius = outerRadius - 18;
 
-    const names = chordData.names || ['بەشی ١', 'بەشی ٢', 'بەشی ٣', 'سەرچاوەی Harvard'];
-    const matrix = chordData.matrix || [
-      [0, 10, 20, 15],
-      [10, 0, 25, 5],
-      [20, 25, 0, 12],
-      [15, 5, 12, 0]
-    ];
+    const names = chordData.names || [];
+    const matrix = chordData.matrix || [];
+    if (!names.length || matrix.length !== names.length || matrix.some(row => row.length !== names.length)) {
+      d3.select(element).append('p').attr('class', 'text-xs text-slate-400 text-center p-6')
+        .text('هێشتا داتای ڕاستەقینەی هاوبەشیی سەرچاوەکان لە بەشەکاندا نییە.');
+      return;
+    }
 
     const chord = d3.chord()
       .padAngle(0.06)
