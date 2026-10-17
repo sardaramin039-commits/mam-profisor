@@ -271,6 +271,10 @@ import { AcademicStoreService } from '../../services/academic-store.service';
               <div class="bg-stone-900 text-stone-100 p-5 rounded-2xl text-xs leading-relaxed font-sans whitespace-pre-wrap border border-stone-800 shadow-inner max-h-[500px] overflow-y-auto">
                 {{ outputResult() }}
               </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" (click)="insertOutputIntoManuscript()" class="px-3 py-2 bg-emerald-800 text-white rounded-lg text-xs">ناردن بۆ ناو دەستنووس</button>
+                <button type="button" (click)="saveOutputAsCorpusCard()" class="px-3 py-2 bg-indigo-800 text-white rounded-lg text-xs">پاشەکەوتکردن وەک فیش لە کۆرپەسدا</button>
+              </div>
             </div>
           }
         </div>
