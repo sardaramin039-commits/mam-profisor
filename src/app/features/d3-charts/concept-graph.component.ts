@@ -202,8 +202,8 @@ export class ConceptGraphComponent implements AfterViewInit {
 
   exportTrigger = output<void>();
 
-  nodes = input<ConceptNodeModel[]>(D3ConceptGraphHelper.DEFAULT_NODES);
-  links = input<ConceptLinkModel[]>(D3ConceptGraphHelper.DEFAULT_LINKS);
+  nodes = input<ConceptNodeModel[]>([]);
+  links = input<ConceptLinkModel[]>([]);
 
   activeNode = signal<ConceptNodeModel | null>(null);
   selectedCategory = signal<string>('all');
@@ -216,9 +216,9 @@ export class ConceptGraphComponent implements AfterViewInit {
   private academicStore = inject(AcademicStoreService);
   private editorService = inject(EditorService);
 
-  localNodes = signal<ConceptNodeModel[]>(D3ConceptGraphHelper.DEFAULT_NODES);
-  localLinks = signal<ConceptLinkModel[]>(D3ConceptGraphHelper.DEFAULT_LINKS);
-  filteredNodes = signal<ConceptNodeModel[]>(D3ConceptGraphHelper.DEFAULT_NODES);
+  localNodes = signal<ConceptNodeModel[]>([]);
+  localLinks = signal<ConceptLinkModel[]>([]);
+  filteredNodes = signal<ConceptNodeModel[]>([]);
 
   constructor() {
     effect(() => {
@@ -290,6 +290,9 @@ export class ConceptGraphComponent implements AfterViewInit {
 
         this.localNodes.set(dynamicNodes);
         this.localLinks.set(dynamicLinks);
+      } else {
+        this.localNodes.set([]);
+        this.localLinks.set([]);
       }
     });
 
