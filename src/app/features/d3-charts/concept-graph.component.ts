@@ -225,7 +225,7 @@ export class ConceptGraphComponent implements AfterViewInit {
       const chs = this.editorService.chapters();
       const cards = this.academicStore.researchCorpusCards();
       const matrix = this.academicStore.verticalAlignmentMatrix();
-      const glossaryTerms = this.academicStore.glossaryEntries?.() || [];
+      const glossaryTerms: any[] = [];
 
       if (chs.length > 0) {
         const dynamicNodes: ConceptNodeModel[] = [];
