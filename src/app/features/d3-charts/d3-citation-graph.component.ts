@@ -257,13 +257,6 @@ export class D3CitationGraphComponent implements AfterViewInit {
           publisher: s.publisher
         });
       });
-    } else {
-      nodes.push(
-        { id: 'src_1', label: 'ئەمین (2025)', type: 'source', subLabel: 'گوتاری ئەکادیمیی کوردی', details: 'میتۆدۆلۆژیی گەشەسەندنی سۆرانیک لە توێژینەوە زانستییەکاندا.', author: 'ئەمین', year: 2025, publisher: 'گۆڤاری زانستی' },
-        { id: 'src_2', label: 'Smith & Johnson (2024)', type: 'source', subLabel: 'Qualitative Research Methods', details: 'کۆکراوەی میتۆدۆلۆژیای چۆنایەتی لە زانستە مرۆڤایەتییەکاندا.', author: 'Smith & Johnson', year: 2024, publisher: 'Oxford University Press' },
-        { id: 'src_3', label: 'کەریم (2023)', type: 'source', subLabel: 'شیکاریی دەقی مێژوویی', details: 'تایبەتمەندییە زمانەوانییەکانی سۆرانی لە سەدەی بیستەمدا.', author: 'کەریم', year: 2023, publisher: 'چاپخانەی زانکۆ' },
-        { id: 'src_4', label: 'Derrida (2022)', type: 'source', subLabel: 'Deconstruction and Discourse', details: 'تیۆریی پێکهاتەشکێنی لە شیکاریی دەقە ئەدەبییەکاندا.', author: 'Derrida', year: 2022, publisher: 'Academic Press' }
-      );
     }
 
     return nodes;
