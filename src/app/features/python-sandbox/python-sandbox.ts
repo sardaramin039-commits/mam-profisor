@@ -20,118 +20,23 @@ export interface ExperimentRow {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="p-4 bg-slate-900/60 rounded-xl border border-slate-800 space-y-4 dir-rtl">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <mat-icon class="text-indigo-400">query_stats</mat-icon>
-          <h3 class="text-lg font-bold text-slate-100">ژینگەی پایتۆن و تاقیکردنەوەی گریمانەکان (Python Hypothesis Testing Lab)</h3>
-        </div>
-        <span class="text-xs bg-indigo-950 text-indigo-300 border border-indigo-800 px-2.5 py-1 rounded-full font-mono">
-          Python execution sandbox پێویستی بە backend ـی پارێزراو هەیە
-        </span>
+      <h3 class="text-lg font-bold text-slate-100">تاقیگەی ئاماری ڕاستەقینە</h3>
+      <p class="text-xs text-slate-300">داتاکان بە کاما یان هێڵی نوێ جیا بکەرەوە. فەرمانە بەردەستەکان: mean، sd، frequency، pearson.</p>
+      <label class="block text-xs text-slate-300">فەرمانی شیکاری
+        <input [ngModel]="code()" (ngModelChange)="code.set($event)" class="w-full mt-1 p-2 rounded bg-slate-950 text-white border border-slate-700" />
+      </label>
+      <label class="block text-xs text-slate-300">داتای ژمارەیی
+        <textarea [ngModel]="dataInput()" (ngModelChange)="dataInput.set($event)" rows="4" class="w-full mt-1 p-2 rounded bg-slate-950 text-white border border-slate-700 font-mono"></textarea>
+      </label>
+      <div class="flex gap-2 flex-wrap">
+        <button (click)="loadPreset('ttest')" class="px-3 py-2 rounded bg-slate-800 text-white text-xs">t-test</button>
+        <button (click)="loadPreset('anova')" class="px-3 py-2 rounded bg-slate-800 text-white text-xs">ناوەند و SD</button>
+        <button (click)="loadPreset('regression')" class="px-3 py-2 rounded bg-slate-800 text-white text-xs">Pearson</button>
+        <button (click)="loadPreset('chisquare')" class="px-3 py-2 rounded bg-slate-800 text-white text-xs">دووبارەبوون</button>
+        <button (click)="runCode()" [disabled]="isRunning()" class="px-4 py-2 rounded bg-indigo-600 text-white text-xs">{{ isRunning() ? 'شیکاری دەکرێت...' : 'شیکردنەوە' }}</button>
+        <button (click)="exportToCSV()" class="px-3 py-2 rounded bg-emerald-700 text-white text-xs">هەناردەی CSV</button>
       </div>
-
-      <!-- Presets for Hypothesis Testing -->
-      <div class="flex flex-wrap gap-2 text-xs">
-        <span class="text-slate-400 font-bold self-center">تاقیکردنەوە ئامارییەکان:</span>
-        <button (click)="loadPreset('ttest')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">
-          🧪 t-test تاقیکردنەوەی
-        </button>
-        <button (click)="loadPreset('anova')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">
-          📊 ANOVA هێڵکاری
-        </button>
-        <button (click)="loadPreset('regression')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">
-          📈 ڕێگریسیۆنی هێڵی
-        </button>
-        <button (click)="loadPreset('chisquare')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-md border border-slate-700">
-          📐 کاى دووجا (Chi-Square)
-        </button>
-      </div>
-
-      <!-- Python Code Editor -->
-      <textarea
-        [ngModel]="code()"
-        (ngModelChange)="code.set($event)"
-        rows="5"
-        class="w-full font-mono bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-emerald-400 focus:outline-none focus:border-indigo-500 shadow-inner"
-      ></textarea>
-
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <button
-          (click)="runCode()"
-          [disabled]="isRunning()"
-          class="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
-        >
-          <mat-icon class="text-sm">play_arrow</mat-icon>
-          {{ isRunning() ? 'لە جێبەجێکردندایە...' : 'جێبەجێکردنی تاقیکردنەوە لە تاقیگەدا' }}
-        </button>
-
-        <!-- CSV & Excel Export Buttons -->
-        <div class="flex items-center gap-2">
-          <button
-            (click)="exportToCSV()"
-            class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md"
-            title="داگرتنی داتای ئاماری بە شێوازی CSV بۆ تاقیگەکان"
-          >
-            <mat-icon class="text-sm">download</mat-icon>
-            داگرتنی ئەنجامەکان (CSV)
-          </button>
-          <button
-            (click)="exportToExcel()"
-            class="bg-teal-700 hover:bg-teal-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-md"
-            title="داگرتنی ئەنجامەکان و هێڵکارییەکان بە شێوازی Excel"
-          >
-            <mat-icon class="text-sm">table_chart</mat-icon>
-            داگرتنی هێڵکارییەکان (Excel)
-          </button>
-        </div>
-      </div>
-
-      <!-- Terminal Raw Output -->
-      @if (output()) {
-        <pre class="p-3 bg-slate-950 text-xs text-slate-300 font-mono rounded-lg border border-slate-800 overflow-x-auto">{{ output() }}</pre>
-      }
-
-      <!-- Experiment Data Results Table for Lab Use -->
-      <div class="p-3 bg-slate-950 rounded-xl border border-slate-800/80 space-y-2">
-        <div class="flex items-center justify-between text-xs text-indigo-300 font-bold border-b border-slate-800 pb-2">
-          <span class="flex items-center gap-1">
-            <mat-icon class="text-sm">biotech</mat-icon>
-            خشتەی ئاماری تاقیکردنەوەی گریمانەکانی پایتۆن (Lab Results Dataset):
-          </span>
-          <span class="text-[10px] text-slate-400">تا execution ـی ڕاستەقینە ئەنجام نەدراوە، هیچ داتای تاقیکراوە نییە.</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-right text-xs text-slate-300 border-collapse">
-            <thead>
-              <tr class="bg-slate-900 border-b border-slate-800 text-slate-400">
-                <th class="p-2 font-semibold">نموونە (Sample)</th>
-                <th class="p-2 font-semibold">گۆڕاوی X</th>
-                <th class="p-2 font-semibold">گۆڕاوی Y</th>
-                <th class="p-2 font-semibold">بارودۆخی گریمانە (Hypothesis)</th>
-                <th class="p-2 font-semibold">p-value</th>
-                <th class="p-2 font-semibold">ئاستی واتاداری (Significance)</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of experimentData(); track row.sampleName) {
-                <tr class="border-b border-slate-800/50 hover:bg-slate-900/50">
-                  <td class="p-2 font-mono text-indigo-300">{{ row.sampleName }}</td>
-                  <td class="p-2 font-mono">{{ row.variableX }}</td>
-                  <td class="p-2 font-mono">{{ row.variableY }}</td>
-                  <td class="p-2">
-                    <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800">
-                      {{ row.hypothesisStatus }}
-                    </span>
-                  </td>
-                  <td class="p-2 font-mono text-amber-300">{{ row.pValue }}</td>
-                  <td class="p-2 text-slate-400">{{ row.significance }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
+      @if (output()) { <pre class="p-3 bg-slate-950 text-slate-100 rounded whitespace-pre-wrap text-xs">{{ output() }}</pre> }
     </div>
   `
 })
