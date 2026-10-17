@@ -135,6 +135,26 @@
                     </div>
                   }
 
+                  <!-- Branch-by-Branch Live Writing Engine Banner -->
+                  @if (isBranchWritingInProgress() || branchWritingStatus()) {
+                    <div class="p-3.5 bg-gradient-to-r from-amber-950 via-stone-900 to-amber-950 text-white rounded-xl border-2 border-amber-500/80 shadow-md space-y-2 animate-pulse">
+                      <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-2">
+                          <span class="w-2.5 h-2.5 bg-amber-400 rounded-full animate-ping"></span>
+                          <span class="text-xs font-serif font-bold text-amber-300">
+                            بزوێنەری نووسینی زانستی (لق بە لق):
+                          </span>
+                        </div>
+                        <span class="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-200 px-2 py-0.5 rounded border border-amber-400/40">
+                          داڕشتنی چڕ و بێ کورتکردنەوە
+                        </span>
+                      </div>
+                      <p class="text-xs font-serif text-white font-bold tracking-wide">
+                        {{ branchWritingStatus() || 'خەریکی داڕشتنی ئەکادیمیی لقەکان بەپێی کوۆتای وشە...' }}
+                      </p>
+                    </div>
+                  }
+
                   <!-- Listing Parts vertically -->
                   <div class="space-y-3.5">
                     @for (c of chapters(); track c.id) {
@@ -222,6 +242,18 @@
                               <span>چاککردنی ڕێنووس</span>
                             </button>
 
+                            @if (c.axes && c.axes.length > 0) {
+                              <button 
+                                type="button" 
+                                (click)="writeSingleChapter(c.id)" 
+                                [disabled]="isBranchWritingInProgress()"
+                                class="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-[10.5px] font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer shadow-2xs disabled:opacity-50"
+                                title="نووسینی ئەم بەشە لق بە لق بەپێی کوۆتای دیاریکراو">
+                                <mat-icon class="!text-xs !w-3.5 !h-3.5 text-white">auto_awesome</mat-icon>
+                                <span>نووسینی لقەکان</span>
+                              </button>
+                            }
+
                             <button 
                               type="button" 
                               (click)="openChapterPreview(c)" 
@@ -281,6 +313,48 @@
                           </div>
 
                         </div>
+
+                        <!-- 3-Level Sub-Branches Hierarchy Preview -->
+                        @if (c.axes && c.axes.length > 0) {
+                          <div class="mt-2.5 p-2.5 bg-stone-50/70 border border-stone-200 rounded-xl space-y-1.5">
+                            <div class="flex items-center justify-between text-[10px] font-serif font-bold text-stone-700">
+                              <span class="flex items-center gap-1 text-amber-800">
+                                <mat-icon class="!text-xs !w-3.5 !h-3.5">account_tree</mat-icon>
+                                پێڕستی تەوەر و لقەکان ({{ c.axes.length }} تەوەر)
+                              </span>
+                              <span class="font-mono text-stone-500 text-[9px]">کوۆتای وشە بۆ هەر لقێک</span>
+                            </div>
+
+                            <div class="space-y-1.5">
+                              @for (ax of c.axes; track ax.id) {
+                                <div class="bg-white p-2 rounded-lg border border-stone-200/80 space-y-1 text-xs">
+                                  <div class="flex items-center justify-between text-[10px] font-bold font-serif text-amber-950">
+                                    <span>{{ ax.code }}: {{ ax.title }}</span>
+                                    <span class="font-mono text-stone-600 font-bold">{{ ax.wordCount || 0 }} / {{ ax.targetWords }} وشە</span>
+                                  </div>
+                                  <div class="flex flex-wrap gap-1 pt-0.5">
+                                    @for (br of ax.branches; track br.id) {
+                                      <span class="inline-flex items-center gap-1 text-[8.5px] px-1.5 py-0.5 rounded border"
+                                            [class.bg-emerald-50]="br.status === 'completed'"
+                                            [class.border-emerald-300]="br.status === 'completed'"
+                                            [class.text-emerald-800]="br.status === 'completed'"
+                                            [class.bg-amber-50]="br.status === 'writing' || br.status === 'expanding'"
+                                            [class.border-amber-300]="br.status === 'writing' || br.status === 'expanding'"
+                                            [class.text-amber-800]="br.status === 'writing' || br.status === 'expanding'"
+                                            [class.bg-stone-50]="br.status === 'pending'"
+                                            [class.border-stone-200]="br.status === 'pending'"
+                                            [class.text-stone-600]="br.status === 'pending'">
+                                        <span class="font-mono font-bold">{{ br.code }}</span>
+                                        <span class="truncate max-w-[110px]">{{ br.title }}</span>
+                                        <span class="font-mono text-[8px] font-bold">({{ br.wordCount || 0 }}/{{ br.targetWords }})</span>
+                                      </span>
+                                    }
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        }
 
                         <!-- Content Preview -->
                         @if (c.content) {

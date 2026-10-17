@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { DigitalLibraryService } from '../../../services/digital-library.service';
-import { crawlerEngine } from '../../../../services/crawler-engine';
+import { crawlerEngine } from '../services/crawler-engine';
 import { SupportedLanguage, DocumentType } from '../../../models/digital-library.model';
 
 @Component({

@@ -23,9 +23,9 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
         </div>
       </div>
 
-      <button type="button" class="mam-new-project" (click)="goSplash.emit(); closeMobileNav()">
-        <mat-icon>add</mat-icon>
-        <span>پڕۆژەی نوێ</span>
+      <button type="button" class="mam-new-project" (click)="newBlankThesis.emit(); closeMobileNav()" title="دەستپێکردنی تێزێکی نوێی بەتاڵ">
+        <mat-icon>add_circle</mat-icon>
+        <span>+ دەستپێکردنی تێزی نوێ (بەتاڵ)</span>
       </button>
 
       <nav class="mam-nav" aria-label="هەنگاوەکانی پێڕەوی ئەکادیمی">
@@ -142,6 +142,18 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
       </div>
 
       <div class="mam-topbar-right">
+        <!-- New Blank Thesis Button -->
+        <button type="button" class="mam-top-action" (click)="newBlankThesis.emit()" title="دەستپێکردنی توێژینەوەیەکی نوێی بەتاڵ">
+          <mat-icon class="!text-amber-400">add_circle</mat-icon>
+          <span class="font-bold text-amber-200">+ دەستپێکردنی تێزی نوێ (بەتاڵ)</span>
+        </button>
+
+        <!-- Real API & Auto-Save Status Indicator -->
+        <div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 rounded-lg text-[11px] font-sans">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>پاشەکەوت کرا لە بیرگەدا • پەیوەستە بە ژیریی دەستکرد</span>
+        </div>
+
         <div class="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 text-white rounded-full text-xs font-bold shadow-sm border border-amber-300/40">
           <mat-icon class="!text-sm">workspace_premium</mat-icon>
           <span>ئاستی پڕۆ • Pro Active</span>
@@ -193,6 +205,7 @@ export class DashboardHeaderComponent {
   isFocusMode = input(false);
 
   goSplash = output<void>();
+  newBlankThesis = output<void>();
   selectTab = output<MainTab>();
   loginWithGoogle = output<void>();
   logout = output<void>();

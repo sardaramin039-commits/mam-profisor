@@ -36,6 +36,26 @@ export interface ChapterSnapshotModel {
   contentSnippet?: string;
 }
 
+export interface SubBranchItem {
+  id: string; // e.g. "1.1.1"
+  code: string; // e.g. "١.١.١"
+  title: string;
+  targetWords: number;
+  wordCount: number;
+  status: 'pending' | 'writing' | 'completed' | 'expanding';
+  content?: string;
+  expansionRounds?: number;
+}
+
+export interface AxisItem {
+  id: string; // e.g. "1.1"
+  code: string; // e.g. "تەوەری یەکەم"
+  title: string;
+  targetWords: number;
+  wordCount: number;
+  branches: SubBranchItem[];
+}
+
 export interface ChapterItemModel {
   id: number;
   title: string;
@@ -52,6 +72,7 @@ export interface ChapterItemModel {
   customSourcesOn?: boolean;
   fieldWorkOn?: boolean;
   customTOCOn?: boolean;
+  axes?: AxisItem[];
 }
 
 export interface SuggestionItem {

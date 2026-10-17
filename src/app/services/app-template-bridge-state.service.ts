@@ -147,10 +147,37 @@ export class AppTemplateBridgeStateService {
   compareRightDoc = signal<string>('');
   compareLeftText = signal<string>('');
   compareRightText = signal<string>('');
-  compareAnalysis = computed(() => ({
-    left: { wordCount: 0, paragraphs: 0, headers: 0, avgWordLength: 0, complexityScore: 0, citationsCount: 0, citationConsistency: 'بێ کێشە', citationConsistencyScore: 100 },
-    right: { wordCount: 0, paragraphs: 0, headers: 0, avgWordLength: 0, complexityScore: 0, citationsCount: 0, citationConsistency: 'بێ کێشە', citationConsistencyScore: 100 }
-  }));
+  compareAnalysis = computed(() => {
+    const leftText = this.compareLeftText() || this.compareLeftDoc() || '';
+    const rightText = this.compareRightText() || this.compareRightDoc() || '';
+    const countWords = (t: string) => t.trim() ? t.trim().split(/\s+/).filter(Boolean).length : 0;
+    const countParagraphs = (t: string) => t.trim() ? t.split(/\n+/).filter(Boolean).length : 0;
+    const countHeaders = (t: string) => (t.match(/^#{1,6}\s+/gm) || []).length;
+    const leftWords = countWords(leftText);
+    const rightWords = countWords(rightText);
+    return {
+      left: {
+        wordCount: leftWords,
+        paragraphs: countParagraphs(leftText),
+        headers: countHeaders(leftText),
+        avgWordLength: leftWords ? Math.round(leftText.replace(/\s+/g, '').length / leftWords) : 0,
+        complexityScore: leftWords > 300 ? 88 : Math.round((leftWords / 300) * 88),
+        citationsCount: (leftText.match(/\[\d+\]|\([^)]+\d{4}[^)]*\)/g) || []).length,
+        citationConsistency: 'بێ کێشە',
+        citationConsistencyScore: 100
+      },
+      right: {
+        wordCount: rightWords,
+        paragraphs: countParagraphs(rightText),
+        headers: countHeaders(rightText),
+        avgWordLength: rightWords ? Math.round(rightText.replace(/\s+/g, '').length / rightWords) : 0,
+        complexityScore: rightWords > 300 ? 88 : Math.round((rightWords / 300) * 88),
+        citationsCount: (rightText.match(/\[\d+\]|\([^)]+\d{4}[^)]*\)/g) || []).length,
+        citationConsistency: 'بێ کێشە',
+        citationConsistencyScore: 100
+      }
+    };
+  });
 
   // Chapter viewed helpers & Advanced Tools
   viewedChapterSpellIssues = signal<any[]>([]);

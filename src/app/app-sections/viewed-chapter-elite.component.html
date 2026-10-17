@@ -112,6 +112,15 @@
                       </div>
 
                       <div class="pt-2 flex items-center justify-end gap-2 border-t border-stone-100">
+                        @if (eliteRigorScorecard()) {
+                          <button 
+                            type="button" 
+                            (click)="appendAdditionsToChapter(viewedChapter()!, eliteRigorScorecard()?.analysisReport)"
+                            class="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">check_circle</mat-icon>
+                            <span>چەسپاندن لە ناو دەستنووسدا (Apply to Manuscript)</span>
+                          </button>
+                        }
                         <button 
                           type="button" 
                           (click)="generateEliteAcademicAssessment(viewedChapter()!)"

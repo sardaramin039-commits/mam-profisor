@@ -138,6 +138,54 @@ export abstract class AppControllerActions extends AppControllerBase {
     this.viewedChapter.set(null);
   }
 
+  openNewBlankThesisModal(): void {
+    const curTitle = this.refineForm?.get('title')?.value || 'تێزی ئەکادیمی نوێ';
+    this.newThesisTitleInput.set(curTitle === 'تێزی ئەکادیمی' ? 'تێزی ئەکادیمی نوێ' : curTitle);
+    this.isNewBlankThesisModalOpen.set(true);
+  }
+
+  cancelNewBlankThesis(): void {
+    this.isNewBlankThesisModalOpen.set(false);
+  }
+
+  confirmNewBlankThesis(): void {
+    const title = this.newThesisTitleInput().trim() || 'تێزی ئەکادیمی نوێ';
+    const degree = this.newThesisDegreeInput();
+    const structure = this.newThesisStructureInput();
+    this.createNewBlankThesis(title, degree, structure);
+    this.isNewBlankThesisModalOpen.set(false);
+  }
+
+  createNewBlankThesis(customTitle = 'تێزی ئەکادیمی نوێ', level: 'bachelor' | 'master' | 'phd' = 'master', structure: 'humanities' | 'empirical' = 'humanities'): void {
+    const pages = level === 'phd' ? 80 : (level === 'master' ? 40 : 15);
+    const blankOutline = buildAcademicThesisOutline({
+      title: customTitle,
+      academicLevel: level,
+      thesisStructureType: structure,
+      targetPages: pages,
+      includeDedication: true,
+      includeIntro: true,
+      includeTOC: true,
+      includeConclusion: true,
+      includeRecommendations: true,
+      includeReferences: true
+    });
+    this.editorService.setChapters(blankOutline);
+    this.chapters.set(blankOutline);
+    if (blankOutline.length > 0) {
+      this.editorService.activeChapterId.set(blankOutline[0].id);
+      this.viewedChapter.set(blankOutline[0]);
+    }
+    this.refineForm.patchValue({
+      title: customTitle,
+      academicLevel: level,
+      thesisStructureType: structure,
+      size: pages,
+      targetPages: pages
+    });
+    this.toastService.showToast('پڕۆژەی نوێی بەتاڵ', 'تێزێکی نوێی خاوێن و بێ داتای دیمۆ دەستیپێکرد.', 'success', 3500);
+  }
+
   toggleAcademicDarkMode() {
     this.academicDarkMode.update(v => !v);
   }
@@ -352,11 +400,8 @@ export abstract class AppControllerActions extends AppControllerBase {
     this.bridge.deactivateAllAcademicRules();
     this.toastService.showInfo('هەموو مەرجەکان ناچالاک کران (OFF)', 'سەرجەم ڕێسا زانستییەکان ناچالاک کران.');
   }
-  triggerComparison(r: any) { this.bridge.triggerComparison(r); }
-  searchLoadHistory(r: any) { this.bridge.searchLoadHistory(r); }
-  onRegisterVerifiedSource() { this.bridge.onRegisterVerifiedSource(); }
-  expandGlossaryTerm(entry: any) { this.bridge.expandGlossaryTerm(entry); }
-  applyGlossaryRealtimeFix(orig: string, fix: string) { this.bridge.applyGlossaryRealtimeFix(orig, fix); }
+  triggerComparison(r: any) { this.bridge.triggerComparison(r); } searchLoadHistory(r: any) { this.bridge.searchLoadHistory(r); } onRegisterVerifiedSource() { this.bridge.onRegisterVerifiedSource(); }
+  expandGlossaryTerm(entry: any) { this.bridge.expandGlossaryTerm(entry); } applyGlossaryRealtimeFix(orig: string, fix: string) { this.bridge.applyGlossaryRealtimeFix(orig, fix); }
   toggleAcademicRule(id: string) {
     this.bridge.toggleAcademicRule(id);
     const rule = this.bridge.academicRules().find(r => r.id === id);
@@ -382,35 +427,10 @@ export abstract class AppControllerActions extends AppControllerBase {
   onFilterCategory(cat: string) { this.bridge.onFilterCategory(cat); }
   useGlossaryTerm(entry: any) { this.bridge.useGlossaryTerm(entry); }
   toggleFaq(idx: number) { this.bridge.toggleFaq(idx); }
-  reviewStructure(): void {
-    this.bottomDockActions.reviewStructure(this.activeChapter(), (v) => this.isReviewingStructure.set(v));
-  }
-
-  autoWrite(): void {
-    this.bottomDockActions.autoWrite(
-      this.activeChapter(),
-      this.copilotInputText(),
-      this.manuscriptTitle(),
-      (v) => this.isWritingProgress.set(v)
-    );
-  }
-
-  autoHumanize(): void {
-    this.bottomDockActions.autoHumanize(
-      this.activeChapter(),
-      this.copilotInputText(),
-      (v) => this.isHumanizingProgress.set(v)
-    );
-  }
-
-  saveAll(): void {
-    this.bottomDockActions.saveAll(
-      this.refineForm.get('discipline')?.value || 'زانستە گشتییەکان',
-      this.refineForm.get('academicLevel')?.value || 'ماستەر',
-      this.manuscriptTitle(),
-      (v) => this.isExportingWord.set(v)
-    );
-  }
+  reviewStructure(): void { this.bottomDockActions.reviewStructure(this.activeChapter(), (v) => this.isReviewingStructure.set(v)); }
+  autoWrite(): void { this.bottomDockActions.autoWrite(this.activeChapter(), this.copilotInputText(), this.manuscriptTitle(), (v) => this.isWritingProgress.set(v)); }
+  autoHumanize(): void { this.bottomDockActions.autoHumanize(this.activeChapter(), this.copilotInputText(), (v) => this.isHumanizingProgress.set(v)); }
+  saveAll(): void { this.bottomDockActions.saveAll(this.refineForm.get('discipline')?.value || 'زانستە گشتییەکان', this.refineForm.get('academicLevel')?.value || 'ماستەر', this.manuscriptTitle(), (v) => this.isExportingWord.set(v)); }
   closeChapterPreview() { this.viewedChapter.set(null); }
   updateCompareLeftText(v: string) { this.bridge.updateCompareLeftText(v); }
   updateCompareRightText(v: string) { this.bridge.updateCompareRightText(v); }
@@ -454,6 +474,7 @@ export abstract class AppControllerActions extends AppControllerBase {
   applyParaphrasedText(c: any) { this.bridge.applyParaphrasedText(c); }
   runAcademicParaphrase() { this.bridge.runAcademicParaphrase(); }
   writeSingleChapter(id: number) { this.bridge.writeSingleChapter(id); }
+  writeAllChapters() { this.bridge.writeAllChapters(); }
   generateMultiStyleCitation() { this.bridge.generateMultiStyleCitation(); }
   checkChapterPlagiarism(chapter: any) { this.bridge.checkChapterPlagiarism(chapter); }
   exportSandboxPDF() { this.bridge.exportSandboxPDF(); }

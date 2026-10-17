@@ -6,15 +6,7 @@ import { Data } from './data';
 import { ChapterItemModel as ChapterItem } from '../domain/models';
 import { ACADEMIC_GLOSSARY as GLOSSARY_PROMPT } from '../../prompts/academic-glossary';
 import { CitationBuilder, CitationItem } from '../helpers/citation-builder';
-
-function createSnapshotHash(text: string): string {
-  let hash = 2166136261;
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16).padStart(8, '0');
-}
+import { createSnapshotHash } from './app-template-bridge.utils';
 import { firstValueFrom } from 'rxjs';
 import { AppTemplateBridgeStateService } from './app-template-bridge-state.service';
 import { GeminiRequestManagerService } from './gemini-request-manager.service';
@@ -24,25 +16,35 @@ import { SourceVerificationEngine } from '../helpers/source-verification-engine'
 import { POLYPHONIC_SYNTHESIS_DIRECTIVES } from '../helpers/polyphonic-synthesis.helper';
 import { buildTerminologyLockPromptContext } from '../helpers/terminology-consistency-checker';
 
+import { BranchWritingEngineService } from './branch-writing-engine.service';
+
 @Injectable()
 export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateService {
   readonly requestManager = inject(GeminiRequestManagerService);
   readonly toulminService = inject(AcademicToulminArgumentService);
   readonly hedgingService = inject(AcademicHedgingStanceService);
+  readonly branchEngine = inject(BranchWritingEngineService);
   readonly writingWordProgress = this.requestManager.currentWordCountProgress;
+  readonly isBranchWritingInProgress = this.branchEngine.isBranchWritingInProgress;
+  readonly branchWritingStatus = this.branchEngine.currentWritingStatus;
 
   writeSingleChapter(id: number) {
     const chapter = this.getChapterById(id);
     if (!chapter) return;
 
+    if (chapter.axes && chapter.axes.length > 0) {
+      this.branchEngine.executeBranchByBranchWriting(this.editorService.chapters(), {
+        targetChapterId: chapter.id,
+        manuscriptTitle: this.refineForm?.get('title')?.value || chapter.title,
+        academicLevel: this.refineForm?.get('academicLevel')?.value || 'ماستەر',
+        discipline: this.refineForm?.get('discipline')?.value || 'زانستە ئەکادیمییەکان'
+      });
+      return;
+    }
+
     const rawTargetWords = Number(this.refineForm?.get('targetWords')?.value) || 1800;
     const targetWords = Math.max(1200, rawTargetWords);
-
-    const toulminDirectives = this.toulminService.getToulminDirectives();
-    const hedgingDirectives = this.hedgingService.getHedgingDirectives();
-    const terminologyLock = buildTerminologyLockPromptContext();
-
-    const fullPrompt = `${chapter.title || 'بەشی توێژینەوەی ئەکادیمی'}\n\n${toulminDirectives}\n\n${hedgingDirectives}\n\n${POLYPHONIC_SYNTHESIS_DIRECTIVES}\n\n${terminologyLock}`;
+    const fullPrompt = `${chapter.title || 'بەشی توێژینەوەی ئەکادیمی'}\n\n${this.toulminService.getToulminDirectives()}\n\n${this.hedgingService.getHedgingDirectives()}\n\n${POLYPHONIC_SYNTHESIS_DIRECTIVES}\n\n${buildTerminologyLockPromptContext()}`;
 
     this.requestManager.generateLongAcademicSection(
       fullPrompt,
@@ -53,8 +55,14 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
       if (result?.content) {
         this.editorService.updateChapterContent(chapter.id, result.content, 'داڕشتنی بەشی ئەکادیمی (Toulmin & Multi-Pass)');
       }
-    }).catch(error => {
-      console.error('Multi-pass chapter generation error:', error);
+    });
+  }
+
+  writeAllChapters() {
+    this.branchEngine.executeBranchByBranchWriting(this.editorService.chapters(), {
+      manuscriptTitle: this.refineForm?.get('title')?.value || 'تێزی ئەکادیمی',
+      academicLevel: this.refineForm?.get('academicLevel')?.value || 'ماستەر',
+      discipline: this.refineForm?.get('discipline')?.value || 'زانستە ئەکادیمییەکان'
     });
   }
 
@@ -384,22 +392,14 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
   }
   applySoranispellFixInViewedChapter() {}
-  encryptChapterInVault(c: any, pwd: any) {}
-  decryptChapterInVault(c: any, pwd: any) {}
+  encryptChapterInVault(_c: any, _pwd: any) {}
+  decryptChapterInVault(_c: any, _pwd: any) {}
   createManualSnapshot(c: any) {
     if (!c?.id) return;
     try {
-      const snapshot = {
-        id: 'snap_' + Date.now(),
-        chapterId: c.id,
-        createdAt: new Date().toISOString(),
-        content: String(c.content || ''),
-        hash: createSnapshotHash(String(c.content || ''))
-      };
+      const snapshot = { id: 'snap_' + Date.now(), chapterId: c.id, createdAt: new Date().toISOString(), content: String(c.content || ''), hash: createSnapshotHash(String(c.content || '')) };
       localStorage.setItem('mam-professor:snapshot:' + String(c.id), JSON.stringify(snapshot));
-    } catch (error) {
-      console.warn('Snapshot creation failed:', error);
-    }
+    } catch (error) { console.warn('Snapshot creation failed:', error); }
   }
   verifyChapterIntegrityAgainstLastSnapshot(c: any): { isValid: boolean; status: 'verified' | 'not-verified' | 'mismatch'; hash?: string } {
     if (!c?.id || typeof window === 'undefined') return { isValid: false, status: 'not-verified' };

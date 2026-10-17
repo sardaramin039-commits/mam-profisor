@@ -219,6 +219,7 @@ function createSectionItem(
     academicNotes: fieldWorkOn
       ? `${academicNotes} پێویستە داتای مەیدانی و تێبینی ڕاستەوخۆ پشتڕاست بکرێنەوە.`
       : academicNotes,
-    customTargetWords: targetWords
+    customTargetWords: targetWords,
+    axes: []
   };
 }

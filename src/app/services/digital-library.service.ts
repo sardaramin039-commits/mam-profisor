@@ -10,8 +10,8 @@ import {
   SupportedLanguage,
   CrawlerSyncLog
 } from '../models/digital-library.model';
-import { DIGITAL_LIBRARY_SOURCES } from '../../services/digital-library-sources';
-import { INITIAL_LIBRARY_BOOKS } from '../../services/kurdish-books-catalog';
+import { DIGITAL_LIBRARY_SOURCES } from '../features/digital-library/services/digital-library-sources';
+import { INITIAL_LIBRARY_BOOKS } from '../features/digital-library/services/kurdish-books-catalog';
 import { PDF4KURD_BOOKS_ARCHIVE } from '../../prompts/pdf4kurd-books';
 import { EditorService } from '../features/editor/services/editor';
 import { AcademicStoreService } from './academic-store.service';

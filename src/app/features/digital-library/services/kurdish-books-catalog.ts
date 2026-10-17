@@ -1,0 +1,61 @@
+import { LibraryBook } from '../../../models/digital-library.model';
+
+export const INITIAL_LIBRARY_BOOKS: LibraryBook[] = [
+  {
+    id: 'book-sharafnama',
+    title: 'شەرەفنامە: مێژووی دەوڵەت و میرنشینە کوردییەکان',
+    author: 'شەرەفخانی بەدلیسی',
+    year: 1597,
+    language: 'ckb',
+    description: 'گرنگترین سەرچاوەی مێژوویی سەرەتایی لەسەر میرنشینە کوردییەکان و جوگرافیای کوردستان.',
+    coverImage: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600',
+    sourceUrl: 'https://pdf4kurd.com/sharafnama',
+    sourceName: 'PDF4Kurd ئەرشیڤی پەڕتووک',
+    sourceId: 'pdf4kurd',
+    sourceCategory: 'kurdish',
+    documentType: 'book',
+    downloadUrl: 'https://pdf4kurd.com/sharafnama.pdf',
+    pageCount: 520,
+    subjects: ['مێژوو', 'کوردناسی', 'میرنشینەکان'],
+    verified: true,
+    indexedAt: new Date().toISOString()
+  },
+  {
+    id: 'book-mem-u-zin',
+    title: 'مەم و زین: شاکاری عیرفانی و فەلسەفیی نەتەوەیی',
+    author: 'ئەحمەدی خانی',
+    year: 1692,
+    language: 'kmr',
+    description: 'شاکاری ئەدەبی کلاسیکی کوردی، هۆنراوەی داستانئامێز لەسەر فەلسەفەی نەتەوەیی و عیشقی عیرفانی.',
+    coverImage: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=600',
+    sourceUrl: 'https://pdf4kurd.com/mem-u-zin',
+    sourceName: 'PDF4Kurd ئەرشیڤی پەڕتووک',
+    sourceId: 'pdf4kurd',
+    sourceCategory: 'kurdish',
+    documentType: 'book',
+    downloadUrl: 'https://pdf4kurd.com/mem-u-zin.pdf',
+    pageCount: 380,
+    subjects: ['ئەدەبیات', 'فەلسەفە', 'شیعر'],
+    verified: true,
+    indexedAt: new Date().toISOString()
+  },
+  {
+    id: 'book-history-of-kurds',
+    title: 'مێژووی کورد و کوردستان لە سەرەتاوە تا سەردەمی هاوچەرخ',
+    author: 'محەمەد ئەمین زەکی بەگ',
+    year: 1931,
+    language: 'ckb',
+    description: 'یەکەم کتێبی مێژوویی مۆدێرن بە زمانی کوردی دەربارەی مێژوو و نەژادی گەلی کورد.',
+    coverImage: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=600',
+    sourceUrl: 'https://pdf4kurd.com/zaki-beg',
+    sourceName: 'PDF4Kurd ئەرشیڤی پەڕتووک',
+    sourceId: 'pdf4kurd',
+    sourceCategory: 'kurdish',
+    documentType: 'book',
+    downloadUrl: 'https://pdf4kurd.com/zaki-beg.pdf',
+    pageCount: 460,
+    subjects: ['مێژوو', 'کوردناسی', 'جوگرافیا'],
+    verified: true,
+    indexedAt: new Date().toISOString()
+  }
+];

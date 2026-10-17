@@ -1,382 +1,378 @@
 /**
  * src/app/helpers/kurdish-academic-text-analysis.ts
  *
- * Real-time text analysis for Kurdish (Soranî) academic manuscripts:
- * 1. Word Frequency & Vocabulary Diversity (Top 10 used words, stop-word filtering, Type-Token Ratio).
- * 2. Kurdish Academic Readability Index (KARI) adapted for Sorani morphology, sentence lengths, and academic syntax.
+ * Core pure-TypeScript text-checking algorithms ported from server services:
+ * - Contradiction Detection between scholarly claims & evidence
+ * - Human Scholarly Prose refinement & citation preservation
+ * - Kurdish Academic Language (Sorani) quality analyzer
+ * - Kurdish Word Frequency & Readability Analyzers
+ * - Academic Cliche Detection & Professorial Rewrite
  */
+
+export type ContradictionSeverity = 'low' | 'medium' | 'high';
+
+export interface ContradictionFinding {
+  id: string;
+  claimA: string;
+  claimB: string;
+  sourceA: string;
+  sourceB: string;
+  severity: ContradictionSeverity;
+  explanationKurdish: string;
+  status: 'candidate' | 'supported';
+}
+
+export interface ContradictionReport {
+  findings: ContradictionFinding[];
+  contradictionCount: number;
+  highSeverityCount: number;
+  status: 'clear' | 'review_required' | 'insufficient_evidence';
+}
+
+export interface ScholarlyProseResult {
+  refinedText: string;
+  changes: string[];
+  unsupportedContentBlocked: number;
+  humanReviewRequired: boolean;
+  stylePolicy: string;
+  preservationPassed?: boolean;
+}
+
+export interface KurdishLanguageIssue {
+  type: 'grammar' | 'spelling' | 'terminology' | 'tone' | 'cohesion';
+  originalText: string;
+  suggestedText: string;
+  explanationKurdish: string;
+}
+
+export interface KurdishLanguageAnalysis {
+  overallLanguageScore: number;
+  academicTonePassed: boolean;
+  issues: KurdishLanguageIssue[];
+  refinedTextKurdish: string;
+  kurdishSummary: string;
+}
 
 export interface WordFrequencyItem {
   word: string;
   count: number;
   percentage: number;
-  isOverused: boolean;
+  isOverused?: boolean;
 }
 
 export interface WordFrequencyResult {
-  topWords: WordFrequencyItem[];
   totalWords: number;
   uniqueWords: number;
-  diversityRatio: number; // Type-Token Ratio (0 - 100)
+  vocabularyRichnessPct: number;
+  diversityRatio: number;
   diversityLabel: string;
+  topWords: WordFrequencyItem[];
+  overusedWords: WordFrequencyItem[];
 }
 
 export interface KurdishReadabilityResult {
-  score: number; // 0 - 100
+  readabilityScore: number;
+  score: number;
+  readingLevel: string;
   levelLabel: string;
-  gradeLevel: string;
-  avgSentenceLength: number; // words per sentence
-  avgWordLength: number; // characters per word
   badgeClass: string;
   recommendation: string;
+  averageSentenceLength: number;
+  averageWordLength: number;
+  complexWordCount: number;
+  verdictKurdish: string;
 }
 
-// Common Kurdish (Soranî) functional particles & stop-words
-export const KURDISH_STOP_WORDS = new Set([
-  'لە', 'بە', 'بۆ', 'و', 'کە', 'ئەم', 'ئەوە', 'ئەمە', 'ئەو', 'هەروەها', 'وەک', 'وەکو',
-  'یان', 'هیچ', 'هەموو', 'هەر', 'پێی', 'لێی', 'تێدا', 'لەسەر', 'دەربارەی', 'سەبارەت',
-  'چونکە', 'بەپێی', 'بەڵام', 'تا', 'تاکو', 'پاش', 'پێش', 'نییە', 'هەیە', 'دەبێت', 'بوو',
-  'بێت', 'دەکات', 'کراوە', 'دەکرێت', 'کرد', 'لەگەڵ', 'تەنها', 'ئەگەر', 'دەست', 'پێشتر',
-  'دوای', 'دەستنیشان', 'دیاری', 'نێوان', 'نێو', 'ناو', 'ناوخۆ', 'خۆ', 'خۆی', 'خۆیان',
-  'ئەوان', 'ئێمە', 'من', 'تۆ', 'ئیتر', 'بۆیە', 'لەبەر', 'سەر', 'ژێر', 'لای', 'نەک'
+export interface AcademicClicheFinding {
+  cliche: string;
+  formalAlternative: string;
+  reason: string;
+  count: number;
+}
+
+export interface AcademicClicheReport {
+  score: number;
+  clichesCount: number;
+  hasCliche: boolean;
+  generalizationsCount: number;
+  findings: AcademicClicheFinding[];
+  verdict: string;
+}
+
+const KURDISH_STOP_WORDS = new Set([
+  'لە', 'بە', 'بۆ', 'لەگەڵ', 'کە', 'وە', 'وەک', 'ئەم', 'ئەو', 'ئەمانە', 'ئەوانە',
+  'تا', 'بێ', 'یان', 'ئەگەر', 'هەروەها', 'بەڵام', 'چونکە', 'پاش', 'پێش', 'سەر',
+  'ژێر', 'نێوان', 'ناو', 'دەرەوە', 'خۆی', 'خۆیان', 'خۆت', 'من', 'ئێمە', 'تۆ', 'ئێوە'
 ]);
 
-/**
- * Calculates the top most frequent words and vocabulary diversity in Kurdish text.
- */
+function countOccurrences(text: string, fragment: string): number {
+  if (!fragment) return 0;
+  let count = 0;
+  let offset = 0;
+  while (offset <= text.length) {
+    const index = text.indexOf(fragment, offset);
+    if (index < 0) break;
+    count++;
+    offset = index + fragment.length;
+  }
+  return count;
+}
+
+export function extractCitationFragments(text: string): string[] {
+  const matches = [
+    ...(text.match(/\[[0-9]+(?:\s*[,;]\s*[0-9]+)*\]/g) || []),
+    ...(text.match(/\([^()\n]{1,120}\b(?:19|20)\d{2}[a-z]?\)/g) || [])
+  ];
+  return Array.from(new Set(matches.map(item => item.trim()).filter(Boolean)));
+}
+
+export function verifyCitationPreservation(
+  original: string,
+  refined: string,
+  protectedFragments: string[] = []
+): boolean {
+  const uniqueFragments = Array.from(
+    new Set([
+      ...protectedFragments.map(item => String(item || '').trim()).filter(Boolean),
+      ...extractCitationFragments(original)
+    ])
+  );
+  return uniqueFragments.every(
+    fragment => countOccurrences(refined, fragment) >= countOccurrences(original, fragment)
+  );
+}
+
+export function detectLocalContradictions(claims: { id: string; text: string; source: string }[]): ContradictionReport {
+  if (!claims || claims.length < 2) {
+    return { findings: [], contradictionCount: 0, highSeverityCount: 0, status: 'insufficient_evidence' };
+  }
+
+  const findings: ContradictionFinding[] = [];
+  const negations = ['پێچەوانە', 'ڕەتکردنەوە', 'دژ', 'نەگونجاو', 'جیاوازە لە', 'بەرپەرچ'];
+
+  for (let i = 0; i < claims.length; i++) {
+    for (let j = i + 1; j < claims.length; j++) {
+      const a = claims[i];
+      const b = claims[j];
+      const hasConflict = negations.some(n => a.text.includes(n) || b.text.includes(n));
+
+      if (hasConflict) {
+        findings.push({
+          id: `contra_${i}_${j}`,
+          claimA: a.text,
+          claimB: b.text,
+          sourceA: a.source,
+          sourceB: b.source,
+          severity: 'medium',
+          explanationKurdish: `دژبەری یان جیاوازیی گوتار لە نێوان سەرچاوەی (${a.source}) و (${b.source}) بەدیکرا.`,
+          status: 'candidate'
+        });
+      }
+    }
+  }
+
+  return {
+    findings,
+    contradictionCount: findings.length,
+    highSeverityCount: findings.filter(f => f.severity === 'high').length,
+    status: findings.length > 0 ? 'review_required' : 'clear'
+  };
+}
+
+export function analyzeKurdishAcademicLanguage(text: string): KurdishLanguageAnalysis {
+  const issues: KurdishLanguageIssue[] = [];
+  const informalWords: Record<string, string> = {
+    'زۆر زۆر': 'تا ئاستێکی بەرچاو',
+    'ئیش': 'کار / توێژینەوە',
+    'شت': 'دیاردە / بابەتی لێکۆڵراو',
+    'هەموو کەس دەزانێت': 'بەپێی ئەدەبیاتی زانستی سەلمێنراوە کە'
+  };
+
+  for (const [informal, formal] of Object.entries(informalWords)) {
+    if (text.includes(informal)) {
+      issues.push({
+        type: 'tone',
+        originalText: informal,
+        suggestedText: formal,
+        explanationKurdish: `دەستەواژەی گشتی «${informal}» بگۆڕدرێت بە وشەی ئەکادیمی «${formal}».`
+      });
+    }
+  }
+
+  const overallScore = Math.max(70, 100 - issues.length * 8);
+
+  return {
+    overallLanguageScore: overallScore,
+    academicTonePassed: overallScore >= 80,
+    issues,
+    refinedTextKurdish: text,
+    kurdishSummary: `شیکاریی زمانەوانی: نمرەی ئەکادیمی ${overallScore} لە ١٠٠. ${issues.length} تێبینی تۆمارکرا.`
+  };
+}
+
 export function calculateKurdishWordFrequency(
   text: string,
-  excludeStopWords = true,
-  topCount = 10
+  excludeStopWords: boolean = true,
+  topN: number = 10
 ): WordFrequencyResult {
   if (!text || !text.trim()) {
     return {
-      topWords: [],
       totalWords: 0,
       uniqueWords: 0,
-      diversityRatio: 0,
-      diversityLabel: 'هیچ دەقێک نییە'
-    };
-  }
-
-  const cleanText = text
-    .replace(/[،؛؟!.?:"'«»()\[\]{}—–\-_/\\#@*~`+=<>]/g, ' ')
-    .trim();
-  
-  const rawTokens = cleanText.split(/\s+/).filter(w => w.length > 1);
-  const totalWords = rawTokens.length;
-
-  if (totalWords === 0) {
-    return {
+      vocabularyRichnessPct: 100,
+      diversityRatio: 100,
+      diversityLabel: 'دەوڵەمەند و هەمەچەشن',
       topWords: [],
-      totalWords: 0,
-      uniqueWords: 0,
-      diversityRatio: 0,
-      diversityLabel: 'هیچ دەقێک نییە'
+      overusedWords: []
     };
   }
 
-  const freqMap = new Map<string, number>();
-  let countedWords = 0;
+  const words = text
+    .trim()
+    .replace(/[«»"،.؟!؛:\-—()\[\]{}"'\\\/]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 1);
 
-  for (const token of rawTokens) {
-    const word = token.toLowerCase();
-    if (excludeStopWords && KURDISH_STOP_WORDS.has(word)) {
-      continue;
-    }
-    freqMap.set(word, (freqMap.get(word) || 0) + 1);
-    countedWords++;
+  const totalWords = words.length;
+  const counts = new Map<string, number>();
+
+  for (const w of words) {
+    if (excludeStopWords && KURDISH_STOP_WORDS.has(w)) continue;
+    counts.set(w, (counts.get(w) || 0) + 1);
   }
 
-  const sorted = Array.from(freqMap.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, topCount);
+  const items: WordFrequencyItem[] = Array.from(counts.entries())
+    .map(([word, count]) => {
+      const percentage = totalWords > 0 ? Number(((count / totalWords) * 100).toFixed(1)) : 0;
+      const isOverused = count >= 4 && percentage >= 3.0;
+      return { word, count, percentage, isOverused };
+    })
+    .sort((a, b) => b.count - a.count);
 
-  const basisCount = countedWords || totalWords;
-  const topWords: WordFrequencyItem[] = sorted.map(([word, count]) => {
-    const percentage = Number(((count / basisCount) * 100).toFixed(1));
-    return {
-      word,
-      count,
-      percentage,
-      isOverused: percentage > 3.5 && count >= 4
-    };
-  });
-
-  const uniqueWords = freqMap.size;
-  const diversityRatio = Math.min(100, Math.round((uniqueWords / Math.max(1, basisCount)) * 100));
-
-  let diversityLabel = 'هەمەچەشنیی فەرهەنگیی بەرز (دەوڵەمەند)';
-  if (diversityRatio < 35) {
-    diversityLabel = 'دووبارەبوونەوەی زۆر؛ پێویستی بە وشەی هاوواتایە';
-  } else if (diversityRatio < 55) {
-    diversityLabel = 'هەمەچەشنیی فەرهەنگیی مامناوەند';
-  }
+  const topWords = items.slice(0, topN);
+  const overusedWords = items.filter(i => i.isOverused);
+  const uniqueWords = counts.size;
+  const richness = totalWords > 0 ? Math.round((uniqueWords / totalWords) * 100) : 100;
+  const diversityRatio = richness;
+  const diversityLabel = richness > 65 ? 'دەوڵەمەند و هەمەچەشن' : (richness > 45 ? 'ئاسایی' : 'دووبارەبوونەوەی زۆر');
 
   return {
-    topWords,
     totalWords,
     uniqueWords,
+    vocabularyRichnessPct: richness,
     diversityRatio,
-    diversityLabel
+    diversityLabel,
+    topWords,
+    overusedWords
   };
 }
 
-/**
- * Computes Kurdish Academic Readability Index (KARI)
- * Tailored for Central Kurdish sentence syntax and syllable/morpheme distribution.
- */
 export function calculateKurdishAcademicReadability(text: string): KurdishReadabilityResult {
-  if (!text || text.trim().length < 20) {
+  if (!text || !text.trim()) {
     return {
-      score: 50,
-      levelLabel: 'لە سەرەتادایە',
-      gradeLevel: 'دەستی پێنەکردووە',
-      avgSentenceLength: 0,
-      avgWordLength: 0,
-      badgeClass: 'bg-stone-100 text-stone-700 border-stone-300',
-      recommendation: 'دەقی زیاتر بنووسە بۆ شیکاریی وردی ئاستی خوێندنەوە.'
+      readabilityScore: 100,
+      score: 100,
+      readingLevel: 'ئاسان',
+      levelLabel: 'ئاسان',
+      badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+      recommendation: 'دەقەکە بەتاڵە.',
+      averageSentenceLength: 0,
+      averageWordLength: 0,
+      complexWordCount: 0,
+      verdictKurdish: 'دەق بەتاڵە.'
     };
   }
 
-  const sentences = text
-    .split(/[.؟!\n]+/)
-    .map(s => s.trim())
-    .filter(s => s.length > 5);
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  const sentences = text.split(/[.؟!؛\n]+/).filter(s => s.trim().length > 3);
+  const wordCount = words.length;
+  const sentenceCount = Math.max(1, sentences.length);
 
-  const numSentences = Math.max(1, sentences.length);
+  const avgSentenceLen = Number((wordCount / sentenceCount).toFixed(1));
+  const totalChars = words.reduce((acc, w) => acc + w.length, 0);
+  const avgWordLen = wordCount > 0 ? Number((totalChars / wordCount).toFixed(1)) : 0;
+  const complexWords = words.filter(w => w.length >= 8).length;
 
-  const cleanWords = text
-    .replace(/[،؛؟!.?:"'«»()\[\]{}—–\-_/\\#@*~`+=<>]/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter(w => w.length > 0);
+  let score = 100 - (avgSentenceLen * 1.5) - (avgWordLen * 5);
+  score = Math.max(35, Math.min(98, Math.round(score)));
 
-  const numWords = Math.max(1, cleanWords.length);
-
-  // 1. Average Sentence Length (ASL): Words per sentence
-  const avgSentenceLength = Number((numWords / numSentences).toFixed(1));
-
-  // 2. Average Word Length (AWL): Characters per word
-  const totalCharacters = cleanWords.reduce((acc, w) => acc + w.length, 0);
-  const avgWordLength = Number((totalCharacters / numWords).toFixed(1));
-
-  // 3. Estimate multi-syllabic & compound word density (Kurdish vowels: ا, و, ۆ, وو, ی, ێ, ە)
-  let multiSyllableWordCount = 0;
-  const kurdishVowelRegex = /[اوۆێە]|وو|یی/g;
-  for (const w of cleanWords) {
-    const vowels = w.match(kurdishVowelRegex);
-    if (vowels && vowels.length >= 3) {
-      multiSyllableWordCount++;
-    }
-  }
-  const complexWordPct = (multiSyllableWordCount / numWords) * 100;
-
-  // Kurdish Academic Readability Formula:
-  let rawScore = 190 - (1.15 * avgSentenceLength) - (11.0 * avgWordLength) + (complexWordPct * 0.15);
-  rawScore = Math.max(15, Math.min(100, Math.round(rawScore)));
-
-  let levelLabel = 'ئاستی ئەکادیمیی هاوسەنگ';
-  let gradeLevel = 'بەکالۆریۆس / ماستەر';
-  let badgeClass = 'bg-emerald-100 text-emerald-900 border-emerald-400';
-  let recommendation = 'پێکهاتەی ڕستەکان و زاراوەکان لە ئاستێکی ئەکادیمیی ستاندارددان.';
-
-  if (rawScore >= 80) {
-    levelLabel = 'سادە و زارەکی (Conversational)';
-    gradeLevel = 'ئاستی گشتی / خوێندنگە';
-    badgeClass = 'bg-blue-100 text-blue-900 border-blue-400';
-    recommendation = 'ڕستەکان کورتن؛ بەکارهێنانی زاراوەی قووڵتر و گرێدەری زانستی پێشنیار دەکرێت.';
-  } else if (rawScore >= 65) {
-    levelLabel = 'ئەکادیمیی هاوسەنگ (Optimal Academic)';
-    gradeLevel = 'زانکۆ / توێژینەوەی باڵا';
-    badgeClass = 'bg-emerald-100 text-emerald-900 border-emerald-400';
-    recommendation = 'تەبایی و هاوسەنگییەکی زۆر باش لەنێوان درێژی ڕستە و تێگەیشتندا هەیە.';
-  } else if (rawScore >= 50) {
-    levelLabel = 'چڕ و تیۆری (Advanced Theoretical)';
-    gradeLevel = 'تێزی ماستەر و دکتۆرا';
-    badgeClass = 'bg-amber-100 text-amber-900 border-amber-400';
-    recommendation = 'دەقەکە چڕ و ئەکادیمییە؛ دڵنیابەرەوە لە ڕوونی بۆ خوێنەر لە ڕستە درێژەکاندا.';
-  } else {
-    levelLabel = 'زۆر ئاڵۆز (Overly Convoluted)';
-    gradeLevel = 'پێویستی بە سادەکردنەوەیە';
-    badgeClass = 'bg-rose-100 text-rose-900 border-rose-400';
-    recommendation = 'ڕستەکان زۆر درێژ یان ئاڵۆزن؛ پێشنیار دەکرێت بۆ چەند ڕستەیەکی ڕوونتر پارچە بکرێن.';
+  let level = 'مامناوەند (گونجاو بۆ خوێندنی باڵا)';
+  let badgeClass = 'bg-amber-100 text-amber-900 border-amber-300';
+  let recommendation = 'ئاستی ڕستەکان گونجاوە بۆ نامەی ئەکادیمی.';
+  if (score > 80) {
+    level = 'ڕەوان و ئاسان';
+    badgeClass = 'bg-emerald-100 text-emerald-900 border-emerald-300';
+    recommendation = 'تێکستەکە تەواو ڕەوان و خوێنەرپەسەندە.';
+  } else if (score < 50) {
+    level = 'چڕ و قورس (پێویستی بە کورتکردنەوەی ڕستەکانە)';
+    badgeClass = 'bg-rose-100 text-rose-900 border-rose-300';
+    recommendation = 'پێشنیار دەکرێت ڕستە درێژەکان کورت بکرێنەوە بۆ خوێندنەوەی ئاسانتر.';
   }
 
   return {
-    score: rawScore,
-    levelLabel,
-    gradeLevel,
-    avgSentenceLength,
-    avgWordLength,
+    readabilityScore: score,
+    score,
+    readingLevel: level,
+    levelLabel: level,
     badgeClass,
-    recommendation
+    recommendation,
+    averageSentenceLength: avgSentenceLen,
+    averageWordLength: avgWordLen,
+    complexWordCount: complexWords,
+    verdictKurdish: `ڕێژەی ڕەوانیی تێکست ${score} لە ١٠٠. تێکڕای درێژیی ڕستە ${avgSentenceLen} وشەیە.`
   };
 }
 
-export interface AcademicIssueItem {
-  id: string;
-  type: 'journalistic_cliche' | 'unsupported_generalization' | 'orthography';
-  matchedText: string;
-  suggestion: string;
-  explanation: string;
-  index: number;
-}
+export function detectAcademicClichesAndFlaws(text: string): AcademicClicheReport {
+  const clicheDictionary: Array<{ phrase: string; formal: string; reason: string }> = [
+    { phrase: 'وەک هەموومان دەزانین', formal: 'وەک لە ئەدەبیاتی زانستیدا سەلمێنراوە', reason: 'دەرکەوتنی گوتاری گشتی' },
+    { phrase: 'لە کۆنەوە تا ئێستا', formal: 'لە ڕەوتی مێژووییدا', reason: 'کلیشەی دەستپێکی باو' },
+    { phrase: 'زۆر زۆر گرنگە', formal: 'گرنگییەکی ستراتیژی و بنەڕەتی هەیە', reason: 'تۆنی سۆزدار و نا-ئەکادیمی' },
+    { phrase: 'من پێم وایە', formal: 'توێژینەوەکە ئاماژە بەوە دەکات کە', reason: 'بەکارھێنانی کەسی یەکەم لە جیاتی دەنگی نادیار' },
+    { phrase: 'هیچ گومانی تێدا نییە', formal: 'بەڵگەکان بە ئاشکرا دەیسەلمێنن کە', reason: 'بڕیاردانی ڕەها بێ هێنانەوەی سەرچاوە' }
+  ];
 
-export interface ClicheAnalysisResult {
-  issues: AcademicIssueItem[];
-  clichesCount: number;
-  generalizationsCount: number;
-  orthographyCount: number;
-  hasCliche: boolean;
-}
+  const findings: AcademicClicheFinding[] = [];
+  let totalCliches = 0;
 
-const JOURNALISTIC_CLICHES: { pattern: RegExp; suggestion: string; explanation: string }[] = [
-  {
-    pattern: /یەکێکە لە گرنگترین بابەتەکان/g,
-    suggestion: 'بابەتی لێکۆڵینەوە لە چوارچێوەی گرفتی زانستیی... شیکار دەکرێت',
-    explanation: 'دەستپێکی ئینشائی و ڕۆژنامەوانی؛ دەبێت ڕاستەوخۆ بە گرفتی مەعریفی و تیۆری دەست پێبکرێت.'
-  },
-  {
-    pattern: /لە جیهانی ئەمڕۆدا/g,
-    suggestion: 'لە پارادایمی هاوچەرخی زانستیدا / لە واقیعی ئەزموونیدا',
-    explanation: 'دەستەواژەی گشتیی وتاری؛ پێویستە چوارچێوەی تیۆری یان مێژوویی دیاری بکرێت.'
-  },
-  {
-    pattern: /بێگومان دیارە کە/g,
-    suggestion: 'داتاکان و پێداچوونەوەی ئەدەبیات ئاماژە بەوە دەکەن کە',
-    explanation: 'حوکمی ڕەها و نائەکادیمی؛ پێویستی بە زمانی وریایی (Hedging) هەیە.'
-  },
-  {
-    pattern: /شایانی باسە/g,
-    suggestion: 'شیکارییەکان دەری دەخەن کە / بەڵگە مەعریفییەکان دەیسەلمێنن کە',
-    explanation: 'دەستەواژەی ڕۆژنامەوانی؛ شایانی گۆڕینە بۆ گوتاری شرۆڤەکاریی زانستی.'
-  },
-  {
-    pattern: /شایانی ئاماژەیە/g,
-    suggestion: 'لێکەوتە تیۆرییەکان ئاماژە بەوە دەکەن کە',
-    explanation: 'کڵیشەی باوی وتاری؛ بەستەری ئەکادیمی بەکاربهێنە.'
-  },
-  {
-    pattern: /لە دێرینەوە مرۆڤایەتی/g,
-    suggestion: 'پێشینەی مێژوویی و تیۆریی ئەم پرسە نیشانی دەدات کە',
-    explanation: 'گشتاندنی مێژوویی سواو کە شیاوی توێژینەوەی باڵا نییە.'
-  },
-  {
-    pattern: /هەروەک ئاشکرایە کە/g,
-    suggestion: 'بەپێی بنەما و ئەرگیومێنتە ئیپستۆمۆلۆژییەکان',
-    explanation: 'حوکمی پێشوەختە بەبێ بەڵگەهێنانەوە.'
-  },
-  {
-    pattern: /ڕۆڵێکی گرنگ دەگێڕێت/g,
-    suggestion: 'کارکردێکی بنەڕەتی هەیە لە بونیاتنانی',
-    explanation: 'دەربڕینی ئینشائی؛ زاراوەی کارکردی زانستی شیاوترە.'
-  }
-];
-
-const UNSUPPORTED_GENERALIZATIONS: { pattern: RegExp; suggestion: string; explanation: string }[] = [
-  {
-    pattern: /هەموو کەس دەزانێت/g,
-    suggestion: 'ئەدەبیاتی توێژینەوە جەخت لەوە دەکاتەوە',
-    explanation: 'گشتاندنی بێ بەڵگە؛ دەبێت پشت بە داتای زانستی یان سەرچاوە ببەسترێت.'
-  },
-  {
-    pattern: /هەموان کۆکن لەسەر/g,
-    suggestion: 'ڕێژەیەکی بەرچاو لە توێژەران هاوڕان لەسەر',
-    explanation: 'ئیدیعای کۆدەنگی بەبێ ئامار و لێکۆڵینەوەی ڕەخنەیی.'
-  },
-  {
-    pattern: /بە تەواوی ڕوونە کە/g,
-    suggestion: 'دەرەنجامە ئەزموونییەکان پێشنیاری ئەوە دەکەن کە',
-    explanation: 'پێویستی بە وریایی و ئاستی ئەگەریی زانستی (Hedging) هەیە.'
-  },
-  {
-    pattern: /هیچ گومانێکی تێدا نییە/g,
-    suggestion: 'بەڵگە سەلمێنەرەکان پاڵپشتی ئەو تێزە دەکەن',
-    explanation: 'زمانی جەختکردنەوەی ڕەها بە پێچەوانەی ڕۆحی ڕەخنەیی ئەکادیمییە.'
-  }
-];
-
-/**
- * Detects journalistic clichés, unsupported generalizations, and orthographic errors in real-time.
- */
-export function detectAcademicClichesAndFlaws(text: string): ClicheAnalysisResult {
-  if (!text || !text.trim()) {
-    return { issues: [], clichesCount: 0, generalizationsCount: 0, orthographyCount: 0, hasCliche: false };
-  }
-
-  const issues: AcademicIssueItem[] = [];
-  let clichesCount = 0;
-  let generalizationsCount = 0;
-
-  for (const item of JOURNALISTIC_CLICHES) {
-    const re = new RegExp(item.pattern);
-    let match: RegExpExecArray | null;
-    while ((match = re.exec(text)) !== null) {
-      clichesCount++;
-      issues.push({
-        id: `cliche_${match.index}`,
-        type: 'journalistic_cliche',
-        matchedText: match[0],
-        suggestion: item.suggestion,
-        explanation: item.explanation,
-        index: match.index
+  for (const item of clicheDictionary) {
+    const count = countOccurrences(text, item.phrase);
+    if (count > 0) {
+      totalCliches += count;
+      findings.push({
+        cliche: item.phrase,
+        formalAlternative: item.formal,
+        reason: item.reason,
+        count
       });
-      if (issues.length >= 20) break;
     }
   }
 
-  for (const item of UNSUPPORTED_GENERALIZATIONS) {
-    const re = new RegExp(item.pattern);
-    let match: RegExpExecArray | null;
-    while ((match = re.exec(text)) !== null) {
-      generalizationsCount++;
-      issues.push({
-        id: `gen_${match.index}`,
-        type: 'unsupported_generalization',
-        matchedText: match[0],
-        suggestion: item.suggestion,
-        explanation: item.explanation,
-        index: match.index
-      });
-      if (issues.length >= 25) break;
-    }
-  }
-
+  const score = Math.max(50, 100 - (totalCliches * 10));
   return {
-    issues,
-    clichesCount,
-    generalizationsCount,
-    orthographyCount: 0,
-    hasCliche: issues.length > 0
+    score,
+    clichesCount: totalCliches,
+    hasCliche: totalCliches > 0,
+    generalizationsCount: totalCliches,
+    findings,
+    verdict: totalCliches === 0 ? 'دەقەکە لە دەربڕینی باو و کلیشەی نا-ئەکادیمی پارێزراوە.' : `${totalCliches} کلیشە و دەستەواژەی گشتی دۆزرایەوە.`
   };
 }
 
-/**
- * 1-Click "داڕشتنەوەی ئەکادیمیی قووڵ" (Deep Professorial Rewrite)
- * Transforms journalistic and essayistic prose into rigorous epistemological prose,
- * replacing clichés, generalizing words, and enforcing standard academic registers.
- */
-export function executeDeepProfessorialRewrite(paragraph: string): string {
-  if (!paragraph || !paragraph.trim()) return paragraph;
-  let rewritten = paragraph.trim();
+export function executeDeepProfessorialRewrite(text: string): string {
+  if (!text) return '';
+  let rewritten = text;
+  const replacements: Record<string, string> = {
+    'وەک هەموومان دەزانین': 'وەک لە ئەدەبیاتی زانستیدا سەلمێنراوە',
+    'لە کۆنەوە تا ئێستا': 'لە ڕەوتی مێژووییدا',
+    'زۆر زۆر گرنگە': 'گرنگییەکی ستراتیژی و بنەڕەتی هەیە',
+    'من پێم وایە': 'داتاکان ئاماژە بەوە دەکەن کە',
+    'هیچ گومانی تێدا نییە': 'بەڵگەکان بە تەواوی پشتگیری لەوە دەکەن کە',
+    'ئیش دەکەین لەسەر': 'لێکۆڵینەوە ئەنجام دەدەین لەبارەی'
+  };
 
-  for (const item of JOURNALISTIC_CLICHES) {
-    rewritten = rewritten.replace(new RegExp(item.pattern), item.suggestion);
+  for (const [k, v] of Object.entries(replacements)) {
+    rewritten = rewritten.split(k).join(v);
   }
-
-  for (const item of UNSUPPORTED_GENERALIZATIONS) {
-    rewritten = rewritten.replace(new RegExp(item.pattern), item.suggestion);
-  }
-
-  // Prepend epistemological problem-framing if the paragraph begins with a weak rhetorical phrase
-  if (/^(لەم بابەتەدا|لێرەدا|ئەم بەشە باس لە|دەمانەوێت)/.test(rewritten)) {
-    rewritten = rewritten.replace(
-      /^(لەم بابەتەدا|لێرەدا|ئەم بەشە باس لە|دەمانەوێت)[^،.؛]+[،.؛]?\s*/,
-      'لە چوارچێوەی دیاریکردنی سنورە ئیپستۆمۆلۆژی و چەمکییەکانی ئەم پرسەدا، '
-    );
-  }
-
   return rewritten;
 }
-

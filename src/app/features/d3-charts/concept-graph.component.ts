@@ -1,9 +1,11 @@
-import { Component, ChangeDetectionStrategy, AfterViewInit, ElementRef, ViewChild, signal, output, input, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, AfterViewInit, ElementRef, ViewChild, signal, output, input, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { D3ConceptGraphHelper } from '../../helpers/concept-graph';
 import { ConceptNodeModel, ConceptLinkModel } from '../../helpers/thesis-context-map';
+import { AcademicStoreService } from '../../services/academic-store.service';
+import { EditorService } from '../editor/services/editor';
 
 @Component({
   selector: 'app-concept-graph',
@@ -211,12 +213,86 @@ export class ConceptGraphComponent implements AfterViewInit {
   newCategory: 'methodology' | 'hypothesis' | 'evidence' | 'gap' | 'theory' | 'finding' = 'methodology';
   newDefinition = '';
 
+  private academicStore = inject(AcademicStoreService);
+  private editorService = inject(EditorService);
+
   localNodes = signal<ConceptNodeModel[]>(D3ConceptGraphHelper.DEFAULT_NODES);
   localLinks = signal<ConceptLinkModel[]>(D3ConceptGraphHelper.DEFAULT_LINKS);
-
   filteredNodes = signal<ConceptNodeModel[]>(D3ConceptGraphHelper.DEFAULT_NODES);
 
   constructor() {
+    effect(() => {
+      const chs = this.editorService.chapters();
+      const cards = this.academicStore.researchCorpusCards();
+      const matrix = this.academicStore.verticalAlignmentMatrix();
+
+      if (chs.length > 0) {
+        const dynamicNodes: ConceptNodeModel[] = [];
+        const dynamicLinks: ConceptLinkModel[] = [];
+
+        chs.forEach((ch, idx) => {
+          const cat = idx === 0 ? 'methodology' : (idx === chs.length - 1 ? 'finding' : 'theory');
+          dynamicNodes.push({
+            id: `ch_${ch.id}`,
+            name: ch.title || `بەشی ${idx + 1}`,
+            kurdishTranslation: ch.title || `بەشی ${idx + 1}`,
+            category: cat,
+            definition: ch.academicNotes || `بەشی ${idx + 1} بە قەبارەی ${ch.wordCount || 0} وشە.`,
+            importance: 'high'
+          });
+          if (idx > 0) {
+            dynamicLinks.push({
+              source: `ch_${chs[idx - 1].id}`,
+              target: `ch_${ch.id}`,
+              relation: 'پەیوەندیی زنجیرەیی',
+              relationKurdish: 'پەیوەندیی زنجیرەیی'
+            });
+          }
+        });
+
+        cards.forEach((c) => {
+          const cardId = `card_${c.id}`;
+          dynamicNodes.push({
+            id: cardId,
+            name: `${c.sourceTitle} (${c.author})`,
+            kurdishTranslation: c.sourceTitle,
+            category: 'evidence',
+            definition: c.excerptText.slice(0, 100) + '...',
+            importance: 'medium'
+          });
+          const targetChId = c.targetChapterId ? `ch_${c.targetChapterId}` : `ch_${chs[0].id}`;
+          dynamicLinks.push({
+            source: targetChId,
+            target: cardId,
+            relation: 'بەڵگەی کۆرپەس',
+            relationKurdish: 'بەڵگەی کۆرپەس'
+          });
+        });
+
+        matrix.forEach((m) => {
+          const qId = `q_${m.id}`;
+          dynamicNodes.push({
+            id: qId,
+            name: `پرسیاری ${m.questionNumber}`,
+            kurdishTranslation: m.questionText.slice(0, 30),
+            category: 'hypothesis',
+            definition: m.questionText,
+            importance: 'high'
+          });
+          const targetChId = m.targetChapterId ? `ch_${m.targetChapterId}` : `ch_${chs[0].id}`;
+          dynamicLinks.push({
+            source: qId,
+            target: targetChId,
+            relation: 'هاوتابوونی ستوونی',
+            relationKurdish: 'هاوتابوونی ستوونی'
+          });
+        });
+
+        this.localNodes.set(dynamicNodes);
+        this.localLinks.set(dynamicLinks);
+      }
+    });
+
     effect(() => {
       const cat = this.selectedCategory();
       const all = this.localNodes();

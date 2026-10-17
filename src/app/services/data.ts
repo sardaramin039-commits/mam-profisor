@@ -13,6 +13,14 @@ export interface ChapterSnapshot {
   customTOCOn?: boolean;
 }
 
+export function countKurdishWords(text: string | undefined | null): number {
+  if (!text) return 0;
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+export type { SubBranchItem, AxisItem } from '../domain/models';
+import type { AxisItem } from '../domain/models';
+
 export interface ChapterItem {
   id: number;
   title: string;
@@ -29,6 +37,7 @@ export interface ChapterItem {
   customSourcesOn?: boolean;
   fieldWorkOn?: boolean;
   customTOCOn?: boolean;
+  axes?: AxisItem[];
 }
 
 export interface SavedManuscript {
@@ -203,7 +212,7 @@ export class Data {
       chapters: chapters.map(c => ({
         title: c.title,
         content: c.content,
-        wordCount: c.wordCount,
+        wordCount: countKurdishWords(c.content),
         academicNotes: c.academicNotes || '',
         isLocked: c.isLocked || false,
         integrityHash: c.integrityHash || '',
@@ -236,7 +245,7 @@ export class Data {
           chapters: chapters.map(c => ({
             title: c.title,
             content: c.content,
-            wordCount: c.wordCount,
+            wordCount: countKurdishWords(c.content),
             academicNotes: c.academicNotes || '',
             isLocked: c.isLocked || false,
             integrityHash: c.integrityHash || '',

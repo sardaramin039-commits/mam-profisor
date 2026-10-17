@@ -7,6 +7,7 @@ import { AppNotificationsService } from '../core/app.notifications';
 import { AppTemplateBridgeService } from './app-template-bridge.service';
 import { Data } from './data';
 import { ChapterItemModel as ChapterItem } from '../domain/models';
+import { BranchWritingEngineService } from './branch-writing-engine.service';
 
 @Injectable({ providedIn: 'root' })
 export class BottomDockActionsService {
@@ -76,8 +77,10 @@ export class BottomDockActionsService {
     }
   }
 
+  private branchEngine = inject(BranchWritingEngineService);
+
   /**
-   * 2. نووسینی AI (AI Academic Writing generation for the active chapter)
+   * 2. نووسینی AI (AI Academic Writing generation - Branch by Branch with strict quota enforcement)
    */
   async autoWrite(
     activeChapter: ChapterItem | null,
@@ -87,6 +90,21 @@ export class BottomDockActionsService {
   ): Promise<void> {
     if (!activeChapter) {
       this.toastService.showWarning('نووسینی AI', 'تکایە سەرەتا بەشێک بۆ نووسین دیاری بکە.');
+      return;
+    }
+
+    if (activeChapter.axes && activeChapter.axes.length > 0) {
+      setLoading(true);
+      try {
+        await this.branchEngine.executeBranchByBranchWriting(this.editorService.chapters(), {
+          targetChapterId: activeChapter.id,
+          manuscriptTitle,
+          academicLevel: 'ماستەر',
+          discipline: 'زانستە ئەکادیمییەکان'
+        });
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 

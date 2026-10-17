@@ -98,6 +98,8 @@ export abstract class AppControllerBase implements OnInit {
   consultationTopic = this.bridge.consultationTopic; consultationTextToProofread = this.bridge.consultationTextToProofread;
   consultationKurdishMode = this.bridge.consultationKurdishMode; consultationTargetDialect = this.bridge.consultationTargetDialect;
   isConsulting = this.bridge.isConsulting;
+  isBranchWritingInProgress = this.bridge.isBranchWritingInProgress;
+  branchWritingStatus = this.bridge.branchWritingStatus;
   thesisSummaryError = this.bridge.thesisSummaryError; thesisSummaryContext = this.bridge.thesisSummaryContext;
   isAnonymizingData = this.bridge.isAnonymizingData; userIntuitionText = this.bridge.userIntuitionText;
   recalibrationFeedback = this.bridge.recalibrationFeedback; isRecalibratingRigor = this.bridge.isRecalibratingRigor;
@@ -216,6 +218,11 @@ export abstract class AppControllerBase implements OnInit {
   lastAutoSaveTime = signal<string>('');
   searchFeedbackMessage = signal<string | null>(null);
   errorStr = signal<string | null>(null);
+
+  isNewBlankThesisModalOpen = signal<boolean>(false);
+  newThesisTitleInput = signal<string>('تێزی ئەکادیمی نوێ');
+  newThesisDegreeInput = signal<'bachelor' | 'master' | 'phd'>('master');
+  newThesisStructureInput = signal<'humanities' | 'empirical'>('humanities');
 
   // Paraphrasing and Copilot state signals
   academicParaphraseInput = signal<string>('');

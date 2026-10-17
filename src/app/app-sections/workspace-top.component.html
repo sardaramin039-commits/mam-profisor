@@ -37,3 +37,119 @@
 <div class="my-3">
   <app-system-maintenance-panel></app-system-maintenance-panel>
 </div>
+
+<!-- Prominent New Blank Thesis Action Bar -->
+<div class="my-3 p-3 bg-gradient-to-r from-stone-900 via-stone-850 to-stone-950 text-white rounded-xl shadow-md border border-stone-750 flex items-center justify-between gap-3 flex-wrap text-right font-serif">
+  <div class="flex items-center gap-2.5">
+    <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg">
+      <mat-icon class="!text-lg">post_add</mat-icon>
+    </div>
+    <div>
+      <h3 class="text-xs font-bold text-amber-300">سەرەتایەکی نوێ بۆ تێزەکەت</h3>
+      <p class="text-[10px] text-stone-300">پاککردنەوەی داتای دیمۆ و دەستپێکردنی تێزێکی نوێی بەتاڵ بە ناونیشان و ئاستی زانستی خۆت.</p>
+    </div>
+  </div>
+  <button
+    type="button"
+    (click)="openNewBlankThesisModal()"
+    class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-lg text-xs font-bold font-sans flex items-center gap-1.5 transition-all shadow-sm cursor-pointer hover:shadow-md">
+    <mat-icon class="!text-sm">add_circle</mat-icon>
+    <span>+ دەستپێکردنی تێزی نوێ (بەتاڵ)</span>
+  </button>
+</div>
+
+<!-- Interactive Modal for Initializing New Blank Thesis -->
+@if (isNewBlankThesisModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-serif text-right" dir="rtl">
+    <div class="bg-white border-2 border-stone-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 animate-scale-in text-stone-900">
+      
+      <div class="flex items-center justify-between border-b border-stone-200 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="p-2 bg-amber-100 text-amber-900 rounded-xl">
+            <mat-icon>add_chart</mat-icon>
+          </div>
+          <div>
+            <h3 class="text-sm font-extrabold text-stone-900">دەستپێکردنی تێزی نوێ (بەتاڵ)</h3>
+            <p class="text-[11px] text-stone-500">سڕینەوەی داتاکانی دیمۆ و داڕشتنی پەیکەری خاوێن</p>
+          </div>
+        </div>
+        <button type="button" (click)="cancelNewBlankThesis()" class="p-1 hover:bg-stone-100 rounded-lg text-stone-500 hover:text-stone-900 cursor-pointer">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-bold text-stone-850 mb-1">ناونیشانی تێزی نوێ:</label>
+          <input
+            type="text"
+            [value]="newThesisTitleInput()"
+            (input)="newThesisTitleInput.set($any($event.target).value)"
+            placeholder="ناونیشانی فەرمیی توێژینەوەکەت بنووسە..."
+            class="w-full p-2.5 bg-stone-50 border border-stone-300 rounded-lg text-xs font-serif focus:bg-white focus:outline-none focus:border-stone-800 transition" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-850 mb-1.5">پلەی ئەکادیمی (Degree):</label>
+          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <button
+              type="button"
+              (click)="newThesisDegreeInput.set('bachelor')"
+              [class]="'p-2.5 rounded-lg border font-bold transition cursor-pointer ' + (newThesisDegreeInput() === 'bachelor' ? 'bg-stone-900 text-white border-stone-900' : 'bg-stone-50 text-stone-700 border-stone-250 hover:bg-stone-100')">
+              بەکالۆریۆس
+            </button>
+            <button
+              type="button"
+              (click)="newThesisDegreeInput.set('master')"
+              [class]="'p-2.5 rounded-lg border font-bold transition cursor-pointer ' + (newThesisDegreeInput() === 'master' ? 'bg-amber-600 text-white border-amber-600' : 'bg-stone-50 text-stone-700 border-stone-250 hover:bg-stone-100')">
+              ماستەر
+            </button>
+            <button
+              type="button"
+              (click)="newThesisDegreeInput.set('phd')"
+              [class]="'p-2.5 rounded-lg border font-bold transition cursor-pointer ' + (newThesisDegreeInput() === 'phd' ? 'bg-emerald-800 text-white border-emerald-800' : 'bg-stone-50 text-stone-700 border-stone-250 hover:bg-stone-100')">
+              دکتۆرا
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-850 mb-1.5">شێوازی پەیکەربەندی (Structure Type):</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-right">
+            <button
+              type="button"
+              (click)="newThesisStructureInput.set('humanities')"
+              [class]="'p-3 rounded-lg border transition cursor-pointer ' + (newThesisStructureInput() === 'humanities' ? 'bg-amber-50 border-amber-500 text-amber-950 font-bold' : 'bg-stone-50 border-stone-250 text-stone-700 hover:bg-stone-100')">
+              <strong class="block text-xs">مرۆڤایەتی: دەروازە + بەشەکان</strong>
+              <span class="text-[10px] text-stone-500">گونجاو بۆ ئەدەب، زمان، مێژوو، یاسا و فەلسەفە</span>
+            </button>
+            <button
+              type="button"
+              (click)="newThesisStructureInput.set('empirical')"
+              [class]="'p-3 rounded-lg border transition cursor-pointer ' + (newThesisStructureInput() === 'empirical' ? 'bg-amber-50 border-amber-500 text-amber-950 font-bold' : 'bg-stone-50 border-stone-250 text-stone-700 hover:bg-stone-100')">
+              <strong class="block text-xs">پەروەردەیی/پەتی: ٥ بەش</strong>
+              <span class="text-[10px] text-stone-500">پێشەکی، ئەدەبیات، میتۆد، شیکاری، ئەنجام</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-stone-200">
+        <button
+          type="button"
+          (click)="cancelNewBlankThesis()"
+          class="px-4 py-2 bg-stone-150 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-bold transition cursor-pointer">
+          پاشگەزبوونەوە
+        </button>
+        <button
+          type="button"
+          (click)="confirmNewBlankThesis()"
+          class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+          <mat-icon class="!text-xs">check_circle</mat-icon>
+          <span>داڕشتن و دەستپێکردن</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
