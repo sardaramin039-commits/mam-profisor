@@ -67,8 +67,8 @@ export class PythonSandboxComponent {
       else if (operation === 'sd' || operation === 'standard-deviation') result = this.sdTable(values);
       else if (operation === 'frequency') result = this.frequencyTable(values);
       else if (operation === 'pearson') result = this.pearsonTable(values);
-      else if (operation === 'cronbach') result = 'Cronbach’s alpha پێویستی بە داتای چەند پرسیارێکە؛ CSV ـی ستوون-بە-پرسیار بنووسە.';
-      else if (operation === 'ttest') result = 'بۆ t-test داتای دوو گرووپ بە شێوەی A:1,2,3 و B:4,5,6 بنووسە.';
+      else if (operation === 'cronbach') result = this.cronbachAlpha(this.dataInput());
+      else if (operation === 'ttest') result = this.independentTTest(this.dataInput());
       else throw new Error('فەرمان ناسراو نییە. یەکێک لەم فەرمانانە بنووسە: mean, sd, frequency, pearson, cronbach, ttest.');
       this.output.set(result);
       this.experimentData.set(values.map((value, index) => ({
@@ -93,6 +93,37 @@ export class PythonSandboxComponent {
       throw new Error('تکایە تەنها ژمارەی دروست بە کاما یان هێڵی نوێ جیا بکەرەوە.');
     }
     return values;
+  }
+
+  private cronbachAlpha(raw: string): string {
+    const rows = raw.trim().split(/\\r?\\n/).map(line => line.split(/[,;\\t]/).map(Number));
+    if (rows.length < 2 || rows.some(row => row.length < 2 || row.some(value => !Number.isFinite(value)))) {
+      throw new Error('Cronbach alpha: هەر ڕیزێک یەک بەشداربووە و هەر ستوونێک پرسیارێکە؛ لانیکەم دوو ڕیز و دوو ستوون بنووسە.');
+    }
+    const items = rows[0].length;
+    const variance = (values: number[]) => {
+      const mean = this.mean(values);
+      return values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (values.length - 1);
+    };
+    const itemVariance = Array.from({ length: items }, (_, col) => variance(rows.map(row => row[col])));
+    const totals = rows.map(row => row.reduce((sum, value) => sum + value, 0));
+    const totalVariance = variance(totals);
+    if (!totalVariance) throw new Error('Cronbach alpha پێوانە ناکرێت چونکە گۆڕانی نمرەی کۆیی سفرە.');
+    const alpha = items / (items - 1) * (1 - itemVariance.reduce((sum, value) => sum + value, 0) / totalVariance);
+    return `خشتەی ڕەوایی ناوخۆیی (Cronbach’s alpha)\\nژمارەی پرسیار | ${items}\\nژمارەی بەشداربووان | ${rows.length}\\nAlpha | ${alpha.toFixed(3)}\\nتێبینی: ئەنجامەکە لە داتای داخڵکراوی بەکارهێنەرەوە حیساب کراوە.`;
+  }
+
+  private independentTTest(raw: string): string {
+    const groups = raw.split(/\\r?\\n/).filter(Boolean).map(line => line.split(':').slice(1).join(':').split(/[,;\\s]+/).filter(Boolean).map(Number));
+    if (groups.length !== 2 || groups.some(group => group.length < 2 || group.some(value => !Number.isFinite(value)))) {
+      throw new Error('t-test: دوو هێڵ بنووسە بە شێوەی A:1,2,3 و B:4,5,6؛ هەر گرووپێک لانیکەم دوو نمرە.');
+    }
+    const [a, b] = groups;
+    const variance = (values: number[]) => this.sampleSd(values) ** 2;
+    const se = Math.sqrt(variance(a) / a.length + variance(b) / b.length);
+    if (!se) throw new Error('t-test پێوانە ناکرێت چونکە جیاوازی ناوخۆیی هەردوو گرووپ سفرە.');
+    const t = (this.mean(a) - this.mean(b)) / se;
+    return `خشتەی t-test بۆ دوو گرووپی سەربەخۆ\\nN1 | ${a.length}\\nM1 | ${this.mean(a).toFixed(3)}\\nSD1 | ${this.sampleSd(a).toFixed(3)}\\nN2 | ${b.length}\\nM2 | ${this.mean(b).toFixed(3)}\\nSD2 | ${this.sampleSd(b).toFixed(3)}\\nt | ${t.toFixed(3)}\\nتێبینی: ئەم وەشانە p-value حیساب ناکات؛ دەرئەنجام بە واتاداری ئاماری ناونیشان مەکە.`;
   }
 
   private mean(values: number[]): number {
