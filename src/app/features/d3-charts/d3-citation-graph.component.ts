@@ -238,23 +238,10 @@ export class D3CitationGraphComponent implements AfterViewInit {
           chapterId: ch.id
         });
       });
-    } else {
-      nodes.push(
-        { id: 'ch_1', label: 'بەشی ١: پێشەکی و کێشەی توێژینەوە', type: 'chapter', subLabel: 'بەشی ١', details: 'چوارچێوەی گشتی و ئامانجەکانی توێژینەوە.' },
-        { id: 'ch_2', label: 'بەشی ٢: پیاچوونەوەی ئەدەبیات', type: 'chapter', subLabel: 'بەشی ٢', details: 'پیاچوونەوە لە توێژینەوە و تیۆرییە پێشووەکان.' },
-        { id: 'ch_3', label: 'بەشی ٣: میتۆدۆلۆژیا', type: 'chapter', subLabel: 'بەشی ٣', details: 'شێواز و ئامرازەکانی کۆکردنەوەی داتا.' },
-        { id: 'ch_4', label: 'بەشی ٤: شیکاری و دۆزینەوەکان', type: 'chapter', subLabel: 'بەشی ٤', details: 'خستنەڕووی داتاکان و دەرئەنجامە زانستییەکان.' }
-      );
     }
 
-    // 2. Academic Theme Nodes
-    const defaultThemes: CitationNode[] = [
-      { id: 'th_methodology', label: 'تەماتەی میتۆدۆلۆژیا', type: 'theme', subLabel: 'Methodology Theme', details: 'ڕێبازەکانی کێشانە و شیکاریی چەندایەتی و چۆنایەتی.' },
-      { id: 'th_epistemology', label: 'تەماتەی چوارچێوەی تیۆری', type: 'theme', subLabel: 'Theoretical Framework', details: 'چەمک و تیۆرییە فەلسەفی و زانستییە سەرەکییەکان.' },
-      { id: 'th_evidence', label: 'تەماتەی بەڵگەی مەیدانی', type: 'theme', subLabel: 'Empirical Data', details: 'داتا و زانیارییە کۆکراوەکانی ناو مەیدانی توێژینەوە.' },
-      { id: 'th_history', label: 'تەماتەی مێژوویی و زمانی', type: 'theme', subLabel: 'Historical & Linguistic', details: 'گوتار و دەقە مێژوویی و زمانەوانییە کوردییەکان.' }
-    ];
-    nodes.push(...defaultThemes);
+    // Only thesis chapters and supplied bibliography sources are rendered.
+    // Empty project data must remain visibly empty, never fabricated.
 
     // 3. Source Nodes
     if (sourcesList && sourcesList.length > 0) {
@@ -287,46 +274,21 @@ export class D3CitationGraphComponent implements AfterViewInit {
     const nodes = this.allNodes();
 
     const chapterIds = nodes.filter((n) => n.type === 'chapter').map((n) => n.id);
-    const themeIds = nodes.filter((n) => n.type === 'theme').map((n) => n.id);
-    const sourceIds = nodes.filter((n) => n.type === 'source').map((n) => n.id);
+    const sourceNodes = nodes.filter((n) => n.type === 'source');
+    const chapterContent = new Map((this.chapters() || []).map(ch => [String(ch.id), ch.content || '']));
 
-    // Link Sources to Themes
-    sourceIds.forEach((srcId, idx) => {
-      const targetTheme = themeIds[idx % themeIds.length];
-      if (targetTheme) {
-        links.push({
-          source: srcId,
-          target: targetTheme,
-          relation: 'cites_theme',
-          relationKurdish: 'دەچێتەوە سەر تەماتەی'
-        });
-      }
-    });
-
-    // Link Sources to Chapters
-    sourceIds.forEach((srcId, idx) => {
-      const targetCh = chapterIds[idx % chapterIds.length];
-      if (targetCh) {
-        links.push({
-          source: srcId,
-          target: targetCh,
-          relation: 'used_in_chapter',
-          relationKurdish: 'بەکار هاتووە لە'
-        });
-      }
-    });
-
-    // Link Themes to Chapters
-    themeIds.forEach((thId, idx) => {
-      const targetCh = chapterIds[(idx + 1) % chapterIds.length];
-      if (targetCh) {
-        links.push({
-          source: thId,
-          target: targetCh,
-          relation: 'structures_chapter',
-          relationKurdish: 'پێکهێنەری'
-        });
-      }
+    // A citation edge exists only when a chapter text actually mentions its source.
+    sourceNodes.forEach(source => {
+      const sourceModel = (this.sources() || []).find(item => `src_${item.id}` === source.id);
+      if (!sourceModel) return;
+      const identifiers = [sourceModel.doi, sourceModel.url, sourceModel.title, sourceModel.author]
+        .filter((value): value is string => typeof value === 'string' && value.trim().length >= 5);
+      chapterIds.forEach(chapterId => {
+        const text = chapterContent.get(chapterId.replace(/^ch_/, '')) || '';
+        if (identifiers.some(identifier => text.toLocaleLowerCase().includes(identifier.toLocaleLowerCase()))) {
+          links.push({ source: source.id, target: chapterId, relation: 'cited_in_chapter', relationKurdish: 'بەڕاستی ئاماژەی پێکراوە لە' });
+        }
+      });
     });
 
     return links;
