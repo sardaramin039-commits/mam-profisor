@@ -202,8 +202,8 @@ export class ConceptGraphComponent implements AfterViewInit {
 
   exportTrigger = output<void>();
 
-  nodes = input<ConceptNodeModel[]>(D3ConceptGraphHelper.DEFAULT_NODES);
-  links = input<ConceptLinkModel[]>(D3ConceptGraphHelper.DEFAULT_LINKS);
+  nodes = input<ConceptNodeModel[]>([]);
+  links = input<ConceptLinkModel[]>([]);
 
   activeNode = signal<ConceptNodeModel | null>(null);
   selectedCategory = signal<string>('all');
@@ -216,15 +216,16 @@ export class ConceptGraphComponent implements AfterViewInit {
   private academicStore = inject(AcademicStoreService);
   private editorService = inject(EditorService);
 
-  localNodes = signal<ConceptNodeModel[]>(D3ConceptGraphHelper.DEFAULT_NODES);
-  localLinks = signal<ConceptLinkModel[]>(D3ConceptGraphHelper.DEFAULT_LINKS);
-  filteredNodes = signal<ConceptNodeModel[]>(D3ConceptGraphHelper.DEFAULT_NODES);
+  localNodes = signal<ConceptNodeModel[]>([]);
+  localLinks = signal<ConceptLinkModel[]>([]);
+  filteredNodes = signal<ConceptNodeModel[]>([]);
 
   constructor() {
     effect(() => {
       const chs = this.editorService.chapters();
       const cards = this.academicStore.researchCorpusCards();
       const matrix = this.academicStore.verticalAlignmentMatrix();
+      const glossaryTerms: any[] = [];
 
       if (chs.length > 0) {
         const dynamicNodes: ConceptNodeModel[] = [];
@@ -269,6 +270,13 @@ export class ConceptGraphComponent implements AfterViewInit {
           });
         });
 
+        glossaryTerms.forEach((term: any) => {
+          const id = `glossary_${term.id || term.foreign || term.translation}`;
+          dynamicNodes.push({ id, name: term.translation || term.kurdishTerm || term.foreign, kurdishTranslation: term.translation || term.kurdishTerm || term.foreign, category: 'theory', definition: term.definition || '', importance: 'medium' });
+          const related = chs.find(ch => (ch.content || '').toLowerCase().includes(String(term.foreign || term.translation || '').toLowerCase()));
+          if (related) dynamicLinks.push({ source: `ch_${related.id}`, target: id, relation: 'glossary_term', relationKurdish: 'زاراوەی بەکارهاتوو لەم بەشەدا' });
+        });
+
         matrix.forEach((m) => {
           const qId = `q_${m.id}`;
           dynamicNodes.push({
@@ -290,6 +298,9 @@ export class ConceptGraphComponent implements AfterViewInit {
 
         this.localNodes.set(dynamicNodes);
         this.localLinks.set(dynamicLinks);
+      } else {
+        this.localNodes.set([]);
+        this.localLinks.set([]);
       }
     });
 
