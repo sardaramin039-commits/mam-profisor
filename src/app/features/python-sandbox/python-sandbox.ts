@@ -136,145 +136,127 @@ export interface ExperimentRow {
   `
 })
 export class PythonSandboxComponent {
-  private sandbox = inject(PythonSandboxService);
-
-  code = signal<string>(
-`import scipy.stats as stats
-import numpy as np
-
-# تاقیکردنەوەی گریمانەی ئاماری (Hypothesis Testing)
-group_a = [24.5, 26.1, 28.3, 22.9, 27.4, 29.0]
-group_b = [19.2, 21.0, 20.5, 18.8, 22.1, 20.3]
-
-t_stat, p_val = stats.ttest_ind(group_a, group_b)
-print(f"تێکراوی گرووپی A: {np.mean(group_a):.2f}")
-print(f"تێکراوی گرووپی B: {np.mean(group_b):.2f}")
-print(f"نومەرەی t-statistic: {t_stat:.4f}")
-print(f"بڕی p-value: {p_val:.6f}")
-print("دەرئەنجام: گریمانەی پوچ (H0) ڕەتکرایەوە، جیاوازییەکە واتاداری ئاماری هەیە (p < 0.05)." if p_val < 0.05 else "دەرئەنجام: گریمانەی پوچ پەسەندکرا.")`
-  );
-
+  code = signal<string>('mean');
+  dataInput = signal<string>('24,26,28,22,27,29');
   isRunning = signal<boolean>(false);
   output = signal<string>('');
-
-  experimentData = signal<ExperimentRow[]>([
-    // No synthetic results are shown. Rows appear only after a real sandbox execution.
-  ]);
+  experimentData = signal<ExperimentRow[]>([]);
 
   loadPreset(preset: 'ttest' | 'anova' | 'regression' | 'chisquare'): void {
-    if (preset === 'ttest') {
-      this.code.set(
-`import scipy.stats as stats
-import numpy as np
-
-# t-test تاقیکردنەوەی لێکچوونی دوو گرووپ
-sample_1 = np.random.normal(loc=50, scale=10, size=30)
-sample_2 = np.random.normal(loc=58, scale=10, size=30)
-t_val, p_val = stats.ttest_ind(sample_1, sample_2)
-print(f"t-statistic: {t_val:.4f}, p-value: {p_val:.6f}")`
-      );
-    } else if (preset === 'anova') {
-      this.code.set(
-`import scipy.stats as stats
-# ANOVA تاقیکردنەوەی شیکاری جیاوازی
-g1, g2, g3 = [12,14,15,11], [22,24,20,23], [31,33,29,32]
-f_val, p_val = stats.f_oneway(g1, g2, g3)
-print(f"ANOVA F-value: {f_val:.4f}, p-value: {p_val:.6f}")`
-      );
-    } else if (preset === 'regression') {
-      this.code.set(
-`import scipy.stats as stats
-# ڕێگریسیۆنی هێڵی لەسەر گۆڕاوەکان
-x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-y = [2, 3, 5, 7, 8, 10, 11, 14, 15, 17]
-slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-print(f"تەوەرە (R-squared): {r_value**2:.4f}, p-value: {p_value:.6f}")`
-      );
-    } else {
-      this.code.set(
-`import scipy.stats as stats
-# چی دووجا (Chi-Square) بۆ داتای پۆلێنکراو
-obs = [[10, 20, 30], [20, 15, 15]]
-chi2, p_val, dof, ex = stats.chi2_contingency(obs)
-print(f"Chi2 statistic: {chi2:.4f}, p-value: {p_val:.6f}")`
-      );
-    }
+    const presets: Record<string, string> = {
+      ttest: 'ttest',
+      anova: 'mean',
+      regression: 'pearson',
+      chisquare: 'frequency'
+    };
+    this.code.set(presets[preset]);
   }
 
-  async runCode(): Promise<void> {
+  runCode(): void {
     this.isRunning.set(true);
     try {
-      const res = await this.sandbox.executeCode(this.code());
-      this.output.set(res.stdout || 'کۆدەکە بە سەرکەوتوویی جێبەجێ ببوو.');
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'هەڵەیەکی نەناسراو ڕوویدا.';
-      this.output.set(
-        `تاقیکردنەوە جێبەجێ نەکرا. هیچ ئەنجامی خەیاڵی نیشان نادرێت.\nهۆکار: ${message}`
-      );
+      const values = this.parseValues(this.dataInput());
+      const operation = this.code().trim().toLowerCase();
+      let result = '';
+      if (operation === 'mean') result = this.meanTable(values);
+      else if (operation === 'sd' || operation === 'standard-deviation') result = this.sdTable(values);
+      else if (operation === 'frequency') result = this.frequencyTable(values);
+      else if (operation === 'pearson') result = this.pearsonTable(values);
+      else if (operation === 'cronbach') result = 'Cronbach’s alpha پێویستی بە داتای چەند پرسیارێکە؛ CSV ـی ستوون-بە-پرسیار بنووسە.';
+      else if (operation === 'ttest') result = 'بۆ t-test داتای دوو گرووپ بە شێوەی A:1,2,3 و B:4,5,6 بنووسە.';
+      else throw new Error('فەرمان ناسراو نییە. یەکێک لەم فەرمانانە بنووسە: mean, sd, frequency, pearson, cronbach, ttest.');
+      this.output.set(result);
+      this.experimentData.set(values.map((value, index) => ({
+        sampleName: `نمونە ${index + 1}`,
+        variableX: value,
+        variableY: 0,
+        hypothesisStatus: 'داتای داخڵکراو',
+        pValue: 0,
+        significance: 'هێشتا تاقیکردنەوەی گریمانە نەکراوە'
+      })));
+    } catch (error) {
+      this.output.set(error instanceof Error ? error.message : 'هەڵە لە شیکاری داتادا ڕوویدا.');
+      this.experimentData.set([]);
     } finally {
       this.isRunning.set(false);
     }
   }
 
-  exportToCSV(): void {
-    let csvContent = 'data:text/csv;charset=utf-8,Sample_Name,Variable_X,Variable_Y,Hypothesis_Status,p_Value,Significance\n';
-    this.experimentData().forEach(row => {
-      csvContent += `${row.sampleName},${row.variableX},${row.variableY},"${row.hypothesisStatus}",${row.pValue},"${row.significance}"\n`;
-    });
+  private parseValues(raw: string): number[] {
+    const values = raw.split(/[\\s,;\\t\\r\\n]+/).filter(Boolean).map(Number);
+    if (values.length < 1 || values.some(value => !Number.isFinite(value))) {
+      throw new Error('تکایە تەنها ژمارەی دروست بە کاما یان هێڵی نوێ جیا بکەرەوە.');
+    }
+    return values;
+  }
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', 'Hypothesis_Test_Results_Lab.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  private mean(values: number[]): number {
+    return values.reduce((sum, value) => sum + value, 0) / values.length;
+  }
+
+  private sampleSd(values: number[]): number {
+    if (values.length < 2) throw new Error('بۆ لادانی پێوەرەیی نموونە لانیکەم دوو داتا پێویستە.');
+    const mean = this.mean(values);
+    return Math.sqrt(values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (values.length - 1));
+  }
+
+  private meanTable(values: number[]): string {
+    return `خشتەی ئاماری (APA)
+پێوەر | نمرە
+N | ${values.length}
+M | ${this.mean(values).toFixed(3)}
+SD | ${values.length > 1 ? this.sampleSd(values).toFixed(3) : 'نەپێوانرا'}
+تێبینی: ئەنجامەکە لە داتای داخڵکراوی بەکارهێنەرەوە حیساب کراوە.`;
+  }
+
+  private sdTable(values: number[]): string {
+    return `خشتەی ئاماری (APA)
+N | ${values.length}
+SD | ${this.sampleSd(values).toFixed(3)}`;
+  }
+
+  private frequencyTable(values: number[]): string {
+    const counts = new Map<number, number>();
+    values.forEach(value => counts.set(value, (counts.get(value) || 0) + 1));
+    const rows = [...counts.entries()].sort((a, b) => a[0] - b[0]);
+    return ['خشتەی دابەشبوونی دووبارەبوون', 'نمرە | دووبارەبوون | ڕێژە %',
+      ...rows.map(([value, count]) => `${value} | ${count} | ${(count / values.length * 100).toFixed(1)}%`)].join('\n');
+  }
+
+  private pearsonTable(values: number[]): string {
+    if (values.length < 4 || values.length % 2 !== 0) throw new Error('بۆ Pearson، ژمارەی داتا دەبێت جووت بێت: نیوەی یەکەم X و نیوەی دووەم Y، لانیکەم ٢ جووت.');
+    const half = values.length / 2;
+    const x = values.slice(0, half);
+    const y = values.slice(half);
+    const mx = this.mean(x), my = this.mean(y);
+    const numerator = x.reduce((sum, value, i) => sum + (value - mx) * (y[i] - my), 0);
+    const denominator = Math.sqrt(x.reduce((sum, value) => sum + (value - mx) ** 2, 0) * y.reduce((sum, value) => sum + (value - my) ** 2, 0));
+    if (!denominator) throw new Error('Pearson پێوانە ناکرێت کاتێک گۆڕاوێک هەموو نمرەکانی یەکسانن.');
+    return `خشتەی پەیوەندی Pearson
+N | ${half}
+r | ${(numerator / denominator).toFixed(3)}
+تێبینی: X و Y بە ڕیز لە نیوەی یەکەم و دووەمی لیستەکە وەرگیراون.`;
+  }
+
+  exportToCSV(): void {
+    const rows = [['نموونە', 'گۆڕاوی X', 'گۆڕاوی Y', 'دۆخ', 'p-value', 'واتاداری'],
+      ...this.experimentData().map(row => [row.sampleName, String(row.variableX), String(row.variableY), row.hypothesisStatus, String(row.pValue), row.significance])];
+    const csv = rows.map(row => row.map(value => `"${value.replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    this.download(csv, 'خشتەی-ئاماری.csv', 'text/csv;charset=utf-8');
   }
 
   exportToExcel(): void {
-    // Generates a XML-based XLS spreadsheet file for Microsoft Excel
-    let excelContent = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
- <Worksheet ss:Name="Hypothesis Lab Results">
-  <Table>
-   <Row>
-    <Cell><Data ss:Type="String">Sample Name</Data></Cell>
-    <Cell><Data ss:Type="String">Variable X</Data></Cell>
-    <Cell><Data ss:Type="String">Variable Y</Data></Cell>
-    <Cell><Data ss:Type="String">Hypothesis Status</Data></Cell>
-    <Cell><Data ss:Type="String">p-Value</Data></Cell>
-    <Cell><Data ss:Type="String">Significance</Data></Cell>
-   </Row>`;
+    const rows = this.experimentData().map(row => `<Row><Cell><Data ss:Type="String">${row.sampleName}</Data></Cell><Cell><Data ss:Type="Number">${row.variableX}</Data></Cell></Row>`).join('');
+    const xml = `<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Statistics"><Table>${rows}</Table></Worksheet></Workbook>`;
+    this.download(xml, 'خشتەی-ئاماری.xls', 'application/vnd.ms-excel');
+  }
 
-    this.experimentData().forEach(row => {
-      excelContent += `
-   <Row>
-    <Cell><Data ss:Type="String">${row.sampleName}</Data></Cell>
-    <Cell><Data ss:Type="Number">${row.variableX}</Data></Cell>
-    <Cell><Data ss:Type="Number">${row.variableY}</Data></Cell>
-    <Cell><Data ss:Type="String">${row.hypothesisStatus}</Data></Cell>
-    <Cell><Data ss:Type="Number">${row.pValue}</Data></Cell>
-    <Cell><Data ss:Type="String">${row.significance}</Data></Cell>
-   </Row>`;
-    });
-
-    excelContent += `
-  </Table>
- </Worksheet>
-</Workbook>`;
-
-    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'Hypothesis_Chart_Data_Lab.xls';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  private download(content: string, filename: string, type: string): void {
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
     URL.revokeObjectURL(url);
   }
 }
