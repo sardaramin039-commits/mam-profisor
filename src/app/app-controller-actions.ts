@@ -12,6 +12,18 @@ import { AppControllerBase } from './app-controller-base';
 export abstract class AppControllerActions extends AppControllerBase {
   private http = inject(HttpClient);
 
+  applyGeneratedTextToChapter(text: string, mode: 'replace' | 'append' = 'append'): void {
+    const chapter = this.activeChapter();
+    const clean = (text || '').trim();
+    if (!chapter || !clean) {
+      this.toastService.showToast('ئاگاداری', 'بەشێکی چالاک و دەقی دروست پێویستە.', 'warning', 3000);
+      return;
+    }
+    const next = mode === 'replace' ? clean : [chapter.content?.trim(), clean].filter(Boolean).join('\n\n');
+    this.editorService.updateChapterContent(chapter.id, next, mode === 'replace' ? 'جێگرتنەوەی دەقی بەش' : 'زیادکردنی دەق بە کۆتایی بەش');
+    this.toastService.showToast('سەرکەوتوو بوو', 'گۆڕانکارییەکە بۆ دەستنووس نێردرا؛ پاشەکەوتکردن بە خزمەتگوزاری دەستنووس بەڕێوەدەبرێت.', 'success', 3000);
+  }
+
   updateActiveChapterContent(newContent: string) {
     const activeId = this.editorService.activeChapterId();
     if (activeId !== null) {
