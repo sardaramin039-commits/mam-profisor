@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { HttpClient } from '@angular/common/http';
 import { AI_TOOLS_CATALOG, AiToolItem } from './ai-tools-catalog';
+import { EditorService } from '../../services/editor.service';
+import { AcademicStoreService } from '../../services/academic-store.service';
 
 @Component({
   selector: 'app-ai-tools-suite',
@@ -279,6 +281,21 @@ import { AI_TOOLS_CATALOG, AiToolItem } from './ai-tools-catalog';
 })
 export class AiToolsSuiteComponent {
   private http = inject(HttpClient);
+  private editor = inject(EditorService);
+  private academicStore = inject(AcademicStoreService);
+
+  private activeResearchContext(): string {
+    const chapters = this.editor.chapters();
+    const activeId = this.editor.activeChapterId();
+    const chapter = chapters.find(item => item.id === activeId) || chapters[0];
+    const title = this.academicStore.projectTitle?.() || this.academicStore.manuscriptTitle?.() || '';
+    return [
+      'CONTEXT (use as source context, do not invent missing facts):',
+      title ? `Thesis title: ${title}` : '',
+      chapter ? `Selected chapter: ${chapter.title}\\nChapter text:\\n${chapter.content || ''}` : 'No active chapter selected.',
+      'Preserve factual uncertainty and cite only sources supplied or verified.'
+    ].filter(Boolean).join('\\n\\n');
+  }
 
   tools: AiToolItem[] = AI_TOOLS_CATALOG;
 
@@ -329,7 +346,7 @@ export class AiToolsSuiteComponent {
 
     const payload = {
       toolId: this.activeTool().id,
-      inputText: text,
+      inputText: `${this.activeResearchContext()}\\n\\nTOOL REQUEST:\\n${text}`,
       options: {
         style: this.selectedStyle(),
         tone: this.selectedTone(),
@@ -359,6 +376,31 @@ export class AiToolsSuiteComponent {
     this.userInputText.set('');
     this.outputResult.set(null);
     this.errorMessage.set(null);
+  }
+
+  insertOutputIntoManuscript(): void {
+    const result = this.outputResult()?.trim();
+    if (!result) return;
+    const chapters = this.editor.chapters();
+    const id = this.editor.activeChapterId() ?? chapters[0]?.id;
+    if (id == null) { this.errorMessage.set('سەرەتا بەشێکی چالاک دروست بکە.'); return; }
+    const chapter = chapters.find(item => item.id === id);
+    if (!chapter) { this.errorMessage.set('بەشی چالاک نەدۆزرایەوە.'); return; }
+    this.editor.updateChapterContent(id, [chapter.content?.trim(), result].filter(Boolean).join('\\n\\n'), 'ناردنی دەرئەنجامی ئامرازی ئەکادیمی');
+  }
+
+  saveOutputAsCorpusCard(): void {
+    const result = this.outputResult()?.trim();
+    if (!result) return;
+    const chapter = this.editor.chapters().find(item => item.id === this.editor.activeChapterId());
+    this.academicStore.researchCorpusCards.update(cards => [...cards, {
+      id: `tool-result-${Date.now()}`,
+      sourceTitle: this.activeTool().titleKurdish,
+      author: 'Mam Professor AI Tool',
+      excerptText: result,
+      targetChapterId: chapter?.id,
+      createdAt: new Date().toISOString()
+    } as any]);
   }
 
   copyOutput() {
