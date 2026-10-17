@@ -290,8 +290,15 @@ export class AiToolsSuiteComponent {
     const chapters = this.editor.chapters();
     const activeId = this.editor.activeChapterId();
     const chapter = chapters.find(item => item.id === activeId) || chapters[0];
+    const project = this.editor as any;
+    const title = project.manuscriptTitle?.() || project.thesisTitle?.() || '';
+    const questions = project.researchQuestions?.() || project.researchQuestions || '';
+    const methodology = project.methodology?.() || project.methodology || '';
     return [
       'CONTEXT (use as source context, do not invent missing facts):',
+      title ? `Thesis title: ${title}` : '',
+      questions ? `Research questions: ${Array.isArray(questions) ? questions.join('; ') : questions}` : '',
+      methodology ? `Methodology: ${methodology}` : '',
       chapter ? `Selected chapter: ${chapter.title}\\nChapter text:\\n${chapter.content || ''}` : 'No active chapter selected.',
       'Research questions and methodology must be supplied in the project setup when available; do not infer them from absent fields.',
       'Preserve factual uncertainty and cite only sources supplied or verified.'
