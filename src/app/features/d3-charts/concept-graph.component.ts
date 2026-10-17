@@ -269,6 +269,13 @@ export class ConceptGraphComponent implements AfterViewInit {
           });
         });
 
+        glossaryTerms.forEach((term: any) => {
+          const id = `glossary_${term.id || term.foreign || term.translation}`;
+          dynamicNodes.push({ id, name: term.translation || term.kurdishTerm || term.foreign, kurdishTranslation: term.translation || term.kurdishTerm || term.foreign, category: 'theory', definition: term.definition || '', importance: 'medium' });
+          const related = chs.find(ch => (ch.content || '').toLowerCase().includes(String(term.foreign || term.translation || '').toLowerCase()));
+          if (related) dynamicLinks.push({ source: `ch_${related.id}`, target: id, relation: 'glossary_term', relationKurdish: 'زاراوەی بەکارهاتوو لەم بەشەدا' });
+        });
+
         matrix.forEach((m) => {
           const qId = `q_${m.id}`;
           dynamicNodes.push({
