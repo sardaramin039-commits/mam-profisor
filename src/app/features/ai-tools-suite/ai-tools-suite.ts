@@ -292,10 +292,8 @@ export class AiToolsSuiteComponent {
     const chapters = this.editor.chapters();
     const activeId = this.editor.activeChapterId();
     const chapter = chapters.find(item => item.id === activeId) || chapters[0];
-    const title = this.academicStore.projectTitle?.() || this.academicStore.manuscriptTitle?.() || '';
     return [
       'CONTEXT (use as source context, do not invent missing facts):',
-      title ? `Thesis title: ${title}` : '',
       chapter ? `Selected chapter: ${chapter.title}\\nChapter text:\\n${chapter.content || ''}` : 'No active chapter selected.',
       'Research questions and methodology must be supplied in the project setup when available; do not infer them from absent fields.',
       'Preserve factual uncertainty and cite only sources supplied or verified.'
