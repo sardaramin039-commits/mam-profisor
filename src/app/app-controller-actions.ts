@@ -8,10 +8,8 @@ import { buildAcademicThesisOutline } from './helpers/outline-structure';
 import { calculateWordValidationStatus } from './helpers/word-validation.helper';
 import { ChapterItemModel as ChapterItem } from './domain/models';
 import { AppControllerBase } from './app-controller-base';
-
 export abstract class AppControllerActions extends AppControllerBase {
   private http = inject(HttpClient);
-
   applyGeneratedTextToChapter(text: string, mode: 'replace' | 'append' = 'append'): void {
     const chapter = this.activeChapter();
     const clean = (text || '').trim();
@@ -23,7 +21,6 @@ export abstract class AppControllerActions extends AppControllerBase {
     this.editorService.updateChapterContent(chapter.id, next, mode === 'replace' ? 'جێگرتنەوەی دەقی بەش' : 'زیادکردنی دەق بە کۆتایی بەش');
     this.toastService.showToast('سەرکەوتوو بوو', 'گۆڕانکارییەکە بۆ دەستنووس نێردرا؛ پاشەکەوتکردن بە خزمەتگوزاری دەستنووس بەڕێوەدەبرێت.', 'success', 3000);
   }
-
   updateActiveChapterContent(newContent: string) {
     const activeId = this.editorService.activeChapterId();
     if (activeId !== null) {
@@ -32,13 +29,11 @@ export abstract class AppControllerActions extends AppControllerBase {
       this.editorService.updateChapterContent(this.editorService.chapters()[0].id, newContent, 'چاکسازیی ڕێنوسی سۆرانی');
     }
   }
-
   appendDictatedSpeechText(text: string): void {
     const active = this.activeChapter();
     if (!active) return;
     this.editorService.updateChapterContent(active.id, (active.content || '') + text, 'تۆمارکردنی دەنگی زانستی');
   }
-
   onInsertAcademicAddition(text: string): void {
     const active = this.activeChapter();
     if (!active) {
@@ -48,15 +43,12 @@ export abstract class AppControllerActions extends AppControllerBase {
     this.editorService.updateChapterContent(active.id, (active.content || '') + text, 'زیادکردنی بڕگەی ئەکادیمی');
     this.toastService.showToast('سەرکەوتوو بوو', 'بڕگەی ئەکادیمی بە سەرکەوتوویی تێکەڵی دەقی بەشەکە کرا.', 'success', 3000);
   }
-
   onFormalityConfigChanged(config: FormalityToneConfig): void {
     this.selectedFormalityConfig.set(config);
   }
-
   onLineageParentChanged(node: TextLineageNode | null): void {
     this.selectedLineageParent.set(node);
   }
-
   getActiveThesisText(): string {
     const activeId = this.editorService.activeChapterId();
     if (activeId !== null) {
@@ -64,12 +56,10 @@ export abstract class AppControllerActions extends AppControllerBase {
     }
     return this.editorService.chapters()[0]?.content || '';
   }
-
   onDriveFileImported(file: { name: string; content: string }) {
     this.updateActiveChapterContent(file.content);
     this.mainTab.set('editor');
   }
-
   getWordProgressPct(chapter: ChapterItem | null): number {
     if (!chapter) return 0;
     const target = this.getChapterTarget(chapter);
@@ -77,11 +67,9 @@ export abstract class AppControllerActions extends AppControllerBase {
     const current = chapter.wordCount || (chapter.content ? chapter.content.trim().split(/\s+/).filter(Boolean).length : 0);
     return Math.min(200, Math.round((current / target) * 100));
   }
-
   getWordValidationStatus(chapter: ChapterItem | null) {
     return calculateWordValidationStatus(chapter, (ch) => this.getChapterTarget(ch));
   }
-
   fixAllChaptersSpelling(): void {
     const msg = this.editorController.fixAllChaptersSpelling(this.chapters(), (updated) => this.chapters.set(updated));
     if (msg) {
@@ -89,7 +77,6 @@ export abstract class AppControllerActions extends AppControllerBase {
       setTimeout(() => this.searchFeedbackMessage.set(null), 5000);
     }
   }
-
   fixChapterSpelling(chapterId: number): void {
     const msg = this.editorController.fixSingleChapterSpelling(chapterId, this.chapters(), (updated) => this.chapters.set(updated));
     if (msg) {
@@ -97,7 +84,6 @@ export abstract class AppControllerActions extends AppControllerBase {
       setTimeout(() => this.searchFeedbackMessage.set(null), 5000);
     }
   }
-
   updateChapterTargetWords(chapterId: number, targetWords: number) {
     if (!targetWords || targetWords <= 0) return;
     const list = [...this.chapters()];
@@ -107,29 +93,23 @@ export abstract class AppControllerActions extends AppControllerBase {
       this.chapters.set(list);
     }
   }
-
   applyMarginPreset(preset: '5%' | '10%' | '15%' | '1page' | '2pages') {
     const target = this.refineForm.get('targetPages')?.value || 10;
     const res = AppAcademicActions.applyMarginPreset(target, preset);
     this.refineForm.patchValue({ sizeMode: 'range', minPages: res.minPages, maxPages: res.maxPages });
   }
-
   getChapterHeaders(content: string) {
     return AppAcademicActions.getChapterHeaders(content);
   }
-
   applyTextFormatting(textarea: HTMLTextAreaElement, format: 'bold' | 'italic' | 'sub' | 'sup') {
     textarea.value = AppAcademicActions.formatTextSelection(textarea, format);
   }
-
   getKurdishNumberStr(index: number): string {
     return this.appUiActions.getKurdishNumberStr(index);
   }
-
   getSnippet(text: string, query: string, maxLength = 160): string {
     return this.appUiActions.getSnippet(text, query, maxLength);
   }
-
   getWordCountOfText(text: string): number { return this.appUiActions.getWordCountOfText(text); }
   getCharCountNoSpaces(text: string): number { return this.appUiActions.getCharCountNoSpaces(text); }
   getParagraphCount(text: string): number { return this.appUiActions.getParagraphCount(text); }
@@ -140,26 +120,21 @@ export abstract class AppControllerActions extends AppControllerBase {
   toggleStopWordsFilter() { this.appUiActions.toggleStopWordsFilter(); }
   getKurdishWordFrequency(text: string) { return this.appUiActions.getKurdishWordFrequency(text); }
   getKurdishReadability(text: string) { return this.appUiActions.getKurdishReadability(text); }
-
   saveStateLocally(): void {
     this.searchController.showFeedback('ڕەشنووسی تێزەکە بە سەرکەوتوویی لە سێرڤەری لۆکاڵیدا تۆمارکرا.');
   }
-
   clearEditor() {
     this.chapters.set([]);
     this.viewedChapter.set(null);
   }
-
   openNewBlankThesisModal(): void {
     const curTitle = this.refineForm?.get('title')?.value || 'تێزی ئەکادیمی نوێ';
     this.newThesisTitleInput.set(curTitle === 'تێزی ئەکادیمی' ? 'تێزی ئەکادیمی نوێ' : curTitle);
     this.isNewBlankThesisModalOpen.set(true);
   }
-
   cancelNewBlankThesis(): void {
     this.isNewBlankThesisModalOpen.set(false);
   }
-
   confirmNewBlankThesis(): void {
     const title = this.newThesisTitleInput().trim() || 'تێزی ئەکادیمی نوێ';
     const degree = this.newThesisDegreeInput();
@@ -167,7 +142,6 @@ export abstract class AppControllerActions extends AppControllerBase {
     this.createNewBlankThesis(title, degree, structure);
     this.isNewBlankThesisModalOpen.set(false);
   }
-
   createNewBlankThesis(customTitle = 'تێزی ئەکادیمی نوێ', level: 'bachelor' | 'master' | 'phd' = 'master', structure: 'humanities' | 'empirical' = 'humanities'): void {
     const pages = level === 'phd' ? 80 : (level === 'master' ? 40 : 15);
     const blankOutline = buildAcademicThesisOutline({
@@ -197,35 +171,28 @@ export abstract class AppControllerActions extends AppControllerBase {
     });
     this.toastService.showToast('پڕۆژەی نوێی بەتاڵ', 'تێزێکی نوێی خاوێن و بێ داتای دیمۆ دەستیپێکرد.', 'success', 3500);
   }
-
   toggleAcademicDarkMode() {
     this.academicDarkMode.update(v => !v);
   }
-
   isManuscriptCompleted(item: any): boolean {
     return !!(item && item.chapters && item.chapters.length > 0 && item.chapters.every((c: any) => c.content && c.content.length > 100));
   }
-
   getChapterComplexity(c: ChapterItem) {
     return (c.content || '').length > 2000 ? 'بەرز' : 'مامناوەند';
   }
-
   copyToClipboard(text: string) {
     if (text) navigator.clipboard.writeText(text);
   }
-
   loginWithGoogle() {
     this.data.loginWithGoogle().catch((err: any) => {
       this.errorStr.set(err?.message || 'شیکردنەوە نەبوو لە هەوردا');
     });
   }
-
   logout() {
     this.data.logout().catch((err: any) => {
       this.errorStr.set(err?.message || 'کێشە ڕوویدا لە دەرچوون');
     });
   }
-
   async restoreLocalDraft() {
     const draft = await this.appStateFacade.loadDraftFromLocalStorage();
     if (draft) {
@@ -240,13 +207,11 @@ export abstract class AppControllerActions extends AppControllerBase {
     }
     this.hasLocalDraft.set(false);
   }
-
   discardLocalDraft() {
     this.appStateFacade.clearLocalDraft();
     this.hasLocalDraft.set(false);
     this.toastService.showInfo('ڕەشنووس سڕایەوە', 'ڕەشنووسە لۆکاڵییە پاشەکەوتکراوەکە بە تەواوی ڕەشکرایەوە.');
   }
-
   calibrateAuthorVoice() { this.dashboardState.calibrateAuthorVoice(); }
   selectPagePreset(pages: number) { this.refineForm.patchValue({ targetPages: pages, size: pages }); }
   onNumericInput(event: Event, field: string) {
@@ -327,7 +292,6 @@ export abstract class AppControllerActions extends AppControllerBase {
   insertMythologicalSynthesisToChapter(c: ChapterItem, myth: any) { this.dashboardState.insertMythologicalSynthesisToChapter(c, myth); }
   toggleChunkUsage(id: string) { this.dashboardState.toggleChunkUsage(id); }
   verifyChunkSource(chunk: any) { this.dashboardState.verifyChunkSource(chunk); }
-
   runCognitiveCopilot() { this.bridge.runCognitiveCopilot(); }
   getChapterById(id: any) { return this.bridge.getChapterById(id); }
   applyCockpitAccept(c: any) { this.bridge.applyCockpitAccept(c); }
