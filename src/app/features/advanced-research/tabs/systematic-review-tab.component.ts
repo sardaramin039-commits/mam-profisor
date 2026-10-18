@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,6 +9,7 @@ import {
   PRISMA_2020_ITEMS,
   SystematicReviewService
 } from '../../../services/systematic-review.service';
+import { TabContextBridgeService } from '../services/tab-context-bridge.service';
 
 @Component({
   selector: 'app-systematic-review-tab',
@@ -19,6 +20,7 @@ import {
 })
 export class SystematicReviewTabComponent {
   readonly service = new SystematicReviewService();
+  readonly contextBridge = inject(TabContextBridgeService);
   readonly items = PRISMA_2020_ITEMS;
   readonly statuses = signal<Record<number, ChecklistStatus>>({});
   readonly result = signal<PrismaPreflightResult | null>(null);
@@ -67,5 +69,24 @@ export class SystematicReviewTabComponent {
 
   trackById(_: number, item: { id: number }): number {
     return item.id;
+  }
+
+  insertPrismaIntoManuscript(): void {
+    const r = this.result();
+    if (!r) return;
+    const report = `### ئەنجامی پشکنینی PRISMA 2020 بۆ ڕەوتی لێکۆڵینەوەی سیستماتیک:\n` +
+      `- تێکڕای تەواوبوون: %${r.completionPercent}\n` +
+      `- بڕگەکانی تەواوکراو: ${r.completedItems} لە ${this.items.length}\n` +
+      `- ژمارەی سەرچاوەی دۆزراوە: ${this.identified ?? 'دەستنیشاننەکراو'}\n` +
+      `- ژمارەی هەڵبژێردراوی کۆتایی بۆ تێز: ${this.included ?? 'دەستنیشاننەکراو'}\n` +
+      `- دۆخی گشتی: ${r.readyForReporting ? 'ئامادەیە بۆ ڕاپۆرتکردنی زانستی بەپێی PRISMA' : 'پێویستی بە پێداچوونەوەیە'}`;
+    this.contextBridge.insertIntoManuscript(report);
+  }
+
+  savePrismaAsCorpusCard(): void {
+    const r = this.result();
+    if (!r) return;
+    const report = `پشکنینی PRISMA 2020: تەواوبوون %${r.completionPercent}، بڕگەی تەواو ${r.completedItems}، سەرچاوەی لەخۆگیراو ${this.included ?? 0}.`;
+    this.contextBridge.saveAsCorpusCard('پشکنینی سیستماتیکی PRISMA 2020', report);
   }
 }

@@ -4,6 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { HttpClient } from '@angular/common/http';
 import { AI_TOOLS_CATALOG, AiToolItem } from './ai-tools-catalog';
+import { EditorService } from '../editor/services/editor';
+import { AcademicStoreService } from '../../services/academic-store.service';
+import { ManuscriptBridgeActionsService } from '../../services/manuscript-bridge-actions.service';
+import { AppNotificationsService } from '../../core/app.notifications';
 
 @Component({
   selector: 'app-ai-tools-suite',
@@ -233,12 +237,21 @@ import { AI_TOOLS_CATALOG, AiToolItem } from './ai-tools-catalog';
               }
             </button>
 
-            <button
-              type="button"
-              (click)="clearInput()"
-              class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium transition-all cursor-pointer">
-              سڕینەوەی ورودی
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                (click)="injectActiveContext()"
+                class="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer">
+                <mat-icon class="!text-xs">sync_saved_locally</mat-icon>
+                <span>وەرگرتنی خۆکاری زانیاریی تێز و بەشی چالاک</span>
+              </button>
+              <button
+                type="button"
+                (click)="clearInput()"
+                class="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium transition-all cursor-pointer">
+                سڕینەوەی ورودی
+              </button>
+            </div>
           </div>
 
           <!-- Error Alert -->
@@ -252,18 +265,34 @@ import { AI_TOOLS_CATALOG, AiToolItem } from './ai-tools-catalog';
           <!-- AI Output Result Display Workspace -->
           @if (outputResult()) {
             <div class="space-y-2.5 pt-4 border-t border-stone-200 animate-fadeIn">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between flex-wrap gap-2">
                 <h4 class="text-xs font-bold text-stone-900 flex items-center gap-2">
                   <mat-icon class="text-emerald-600 text-base">verified</mat-icon>
                   <span>دەرئەنجامی ئامرازەکە</span>
                 </h4>
-                <button
-                  type="button"
-                  (click)="copyOutput()"
-                  class="px-3 py-1.5 bg-stone-800 hover:bg-stone-900 text-white rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-xs">
-                  <mat-icon class="!w-4 !h-4 text-xs">{{ copySuccess() ? 'check' : 'content_copy' }}</mat-icon>
-                  <span>{{ copySuccess() ? 'کۆپی کرا!' : 'کۆپیکردنی دەق' }}</span>
-                </button>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    (click)="insertIntoManuscript()"
+                    class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-xs">
+                    <mat-icon class="!w-4 !h-4 text-xs">edit_note</mat-icon>
+                    <span>ناردن بۆ ناو دەستنووس</span>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="saveAsCorpusCard()"
+                    class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-xs">
+                    <mat-icon class="!w-4 !h-4 text-xs">bookmark_add</mat-icon>
+                    <span>پاشەکەوتکردن وەک فیش لە کۆرپەسدا</span>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="copyOutput()"
+                    class="px-3 py-1.5 bg-stone-800 hover:bg-stone-900 text-white rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-xs">
+                    <mat-icon class="!w-4 !h-4 text-xs">{{ copySuccess() ? 'check' : 'content_copy' }}</mat-icon>
+                    <span>{{ copySuccess() ? 'کۆپی کرا!' : 'کۆپیکردنی دەق' }}</span>
+                  </button>
+                </div>
               </div>
 
               <div class="bg-stone-900 text-stone-100 p-5 rounded-2xl text-xs leading-relaxed font-sans whitespace-pre-wrap border border-stone-800 shadow-inner max-h-[500px] overflow-y-auto">
@@ -279,6 +308,10 @@ import { AI_TOOLS_CATALOG, AiToolItem } from './ai-tools-catalog';
 })
 export class AiToolsSuiteComponent {
   private http = inject(HttpClient);
+  private editorService = inject(EditorService);
+  private academicStore = inject(AcademicStoreService);
+  private manuscriptBridge = inject(ManuscriptBridgeActionsService);
+  private toastService = inject(AppNotificationsService);
 
   tools: AiToolItem[] = AI_TOOLS_CATALOG;
 
@@ -316,6 +349,55 @@ export class AiToolsSuiteComponent {
     this.activeTool.set(tool);
     this.outputResult.set(null);
     this.errorMessage.set(null);
+    if (!this.userInputText().trim()) {
+      this.injectActiveContext();
+    }
+  }
+
+  injectActiveContext() {
+    const title = this.academicStore.manuscriptTitle() || 'تێزی ئەکادیمی';
+    const chapters = this.editorService.chapters();
+    const activeId = this.editorService.activeChapterId();
+    const activeCh = (activeId !== null ? chapters.find(c => c.id === activeId) : null) || chapters[0];
+    const questions = this.academicStore.verticalAlignmentMatrix().map(m => m.questionText).join('؛ ');
+
+    let activeText = '';
+    if (activeCh) {
+      if (activeCh.axes && activeCh.axes.length > 0) {
+        for (const ax of activeCh.axes) {
+          for (const br of ax.branches) {
+            if (br.content) activeText += `\n[${br.code} ${br.title}]: ${br.content}\n`;
+          }
+        }
+      }
+      if (!activeText) activeText = activeCh.content || '';
+    }
+
+    const snippet = `ناونیشانی تێز: ${title}\nپرسیارەکانی توێژینەوە: ${questions || 'کێشە و ئامانجە زانستییەکان'}\nبەشی کارپێکراو: ${activeCh?.title || 'بەشی یەکەم'}\nدەقی چالاکی دەستنووس:\n${activeText.slice(0, 1000)}`;
+    this.userInputText.set(snippet);
+    this.toastService.showSuccess('زانیاری بارکرا', 'زانیاریی دەستنووس و پرسیارەکانی توێژینەوە بە سەرکەوتوویی بارکران.');
+  }
+
+  insertIntoManuscript() {
+    const text = this.outputResult();
+    if (!text) return;
+    this.manuscriptBridge.applyManuscriptUpdate(text, 'append');
+  }
+
+  saveAsCorpusCard() {
+    const text = this.outputResult();
+    if (!text) return;
+    const activeId = this.editorService.activeChapterId();
+    this.academicStore.addCorpusCard({
+      title: `دەرئەنجامی ئامرازی #${this.activeTool().num}: ${this.activeTool().titleKurdish || this.activeTool().id}`,
+      excerptText: text,
+      sourceTitle: `ئامرازی ژیریی # ${this.activeTool().num}`,
+      author: 'AI Academic Suite',
+      targetChapterId: activeId !== null ? activeId : 1,
+      category: 'corpus',
+      tags: ['ai_tools', this.activeTool().id]
+    });
+    this.toastService.showSuccess('پاشەکەوت کرا', 'دەرئەنجامەکە وەک کارتی فیش لە کۆرپەسدا پاشەکەوت کرا.');
   }
 
   executeTool() {

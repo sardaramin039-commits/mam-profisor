@@ -19,10 +19,16 @@ import { AppTemplateBridgeWritingService } from './app-template-bridge-writing.s
 import { AcademicToulminArgumentService } from './academic-toulmin-argument.service';
 import { AcademicHedgingStanceService } from './academic-hedging-stance.service';
 import { AcademicLexiconStandardsService } from './academic-lexicon-standards.service';
+import { ManuscriptBridgeActionsService } from './manuscript-bridge-actions.service';
+import { PythonSandboxService } from './python-sandbox';
+import { AppNotificationsService } from '../core/app.notifications';
 
 @Injectable()
 export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingService {
   readonly lexiconService = inject(AcademicLexiconStandardsService);
+  private readonly manuscriptBridge = inject(ManuscriptBridgeActionsService);
+  private readonly pythonSandbox = inject(PythonSandboxService);
+  private readonly toastService = inject(AppNotificationsService);
 
   anonymizeActiveChapterData(chapter: any) {
     if (!chapter) return;
@@ -188,9 +194,48 @@ export class AppTemplateBridgeAdvancedService extends AppTemplateBridgeWritingSe
       error: err => console.error('Plagiarism check error:', err)
     });
   }
-  exportSandboxPDF() {}
-  appendPythonSandboxOutputToChapter(chapter: any) {}
-  executePythonDatasetInterpreter(chapter: any) {}
+  executePythonDatasetInterpreter(chapter: any) {
+    const csv = (this.datasetInputCsv() || '').trim();
+    const code = (this.pythonInterpreterCode() || '').trim();
+    if (!csv) {
+      this.pythonSandboxError.set('تکایە سەرەتا داتای خشتەیی بە فۆرماتی CSV دابنێ بۆ شیکاری.');
+      return;
+    }
+    this.isExecutingPythonSandbox.set(true);
+    this.pythonSandboxError.set(null);
+
+    try {
+      const output = this.pythonSandbox.runEmpiricalAnalysis(csv, code);
+      this.pythonSandboxResult.set(output);
+      this.toastService.showSuccess('شیکاری ئەنجامدرا', 'شیکاریی ئاماری و گریمانەکان لە تاقیگە بە سەرکەوتوویی تەواو بوو.');
+    } catch (err: any) {
+      this.pythonSandboxError.set(err?.message || 'هەڵە لە ئەنجامدانی شیکاریی داتادا.');
+    } finally {
+      this.isExecutingPythonSandbox.set(false);
+    }
+  }
+
+  appendPythonSandboxOutputToChapter(chapter: any) {
+    const res = this.pythonSandboxResult();
+    if (!res || !res.formattedKurdishTable) return;
+    this.manuscriptBridge.applyManuscriptUpdate(res.formattedKurdishTable, 'append', chapter);
+    this.toastService.showSuccess('چەسپێندرا', 'خشتە و شیکاریی ئاماری بە سەرکەوتوویی لە دەستنووسی چالاکدا چەسپێندرا.');
+  }
+
+  exportSandboxPDF() {
+    const res = this.pythonSandboxResult();
+    if (!res) return;
+    const blob = new Blob([res.formattedKurdishTable], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Statistical_Analysis_APA7_Kurdish.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.toastService.showSuccess('داگیرا', 'فایلی شیکاریی ئاماری بە سەرکەوتوویی داگیرا.');
+  }
   copyLatexCode(code: string) {
     if (code) navigator.clipboard.writeText(code);
   }

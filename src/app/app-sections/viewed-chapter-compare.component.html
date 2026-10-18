@@ -145,6 +145,27 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Direct Manuscript Application Actions -->
+              <div class="pt-3 border-t border-stone-200 flex items-center justify-between flex-wrap gap-2">
+                <span class="text-[11px] text-stone-600 font-serif">چەسپاندنی دەقی پێداچوونەوەکراوی لای ڕاست لە دەستنووسی سەرەکیدا:</span>
+                <div class="flex items-center gap-2">
+                  <button 
+                    type="button" 
+                    (click)="applyManuscriptUpdate(compareRightText() || compareLeftText(), 'replace')"
+                    class="px-3 py-1.5 bg-stone-900 hover:bg-black text-white text-[10.5px] font-bold rounded-lg cursor-pointer transition flex items-center gap-1 shadow-sm">
+                    <mat-icon class="!text-xs">sync_saved_locally</mat-icon>
+                    <span>چەسپاندن و جێگیرکردن لە ناو دەستنووسدا</span>
+                  </button>
+                  <button 
+                    type="button" 
+                    (click)="applyManuscriptUpdate(compareRightText() || compareLeftText(), 'append')"
+                    class="px-3 py-1.5 bg-indigo-800 hover:bg-indigo-950 text-white text-[10.5px] font-bold rounded-lg cursor-pointer transition flex items-center gap-1 shadow-sm">
+                    <mat-icon class="!text-xs">add_circle</mat-icon>
+                    <span>لکاندن بە کۆتایی لقی ئێستاوە</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
           </div>

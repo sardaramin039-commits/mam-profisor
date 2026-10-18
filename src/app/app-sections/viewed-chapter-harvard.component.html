@@ -116,10 +116,17 @@
                         @if (harvardReviewResult()) {
                           <button 
                             type="button" 
-                            (click)="applyHarvardActionableImprovement(viewedChapter()!)"
-                            class="px-2.5 py-1.5 bg-red-900 hover:bg-red-950 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
-                            <mat-icon class="!text-xs">check_circle</mat-icon>
-                            <span>چەسپاندن لە ناو دەستنووسدا (Apply to Manuscript)</span>
+                            (click)="applyManuscriptUpdate(harvardReviewResult()?.harvardActionableImprovement || '', 'replace')"
+                            class="px-2.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">done_all</mat-icon>
+                            <span>چەسپاندن و جێگیرکردن لە ناو دەستنووسدا</span>
+                          </button>
+                          <button 
+                            type="button" 
+                            (click)="applyManuscriptUpdate(harvardReviewResult()?.harvardActionableImprovement || '', 'append')"
+                            class="px-2.5 py-1.5 bg-stone-900 hover:bg-black text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs text-amber-400">add</mat-icon>
+                            <span>لکاندن بە کۆتایی لقی ئێستاوە</span>
                           </button>
                         }
                         <button 

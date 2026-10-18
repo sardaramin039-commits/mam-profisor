@@ -9,19 +9,29 @@
               class="flex-1 bg-slate-950 border border-slate-700 text-slate-100 text-sm rounded-xl p-3 focus:outline-none focus:border-cyan-500 transition-all"
             ></textarea>
           </div>
-          <button
-            (click)="multiAgent.runFactCheck(factInput.value)"
-            [disabled]="multiAgent.isFactChecking()"
-            class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md shadow-cyan-500/20 disabled:opacity-50"
-          >
-            @if (multiAgent.isFactChecking()) {
-              <mat-icon class="animate-spin text-sm">sync</mat-icon>
-              لە پشکنیندایە...
-            } @else {
-              <mat-icon class="text-sm">verified</mat-icon>
-              پشتڕاستکردنەوە لە جیهانی زانستی
-            }
-          </button>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              (click)="multiAgent.runFactCheck(factInput.value)"
+              [disabled]="multiAgent.isFactChecking()"
+              class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md shadow-cyan-500/20 disabled:opacity-50 cursor-pointer"
+            >
+              @if (multiAgent.isFactChecking()) {
+                <mat-icon class="animate-spin text-sm">sync</mat-icon>
+                لە پشکنیندایە...
+              } @else {
+                <mat-icon class="text-sm">verified</mat-icon>
+                پشتڕاستکردنەوە لە جیهانی زانستی
+              }
+            </button>
+            <button
+              type="button"
+              (click)="factInput.value = contextBridge.getActiveThesisContext()"
+              class="bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-cyan-850"
+            >
+              <mat-icon class="!text-xs">sync_saved_locally</mat-icon>
+              وەرگرتنی خۆکاری دەقی دەستنووس
+            </button>
+          </div>
         </div>
 
         <!-- Fact Check Result -->
@@ -58,6 +68,24 @@
                   }
                 </ul>
               </div>
+            </div>
+
+            <!-- 1-Click Action Buttons for Manuscript & Corpus -->
+            <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-2 flex-wrap">
+              <button 
+                type="button" 
+                (click)="contextBridge.insertIntoManuscript(fact.correctedStatement || fact.explanation)"
+                class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                <mat-icon class="!text-xs">edit_note</mat-icon>
+                <span>ناردن بۆ ناو دەستنووس</span>
+              </button>
+              <button 
+                type="button" 
+                (click)="contextBridge.saveAsCorpusCard('پشکنینی ڕاستیی زانستی: ' + fact.status, (fact.correctedStatement ? 'دەقی ڕاستکراوە:\n' + fact.correctedStatement + '\n\n' : '') + fact.explanation)"
+                class="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                <mat-icon class="!text-xs">bookmark_add</mat-icon>
+                <span>پاشەکەوتکردن وەک فیش لە کۆرپەسدا</span>
+              </button>
             </div>
           </div>
         }

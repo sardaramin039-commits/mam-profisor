@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { ResearchApiClientService } from '../services/research-api-client.service';
+import { TabContextBridgeService } from '../services/tab-context-bridge.service';
 
 @Component({
   selector: 'app-scholarship-55-tab',
@@ -40,9 +41,18 @@ import { ResearchApiClientService } from '../services/research-api-client.servic
           <input
             type="text"
             [(ngModel)]="searchTopic"
-            placeholder="ناونیشانی پرۆپۆزەڵ بنووسە..."
+            placeholder="ناونیشانی پرۆپۆزەڵ یان تەوەری توێژینەوە..."
             class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
           />
+          <button
+            type="button"
+            (click)="injectThesisContext()"
+            class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs flex items-center gap-1.5 transition-all"
+            title="بارکردنی پرسیار و دەقی دەستنووسی چالاک"
+          >
+            <mat-icon class="text-sm">auto_stories</mat-icon>
+            <span>دەستنووس</span>
+          </button>
           <button
             type="button"
             (click)="runAssessment()"
@@ -70,6 +80,26 @@ import { ResearchApiClientService } from '../services/research-api-client.servic
             }
           </div>
           <p class="text-xs text-slate-300 leading-relaxed">{{ res.summary || res.critique || 'شیکاری بە سەرکەوتوویی ئەنجامدرا.' }}</p>
+
+          <!-- Direct Integration Buttons -->
+          <div class="flex items-center gap-2 pt-2 border-t border-slate-800 flex-wrap">
+            <button
+              type="button"
+              (click)="contextBridge.insertIntoManuscript(res.summary || res.critique || '')"
+              class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition-all"
+            >
+              <mat-icon class="!text-xs">post_add</mat-icon>
+              <span>چەسپاندن لە دەستنووسی چالاکدا</span>
+            </button>
+            <button
+              type="button"
+              (click)="contextBridge.saveAsCorpusCard('هەڵسەنگاندنی ٥٥ پێوەری سکۆلارشیپ', res.summary || res.critique || '')"
+              class="px-3 py-1.5 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700/60 text-indigo-200 font-bold text-xs flex items-center gap-1 transition-all"
+            >
+              <mat-icon class="!text-xs">bookmark_add</mat-icon>
+              <span>پاشەکەوتکردن وەک فیش لە کۆرپەسدا</span>
+            </button>
+          </div>
         </div>
       }
 
@@ -96,10 +126,16 @@ import { ResearchApiClientService } from '../services/research-api-client.servic
 })
 export class Scholarship55TabComponent implements OnInit {
   private readonly api = inject(ResearchApiClientService);
+  readonly contextBridge = inject(TabContextBridgeService);
 
   searchTopic = '';
   readonly loading = signal(false);
   readonly result = signal<any>(null);
+
+  injectThesisContext(): void {
+    const ctx = this.contextBridge.getActiveThesisContext();
+    this.searchTopic = ctx.slice(0, 300);
+  }
 
   readonly defaultDimensions = [
     { id: 'DIM-01', name: 'Originality & Novelty', desc: 'ڕەسەنایەتی بیرۆکە و بەشداریی نوێ لە زانست' },

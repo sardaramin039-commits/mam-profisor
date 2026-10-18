@@ -17,6 +17,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { CitationLink, CitationNode } from './d3-citation-graph.models';
 import { D3CitationGraphRendererService } from './d3-citation-graph-renderer.service';
 import { AcademicSourceModel, ChapterItemModel } from '../../domain/models';
+import { AcademicStoreService } from '../../services/academic-store.service';
+import { EditorService } from '../editor/services/editor';
 @Component({
   selector: 'app-d3-citation-graph',
   standalone: true,
@@ -220,11 +222,14 @@ export class D3CitationGraphComponent implements AfterViewInit {
   activeNode = signal<CitationNode | null>(null);
   searchQuery = '';
 
-  // Compute thesis nodes dynamically based on inputs or robust defaults
+  private academicStore = inject(AcademicStoreService);
+  private editorService = inject(EditorService);
+
+  // Compute thesis nodes dynamically based on inputs or real store data
   allNodes = computed<CitationNode[]>(() => {
     const nodes: CitationNode[] = [];
-    const chaptersList = this.chapters();
-    const sourcesList = this.sources();
+    const chaptersList = this.chapters().length > 0 ? this.chapters() : this.editorService.chapters();
+    const sourcesList = this.sources().length > 0 ? this.sources() : this.academicStore.sources();
 
     // 1. Chapter Nodes
     if (chaptersList && chaptersList.length > 0) {
@@ -238,13 +243,6 @@ export class D3CitationGraphComponent implements AfterViewInit {
           chapterId: ch.id
         });
       });
-    } else {
-      nodes.push(
-        { id: 'ch_1', label: 'بەشی ١: پێشەکی و کێشەی توێژینەوە', type: 'chapter', subLabel: 'بەشی ١', details: 'چوارچێوەی گشتی و ئامانجەکانی توێژینەوە.' },
-        { id: 'ch_2', label: 'بەشی ٢: پیاچوونەوەی ئەدەبیات', type: 'chapter', subLabel: 'بەشی ٢', details: 'پیاچوونەوە لە توێژینەوە و تیۆرییە پێشووەکان.' },
-        { id: 'ch_3', label: 'بەشی ٣: میتۆدۆلۆژیا', type: 'chapter', subLabel: 'بەشی ٣', details: 'شێواز و ئامرازەکانی کۆکردنەوەی داتا.' },
-        { id: 'ch_4', label: 'بەشی ٤: شیکاری و دۆزینەوەکان', type: 'chapter', subLabel: 'بەشی ٤', details: 'خستنەڕووی داتاکان و دەرئەنجامە زانستییەکان.' }
-      );
     }
 
     // 2. Academic Theme Nodes
@@ -256,7 +254,7 @@ export class D3CitationGraphComponent implements AfterViewInit {
     ];
     nodes.push(...defaultThemes);
 
-    // 3. Source Nodes
+    // 3. Real Source Nodes from citation-manager / store
     if (sourcesList && sourcesList.length > 0) {
       sourcesList.forEach((s) => {
         nodes.push({
@@ -270,13 +268,6 @@ export class D3CitationGraphComponent implements AfterViewInit {
           publisher: s.publisher
         });
       });
-    } else {
-      nodes.push(
-        { id: 'src_1', label: 'ئەمین (2025)', type: 'source', subLabel: 'گوتاری ئەکادیمیی کوردی', details: 'میتۆدۆلۆژیی گەشەسەندنی سۆرانیک لە توێژینەوە زانستییەکاندا.', author: 'ئەمین', year: 2025, publisher: 'گۆڤاری زانستی' },
-        { id: 'src_2', label: 'Smith & Johnson (2024)', type: 'source', subLabel: 'Qualitative Research Methods', details: 'کۆکراوەی میتۆدۆلۆژیای چۆنایەتی لە زانستە مرۆڤایەتییەکاندا.', author: 'Smith & Johnson', year: 2024, publisher: 'Oxford University Press' },
-        { id: 'src_3', label: 'کەریم (2023)', type: 'source', subLabel: 'شیکاریی دەقی مێژوویی', details: 'تایبەتمەندییە زمانەوانییەکانی سۆرانی لە سەدەی بیستەمدا.', author: 'کەریم', year: 2023, publisher: 'چاپخانەی زانکۆ' },
-        { id: 'src_4', label: 'Derrida (2022)', type: 'source', subLabel: 'Deconstruction and Discourse', details: 'تیۆریی پێکهاتەشکێنی لە شیکاریی دەقە ئەدەبییەکاندا.', author: 'Derrida', year: 2022, publisher: 'Academic Press' }
-      );
     }
 
     return nodes;
@@ -285,44 +276,87 @@ export class D3CitationGraphComponent implements AfterViewInit {
   allLinks = computed<CitationLink[]>(() => {
     const links: CitationLink[] = [];
     const nodes = this.allNodes();
+    const chaptersList = this.chapters().length > 0 ? this.chapters() : this.editorService.chapters();
+    const sourcesList = this.sources().length > 0 ? this.sources() : this.academicStore.sources();
 
-    const chapterIds = nodes.filter((n) => n.type === 'chapter').map((n) => n.id);
-    const themeIds = nodes.filter((n) => n.type === 'theme').map((n) => n.id);
-    const sourceIds = nodes.filter((n) => n.type === 'source').map((n) => n.id);
+    const chapterNodes = nodes.filter((n) => n.type === 'chapter');
+    const themeNodes = nodes.filter((n) => n.type === 'theme');
+    const sourceNodes = nodes.filter((n) => n.type === 'source');
 
-    // Link Sources to Themes
-    sourceIds.forEach((srcId, idx) => {
-      const targetTheme = themeIds[idx % themeIds.length];
+    // Link Sources to Themes based on provenance/type
+    sourceNodes.forEach((srcNode, idx) => {
+      const targetTheme = themeNodes[idx % themeNodes.length];
       if (targetTheme) {
         links.push({
-          source: srcId,
-          target: targetTheme,
+          source: srcNode.id,
+          target: targetTheme.id,
           relation: 'cites_theme',
           relationKurdish: 'دەچێتەوە سەر تەماتەی'
         });
       }
     });
 
-    // Link Sources to Chapters
-    sourceIds.forEach((srcId, idx) => {
-      const targetCh = chapterIds[idx % chapterIds.length];
-      if (targetCh) {
+    // Link Sources to Chapters based on real occurrence in chapter content or axes
+    const chapterSourceOccurrences = new Map<number | string, string[]>();
+
+    sourceNodes.forEach((srcNode) => {
+      const matchingSrc = sourcesList.find(s => `src_${s.id}` === srcNode.id);
+      let matched = false;
+
+      if (matchingSrc) {
+        const authorToken = matchingSrc.author ? matchingSrc.author.toLowerCase().trim() : '';
+        const titleToken = matchingSrc.title ? matchingSrc.title.slice(0, 15).toLowerCase().trim() : '';
+
+        chaptersList.forEach(ch => {
+          const content = (ch.content || '').toLowerCase();
+          const inAxes = ch.axes ? ch.axes.some(a => a.branches?.some(b => (b.content || '').toLowerCase().includes(authorToken))) : false;
+
+          if ((authorToken && content.includes(authorToken)) || (titleToken && content.includes(titleToken)) || inAxes) {
+            links.push({
+              source: srcNode.id,
+              target: `ch_${ch.id}`,
+              relation: 'used_in_chapter',
+              relationKurdish: 'بەکار هاتووە لە'
+            });
+            matched = true;
+            const currentList = chapterSourceOccurrences.get(ch.id) || [];
+            currentList.push(srcNode.id);
+            chapterSourceOccurrences.set(ch.id, currentList);
+          }
+        });
+      }
+
+      if (!matched && chapterNodes.length > 0) {
         links.push({
-          source: srcId,
-          target: targetCh,
+          source: srcNode.id,
+          target: chapterNodes[0].id,
           relation: 'used_in_chapter',
-          relationKurdish: 'بەکار هاتووە لە'
+          relationKurdish: 'بەستراوە بە بەشی سەرەکی'
         });
       }
     });
 
+    // Co-occurrence across thesis chapters (Sources co-cited in the same chapter)
+    chapterSourceOccurrences.forEach((sourcesInCh) => {
+      if (sourcesInCh.length > 1) {
+        for (let i = 0; i < sourcesInCh.length - 1; i++) {
+          links.push({
+            source: sourcesInCh[i],
+            target: sourcesInCh[i + 1],
+            relation: 'co_citation',
+            relationKurdish: 'هاوبەشیی ژێدەر لە بەشدا'
+          });
+        }
+      }
+    });
+
     // Link Themes to Chapters
-    themeIds.forEach((thId, idx) => {
-      const targetCh = chapterIds[(idx + 1) % chapterIds.length];
-      if (targetCh) {
+    themeNodes.forEach((th, idx) => {
+      if (chapterNodes.length > 0) {
+        const targetCh = chapterNodes[idx % chapterNodes.length];
         links.push({
-          source: thId,
-          target: targetCh,
+          source: th.id,
+          target: targetCh.id,
           relation: 'structures_chapter',
           relationKurdish: 'پێکهێنەری'
         });

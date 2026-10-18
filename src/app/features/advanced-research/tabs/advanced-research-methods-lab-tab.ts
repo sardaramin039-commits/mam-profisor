@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { ResearchApiClientService, ResearchControlPlaneState } from '../services/research-api-client.service';
-
+import { TabContextBridgeService } from '../services/tab-context-bridge.service';
 
 @Component({
   selector: 'app-advanced-research-methods-lab-tab',
@@ -14,6 +14,7 @@ import { ResearchApiClientService, ResearchControlPlaneState } from '../services
 })
 export class AdvancedResearchMethodsLabTabComponent {
   private readonly api = inject(ResearchApiClientService);
+  readonly contextBridge = inject(TabContextBridgeService);
   mode = signal<'prisma'|'power'|'claim_map'|'provenance'|'framework'|'risk_bias'|'evidence_grade'|'methodology_gate'|'reporting_guideline'>('prisma');
   projectId = input<string>('current');
   result = signal<any>(null);
@@ -21,6 +22,18 @@ export class AdvancedResearchMethodsLabTabComponent {
   running = signal(false);
 
   title=''; rationale=''; question=''; eligibility=''; informationSources=''; searchStrategy='';
+
+  formatResultForManuscript(r: any): string {
+    if (typeof r === 'string') return r;
+    return JSON.stringify(r, null, 2);
+  }
+
+  injectActiveContext(): void {
+    const ctx = this.contextBridge.getActiveThesisContext();
+    if (!this.question) this.question = ctx;
+    if (!this.researchQuestion) this.researchQuestion = ctx;
+    if (!this.methodology) this.methodology = ctx;
+  }
   selectionProcess=''; dataCollection=''; riskOfBias=''; synthesis=''; reportingBias='';
   certainty=''; protocol=''; funding=''; conflicts=''; dataCode='';
   identified=0; screened=0; retrieved=0; excluded=0; included=0;

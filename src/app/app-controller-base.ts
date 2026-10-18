@@ -34,6 +34,7 @@ import { ChapterItemModel as ChapterItem, StructureReviewResult } from './domain
 import { calculateChapterTargetWords } from './helpers/chapter-calculator';
 import { EditorFocusModeService } from './services/editor-focus-mode.service';
 import { EditorSyncFeedbackService } from './services/editor-sync-feedback.service';
+import { ManuscriptBridgeActionsService } from './services/manuscript-bridge-actions.service';
 
 @Directive()
 export abstract class AppControllerBase implements OnInit {
@@ -51,6 +52,7 @@ export abstract class AppControllerBase implements OnInit {
   public bridge = inject(AppTemplateBridgeService);
   public toastService = inject(AppNotificationsService);
   public bottomDockActions = inject(BottomDockActionsService);
+  public manuscriptBridgeActions = inject(ManuscriptBridgeActionsService);
 
   copilotInputText = this.bridge.copilotInputText; copilotExtraInfo = this.bridge.copilotExtraInfo;
   isCopilotRunning = this.bridge.isCopilotRunning; copilotError = this.bridge.copilotError;

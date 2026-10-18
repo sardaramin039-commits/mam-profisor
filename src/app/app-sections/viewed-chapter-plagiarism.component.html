@@ -71,10 +71,17 @@
                         @if (plagiarismResult()?.paraphrasedAlternative) {
                           <button 
                             type="button" 
-                            (click)="applyParaphrasedAlternativeToChapter(viewedChapter()!)"
+                            (click)="applyManuscriptUpdate(plagiarismResult()?.paraphrasedAlternative || '', 'replace')"
+                            class="px-2.5 py-1.5 bg-stone-900 hover:bg-black text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">sync_saved_locally</mat-icon>
+                            <span>چەسپاندن و جێگیرکردن لە ناو دەستنووسدا</span>
+                          </button>
+                          <button 
+                            type="button" 
+                            (click)="applyManuscriptUpdate(plagiarismResult()?.paraphrasedAlternative || '', 'append')"
                             class="px-2.5 py-1.5 bg-indigo-800 hover:bg-indigo-950 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
-                            <mat-icon class="!text-xs">check_circle</mat-icon>
-                            <span>چەسپاندن لە ناو دەستنووسدا (Apply to Manuscript)</span>
+                            <mat-icon class="!text-xs">add_circle</mat-icon>
+                            <span>لکاندن بە کۆتایی لقی ئێستاوە</span>
                           </button>
                         }
                         <button 

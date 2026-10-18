@@ -6,6 +6,7 @@ import { D3ConceptGraphHelper } from '../../helpers/concept-graph';
 import { ConceptNodeModel, ConceptLinkModel } from '../../helpers/thesis-context-map';
 import { AcademicStoreService } from '../../services/academic-store.service';
 import { EditorService } from '../editor/services/editor';
+import { ACADEMIC_GLOSSARY } from '../../../prompts/academic-glossary';
 
 @Component({
   selector: 'app-concept-graph',
@@ -232,22 +233,86 @@ export class ConceptGraphComponent implements AfterViewInit {
 
         chs.forEach((ch, idx) => {
           const cat = idx === 0 ? 'methodology' : (idx === chs.length - 1 ? 'finding' : 'theory');
+          const chNodeId = `ch_${ch.id}`;
           dynamicNodes.push({
-            id: `ch_${ch.id}`,
+            id: chNodeId,
             name: ch.title || `بەشی ${idx + 1}`,
             kurdishTranslation: ch.title || `بەشی ${idx + 1}`,
             category: cat,
             definition: ch.academicNotes || `بەشی ${idx + 1} بە قەبارەی ${ch.wordCount || 0} وشە.`,
-            importance: 'high'
+            importance: 'critical'
           });
           if (idx > 0) {
             dynamicLinks.push({
               source: `ch_${chs[idx - 1].id}`,
-              target: `ch_${ch.id}`,
+              target: chNodeId,
               relation: 'پەیوەندیی زنجیرەیی',
               relationKurdish: 'پەیوەندیی زنجیرەیی'
             });
           }
+
+          // Level 2: Axes (تەوەرەکان)
+          if (ch.axes && ch.axes.length > 0) {
+            ch.axes.forEach(axis => {
+              const axNodeId = `ax_${axis.id}`;
+              dynamicNodes.push({
+                id: axNodeId,
+                name: axis.title,
+                kurdishTranslation: axis.title,
+                category: 'theory',
+                definition: `تەوەری زانستی لە ناو ${ch.title}`,
+                importance: 'high'
+              });
+              dynamicLinks.push({
+                source: chNodeId,
+                target: axNodeId,
+                relation: 'تەوەرەی بەش',
+                relationKurdish: 'تەوەرەی سەرەکی'
+              });
+
+              // Level 3: Branches (لقەکان)
+              if (axis.branches && axis.branches.length > 0) {
+                axis.branches.forEach(br => {
+                  const brNodeId = `br_${br.id}`;
+                  dynamicNodes.push({
+                    id: brNodeId,
+                    name: `${br.code} ${br.title}`,
+                    kurdishTranslation: `${br.code} ${br.title}`,
+                    category: 'evidence',
+                    definition: br.content ? br.content.slice(0, 100) + '...' : `لقی ${br.code}`,
+                    importance: 'medium'
+                  });
+                  dynamicLinks.push({
+                    source: axNodeId,
+                    target: brNodeId,
+                    relation: 'لقی تەوەر',
+                    relationKurdish: 'لقی دەستنووس'
+                  });
+                });
+              }
+            });
+          }
+        });
+
+        // Dynamic Approved Glossary Terms
+        const approvedGlossary = ACADEMIC_GLOSSARY.slice(0, 8);
+        approvedGlossary.forEach((term, tIdx) => {
+          const termNodeId = `term_${tIdx}`;
+          dynamicNodes.push({
+            id: termNodeId,
+            name: term.translation,
+            kurdishTranslation: term.translation,
+            category: term.category === 'شیکاری' ? 'methodology' : (term.category === 'تیۆری' ? 'theory' : 'finding'),
+            definition: `${term.foreign}: ${term.definition}`,
+            importance: 'high'
+          });
+          const targetNode = dynamicNodes.find(n => n.id.startsWith('ax_') || n.id.startsWith('ch_'))?.id || `ch_${chs[0].id}`;
+          dynamicLinks.push({
+            source: termNodeId,
+            target: targetNode,
+            relation: 'زاراوەی ئەکادیمی',
+            relationKurdish: 'چەمکی پەسەندکراو'
+          });
         });
 
         cards.forEach((c) => {

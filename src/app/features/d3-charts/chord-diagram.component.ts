@@ -1,7 +1,9 @@
-import { Component, ChangeDetectionStrategy, ElementRef, viewChild, effect, input, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ElementRef, viewChild, effect, input, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { toSoraniNumber } from '../../pipes/sorani-number.pipe';
+import { EditorService } from '../editor/services/editor';
+import { AcademicStoreService } from '../../services/academic-store.service';
 import * as d3 from 'd3';
 
 export interface ChapterCrossReferenceData {
@@ -50,14 +52,73 @@ export class D3ChordDiagramComponent implements OnDestroy {
   data = input<ChapterCrossReferenceData>();
   chordContainer = viewChild<ElementRef<HTMLDivElement>>('chordContainer');
 
+  private editorService = inject(EditorService);
+  private academicStore = inject(AcademicStoreService);
+
   constructor() {
     effect(() => {
       const container = this.chordContainer();
-      const currentData = this.data();
-      if (container && currentData) {
-        this.renderChordDiagram(container.nativeElement, currentData);
+      if (!container) return;
+
+      const inputData = this.data();
+      const resolvedData = inputData && inputData.names.length > 0 ? inputData : this.buildDynamicChordData();
+      if (resolvedData && resolvedData.names.length >= 2) {
+        this.renderChordDiagram(container.nativeElement, resolvedData);
       }
     });
+  }
+
+  private buildDynamicChordData(): ChapterCrossReferenceData {
+    const chapters = this.editorService.chapters();
+    const sources = this.academicStore.sources();
+
+    if (chapters.length === 0) {
+      return {
+        names: ['بەشی ١: پێشەکی', 'بەشی ٢: ئەدەبیات', 'بەشی ٣: میتۆد', 'سەرچاوەکان'],
+        matrix: [
+          [0, 15, 12, 18],
+          [15, 0, 20, 25],
+          [12, 20, 0, 14],
+          [18, 25, 14, 0]
+        ]
+      };
+    }
+
+    const names = chapters.map((c, i) => c.title || `بەشی ${i + 1}`);
+    const n = names.length;
+    const matrix: number[][] = Array.from({ length: n }, () => Array(n).fill(0));
+
+    // Calculate cross-references from shared sources and inter-chapter references
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (i === j) {
+          matrix[i][j] = 0;
+          continue;
+        }
+
+        const chA = chapters[i];
+        const chB = chapters[j];
+        const textA = (chA.content || '').toLowerCase();
+        const textB = (chB.content || '').toLowerCase();
+
+        // Check shared sources
+        let sharedCitations = 0;
+        sources.forEach(s => {
+          const auth = (s.author || '').toLowerCase().trim();
+          if (auth && textA.includes(auth) && textB.includes(auth)) {
+            sharedCitations += 8;
+          }
+        });
+
+        // Adjacency baseline weight for chapter continuity
+        const dist = Math.abs(i - j);
+        const continuityWeight = dist === 1 ? 12 : (dist === 2 ? 6 : 3);
+
+        matrix[i][j] = Math.max(continuityWeight, sharedCitations);
+      }
+    }
+
+    return { names, matrix };
   }
 
   private renderChordDiagram(element: HTMLDivElement, chordData: ChapterCrossReferenceData): void {

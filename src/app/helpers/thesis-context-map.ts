@@ -108,13 +108,14 @@ export function parseThesisContextMapFile(file: File): Promise<ThesisContextMapM
 export interface ResearchCorpusCard {
   id: string;
   sourceTitle: string;
+  title?: string;
   author: string;
-  pageNumber: string | number;
+  pageNumber?: string | number;
   targetChapterId: number;
   excerptText: string;
-  analyticalNote: string;
+  analyticalNote?: string;
   createdAt: string;
-  category?: 'literary_passage' | 'poetry' | 'travelogue' | 'archival' | 'field_data';
+  category?: 'literary_passage' | 'poetry' | 'travelogue' | 'archival' | 'field_data' | 'corpus';
   tags?: string[];
 }
 

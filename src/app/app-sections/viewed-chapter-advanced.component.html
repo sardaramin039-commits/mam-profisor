@@ -1,4 +1,4 @@
-              @if (viewedChapter()?.content) {
+              @if (viewedChapter()?.content || viewedChapter()?.axes?.length || activeChapter()?.content || activeChapter()?.axes?.length) {
                 <div class="mt-8 pt-6 border-t-4 border-stone-800 space-y-6 font-serif">
                   
                   <!-- Section Header -->

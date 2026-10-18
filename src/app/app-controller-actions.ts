@@ -487,4 +487,11 @@ export abstract class AppControllerActions extends AppControllerBase {
   analyzeChapterRigor(c: any) { this.bridge.analyzeChapterRigor(c); }
   resetViva() { this.bridge.resetViva(); }
   submitVivaDefense(c: any) { this.bridge.submitVivaDefense(c); }
+  applyManuscriptUpdate(text: string, mode: 'replace' | 'append' = 'append') {
+    this.manuscriptBridgeActions.applyManuscriptUpdate(text, mode, this.viewedChapter() || this.activeChapter(), undefined, this.refineForm?.value, this.manuscriptTitle());
+    if (this.viewedChapter()) {
+      const updated = this.editorService.chapters().find(c => c.id === this.viewedChapter()!.id);
+      if (updated) this.viewedChapter.set(updated);
+    }
+  }
 }

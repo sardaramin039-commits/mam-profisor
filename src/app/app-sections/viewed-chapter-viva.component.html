@@ -139,13 +139,22 @@
                               class="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-serif font-bold rounded-lg cursor-pointer transition-all">
                               دووبارە بەرگریی تر تاقیبکەرەوە
                             </button>
-                            <button 
-                              type="button" 
-                              (click)="appendAdditionsToChapter(viewedChapter()!, 'پوختەی بەرگری و تێبینی لیژنەی تاوتوێکار:\n' + (vivaEvaluationResult()?.decision || ''))"
-                              class="px-4 py-2 bg-indigo-900 hover:bg-indigo-950 text-white text-xs font-serif font-bold rounded-lg cursor-pointer transition-all flex items-center gap-1.5 shadow-sm">
-                              <mat-icon class="!text-xs">check_circle</mat-icon>
-                              <span>چەسپاندن لە ناو دەستنووسدا (Apply to Manuscript)</span>
-                            </button>
+                            <div class="flex items-center gap-2">
+                              <button 
+                                type="button" 
+                                (click)="applyManuscriptUpdate('پوختەی بەرگری و تێبینی لیژنەی تاوتوێکار:\n' + (vivaEvaluationResult()?.decision || ''), 'replace')"
+                                class="px-3 py-1.5 bg-stone-900 hover:bg-black text-white text-xs font-serif font-bold rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-sm">
+                                <mat-icon class="!text-xs">sync_saved_locally</mat-icon>
+                                <span>چەسپاندن و جێگیرکردن لە ناو دەستنووسدا</span>
+                              </button>
+                              <button 
+                                type="button" 
+                                (click)="applyManuscriptUpdate('پوختەی بەرگری و تێبینی لیژنەی تاوتوێکار:\n' + (vivaEvaluationResult()?.decision || ''), 'append')"
+                                class="px-3 py-1.5 bg-indigo-900 hover:bg-indigo-950 text-white text-xs font-serif font-bold rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-sm">
+                                <mat-icon class="!text-xs">add_circle</mat-icon>
+                                <span>لکاندن بە کۆتایی لقی ئێستاوە</span>
+                              </button>
+                            </div>
                           </div>
 
                         </div>

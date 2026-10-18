@@ -81,9 +81,28 @@
           @for (error of r.flowErrors; track error) { <p class="text-[10px] text-slate-300">{{ error }}</p> }
         </div>
       }
-      <button type="button" (click)="reset()" class="px-3 py-2 border border-slate-700 rounded-lg text-[10px] text-slate-300 hover:bg-slate-800">
-        پاککردنەوەی پشکنین
-      </button>
+      <!-- Direct Integration Actions -->
+      <div class="flex items-center gap-2 pt-2 border-t border-slate-800 flex-wrap">
+        <button
+          type="button"
+          (click)="insertPrismaIntoManuscript()"
+          class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition-all"
+        >
+          <mat-icon class="!text-xs">post_add</mat-icon>
+          <span>چەسپاندن لە دەستنووسی چالاکدا</span>
+        </button>
+        <button
+          type="button"
+          (click)="savePrismaAsCorpusCard()"
+          class="px-3 py-1.5 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700/60 text-indigo-200 font-bold text-xs flex items-center gap-1 transition-all"
+        >
+          <mat-icon class="!text-xs">bookmark_add</mat-icon>
+          <span>پاشەکەوتکردن وەک فیش</span>
+        </button>
+        <button type="button" (click)="reset()" class="px-3 py-1.5 border border-slate-700 rounded-lg text-xs text-slate-300 hover:bg-slate-800 transition-all">
+          پاککردنەوەی پشکنین
+        </button>
+      </div>
     </section>
   }
 </section>

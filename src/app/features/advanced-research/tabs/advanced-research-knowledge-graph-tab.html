@@ -43,4 +43,25 @@
             </g>
           </svg>
         </div>
+
+        <!-- 1-Click Action Buttons -->
+        <div class="p-3 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between flex-wrap gap-2">
+          <span class="text-xs text-slate-300 font-serif">چەسپاندن و بەکارهێنانی نەخشەی زانیاری:</span>
+          <div class="flex items-center gap-2">
+            <button 
+              type="button" 
+              (click)="contextBridge.insertIntoManuscript('نەخشەی تۆپۆلۆژیی چەمکەکان:\n' + contextBridge.getActiveThesisContext())"
+              class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+              <mat-icon class="!text-xs">edit_note</mat-icon>
+              <span>ناردن بۆ ناو دەستنووس</span>
+            </button>
+            <button 
+              type="button" 
+              (click)="contextBridge.saveAsCorpusCard('نەخشەی تۆپۆلۆژی و چەمکە ئەکادیمییەکان', contextBridge.getActiveThesisContext())"
+              class="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+              <mat-icon class="!text-xs">bookmark_add</mat-icon>
+              <span>پاشەکەوتکردن وەک فیش لە کۆرپەسدا</span>
+            </button>
+          </div>
+        </div>
       </div>

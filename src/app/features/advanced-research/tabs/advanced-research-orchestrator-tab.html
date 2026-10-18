@@ -6,10 +6,21 @@
             <input
               #orchestratorInput
               type="text"
+              [ngModel]="topicText()"
+              (ngModelChange)="topicText.set($event)"
               placeholder="بۆ نموونە: شیکاری کاریگەری ژیری دەستکرد و مۆدێلە گەورەکانی زمان لەسەر ڕەسەنایەتی توێژینەوە..."
               (keyup.enter)="runOrchestrator(orchestratorInput.value)"
               class="flex-1 bg-slate-950 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 transition-all"
             />
+            <button
+              type="button"
+              (click)="injectThesisContext()"
+              class="px-3.5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs flex items-center gap-1.5 transition-all"
+              title="بارکردنی پرسیار و دەقی دەستنووسی چالاک"
+            >
+              <mat-icon class="text-sm">auto_stories</mat-icon>
+              <span>دەستنووس</span>
+            </button>
             <button
               (click)="runOrchestrator(orchestratorInput.value)"
               [disabled]="multiAgent.isLoadingPipeline()"
@@ -79,6 +90,24 @@
               <p class="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800 max-h-48 overflow-y-auto">
                 {{ res.writerAgentOutput.academicProse }}
               </p>
+              <div class="flex items-center gap-2 pt-2 border-t border-slate-800 flex-wrap">
+                <button
+                  type="button"
+                  (click)="contextBridge.insertIntoManuscript(res.writerAgentOutput.academicProse)"
+                  class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition-all"
+                >
+                  <mat-icon class="!text-xs">post_add</mat-icon>
+                  <span>چەسپاندن لە دەستنووسی چالاکدا</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="contextBridge.saveAsCorpusCard(res.writerAgentOutput.title || 'دەرئەنجامی ئۆرکێسترەیتەر', res.writerAgentOutput.academicProse)"
+                  class="px-3 py-1.5 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700/60 text-indigo-200 font-bold text-xs flex items-center gap-1 transition-all"
+                >
+                  <mat-icon class="!text-xs">bookmark_add</mat-icon>
+                  <span>پاشەکەوتکردن وەک فیش</span>
+                </button>
+              </div>
             </div>
 
             <!-- Citation Agent Card -->
@@ -99,6 +128,16 @@
                   </li>
                 }
               </ul>
+              <div class="flex items-center gap-2 pt-2 border-t border-slate-800 flex-wrap">
+                <button
+                  type="button"
+                  (click)="contextBridge.insertIntoManuscript(res.citationAgentOutput.formattedCitationsAPA.join('\n'))"
+                  class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-[11px] flex items-center gap-1 transition-all"
+                >
+                  <mat-icon class="!text-xs">post_add</mat-icon>
+                  <span>ناردنی سەرچاوەکان بۆ دەستنووس</span>
+                </button>
+              </div>
             </div>
 
             <!-- Reviewer & Fact Checker Card -->

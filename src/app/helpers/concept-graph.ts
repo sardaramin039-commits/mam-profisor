@@ -71,6 +71,126 @@ export class D3ConceptGraphHelper {
     { source: 'findings', target: 'literature_gap', relation: 'fills', relationKurdish: 'پڕی دەکاتەوە' }
   ];
 
+  public static buildDynamicConceptGraphFromThesis(
+    chapters: any[],
+    glossaryTerms?: any[]
+  ): { nodes: ConceptNodeModel[]; links: ConceptLinkModel[] } {
+    const nodes: ConceptNodeModel[] = [];
+    const links: ConceptLinkModel[] = [];
+    const registeredIds = new Set<string>();
+
+    const addNode = (n: ConceptNodeModel) => {
+      if (!registeredIds.has(n.id)) {
+        registeredIds.add(n.id);
+        nodes.push(n);
+      }
+    };
+
+    if (chapters && chapters.length > 0) {
+      chapters.forEach((ch, chIdx) => {
+        const chId = `ch_${ch.id || chIdx + 1}`;
+        addNode({
+          id: chId,
+          name: ch.title || `Chapter ${chIdx + 1}`,
+          kurdishTranslation: ch.title || `بەشی ${chIdx + 1}`,
+          category: 'methodology',
+          definition: `بەشی ئەکادیمی ژمارە ${chIdx + 1} (${ch.wordCount || 0} وشە)`,
+          importance: 'critical'
+        });
+
+        if (chIdx > 0) {
+          const prevChId = `ch_${chapters[chIdx - 1].id || chIdx}`;
+          links.push({
+            source: prevChId,
+            target: chId,
+            relation: 'leads_to',
+            relationKurdish: 'دەبێتە سەرەتای'
+          });
+        }
+
+        // Axes (Level 2)
+        if (ch.axes && ch.axes.length > 0) {
+          ch.axes.forEach((ax: any, axIdx: number) => {
+            const axId = `ax_${ax.id || `${chId}_${axIdx + 1}`}`;
+            addNode({
+              id: axId,
+              name: ax.title,
+              kurdishTranslation: ax.title,
+              category: 'theory',
+              definition: `تەوەری شیکاری لە ${ch.title}`,
+              importance: 'high'
+            });
+
+            links.push({
+              source: chId,
+              target: axId,
+              relation: 'contains_axis',
+              relationKurdish: 'تەوەری سەرەکی'
+            });
+
+            // Sub-branches (Level 3)
+            if (ax.branches && ax.branches.length > 0) {
+              ax.branches.forEach((b: any, bIdx: number) => {
+                const bId = `br_${b.id || `${axId}_${bIdx + 1}`}`;
+                addNode({
+                  id: bId,
+                  name: `${b.code} ${b.title}`,
+                  kurdishTranslation: `${b.code} ${b.title}`,
+                  category: 'evidence',
+                  definition: `لقی شیکاری (${b.wordCount || 0} / ${b.targetWords || 0} وشە)`,
+                  importance: 'medium'
+                });
+
+                links.push({
+                  source: axId,
+                  target: bId,
+                  relation: 'branches_into',
+                  relationKurdish: 'لقی شیکاری'
+                });
+              });
+            }
+          });
+        }
+      });
+    }
+
+    // Connect approved glossary terms
+    const terms = glossaryTerms && glossaryTerms.length > 0 ? glossaryTerms.slice(0, 15) : [];
+    terms.forEach((term: any) => {
+      const termId = `gloss_${term.foreign?.toLowerCase().replace(/\\s+/g, '_') || term.translation}`;
+      addNode({
+        id: termId,
+        name: term.foreign || term.translation,
+        kurdishTranslation: term.translation,
+        category: 'gap',
+        definition: term.definition || 'زاراوەی ئەکادیمی پەسەندکراوی تێز.',
+        importance: 'high'
+      });
+
+      const matchedChapter = chapters?.find((c: any) =>
+        (c.title + ' ' + (c.content || '')).toLowerCase().includes(term.translation?.toLowerCase())
+      );
+      const targetId = matchedChapter ? `ch_${matchedChapter.id}` : (nodes[0]?.id || 'ch_1');
+      if (targetId && registeredIds.has(targetId)) {
+        links.push({
+          source: termId,
+          target: targetId,
+          relation: 'conceptualizes',
+          relationKurdish: 'چەمکسازی بۆ'
+        });
+      }
+    });
+
+    if (nodes.length === 0) {
+      return {
+        nodes: D3ConceptGraphHelper.DEFAULT_NODES,
+        links: D3ConceptGraphHelper.DEFAULT_LINKS
+      };
+    }
+
+    return { nodes, links };
+  }
+
   public static renderForceGraph(
     config: ConceptGraphConfig,
     nodesData: ConceptNodeModel[],

@@ -308,10 +308,26 @@
 
                     <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
                       @if (recalibrationFeedback()) {
-                        <span class="text-[9.5px] font-bold text-emerald-800 flex items-center gap-1">
-                          <mat-icon class="!text-xs text-emerald-600">done_all</mat-icon>
-                          {{ recalibrationFeedback() }}
-                        </span>
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="text-[9.5px] font-bold text-emerald-800 flex items-center gap-1">
+                            <mat-icon class="!text-xs text-emerald-600">done_all</mat-icon>
+                            {{ recalibrationFeedback() }}
+                          </span>
+                          <button 
+                            type="button" 
+                            (click)="applyManuscriptUpdate(userIntuitionText(), 'replace')"
+                            class="px-2.5 py-1 bg-stone-900 hover:bg-black text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">sync_saved_locally</mat-icon>
+                            <span>چەسپاندن و جێگیرکردن لە ناو دەستنووسدا</span>
+                          </button>
+                          <button 
+                            type="button" 
+                            (click)="applyManuscriptUpdate(userIntuitionText(), 'append')"
+                            class="px-2.5 py-1 bg-indigo-800 hover:bg-indigo-950 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">add_circle</mat-icon>
+                            <span>لکاندن بە کۆتایی لقی ئێستاوە</span>
+                          </button>
+                        </div>
                       } @else {
                         <span></span>
                       }

@@ -177,6 +177,21 @@
                     <span class="font-bold block text-stone-900 mb-1">📋 ڕاپۆرتی زمانەوانی سەرانسەری (Linguistic Integrity Digest):</span>
                     {{ audit.overallFeedback }}
                   </div>
+
+                  <div class="flex items-center gap-2 pt-2 border-t border-stone-200 mt-2 flex-wrap">
+                    <button type="button" 
+                            (click)="applyManuscriptUpdate(audit.overallFeedback || '', 'replace')" 
+                            class="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white text-[10px] font-bold rounded flex items-center gap-1 cursor-pointer shadow-xs">
+                      <mat-icon class="!text-xs">done_all</mat-icon>
+                      <span>چەسپاندن و جێگیرکردن لە ناو دەستنووسدا</span>
+                    </button>
+                    <button type="button" 
+                            (click)="applyManuscriptUpdate(audit.overallFeedback || '', 'append')" 
+                            class="px-3 py-1.5 bg-stone-900 hover:bg-black text-white text-[10px] font-bold rounded flex items-center gap-1 cursor-pointer shadow-xs">
+                      <mat-icon class="!text-xs text-amber-400">add</mat-icon>
+                      <span>لکاندن بە کۆتایی لقی ئێستاوە</span>
+                    </button>
+                  </div>
                 </div>
               }
             </div>

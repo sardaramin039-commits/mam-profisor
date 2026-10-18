@@ -26,6 +26,7 @@ export class AcademicStoreService {
   public academicDarkMode = signal<boolean>(false);
 
   // Dynamic Writing State
+  public manuscriptTitle = signal<string>('تێزی ئەکادیمی');
   public chapters = signal<ChapterItem[]>([]);
   public sources = signal<AcademicSourceModel[]>([]);
   public viewedChapter = signal<ChapterItem | null>(null);
