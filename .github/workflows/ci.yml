@@ -32,6 +32,12 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Report npm security advisories (non-blocking)
+        shell: bash
+        run: |
+          npm audit --json > "$RUNNER_TEMP/npm-audit.json" || true
+          node scripts/dependency-audit-report.mjs "$RUNNER_TEMP/npm-audit.json"
+
       - name: Verify release prerequisites and lockfile consistency
         run: npm run release:check
 
