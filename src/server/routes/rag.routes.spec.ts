@@ -4,8 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   indexDocument: vi.fn(),
-  verifySources: vi.fn()
+  verifySources: vi.fn(),
+  requireAuth: vi.fn()
 }));
+
+vi.mock('../../middleware/auth', () => ({ requireAuth: mocks.requireAuth }));
 
 vi.mock('../../services/vector-store.service', () => ({
   vectorStoreService: { indexDocument: mocks.indexDocument, searchSimilarDocuments: vi.fn() }
@@ -22,10 +25,7 @@ let server: Server | undefined;
 async function buildServer(): Promise<Server> {
   const app = express();
   app.use(express.json());
-  app.use('/api/rag', (req: Request, _res: Response, next: NextFunction) => {
-    (req as Request & { user?: { uid: string } }).user = { uid: 'test-user' };
-    next();
-  }, createRagRouter(() => ({} as never)));
+  app.use('/api/rag', createRagRouter(() => ({} as never)));
 
   const instance = app.listen(0);
   await new Promise<void>((resolve, reject) => {
@@ -43,6 +43,14 @@ async function baseUrl(): Promise<string> {
 
 beforeEach(async () => {
   vi.resetAllMocks();
+  mocks.requireAuth.mockImplementation((req: Request, res: Response, next: NextFunction) => {
+    if (req.headers.authorization !== 'Bearer test-token') {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    (req as Request & { user?: { uid: string } }).user = { uid: 'test-user' };
+    next();
+  });
   mocks.verifySources.mockResolvedValue({
     verifiedSources: [{ sourceId: 'doi:10.1234/example', identityStatus: 'verified' }],
     citationEligibleSources: [],
@@ -71,10 +79,25 @@ afterEach(async () => {
 });
 
 describe('RAG content verification boundary', () => {
-  it('does not mark caller-uploaded content verified just because source identity metadata matched', async () => {
+  it('rejects requests without authentication before invoking source verification or storage', async () => {
     const response = await fetch(`${await baseUrl()}/api/rag/index-document`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Unauthenticated document',
+        content: 'This content must not be passed to source verification or storage when no token is present.'
+      })
+    });
+
+    expect(response.status).toBe(401);
+    expect(mocks.verifySources).not.toHaveBeenCalled();
+    expect(mocks.indexDocument).not.toHaveBeenCalled();
+  });
+
+  it('does not mark caller-uploaded content verified just because source identity metadata matched', async () => {
+    const response = await fetch(`${await baseUrl()}/api/rag/index-document`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
       body: JSON.stringify({
         title: 'Trusted metadata, caller-supplied text',
         content: 'This text was uploaded by a caller and has not been fetched from an authoritative full text.',
