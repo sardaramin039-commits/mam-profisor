@@ -5,6 +5,7 @@ import {
   PlagiarismAnalysisReport, CitationValidationReport, OcrExtractionResult,
   fetchSemanticScholar, fetchPubMed, fetchDOAJ, fetchEuropeana
 } from '../../../../helpers/academic-integrations';
+import { lookupIsbn as lookupIsbnProvider, lookupIssn as lookupIssnProvider, resolveDoi as resolveDoiProvider } from '../../../../helpers/extended-academic-tools';
 import {
   ZoteroItem, OrcidProfile, GoogleScholarMetadata, DoiResolutionResult,
   IsbnLookupResult, IssnLookupResult, ResearchTimelineNode, MindMapNode,
@@ -87,15 +88,15 @@ export class ResearchApiClientService {
   }
 
   resolveDoi(doi: string): Observable<DoiResolutionResult> {
-    return this.notConfigured('resolveDoi');
+    return from(resolveDoiProvider(doi));
   }
 
   lookupIsbn(isbn: string): Observable<IsbnLookupResult> {
-    return this.notConfigured('lookupIsbn');
+    return from(lookupIsbnProvider(isbn));
   }
 
   lookupIssn(issn: string): Observable<IssnLookupResult> {
-    return this.notConfigured('lookupIssn');
+    return from(lookupIssnProvider(issn));
   }
 
   generateResearchTimeline(topic: string): Observable<{ timeline: ResearchTimelineNode[] }> {
