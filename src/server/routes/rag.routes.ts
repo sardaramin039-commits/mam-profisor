@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import type { AuthRequest } from '../../middleware/auth';
-import { requireAuth } from '../../middleware/auth';
+import { requireAuth, type AuthRequest } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { vectorStoreService } from '../../services/vector-store.service';
 import { sourceVerificationService } from '../services/source-verification.service';
