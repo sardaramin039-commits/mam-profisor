@@ -16,9 +16,9 @@ concurrency:
 
 jobs:
   validate:
-    name: Typecheck and production build
+    name: Academic integrity, typecheck and production build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,8 +32,20 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Verify release prerequisites and lockfile consistency
+        run: npm run release:check
+
+      - name: Check source file line limits
+        run: npm run line-limit
+
+      - name: Audit critical academic research client for fabricated results
+        run: npm run integrity:audit
+
       - name: TypeScript typecheck
         run: npm run typecheck
 
       - name: Production build
         run: npm run build -- --configuration production
+
+      - name: Smoke-check production output
+        run: npm run release:smoke

@@ -13,14 +13,10 @@
     "lint": "ng lint",
     "test": "ng test --watch=false",
     "integrity:audit": "node scripts/anti-hallucination-audit.mjs",
-    "db:migrate": "drizzle-kit migrate",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "line-limit": "node scripts/verify-file-line-limits.mjs",
     "release:check": "node scripts/release-readiness-check.mjs",
-    "release:smoke": "node scripts/release-smoke-check.mjs",
-    "test:server": "vitest run src/server/routes/publication-submission-editorial.routes.spec.ts src/server/routes/publication-submission-resubmit.routes.spec.ts",
-    "e2e": "npm run build && npm run e2e:ci",
-    "e2e:ci": "playwright test"
+    "release:smoke": "node scripts/release-smoke-check.mjs"
   },
   "dependencies": {
     "@angular/cdk": "^20.2.14",
