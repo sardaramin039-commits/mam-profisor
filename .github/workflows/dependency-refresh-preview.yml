@@ -3,9 +3,11 @@ name: Dependency refresh preview
 on:
   push:
     branches: [chore/security-dependency-refresh-preview]
+  pull_request:
+    branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: dependency-preview-${{ github.ref }}
@@ -77,3 +79,19 @@ jobs:
             ${{ runner.temp }}/npm-audit-production.json
           if-no-files-found: error
           retention-days: 7
+
+      - name: Commit validated lockfile back to candidate branch
+        if: success() && github.event_name == 'pull_request'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet -- package-lock.json; then
+            echo 'Candidate lockfile matches the branch already.'
+          else
+            git add package-lock.json
+            git commit -m 'chore: regenerate validated dependency lockfile'
+            git push origin HEAD:${{ github.head_ref }}
+          fi
