@@ -28,7 +28,7 @@ jobs:
           node-version: 22
 
       - name: Regenerate lockfile for requested version ranges
-        run: npm install --package-lock-only --ignore-scripts --no-audit
+        run: rm -f package-lock.json && npm install --package-lock-only --ignore-scripts --no-audit
 
       - name: Apply only non-forced compatible security fixes
         shell: bash
