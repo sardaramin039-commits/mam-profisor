@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { auth, googleAuthProvider } from '../../firebase';
 import { onAuthStateChanged, signInWithPopup, signInAnonymously, signOut, User } from 'firebase/auth';
+import { isInternalApiUrl } from '../utils/internal-api-url';
 
 @Injectable({
   providedIn: 'root'
@@ -57,7 +58,7 @@ export class CoreFirebase {
       const originalFetch = window.fetch;
       window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
         const urlString = typeof input === 'string' ? input : (input instanceof URL ? input.href : input.url);
-        if (urlString && urlString.includes('/api/')) {
+        if (isInternalApiUrl(urlString)) {
           const user = auth.currentUser;
           if (user) {
             try {
