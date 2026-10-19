@@ -18,7 +18,7 @@
     "release:check": "node scripts/release-readiness-check.mjs",
     "release:smoke": "node scripts/release-smoke-check.mjs",
     "db:migrate": "drizzle-kit migrate",
-    "test:server": "vitest run src/server/routes/publication-submission-editorial.routes.spec.ts src/server/routes/publication-submission-resubmit.routes.spec.ts src/routes/agents.router.spec.ts src/services/academic-agents.service.spec.ts"
+    "test:server": "vitest run src/server/routes/publication-submission-editorial.routes.spec.ts src/server/routes/publication-submission-resubmit.routes.spec.ts src/routes/agents.router.spec.ts src/services/academic-agents.service.spec.ts src/server/routes/rag.routes.spec.ts src/server/middleware/rbac.middleware.spec.ts src/server/middleware/security.middleware.spec.ts src/server/services/source-verification.service.security.spec.ts"
   },
   "dependencies": {
     "@angular/cdk": "^20.2.14",
