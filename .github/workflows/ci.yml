@@ -53,6 +53,9 @@ jobs:
       - name: Audit critical academic research client for fabricated results
         run: npm run integrity:audit
 
+      - name: Security and server regression tests
+        run: npm run test:server
+
       - name: TypeScript typecheck
         run: npm run typecheck
 
