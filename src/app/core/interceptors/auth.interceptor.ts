@@ -4,6 +4,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Observable, from, of, throwError } from 'rxjs';
 import { switchMap, catchError } from 'rxjs/operators';
 import { auth } from '../../firebase';
+import { isInternalApiUrl } from '../utils/internal-api-url';
 
 /**
  * Production-grade Angular HTTP Interceptor for Firebase Authentication.
@@ -16,7 +17,7 @@ export const authInterceptor: HttpInterceptorFn = (
   next: HttpHandlerFn
 ): Observable<HttpEvent<unknown>> => {
   // Only intercept internal backend /api/ requests
-  if (!req.url.includes('/api/')) {
+  if (!isInternalApiUrl(req.url)) {
     return next(req);
   }
 
