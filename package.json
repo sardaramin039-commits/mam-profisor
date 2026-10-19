@@ -84,6 +84,7 @@
   "description": "Kurdish-first academic research and thesis workspace.",
   "overrides": {
     "@grpc/grpc-js": "1.14.5",
-    "uuid": "11.1.1"
+    "uuid": "11.1.1",
+    "@modelcontextprotocol/sdk": "1.31.0"
   }
 }
