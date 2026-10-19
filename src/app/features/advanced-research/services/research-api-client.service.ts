@@ -1,7 +1,5 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
 import { Observable, of, from, throwError } from 'rxjs';
-import { GeminiRequestManagerService } from '../../../services/gemini-request-manager.service';
 import {
   AcademicSourceItem, FactCheckResult, MultiAgentResponse, PeerReviewReport,
   PlagiarismAnalysisReport, CitationValidationReport, OcrExtractionResult,
@@ -28,9 +26,6 @@ export interface ResearchControlPlaneState {
 
 @Injectable({ providedIn: 'root' })
 export class ResearchApiClientService {
-  private http = inject(HttpClient);
-  private geminiManager = inject(GeminiRequestManagerService);
-
   runMultiAgentPipeline(topic: string, professorMode: ProfessorModeLevel, memory: ResearchMemoryState): Observable<MultiAgentResponse> {
     return this.notConfigured('runMultiAgentPipeline');
   }
@@ -46,10 +41,15 @@ export class ResearchApiClientService {
           fetchSemanticScholar(query), fetchPubMed(query), fetchDOAJ(query), fetchEuropeana(query)
         ]);
         const combined = [...sem, ...pub, ...doaj, ...eur];
-        const avg = combined.length ? Math.round(combined.reduce((s, i) => s + (i.confidenceScore || 70), 0) / combined.length) : 75;
-        return { query, sources: combined, averageConfidenceScore: avg };
+        const scored = combined.filter(
+          item => typeof item.confidenceScore === 'number' && Number.isFinite(item.confidenceScore)
+        );
+        const averageConfidenceScore = scored.length
+          ? Math.round(scored.reduce((sum, item) => sum + item.confidenceScore, 0) / scored.length)
+          : 0;
+        return { query, sources: combined, averageConfidenceScore };
       } catch {
-        return { query, sources: [], averageConfidenceScore: 70 };
+        throw new Error('گەڕانی سەرچاوە ئەکادیمییەکان شکستی هێنا؛ هیچ ئەنجامی پشتڕاستکراوە بەرهەم نەهاتووە.');
       }
     })());
   }
