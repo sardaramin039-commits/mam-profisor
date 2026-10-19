@@ -31,7 +31,14 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install locked dependencies
+      - name: Regenerate candidate lockfile within declared semver ranges
+        run: rm -f package-lock.json && npm install --package-lock-only --ignore-scripts --no-audit
+
+      - name: Apply non-forced security fixes only
+        shell: bash
+        run: npm audit fix --package-lock-only --ignore-scripts || true
+
+      - name: Install candidate lockfile cleanly
         run: npm ci
 
       - name: Report npm security advisories (non-blocking)

@@ -32,7 +32,7 @@
     "@angular/platform-browser-dynamic": "^20.3.32",
     "@angular/platform-server": "^20.3.32",
     "@angular/router": "^20.3.32",
-    "@angular/ssr": "^20.3.32",
+    "@angular/ssr": "^20.3.40",
     "@google/genai": "^2.24.0",
     "@tailwindcss/postcss": "^4.0.0",
     "axios": "^1.20.0",
@@ -53,11 +53,10 @@
     "docx": "^9.7.2"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^20.3.37",
     "@angular-eslint/builder": "^20.1.1",
     "@angular-eslint/eslint-plugin": "^20.1.1",
     "@angular-eslint/template-parser": "^20.1.1",
-    "@angular/cli": "^20.3.37",
+    "@angular/cli": "^20.3.40",
     "@angular/compiler-cli": "^20.3.32",
     "@eslint/js": "^9.28.0",
     "@types/canvas-confetti": "^1.9.0",
@@ -74,7 +73,7 @@
     "typescript-eslint": "8.70.1",
     "vitest": "^3.2.7",
     "jsdom": "^30.1.1",
-    "@angular/build": "^20.3.37",
+    "@angular/build": "^20.3.40",
     "@playwright/test": "^1.64.0"
   },
   "engines": {
@@ -84,6 +83,7 @@
   "description": "Kurdish-first academic research and thesis workspace.",
   "overrides": {
     "@grpc/grpc-js": "1.14.5",
-    "uuid": "11.1.1"
+    "uuid": "11.1.1",
+    "@modelcontextprotocol/sdk": "1.31.0"
   }
 }
