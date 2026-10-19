@@ -35,5 +35,14 @@ jobs:
       - name: TypeScript typecheck
         run: npm run typecheck
 
+      - name: Release readiness audit
+        run: npm run release:check
+
+      - name: Academic integrity static audit
+        run: npm run integrity:audit
+
       - name: Production build
         run: npm run build -- --configuration production
+
+      - name: Production artifact smoke check
+        run: npm run release:smoke
