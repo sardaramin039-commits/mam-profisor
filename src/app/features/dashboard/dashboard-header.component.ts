@@ -171,6 +171,11 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
         </button>
         <input type="file" #topbarFileInput class="hidden" accept=".json" (change)="onBackupFileSelected($event)" />
 
+        <button type="button" class="mam-top-action" (click)="exportWordOrPdf.emit()" title="داگرتنی تێز بە فایلی Word یان PDF">
+          <mat-icon class="!text-emerald-400">description</mat-icon>
+          <span>داگرتنی فایلی Word / PDF</span>
+        </button>
+
         <button type="button" class="mam-top-action" [class.primary]="isFocusMode()" (click)="toggleFocusMode.emit()" title="دۆخی سەرنج (Focus Mode) - نووسینی ئارام و بێ بەربەست">
           <mat-icon>{{ isFocusMode() ? 'fullscreen_exit' : 'center_focus_strong' }}</mat-icon>
           <span>{{ isFocusMode() ? 'دەرچوون لە سەرنج' : 'دۆخی سەرنج' }}</span>
@@ -213,6 +218,7 @@ export class DashboardHeaderComponent {
   toggleDarkMode = output<void>();
   clearEditor = output<void>();
   toggleFocusMode = output<void>();
+  exportWordOrPdf = output<void>();
 
   mobileNavOpen = signal(false);
 

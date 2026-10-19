@@ -37,7 +37,8 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
         targetChapterId: chapter.id,
         manuscriptTitle: this.refineForm?.get('title')?.value || chapter.title,
         academicLevel: this.refineForm?.get('academicLevel')?.value || 'ماستەر',
-        discipline: this.refineForm?.get('discipline')?.value || 'زانستە ئەکادیمییەکان'
+        discipline: this.refineForm?.get('discipline')?.value || 'زانستە ئەکادیمییەکان',
+        refineFormValue: this.refineForm?.value
       });
       return;
     }
@@ -62,7 +63,8 @@ export class AppTemplateBridgeWritingService extends AppTemplateBridgeStateServi
     this.branchEngine.executeBranchByBranchWriting(this.editorService.chapters(), {
       manuscriptTitle: this.refineForm?.get('title')?.value || 'تێزی ئەکادیمی',
       academicLevel: this.refineForm?.get('academicLevel')?.value || 'ماستەر',
-      discipline: this.refineForm?.get('discipline')?.value || 'زانستە ئەکادیمییەکان'
+      discipline: this.refineForm?.get('discipline')?.value || 'زانستە ئەکادیمییەکان',
+      refineFormValue: this.refineForm?.value
     });
   }
 

@@ -38,24 +38,51 @@
   <app-system-maintenance-panel></app-system-maintenance-panel>
 </div>
 
-<!-- Prominent New Blank Thesis Action Bar -->
+<!-- Prominent Functional Action Bar -->
 <div class="my-3 p-3 bg-gradient-to-r from-stone-900 via-stone-850 to-stone-950 text-white rounded-xl shadow-md border border-stone-750 flex items-center justify-between gap-3 flex-wrap text-right font-serif">
   <div class="flex items-center gap-2.5">
     <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg">
-      <mat-icon class="!text-lg">post_add</mat-icon>
+      <mat-icon class="!text-lg">auto_stories</mat-icon>
     </div>
     <div>
-      <h3 class="text-xs font-bold text-amber-300">سەرەتایەکی نوێ بۆ تێزەکەت</h3>
-      <p class="text-[10px] text-stone-300">پاککردنەوەی داتای دیمۆ و دەستپێکردنی تێزێکی نوێی بەتاڵ بە ناونیشان و ئاستی زانستی خۆت.</p>
+      <h3 class="text-xs font-bold text-amber-300">کردارە خێراکانی دەستنووس و داتای تێز</h3>
+      <p class="text-[10px] text-stone-300">دەستپێکردنی تێزی نوێ، پاراستنی یەدەگ، و هەناردەکردنی ڕاستەوخۆ بۆ Word و PDF.</p>
     </div>
   </div>
-  <button
-    type="button"
-    (click)="openNewBlankThesisModal()"
-    class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-lg text-xs font-bold font-sans flex items-center gap-1.5 transition-all shadow-sm cursor-pointer hover:shadow-md">
-    <mat-icon class="!text-sm">add_circle</mat-icon>
-    <span>+ دەستپێکردنی تێزی نوێ (بەتاڵ)</span>
-  </button>
+  <div class="flex items-center gap-2 flex-wrap">
+    <button
+      type="button"
+      (click)="openNewBlankThesisModal()"
+      class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-lg text-xs font-bold font-sans flex items-center gap-1.5 transition-all shadow-sm cursor-pointer hover:shadow-md">
+      <mat-icon class="!text-sm">add_circle</mat-icon>
+      <span>+ تێزی نوێی بەتاڵ</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="backupProject()"
+      class="px-3 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer">
+      <mat-icon class="!text-sm text-amber-400">download</mat-icon>
+      <span>داگرتنی یەدەگ (.json)</span>
+    </button>
+
+    <button
+      type="button"
+      (click)="topRestoreFileInput.click()"
+      class="px-3 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer">
+      <mat-icon class="!text-sm text-emerald-400">upload_file</mat-icon>
+      <span>گەڕاندنەوەی پڕۆژە</span>
+    </button>
+    <input type="file" #topRestoreFileInput class="hidden" accept=".json" (change)="onBackupFileSelected($event)" />
+
+    <button
+      type="button"
+      (click)="exportWordOrPdf()"
+      class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer">
+      <mat-icon class="!text-sm">description</mat-icon>
+      <span>داگرتنی فایلی Word / PDF</span>
+    </button>
+  </div>
 </div>
 
 <!-- Interactive Modal for Initializing New Blank Thesis -->

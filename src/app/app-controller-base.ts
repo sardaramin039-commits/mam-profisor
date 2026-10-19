@@ -35,6 +35,7 @@ import { calculateChapterTargetWords } from './helpers/chapter-calculator';
 import { EditorFocusModeService } from './services/editor-focus-mode.service';
 import { EditorSyncFeedbackService } from './services/editor-sync-feedback.service';
 import { ManuscriptBridgeActionsService } from './services/manuscript-bridge-actions.service';
+import { BackupRestoreService } from './core/services/backup-restore.service';
 
 @Directive()
 export abstract class AppControllerBase implements OnInit {
@@ -288,6 +289,24 @@ export abstract class AppControllerBase implements OnInit {
     thesisDefense: [false]
   });
 
+
+  public backupService = inject(BackupRestoreService);
+
+  backupProject(): void {
+    void this.backupService.exportFullBackup();
+  }
+
+  async onBackupFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      const success = await this.backupService.restoreFromFile(file);
+      if (success && typeof window !== 'undefined') {
+        this.toastService.showSuccess('پڕۆژە گەڕێندرایەوە', 'تەواوی داتاکانی پڕۆژە لە فایلی یەدەگەوە گەڕێندرانەوە.');
+        setTimeout(() => window.location.reload(), 1200);
+      }
+    }
+  }
 
   ngOnInit(): void {
     this.bridge.refineForm = this.refineForm;

@@ -45,17 +45,64 @@ export class AppAcademicActions {
     return headers;
   }
 
-  static formatTextSelection(textarea: HTMLTextAreaElement, format: 'bold' | 'italic' | 'sub' | 'sup'): string {
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const val = textarea.value;
-    const selected = val.substring(start, end) || 'دەقی هەڵبژێردراو';
+  static formatTextSelection(
+    textarea: HTMLTextAreaElement,
+    format: 'bold' | 'italic' | 'h1' | 'h2' | 'h3' | 'quote' | 'footnote' | 'bullet' | 'number' | 'table' | 'sub' | 'sup'
+  ): string {
+    const start = textarea.selectionStart ?? 0;
+    const end = textarea.selectionEnd ?? 0;
+    const val = textarea.value || '';
+    const selected = val.substring(start, end);
 
     let formatted = selected;
-    if (format === 'bold') formatted = `**${selected}**`;
-    if (format === 'italic') formatted = `*${selected}*`;
-    if (format === 'sub') formatted = `<sub>${selected}</sub>`;
-    if (format === 'sup') formatted = `<sup>${selected}</sup>`;
+    switch (format) {
+      case 'bold':
+        formatted = `**${selected || 'دەقی تۆخ'}**`;
+        break;
+      case 'italic':
+        formatted = `*${selected || 'دەقی لار'}*`;
+        break;
+      case 'h1':
+        formatted = `\n# ${selected || 'سەرپەڕەی سەرەکی (Heading 1)'}\n`;
+        break;
+      case 'h2':
+        formatted = `\n## ${selected || 'تەوەری سەرەکی (Heading 2)'}\n`;
+        break;
+      case 'h3':
+        formatted = `\n### ${selected || 'لقی توێژینەوە (Heading 3)'}\n`;
+        break;
+      case 'quote':
+        formatted = `«${selected || 'دەقی وەرگیراو بەپێی ستاندارد'}»`;
+        break;
+      case 'footnote': {
+        const footnoteMatches = (val.match(/\[[١٢٣٤٥٦٧٨٩٠\d]+\]/g) || []).length;
+        const nextNum = footnoteMatches + 1;
+        const kurdishDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+        const numStr = String(nextNum).split('').map(d => kurdishDigits[parseInt(d, 10)] ?? d).join('');
+        const marker = `[${numStr}]`;
+        const noteEntry = `\n\n---\n${marker} تێبینی و سەرچاوە: (نووسەر، ساڵ، ل. لاپەڕە).`;
+        const hasFootnotesSection = val.includes('پەراوێزەکان') || val.includes('---');
+        const appendFooter = hasFootnotesSection ? `\n${marker} تێبینی: ` : noteEntry;
+        return val.substring(0, start) + marker + val.substring(end) + appendFooter;
+      }
+      case 'bullet':
+        formatted = `\n- ${selected || 'بڕگەی یەکەم'}\n- بڕگەی دووەم\n- بڕگەی سێیەم\n`;
+        break;
+      case 'number':
+        formatted = `\n١. ${selected || 'خاڵی یەکەم'}\n٢. خاڵی دووەم\n٣. خاڵی سێیەم\n`;
+        break;
+      case 'table':
+        formatted = `\n| پێوەر / گۆڕاو | قەبارە (N) | تێکڕا (Mean) | لادانی پێوانەیی (SD) | ئاستی واتاداری (p) |\n| :--- | :---: | :---: | :---: | :---: |\n| نموونەی یەکەم | ٣٠ | ٤.٢٥ | ٠.٦٢ | p < 0.05 |\n| نموونەی دووەم | ٣٠ | ٣.٨٠ | ٠.٧٥ | p < 0.05 |\n`;
+        break;
+      case 'sub':
+        formatted = `<sub>${selected || 'ژێرنووس'}</sub>`;
+        break;
+      case 'sup':
+        formatted = `<sup>${selected || 'سەرنووس'}</sup>`;
+        break;
+      default:
+        formatted = selected;
+    }
 
     return val.substring(0, start) + formatted + val.substring(end);
   }

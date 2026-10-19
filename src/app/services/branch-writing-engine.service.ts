@@ -13,6 +13,7 @@ export interface BranchWritingOptions {
   academicLevel?: string;
   discipline?: string;
   targetChapterId?: number;
+  refineFormValue?: any;
   onUpdate?: () => void;
 }
 
@@ -92,7 +93,7 @@ export class BranchWritingEngineService {
             this.currentWritingStatus.set(statusText);
 
             // 1. Send dedicated request for this exact sub-branch
-            const prompt = this.buildSubBranchPrompt(title, level, discipline, chapter, axis, branch, targetWords);
+            const prompt = this.buildSubBranchPrompt(title, level, discipline, chapter, axis, branch, targetWords, options.refineFormValue);
             let branchContent = await this.requestManager.callGeminiApi(prompt, SYSTEM_PROMPT_GENERATE_CHAPTER);
             branchContent = (branchContent || '').trim();
 
@@ -184,8 +185,31 @@ export class BranchWritingEngineService {
     chapter: ChapterItem,
     axis: AxisItem,
     branch: SubBranchItem,
-    targetWords: number
+    targetWords: number,
+    refineFormValue?: any
   ): string {
+    let customRules = '';
+    if (refineFormValue) {
+      if (refineFormValue.methodology) {
+        customRules += `\n- میتۆدۆلۆژیای پەسەندکراو: ${refineFormValue.methodology}`;
+      }
+      if (refineFormValue.customInstructions?.trim()) {
+        customRules += `\n- ڕێنمایی تایبەتی نووسەر: ${refineFormValue.customInstructions.trim()}`;
+      }
+      if (refineFormValue.customSourcesText?.trim()) {
+        customRules += `\n- سەرچاوە زۆرەملێکانی دەستنیشانکراو: ${refineFormValue.customSourcesText.trim()}`;
+      }
+      if (refineFormValue.fieldWorkText?.trim()) {
+        customRules += `\n- داتاکانی کاری مەیدانی بۆ شیتاڵکردن: ${refineFormValue.fieldWorkText.trim()}`;
+      }
+      if (refineFormValue.compareAspect?.trim()) {
+        customRules += `\n- ڕووی بەراوردکاری: ${refineFormValue.compareAspect.trim()}`;
+      }
+      if (refineFormValue.copyStyleText?.trim()) {
+        customRules += `\n- شێوازی داڕشتنی دەنگ: ${refineFormValue.copyStyleText.slice(0, 500).trim()}`;
+      }
+    }
+
     return `[سیستەمی نووسینی دکتۆرا و ماستەر بەپێی ستانداردی ئەکادیمی - بەرهەمهێنانی ڕاستەوخۆی لق]:
 ناونیشانی گشتیی تێز: «${thesisTitle}»
 کایەی زانستی: ${discipline}
@@ -194,7 +218,7 @@ export class BranchWritingEngineService {
 تەوەری زانستی: «${axis.code}: ${axis.title}»
 لقی داواکراو بۆ نووسین: «${branch.code}: ${branch.title}»
 ئامانجی وشە بۆ ئەم لقە: لانیکەم ${targetWords} وشەی ئەکادیمیی سۆرانی بەبێ کورتکردنەوە.
-
+${customRules ? `مەرج و ڕێنماییە دەستنیشانکراوەکانی بەکارهێنەر:${customRules}\n` : ''}
 یاسا و مەرجە نەگۆڕەکانی ئەم لقە:
 ١. تەنها و تەنها دەقی ناوەڕۆکی لقی «${branch.code}: ${branch.title}» بنووسە بە پەڕەگرافی چڕ و ڕەخنەگرانە.
 ٢. دەستپێکی ڕاستەوخۆی مەعریفی (Epistemological Framing) بەبێ هیچ پێشەکییەکی ڕۆژنامەوانی یان ئینشائی (وەک «یەکێکە لە گرنگترین بابەتەکان» یان «لە جیهانی ئەمڕۆدا»).
