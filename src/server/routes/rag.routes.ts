@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import type { AuthRequest } from '../../middleware/auth';
+import { requireAuth } from '../../middleware/auth';
 import { GoogleGenAI } from '@google/genai';
 import { vectorStoreService } from '../../services/vector-store.service';
 import { sourceVerificationService } from '../services/source-verification.service';
@@ -30,6 +31,8 @@ const retrieveSchema = z.object({
 
 export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
+  // RAG stores user-owned documents and embeddings; authenticate before any route executes.
+  router.use(requireAuth);
 
   /**
    * POST /api/rag/index-document
