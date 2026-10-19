@@ -20,8 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - name: Checkout repository
+      - name: Checkout full history
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -43,6 +45,13 @@ jobs:
         run: |
           npm audit --omit=dev --json > "$RUNNER_TEMP/npm-audit-production.json" || true
           node scripts/dependency-audit-report.mjs "$RUNNER_TEMP/npm-audit-production.json"
+
+      - name: Phase 3 Ironclad Preservation Gate
+        env:
+          PRESERVATION_EVENT_NAME: ${{ github.event_name }}
+          PRESERVATION_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
+          PRESERVATION_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: npm run phase3:preserve
 
       - name: Verify release prerequisites and lockfile consistency
         run: npm run release:check
