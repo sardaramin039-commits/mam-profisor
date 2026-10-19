@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   indexDocument: vi.fn(),
+  searchSimilarDocuments: vi.fn(),
   verifySources: vi.fn(),
   requireAuth: vi.fn()
 }));
@@ -11,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../middleware/auth', () => ({ requireAuth: mocks.requireAuth }));
 
 vi.mock('../../services/vector-store.service', () => ({
-  vectorStoreService: { indexDocument: mocks.indexDocument, searchSimilarDocuments: vi.fn() }
+  vectorStoreService: { indexDocument: mocks.indexDocument, searchSimilarDocuments: mocks.searchSimilarDocuments }
 }));
 
 vi.mock('../services/source-verification.service', () => ({
@@ -51,6 +52,7 @@ beforeEach(async () => {
     (req as Request & { user?: { uid: string } }).user = { uid: 'test-user' };
     next();
   });
+  mocks.searchSimilarDocuments.mockResolvedValue([]);
   mocks.verifySources.mockResolvedValue({
     verifiedSources: [{ sourceId: 'doi:10.1234/example', identityStatus: 'verified' }],
     citationEligibleSources: [],
@@ -92,6 +94,26 @@ describe('RAG content verification boundary', () => {
     expect(response.status).toBe(401);
     expect(mocks.verifySources).not.toHaveBeenCalled();
     expect(mocks.indexDocument).not.toHaveBeenCalled();
+  });
+
+  it('scopes retrieval to the authenticated owner and never implies a source is verified by relevance', async () => {
+    const response = await fetch(`${await baseUrl()}/api/rag/hybrid-retrieve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+      body: JSON.stringify({ query: 'climate change' })
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      retrievalStatus: 'no-matching-indexed-content',
+      verificationPolicy: 'retrieval-relevance-does-not-imply-source-verification'
+    });
+    expect(mocks.searchSimilarDocuments).toHaveBeenCalledWith(
+      'climate change',
+      'test-user',
+      5,
+      undefined
+    );
   });
 
   it('does not mark caller-uploaded content verified just because source identity metadata matched', async () => {
