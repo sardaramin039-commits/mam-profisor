@@ -4,26 +4,8 @@ import { switchMap } from 'rxjs/operators';
 import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { auth } from '../../firebase';
-
-/**
- * Checks whether the target URL is an internal /api/* endpoint.
- * Ensures the token is omitted for third-party endpoints (Crossref, OpenAlex, Google Books, etc.).
- */
-export function isInternalApiUrl(url: string): boolean {
-  if (!url) return false;
-  // Relative /api/ path
-  if (url.startsWith('/api/') || url === '/api') {
-    return true;
-  }
-  // Absolute URLs matching local origin or current window origin
-  if (typeof window !== 'undefined' && window.location) {
-    const origin = window.location.origin;
-    if (url.startsWith(`${origin}/api/`) || url === `${origin}/api`) {
-      return true;
-    }
-  }
-  return false;
-}
+import { isInternalApiUrl } from '../utils/internal-api-url';
+export { isInternalApiUrl } from '../utils/internal-api-url';
 
 /**
  * Angular HTTP Interceptor that attaches the Firebase ID token as a Bearer token
