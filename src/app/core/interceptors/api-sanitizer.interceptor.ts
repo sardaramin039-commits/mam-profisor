@@ -1,5 +1,6 @@
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { isInternalApiUrl } from '../utils/internal-api-url';
 
 /**
  * Sanitizes input string to prevent script injection and unauthorized RAG payload manipulation
@@ -47,7 +48,7 @@ export const apiSanitizerInterceptor: HttpInterceptorFn = (
   next: HttpHandlerFn
 ): Observable<HttpEvent<unknown>> => {
   // Only intercept requests directed to our backend API or RAG endpoints
-  if (req.url.includes('/api/')) {
+  if (isInternalApiUrl(req.url)) {
     let sanitizedReq = req.clone({
       setHeaders: {
         'X-Kurdish-Library-Sanitized': 'true',
