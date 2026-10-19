@@ -30,7 +30,7 @@ jobs:
           cache: npm
 
       - name: Regenerate candidate lockfile within declared semver ranges
-        run: npm install --package-lock-only --ignore-scripts --no-audit
+        run: rm -f package-lock.json && npm install --package-lock-only --ignore-scripts --no-audit
 
       - name: Apply non-forced security fixes only
         shell: bash
