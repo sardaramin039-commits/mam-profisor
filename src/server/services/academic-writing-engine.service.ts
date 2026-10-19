@@ -1,0 +1,135 @@
+import { GoogleGenAI } from '@google/genai';
+import { disciplineProfileService } from './discipline-profile.service';
+
+export interface ArgumentNode {
+  id: string;
+  claim: string;
+  subArguments: string[];
+  evidenceQuotes: string[];
+  counterArguments: string[];
+  synthesisKurdish: string;
+}
+
+export interface ThesisStructurePlan {
+  status: 'generated' | 'degraded';
+  researchQuestion: string;
+  thesisStatement: string;
+  arguments: ArgumentNode[];
+  overallConclusion: string;
+}
+
+export class AcademicWritingEngineService {
+  /**
+   * Generates a complete Argument Architecture for an academic paper or thesis chapter.
+   */
+  public async generateArgumentArchitecture(
+    topic: string,
+    discipline: string,
+    getGeminiClient: () => GoogleGenAI
+  ): Promise<ThesisStructurePlan> {
+    const profile = disciplineProfileService.getProfile(discipline);
+
+    const prompt = `تۆ سەرنووسەرێکی ئەکادیمیی زانکۆیییت. بونیادێکی ڕێکخراوی ئارگومێنتی (Argument Architecture) بۆ ئەم بابەتە دابنێ:
+بابەت: ${topic}
+بوار: ${discipline}
+پرۆفایلی بوار: ${JSON.stringify(profile)}
+
+بونیادەکە بەپێی پێوەرە باوەڕپێکراوەکانی نووسینی ئەکادیمی دابنێ:
+1. Research Question (پرسیاری سەرەکی توێژینەوە)
+2. Thesis Statement (فرزیەی بنەڕەتی)
+3. Arguments & Sub-arguments (ئارگومێنت و لاوەکییەکان)
+4. Evidence & Quotes (بەڵگە و وتەکان؛ لەم سەروەرەدا هیچ quote ـێکی ڕاستەقینە دروست مەکە، تەنها خانەکە بەتاڵ بهێڵە)
+5. Counterarguments & Synthesis (وەڵامی دژە-ئارگومێنت و تێکەڵکردن)
+6. Conclusion (ئەنجامگیری)
+
+وەڵامەکەت تەنها بە JSON بێت بەم شێوازە:
+{
+  "researchQuestion": "پرسیاری سەرەکی",
+  "thesisStatement": "فرزیەی بنەڕەتی تێزەکە",
+  "arguments": [
+    {
+      "id": "ARG-01",
+      "claim": "ئارگومێنتی سەرەکی یەکەم",
+      "subArguments": ["خاڵی لاوەکی A", "خاڵی لاوەکی B"],
+      "evidenceQuotes": [],
+      "counterArguments": ["دژە-ئارگومێنتی ئەگەری"],
+      "synthesisKurdish": "شیکاری تێکەڵکردن و بەرگری زانستی"
+    }
+  ],
+  "overallConclusion": "ئەنجامگیری سەرانسەری تێزەکە"
+}`;
+
+    try {
+      const ai = getGeminiClient();
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.3
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}') as Record<string, unknown>;
+      const researchQuestion = typeof parsed['researchQuestion'] === 'string' ? parsed['researchQuestion'].trim() : '';
+      const thesisStatement = typeof parsed['thesisStatement'] === 'string' ? parsed['thesisStatement'].trim() : '';
+      const overallConclusion = typeof parsed['overallConclusion'] === 'string' ? parsed['overallConclusion'].trim() : '';
+      const rawArguments = parsed['arguments'];
+      if (
+        !researchQuestion ||
+        !thesisStatement ||
+        !overallConclusion ||
+        !Array.isArray(rawArguments) ||
+        rawArguments.length === 0
+      ) {
+        throw new Error('Argument architecture response is incomplete.');
+      }
+
+      const argumentsList: ArgumentNode[] = rawArguments.flatMap((raw: unknown, index: number) => {
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return [];
+        const item = raw as Record<string, unknown>;
+        const claim = typeof item['claim'] === 'string' ? item['claim'].trim() : '';
+        if (!claim) return [];
+        return [{
+          id: typeof item['id'] === 'string' && item['id'].trim() ? item['id'].trim().slice(0, 80) : `ARG-${String(index + 1).padStart(2, '0')}`,
+          claim,
+          subArguments: Array.isArray(item['subArguments']) ? item['subArguments'].filter((value): value is string => typeof value === 'string').slice(0, 20) : [],
+          evidenceQuotes: Array.isArray(item['evidenceQuotes']) ? item['evidenceQuotes'].filter((value): value is string => typeof value === 'string').slice(0, 20) : [],
+          counterArguments: Array.isArray(item['counterArguments']) ? item['counterArguments'].filter((value): value is string => typeof value === 'string').slice(0, 20) : [],
+          synthesisKurdish: typeof item['synthesisKurdish'] === 'string' ? item['synthesisKurdish'] : ''
+        }];
+      });
+      if (argumentsList.length === 0) {
+        throw new Error('Argument architecture contained no usable arguments.');
+      }
+
+      return {
+        status: 'generated',
+        researchQuestion,
+        thesisStatement,
+        arguments: argumentsList,
+        overallConclusion
+      };
+    } catch (err: any) {
+      console.error('Error in AcademicWritingEngineService:', err);
+      return {
+        status: 'degraded',
+        researchQuestion: `پرسیاری پێشنیارکراو بۆ توێژینەوەی «${topic}»؛ پێویستی بە دیاریکردنی scope و پشکنینی ئەدەبیات هەیە.`,
+        thesisStatement: `فرزیەی پێشنیارکراو بۆ «${topic}»؛ نابێت وەک دەرئەنجامی سەلمێنراو وەربگیرێت تا Evidence کۆنەکرێت و پشکنین نەکرێت.`,
+        arguments: [
+          {
+            id: 'ARG-DRAFT-01',
+            claim: `خاڵێکی شیکاری پێشنیارکراو بۆ «${topic}»؛ پێویستی بە بەڵگەی ڕەسەن هەیە.`,
+            subArguments: ['ژێرپرسیاری یەکەم بۆ پشکنین', 'ژێرپرسیاری دووەم بۆ پشکنین'],
+            evidenceQuotes: [],
+            counterArguments: ['دژە-ئارگومێنتێکی ئەگەری دیاری بکە دوای خوێندنەوەی ئەدەبیات.'],
+            synthesisKurdish: 'ئەم بونیادە تەنها ڕەشنووسێکی جێگرەوەیە؛ AI بەرهەمی نەدا و هیچ بانگەشەیەک پشتڕاست نەکراوەتەوە.'
+          }
+        ],
+        overallConclusion: 'دەرئەنجامی کۆتایی نابێت لە fallback ـدا دروست بکرێت؛ دوای کۆکردنەوەی Evidence و پشکنینی توێژەر پڕ دەکرێتەوە.'
+      };
+    }
+  }
+}
+
+export const academicWritingEngineService = new AcademicWritingEngineService();
