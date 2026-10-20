@@ -62,6 +62,35 @@ describe('security middleware', () => {
     }
   });
 
+  it('fails closed for cross-origin loopback requests in production without an allowlist', () => {
+    const previousAllowedOrigins = process.env['ALLOWED_ORIGINS'];
+    const previousAppUrl = process.env['APP_URL'];
+    const previousNodeEnv = process.env['NODE_ENV'];
+    delete process.env['ALLOWED_ORIGINS'];
+    delete process.env['APP_URL'];
+    process.env['NODE_ENV'] = 'production';
+
+    try {
+      const response = createResponse();
+      const request = {
+        method: 'GET',
+        protocol: 'http',
+        headers: { origin: 'http://localhost:4200' },
+        get: (name: string) => name.toLowerCase() === 'host' ? '127.0.0.1:3000' : undefined
+      };
+      securityHeadersMiddleware(request as never, response as never, () => undefined);
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('null');
+      expect(response.headers.has('Access-Control-Allow-Credentials')).toBe(false);
+    } finally {
+      if (previousAllowedOrigins === undefined) delete process.env['ALLOWED_ORIGINS'];
+      else process.env['ALLOWED_ORIGINS'] = previousAllowedOrigins;
+      if (previousAppUrl === undefined) delete process.env['APP_URL'];
+      else process.env['APP_URL'] = previousAppUrl;
+      if (previousNodeEnv === undefined) delete process.env['NODE_ENV'];
+      else process.env['NODE_ENV'] = previousNodeEnv;
+    }
+  });
+
   it('sanitizes instruction fields without mutating academic source content', () => {
     const response = createResponse();
     const request = {
