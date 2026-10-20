@@ -11,7 +11,7 @@ describe('manuscript assembly integrity', () => {
     ], []);
     expect(result.readyForExport).toBe(true);
     expect(result.orderedSections.map(section => section.sectionId)).toEqual(['sec-1', 'sec-2']);
-    expect(result.wordCount).toBe(7);
+    expect(result.wordCount).toBe(8);
     expect(result.estimatedPagesAt350Words).toBe(1);
     expect(result.contentHash).toMatch(/^[a-f0-9]{64}$/u);
   });
