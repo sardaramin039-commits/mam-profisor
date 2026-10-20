@@ -145,4 +145,59 @@ describe('AcademicSearchService', () => {
       ['Author Two']
     ]);
   });
+
+  it('rejects blank and oversized queries before contacting any provider', async () => {
+    const get = vi.spyOn(axios, 'get');
+
+    expect(await service.searchOpenAlex('   ')).toEqual([]);
+    expect(await service.searchCrossRef('x'.repeat(501))).toEqual([]);
+    expect(await service.searchGoogleBooks('\n \t ')).toEqual([]);
+    expect(await service.searchAll('x'.repeat(501))).toEqual([]);
+
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it('normalizes Unicode compatibility characters and whitespace in provider queries', async () => {
+    const get = vi.spyOn(axios, 'get').mockResolvedValueOnce({
+      data: { results: [] }
+    } as never);
+
+    await service.searchOpenAlex('  ＡI   research  ');
+
+    expect(get).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        params: { search: 'AI research', 'per-page': 10 }
+      })
+    );
+  });
+
+  it('clamps provider result limits to the safe range', async () => {
+    const get = vi.spyOn(axios, 'get');
+    get
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { message: { items: [] } } } as never)
+      .mockResolvedValueOnce({ data: { items: [] } } as never)
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { message: { items: [] } } } as never)
+      .mockResolvedValueOnce({ data: { items: [] } } as never)
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { message: { items: [] } } } as never)
+      .mockResolvedValueOnce({ data: { items: [] } } as never);
+
+    await service.searchOpenAlex('topic', 10_000);
+    await service.searchCrossRef('topic', -30);
+    await service.searchGoogleBooks('topic', Number.POSITIVE_INFINITY);
+    await service.searchAll('topic', 10_000);
+    await service.searchAll('topic', Number.NaN);
+
+    const calls = get.mock.calls;
+    expect((calls[0]?.[1] as { params?: Record<string, unknown> }).params?.['per-page']).toBe(50);
+    expect((calls[1]?.[1] as { params?: Record<string, unknown> }).params?.rows).toBe(1);
+    expect((calls[2]?.[1] as { params?: Record<string, unknown> }).params?.maxResults).toBe(5);
+    expect((calls[3]?.[1] as { params?: Record<string, unknown> }).params?.['per-page']).toBe(17);
+    expect((calls[4]?.[1] as { params?: Record<string, unknown> }).params?.rows).toBe(17);
+    expect((calls[5]?.[1] as { params?: Record<string, unknown> }).params?.maxResults).toBe(17);
+    expect((calls[8]?.[1] as { params?: Record<string, unknown> }).params?.maxResults).toBe(2);
+  });
 });
