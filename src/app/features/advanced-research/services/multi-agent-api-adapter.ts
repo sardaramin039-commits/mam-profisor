@@ -1,7 +1,8 @@
 import type { MultiAgentResponse } from '../../../../helpers/academic-integrations';
 import type { ProfessorModeLevel, ResearchMemoryState } from '../models/multi-agent.types';
 
-type RecordValue = Record<string, any>;
+// The server returns nested provider payloads; validate the envelope and guard each nested value below.
+type RecordValue = any;
 
 function asRecord(value: unknown): RecordValue {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : {};
