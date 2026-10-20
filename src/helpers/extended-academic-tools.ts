@@ -153,7 +153,14 @@ export interface WritingTemplateItem {
  * Fetch publication details by DOI via Crossref API
  */
 export async function resolveDoi(doi: string): Promise<DoiResolutionResult> {
-  const cleanDoi = doi.trim().replace(/^https?:\/\/(dx\.)?doi\.org\//, '');
+  const cleanDoi = doi.trim()
+    .replace(/^doi:\s*/i, '')
+    .replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, '')
+    .replace(/[.,;]+$/u, '');
+  if (!/^10\.\d{4,9}\/\S+$/iu.test(cleanDoi)) {
+    throw new Error(`DOI شێوەی دروستی نییە: ${cleanDoi || '(empty)'}`);
+  }
+
   try {
     const url = `https://api.crossref.org/works/${encodeURIComponent(cleanDoi)}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -192,13 +199,33 @@ export async function resolveDoi(doi: string): Promise<DoiResolutionResult> {
   throw new Error(`DOI نەسەلمێنرا یان Crossref بەردەست نەبوو: ${cleanDoi}`);
 }
 
+function hasValidIsbnChecksum(isbn: string): boolean {
+  if (/^\d{9}[\dX]$/u.test(isbn)) {
+    const total = isbn.split('').reduce((sum, char, index) => {
+      const digit = index === 9 && char === 'X' ? 10 : Number(char);
+      return sum + digit * (10 - index);
+    }, 0);
+    return total % 11 === 0;
+  }
+
+  if (/^\d{13}$/u.test(isbn)) {
+    const weightedTotal = isbn.slice(0, 12).split('').reduce(
+      (sum, char, index) => sum + Number(char) * (index % 2 === 0 ? 1 : 3),
+      0
+    );
+    return Number(isbn[12]) === (10 - (weightedTotal % 10)) % 10;
+  }
+
+  return false;
+}
+
 /**
  * Fetch book details by ISBN via Open Library API
  */
 export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
   const cleanIsbn = isbn.replace(/[^0-9X]/gi, '').toUpperCase();
-  if (![10, 13].includes(cleanIsbn.length) || !/^\d{9}[\dX]$|^\d{13}$/.test(cleanIsbn)) {
-    throw new Error(`ISBN شێوەی دروستی نییە: ${cleanIsbn}`);
+  if (!hasValidIsbnChecksum(cleanIsbn)) {
+    throw new Error(`ISBN شێوە یان checksum ـی دروستی نییە: ${cleanIsbn}`);
   }
   try {
     const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
@@ -232,7 +259,7 @@ export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
  */
 export async function lookupIssn(issn: string): Promise<IssnLookupResult> {
   const cleanIssn = issn.trim();
-  const compact = cleanIssn.replace(/-/g, '').toUpperCase();
+  const compact = cleanIssn.replace(/[^0-9X]/gi, '').toUpperCase();
   if (!/^\d{7}[\dX]$/.test(compact)) {
     throw new Error(`ISSN شێوەی دروستی نییە: ${cleanIssn}`);
   }
