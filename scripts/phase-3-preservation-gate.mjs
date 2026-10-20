@@ -47,13 +47,50 @@ function isSourceFile(filePath) {
   return SOURCE_EXTENSIONS.has(extname(filePath).toLowerCase());
 }
 
+function commitExists(sha) {
+  if (!sha || /^0+$/u.test(sha)) return false;
+  try {
+    gitRaw(['cat-file', '-e', `${sha}^{commit}`]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isAncestor(base, head) {
+  try {
+    gitRaw(['merge-base', '--is-ancestor', base, head]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function resolveComparison() {
   const head = (process.env.PRESERVATION_HEAD_SHA || gitText(['rev-parse', 'HEAD'])).trim();
   let base = (process.env.PRESERVATION_BASE_SHA || '').trim();
 
-  if (!base || /^0+$/u.test(base)) {
+  if (!commitExists(head)) {
+    throw new Error(`Head commit is unavailable locally: ${head}`);
+  }
+
+  // A force-push can leave github.event.before outside the fetched history.
+  // A PR base can also advance after the feature branch was created. In either
+  // case, compare from the merge-base with main rather than failing or skipping
+  // approval-marker checks.
+  if (!commitExists(base) || !isAncestor(base, head)) {
     try {
-      base = gitText(['rev-parse', `${head}^`]);
+      const mergeBase = gitText(['merge-base', head, 'origin/main']);
+      base = commitExists(mergeBase) ? mergeBase : '';
+    } catch {
+      base = '';
+    }
+  }
+
+  if (!base) {
+    try {
+      const parent = gitText(['rev-parse', `${head}^`]);
+      base = commitExists(parent) ? parent : '';
     } catch {
       base = '';
     }
