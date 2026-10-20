@@ -7,6 +7,10 @@ import {
 import { ResearchMemoryItem, researchMemoryService } from '../services/research-memory.service';
 import { researchControlPlaneService } from '../services/research-control-plane.service';
 import type { AuthRequest } from '../../middleware/auth';
+import {
+  manuscriptAssemblyIntegrityService,
+  type ManuscriptSectionInput
+} from '../services/manuscript-assembly-integrity.service';
 
 const id = z.string().trim().min(1).max(128);
 
@@ -99,18 +103,76 @@ export function createManuscriptAssemblyRouter(): Router {
         workspaceId,
         parsed.data.citations
       );
+
+      // Validate the same user-supplied sections that will enter the persisted/exported manuscript.
+      // Citation eligibility comes from the server-owned evidence lookup above, never the request's boolean.
+      const integritySections: ManuscriptSectionInput[] = [];
+      if (parsed.data.abstract?.trim()) {
+        integritySections.push({
+          sectionId: 'manuscript-abstract',
+          title: 'پوختە',
+          order: integritySections.length,
+          body: parsed.data.abstract
+        });
+      }
+      if (parsed.data.researchQuestion?.trim()) {
+        integritySections.push({
+          sectionId: 'manuscript-research-question',
+          title: 'پرسیاری توێژینەوە',
+          order: integritySections.length,
+          body: parsed.data.researchQuestion
+        });
+      }
+      if (parsed.data.methodology?.trim()) {
+        integritySections.push({
+          sectionId: 'manuscript-methodology',
+          title: 'میتۆدۆلۆجیا',
+          order: integritySections.length,
+          body: parsed.data.methodology
+        });
+      }
+
+      const sectionOffset = integritySections.length;
+      const orderedChapters = [...parsed.data.chapters].sort((a, b) => a.order - b.order);
+      for (const chapter of orderedChapters) {
+        integritySections.push({
+          sectionId: chapter.id,
+          title: chapter.title,
+          order: sectionOffset + chapter.order,
+          body: chapter.content,
+          citationIds: chapter.citationIds
+        });
+      }
+      if (parsed.data.conclusion?.trim()) {
+        const maxChapterOrder = Math.max(0, ...parsed.data.chapters.map(chapter => chapter.order));
+        integritySections.push({
+          sectionId: 'manuscript-conclusion',
+          title: 'ئەنجام',
+          order: sectionOffset + maxChapterOrder + 1,
+          body: parsed.data.conclusion
+        });
+      }
+
+      const assemblyIntegrity = manuscriptAssemblyIntegrityService.validate(
+        integritySections,
+        serverVerifiedCitations
+          .filter(citation => citation.verified)
+          .map(citation => citation.citationId)
+      );
+
       const manuscript = assembleManuscript({
         projectId: workspaceId,
         ...parsed.data,
         citations: serverVerifiedCitations
       });
 
-      const exportBlocked = control.gates.exportBlocked || manuscript.integrity.structuralStatus !== 'PASS';
+      const exportBlocked = control.gates.exportBlocked || manuscript.integrity.structuralStatus !== 'PASS' || !assemblyIntegrity.readyForExport;
       if (exportBlocked) {
         res.status(409).json({
           success: false,
           exportBlocked: true,
           controlPlane: control,
+          assemblyIntegrity,
           manuscript
         });
         return;
@@ -123,6 +185,7 @@ export function createManuscriptAssemblyRouter(): Router {
           exportBlocked: false,
           persisted,
           controlPlane: control,
+          assemblyIntegrity,
           manuscript
         });
       } catch (persistenceError: unknown) {
