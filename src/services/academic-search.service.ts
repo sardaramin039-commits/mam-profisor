@@ -13,15 +13,35 @@ export interface AcademicPaper {
 }
 
 export class AcademicSearchService {
+  private static readonly MAX_QUERY_LENGTH = 500;
+  private static readonly MAX_RESULTS_PER_PROVIDER = 50;
+
   private openAlexBaseUrl = 'https://api.openalex.org/works';
   private crossrefBaseUrl = 'https://api.crossref.org/works';
   private googleBooksBaseUrl = 'https://www.googleapis.com/books/v1/volumes';
+
+  private normalizeQuery(query: string): string | null {
+    if (typeof query !== 'string') return null;
+    const normalized = query.normalize('NFKC').trim().replace(/\\s+/g, ' ');
+    if (!normalized || normalized.length > AcademicSearchService.MAX_QUERY_LENGTH) return null;
+    return normalized;
+  }
+
+  private normalizeLimit(limit: number, fallback: number): number {
+    if (!Number.isFinite(limit)) return fallback;
+    return Math.max(1, Math.min(
+      AcademicSearchService.MAX_RESULTS_PER_PROVIDER,
+      Math.floor(limit)
+    ));
+  }
 
   /**
    * گەڕان لە داتابەیزی OpenAlex
    */
   async searchOpenAlex(query: string, limit = 10): Promise<AcademicPaper[]> {
-    if (!query || query.trim() === '') return [];
+    const normalizedQuery = this.normalizeQuery(query);
+    if (!normalizedQuery) return [];
+    const safeLimit = this.normalizeLimit(limit, 10);
     try {
       const apiKey = process.env['OPENALEX_API_KEY'];
       const headers: Record<string, string> = {
@@ -32,7 +52,7 @@ export class AcademicSearchService {
       }
 
       const response = await axios.get(this.openAlexBaseUrl, {
-        params: { search: query, 'per-page': limit },
+        params: { search: normalizedQuery, 'per-page': safeLimit },
         headers,
         timeout: 8000,
       });
@@ -62,7 +82,9 @@ export class AcademicSearchService {
    * گەڕان لە داتابەیزی Crossref
    */
   async searchCrossRef(query: string, limit = 10): Promise<AcademicPaper[]> {
-    if (!query || query.trim() === '') return [];
+    const normalizedQuery = this.normalizeQuery(query);
+    if (!normalizedQuery) return [];
+    const safeLimit = this.normalizeLimit(limit, 10);
     try {
       const headers: Record<string, string> = {
         'User-Agent': 'Mam-Professor-Academic-Platform/1.0',
@@ -73,7 +95,7 @@ export class AcademicSearchService {
       }
 
       const response = await axios.get(this.crossrefBaseUrl, {
-        params: { query, rows: limit },
+        params: { query: normalizedQuery, rows: safeLimit },
         headers,
         timeout: 8000,
       });
@@ -111,12 +133,14 @@ export class AcademicSearchService {
    * گەڕان لە Google Books API
    */
   async searchGoogleBooks(query: string, limit = 5): Promise<AcademicPaper[]> {
-    if (!query || query.trim() === '') return [];
+    const normalizedQuery = this.normalizeQuery(query);
+    if (!normalizedQuery) return [];
+    const safeLimit = this.normalizeLimit(limit, 5);
     try {
       const apiKey = process.env['GOOGLE_BOOKS_API_KEY'];
       const params: Record<string, string | number> = {
-        q: query,
-        maxResults: limit,
+        q: normalizedQuery,
+        maxResults: safeLimit,
       };
       if (apiKey) params['key'] = apiKey;
 
@@ -155,11 +179,14 @@ export class AcademicSearchService {
    * گەڕانی یەکگرتوو بەناو سەرجەم کەتەلۆگە جیهانییەکان
    */
   async searchAll(query: string, limit = 6): Promise<AcademicPaper[]> {
-    const subLimit = Math.max(2, Math.floor(limit / 3));
+    const normalizedQuery = this.normalizeQuery(query);
+    if (!normalizedQuery) return [];
+    const safeLimit = this.normalizeLimit(limit, 6);
+    const subLimit = Math.max(2, Math.ceil(safeLimit / 3));
     const [openAlex, crossref, googleBooks] = await Promise.all([
-      this.searchOpenAlex(query, subLimit),
-      this.searchCrossRef(query, subLimit),
-      this.searchGoogleBooks(query, subLimit),
+      this.searchOpenAlex(normalizedQuery, subLimit),
+      this.searchCrossRef(normalizedQuery, subLimit),
+      this.searchGoogleBooks(normalizedQuery, subLimit),
     ]);
 
     const combined = [...openAlex, ...crossref, ...googleBooks]
@@ -186,7 +213,7 @@ export class AcademicSearchService {
       return true;
     });
 
-    return deduplicated.slice(0, limit);
+    return deduplicated.slice(0, safeLimit);
   }
 
   /**
