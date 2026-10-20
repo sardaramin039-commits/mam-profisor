@@ -312,8 +312,31 @@ export class ResearchApiClientService {
     return of({ count: 50, categories: ['methodology', 'writing_voice', 'citations', 'language_orthography', 'defense_publishing'] });
   }
 
-  runResearchMethodsLab(mode: string, payload: Record<string, unknown>): Observable<{ mode: string; result: any; generatedAt: string }> {
-    return this.notConfigured('runResearchMethodsLab');
+  runResearchMethodsLab(
+    mode: string,
+    payload: Record<string, unknown>
+  ): Observable<{ mode: string; result: any; generatedAt: string }> {
+    return from((async () => {
+      const response = await fetch('/api/research-methods-lab/run', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, payload })
+      });
+      const body = await response.json() as {
+        mode?: string;
+        result?: unknown;
+        generatedAt?: string;
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(body.error || `Research Methods Lab returned HTTP ${response.status}.`);
+      }
+      if (!body.mode || typeof body.result !== 'object' || body.result === null || !body.generatedAt) {
+        throw new Error('Research Methods Lab returned an invalid response envelope.');
+      }
+      return body as { mode: string; result: any; generatedAt: string };
+    })());
   }
 
   listResearchVersions(limit = 30): Observable<{ versions: Array<Record<string, unknown>> }> {
