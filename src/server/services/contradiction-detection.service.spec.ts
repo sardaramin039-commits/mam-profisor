@@ -108,7 +108,7 @@ describe('contradiction detection evidence and reference integrity', () => {
     );
     expect(result.findings).toEqual([]);
     expect(result.contradictionCount).toBe(0);
-    expect(result.status).toBe('clear');
+    expect(result.status).toBe('insufficient_evidence');
   });
 
   it('blocks claims whose quote does not appear in the linked source evidence', async () => {
