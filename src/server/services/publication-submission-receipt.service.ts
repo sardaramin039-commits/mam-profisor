@@ -25,6 +25,9 @@ export interface SubmissionReceipt {
   note: string;
   externalReference?: string;
   submittedAt: string;
+  /** Version 2 explicitly identifies this as a user-reported internal receipt, not journal confirmation. */
+  receiptVersion?: 2;
+  submissionConfirmation?: 'USER_REPORTED_UNVERIFIED';
   immutableHash: string;
 }
 
@@ -35,7 +38,7 @@ function clean(value: unknown): string {
 }
 
 function receiptCanonical(receipt: SubmissionReceipt): string {
-  return JSON.stringify({
+  const canonical = {
     submissionId: clean(receipt.submissionId),
     userId: clean(receipt.userId),
     workspaceId: clean(receipt.workspaceId),
@@ -46,13 +49,24 @@ function receiptCanonical(receipt: SubmissionReceipt): string {
     note: clean(receipt.note),
     externalReference: clean(receipt.externalReference),
     submittedAt: clean(receipt.submittedAt)
-  });
+  };
+  // Preserve old receipt hashes; only explicitly versioned receipts use the v2 fields.
+  return receipt.receiptVersion === 2
+    ? JSON.stringify({
+        ...canonical,
+        receiptVersion: receipt.receiptVersion,
+        submissionConfirmation: receipt.submissionConfirmation
+      })
+    : JSON.stringify(canonical);
 }
 
 export interface SubmissionReceiptVerification {
   status: 'VERIFIED' | 'INVALID';
   expectedHash: string;
   errors: string[];
+  verificationScope: 'INTERNAL_RECEIPT_INTEGRITY_ONLY';
+  externalSubmissionVerified: false;
+  submissionConfirmation: 'USER_REPORTED_UNVERIFIED' | 'LEGACY_CONFIRMATION_SCOPE_UNKNOWN';
 }
 
 export function verifySubmissionReceipt(
@@ -74,6 +88,13 @@ export function verifySubmissionReceipt(
   if (expectedId !== clean(receipt.id)) {
     errors.push('Submission receipt id does not match its immutable hash.');
   }
+  if (receipt.receiptVersion !== undefined && receipt.receiptVersion !== 2) {
+    errors.push('Submission receipt version is unsupported.');
+  }
+  if (receipt.receiptVersion === 2 &&
+      receipt.submissionConfirmation !== 'USER_REPORTED_UNVERIFIED') {
+    errors.push('Submission receipt confirmation scope is invalid.');
+  }
 
   const checks: Array<[string, string | undefined]> = [
     ['submissionId', expected?.submissionId],
@@ -91,7 +112,12 @@ export function verifySubmissionReceipt(
   return {
     status: errors.length ? 'INVALID' : 'VERIFIED',
     expectedHash,
-    errors
+    errors,
+    verificationScope: 'INTERNAL_RECEIPT_INTEGRITY_ONLY',
+    externalSubmissionVerified: false,
+    submissionConfirmation: receipt.receiptVersion === 2
+      ? 'USER_REPORTED_UNVERIFIED'
+      : 'LEGACY_CONFIRMATION_SCOPE_UNKNOWN'
   };
 }
 
@@ -117,6 +143,8 @@ export function buildSubmissionReceipt(input: SubmissionReceiptInput): Submissio
     throw new Error('Submission receipt requires a note or external reference.');
   }
 
+  const receiptVersion = 2 as const;
+  const submissionConfirmation = 'USER_REPORTED_UNVERIFIED' as const;
   const canonical = JSON.stringify({
     submissionId,
     userId,
@@ -127,7 +155,9 @@ export function buildSubmissionReceipt(input: SubmissionReceiptInput): Submissio
     submissionVersionId: clean(input.submissionVersionId),
     note,
     externalReference,
-    submittedAt
+    submittedAt,
+    receiptVersion,
+    submissionConfirmation
   });
   const immutableHash = sha256(canonical);
   return {
@@ -142,6 +172,8 @@ export function buildSubmissionReceipt(input: SubmissionReceiptInput): Submissio
     note,
     ...(externalReference ? { externalReference } : {}),
     submittedAt,
+    receiptVersion,
+    submissionConfirmation,
     immutableHash
   };
 }
