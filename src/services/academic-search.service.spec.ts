@@ -180,6 +180,9 @@ describe('AcademicSearchService', () => {
       .mockResolvedValueOnce({ data: { items: [] } } as never)
       .mockResolvedValueOnce({ data: { results: [] } } as never)
       .mockResolvedValueOnce({ data: { message: { items: [] } } } as never)
+      .mockResolvedValueOnce({ data: { items: [] } } as never)
+      .mockResolvedValueOnce({ data: { results: [] } } as never)
+      .mockResolvedValueOnce({ data: { message: { items: [] } } } as never)
       .mockResolvedValueOnce({ data: { items: [] } } as never);
 
     await service.searchOpenAlex('topic', 10_000);
@@ -194,6 +197,7 @@ describe('AcademicSearchService', () => {
     expect((calls[2]?.[1] as { params?: Record<string, unknown> }).params?.maxResults).toBe(5);
     expect((calls[3]?.[1] as { params?: Record<string, unknown> }).params?.['per-page']).toBe(17);
     expect((calls[4]?.[1] as { params?: Record<string, unknown> }).params?.rows).toBe(17);
-    expect((calls[5]?.[1] as { params?: Record<string, unknown> }).params?.maxResults).toBe(2);
+    expect((calls[5]?.[1] as { params?: Record<string, unknown> }).params?.maxResults).toBe(17);
+    expect((calls[8]?.[1] as { params?: Record<string, unknown> }).params?.maxResults).toBe(2);
   });
 });
