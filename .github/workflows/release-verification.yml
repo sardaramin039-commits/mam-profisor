@@ -1,0 +1,82 @@
+name: Release Verification Evidence
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-verification-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify release candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Record runtime versions
+        run: |
+          node --version
+          npm --version
+
+      - name: Install exact locked dependencies
+        run: npm ci
+
+      - name: Check preservation rules
+        env:
+          PRESERVATION_EVENT_NAME: release
+          PRESERVATION_BASE_SHA: ${{ github.event.before || '' }}
+          PRESERVATION_HEAD_SHA: ${{ github.sha }}
+        run: npm run phase3:preserve
+
+      - name: Verify release prerequisites and lockfile consistency
+        run: npm run release:check
+
+      - name: Check source file line limits
+        run: npm run line-limit
+
+      - name: Audit academic research integrity safeguards
+        run: npm run integrity:audit
+
+      - name: Run focused server security and regression tests
+        run: npm run test:server
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Build production application
+        run: npm run build -- --configuration production
+
+      - name: Smoke-check production output
+        run: npm run release:smoke
+
+      - name: Generate release evidence manifest
+        if: success()
+        run: node scripts/write-release-evidence.mjs
+
+      - name: Upload production build and verification evidence
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mam-profisor-release-evidence-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            dist/app/
+            release-evidence/
