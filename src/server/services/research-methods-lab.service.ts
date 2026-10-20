@@ -107,12 +107,61 @@ function effectSize(p: Record<string, unknown>) {
 }
 
 function power(p: Record<string, unknown>) {
-  const alpha=clamp(num(p['alpha'],0.05),0.0001,0.5); const targetPower=clamp(num(p['power'],0.8),0.5,0.999);
-  const zAlpha=normalCdfInverse(1-alpha/2), zPower=normalCdfInverse(targetPower);
-  const design=String(p['design']||'two_group_t');
-  if (design==='correlation') { const r=clamp(Math.abs(num(p['effect'],0.3)),0.001,0.99); const fisher=Math.atanh(r); const n=Math.ceil(((zAlpha+zPower)/fisher)**2+3); return {design,alpha,targetPower,effect:r,estimatedN:n,note:'Approximate two-sided Fisher-z calculation; final protocol should be checked in a dedicated statistical package.'}; }
-  const d=Math.max(0.001,Math.abs(num(p['effect'],0.5))); const nPerGroup=Math.ceil(2*((zAlpha+zPower)/d)**2);
-  return {design,alpha,targetPower,effect:d,estimatedNPerGroup:nPerGroup,estimatedTotalN:nPerGroup*2,note:'Approximate two-sided two-group calculation; account for attrition, clustering and analysis assumptions before finalizing.'};
+  const alpha = num(p['alpha'], Number.NaN);
+  const targetPower = num(p['power'], Number.NaN);
+  const rawEffect = num(p['effect'], Number.NaN);
+  const design = String(p['design'] || '');
+  const n1 = num(p['n1'], Number.NaN);
+  const n2 = num(p['n2'], Number.NaN);
+  const mean1 = num(p['mean1'], Number.NaN);
+  const mean2 = num(p['mean2'], Number.NaN);
+  const sd1 = num(p['sd1'], Number.NaN);
+  const sd2 = num(p['sd2'], Number.NaN);
+  const validAlpha = Number.isFinite(alpha) && alpha >= 0.000001 && alpha <= 0.5;
+  const validPower = Number.isFinite(targetPower) && targetPower >= 0.5 && targetPower <= 0.999;
+  const absoluteEffect = Math.abs(rawEffect);
+  const validEffect = design === 'correlation'
+    ? Number.isFinite(rawEffect) && absoluteEffect >= 0.001 && absoluteEffect <= 0.99
+    : design === 'two_group_t' && Number.isFinite(rawEffect) &&
+      absoluteEffect >= 0.001 && absoluteEffect <= 10;
+  const validSamples = Number.isSafeInteger(n1) && n1 >= 2 &&
+    Number.isSafeInteger(n2) && n2 >= 2;
+  const validMeans = Number.isFinite(mean1) && Number.isFinite(mean2);
+  const validStandardDeviations = Number.isFinite(sd1) && sd1 > 0 &&
+    Number.isFinite(sd2) && sd2 > 0;
+
+  if (!validAlpha || !validPower || !validEffect || !validSamples ||
+      !validMeans || !validStandardDeviations) {
+    return {
+      calculationBlocked: true,
+      error: 'Invalid statistical parameters; values were not silently clamped.',
+      issues: [
+        ...(!validAlpha ? ['alpha must be between 0.000001 and 0.5.'] : []),
+        ...(!validPower ? ['power must be between 0.5 and 0.999.'] : []),
+        ...(!validEffect ? ['effect size is outside the valid range for the selected design.'] : []),
+        ...(!validSamples ? ['both group sample sizes must be safe integers of at least 2.'] : []),
+        ...(!validMeans ? ['group means must be finite numbers.'] : []),
+        ...(!validStandardDeviations ? ['group standard deviations must be finite and greater than zero.'] : [])
+      ]
+    };
+  }
+
+  const zAlpha = normalCdfInverse(1 - alpha / 2);
+  const zPower = normalCdfInverse(targetPower);
+  if (design === 'correlation') {
+    const fisher = Math.atanh(absoluteEffect);
+    const estimatedN = Math.ceil(((zAlpha + zPower) / fisher) ** 2 + 3);
+    return {
+      design, alpha, targetPower, effect: absoluteEffect, estimatedN,
+      note: 'Approximate two-sided Fisher-z calculation; final protocol should be checked in a dedicated statistical package.'
+    };
+  }
+  const estimatedNPerGroup = Math.ceil(2 * ((zAlpha + zPower) / absoluteEffect) ** 2);
+  return {
+    design, alpha, targetPower, effect: absoluteEffect, estimatedNPerGroup,
+    estimatedTotalN: estimatedNPerGroup * 2,
+    note: 'Approximate two-sided two-group calculation; account for attrition, clustering and analysis assumptions before finalizing.'
+  };
 }
 
 function prisma(p: Record<string, unknown>) {
@@ -204,5 +253,21 @@ function provenance(p: Record<string, unknown>) {
   return {records:records.map((r,i)=>({evidenceId:String(r['evidenceId']||('EVD-'+(i+1))),sourceId:String(r['sourceId']||''),documentFingerprint:String(r['documentFingerprint']||''),page:String(r['page']||''),locator:String(r['locator']||''),excerptHash:String(r['excerptHash']||''),retrievedAt:String(r['retrievedAt']||''),verified:r['verified']===true,complete:Boolean(r['sourceId']&&r['documentFingerprint']&&r['locator']&&r['retrievedAt'])})),incompleteCount:records.filter(r=>!(r['sourceId']&&r['documentFingerprint']&&r['locator']&&r['retrievedAt'])).length};
 }
 
-export class ResearchMethodsLabService { run(mode: MethodsLabMode,payload:Record<string,unknown>) { if(mode==='prisma') return prisma(payload); if(mode==='power') return {...power(payload),effectSize:effectSize(payload)}; if(mode==='claim_map') return claimMap(payload); if(mode==='provenance') return provenance(payload); if(mode==='framework') return framework(payload); if(mode==='risk_bias') return riskBias(payload); if(mode==='methodology_gate') return methodologyGate(payload); if(mode==='reporting_guideline') return reportingGuideline(payload); return evidenceGrade(payload); } }
+export class ResearchMethodsLabService {
+  run(mode: MethodsLabMode, payload: Record<string, unknown>) {
+    if (mode === 'prisma') return prisma(payload);
+    if (mode === 'power') {
+      const calculation = power(payload);
+      if ('calculationBlocked' in calculation && calculation.calculationBlocked === true) return calculation;
+      return { ...calculation, effectSize: effectSize(payload) };
+    }
+    if (mode === 'claim_map') return claimMap(payload);
+    if (mode === 'provenance') return provenance(payload);
+    if (mode === 'framework') return framework(payload);
+    if (mode === 'risk_bias') return riskBias(payload);
+    if (mode === 'methodology_gate') return methodologyGate(payload);
+    if (mode === 'reporting_guideline') return reportingGuideline(payload);
+    return evidenceGrade(payload);
+  }
+}
 export const researchMethodsLabService=new ResearchMethodsLabService();
