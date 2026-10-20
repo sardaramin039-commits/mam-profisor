@@ -125,7 +125,8 @@ export interface MultiAgentResponse {
     methodologyCritique: string;
     improvementSuggestions: string[];
   };
-  factCheckerAgentOutput: FactCheckResult;
+  factCheckerAgentOutput?: FactCheckResult;
+  qaGateResult?: { exportBlocked: boolean; overallQAScore: number | null; criticalViolationsCount: number; kurdishSummaryStatus: string; checks: Array<{ ruleName?: string; passed?: boolean; severity?: 'warning' | 'critical'; detailsKurdish?: string; recommendedActionKurdish?: string }> };
   knowledgeGraph: KnowledgeGraphData;
   sourceConfidenceAverage: number;
 }
