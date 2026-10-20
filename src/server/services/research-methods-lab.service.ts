@@ -253,5 +253,21 @@ function provenance(p: Record<string, unknown>) {
   return {records:records.map((r,i)=>({evidenceId:String(r['evidenceId']||('EVD-'+(i+1))),sourceId:String(r['sourceId']||''),documentFingerprint:String(r['documentFingerprint']||''),page:String(r['page']||''),locator:String(r['locator']||''),excerptHash:String(r['excerptHash']||''),retrievedAt:String(r['retrievedAt']||''),verified:r['verified']===true,complete:Boolean(r['sourceId']&&r['documentFingerprint']&&r['locator']&&r['retrievedAt'])})),incompleteCount:records.filter(r=>!(r['sourceId']&&r['documentFingerprint']&&r['locator']&&r['retrievedAt'])).length};
 }
 
-export class ResearchMethodsLabService { run(mode: MethodsLabMode,payload:Record<string,unknown>) { if(mode==='prisma') return prisma(payload); if(mode==='power') return {...power(payload),effectSize:effectSize(payload)}; if(mode==='claim_map') return claimMap(payload); if(mode==='provenance') return provenance(payload); if(mode==='framework') return framework(payload); if(mode==='risk_bias') return riskBias(payload); if(mode==='methodology_gate') return methodologyGate(payload); if(mode==='reporting_guideline') return reportingGuideline(payload); return evidenceGrade(payload); } }
+export class ResearchMethodsLabService {
+  run(mode: MethodsLabMode, payload: Record<string, unknown>) {
+    if (mode === 'prisma') return prisma(payload);
+    if (mode === 'power') {
+      const calculation = power(payload);
+      if ('calculationBlocked' in calculation && calculation.calculationBlocked === true) return calculation;
+      return { ...calculation, effectSize: effectSize(payload) };
+    }
+    if (mode === 'claim_map') return claimMap(payload);
+    if (mode === 'provenance') return provenance(payload);
+    if (mode === 'framework') return framework(payload);
+    if (mode === 'risk_bias') return riskBias(payload);
+    if (mode === 'methodology_gate') return methodologyGate(payload);
+    if (mode === 'reporting_guideline') return reportingGuideline(payload);
+    return evidenceGrade(payload);
+  }
+}
 export const researchMethodsLabService=new ResearchMethodsLabService();
