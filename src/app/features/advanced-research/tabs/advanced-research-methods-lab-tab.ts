@@ -15,7 +15,7 @@ import { TabContextBridgeService } from '../services/tab-context-bridge.service'
 export class AdvancedResearchMethodsLabTabComponent {
   private readonly api = inject(ResearchApiClientService);
   readonly contextBridge = inject(TabContextBridgeService);
-  mode = signal<'prisma'|'power'|'claim_map'|'provenance'|'framework'|'risk_bias'|'evidence_grade'|'methodology_gate'|'reporting_guideline'>('prisma');
+  mode = signal<'prisma'|'power'|'statistics_integrity'|'claim_map'|'provenance'|'framework'|'risk_bias'|'evidence_grade'|'methodology_gate'|'reporting_guideline'>('prisma');
   projectId = input<string>('current');
   result = signal<any>(null);
   error = signal<string | null>(null);
@@ -38,6 +38,18 @@ export class AdvancedResearchMethodsLabTabComponent {
   certainty=''; protocol=''; funding=''; conflicts=''; dataCode='';
   identified=0; screened=0; retrieved=0; excluded=0; included=0;
   design='two_group_t'; effect=0.5; alpha=0.05; power=0.8; mean1=0; mean2=0; sd1=1; sd2=1; n1=30; n2=30;
+  statisticalSampleSize: number | null = null;
+  statisticalEventCount: number | null = null;
+  statisticalReportedPercent: number | null = null;
+  statisticalPValue: number | null = null;
+  statisticalAlpha: number | null = 0.05;
+  statisticalConfidenceLevel: number | null = 0.95;
+  statisticalCiLower: number | null = null;
+  statisticalCiUpper: number | null = null;
+  statisticalMean: number | null = null;
+  statisticalStandardDeviation: number | null = null;
+  statisticalStudyDesign = 'unknown';
+  statisticalConclusion = '';
   claimsJson='[]'; provenanceJson='[]'; frameworkJson='{}'; assessmentsJson='{}'; evidenceJson='{}';
   frameworkKind='PICO'; riskTool='rob2'; initialCertainty='high';
   riskOfBiasInput=''; inconsistency=''; indirectness=''; imprecision=''; publicationBias='';
@@ -58,6 +70,20 @@ export class AdvancedResearchMethodsLabTabComponent {
     } : this.mode()==='power' ? {
       design:this.design,effect:this.effect,alpha:this.alpha,power:this.power,mean1:this.mean1,mean2:this.mean2,
       sd1:this.sd1,sd2:this.sd2,n1:this.n1,n2:this.n2
+    } : this.mode()==='statistics_integrity' ? {
+      ...(this.statisticalSampleSize !== null ? { sampleSize: this.statisticalSampleSize } : {}),
+      ...(this.statisticalEventCount !== null ? { eventCount: this.statisticalEventCount } : {}),
+      ...(this.statisticalReportedPercent !== null ? { reportedPercent: this.statisticalReportedPercent } : {}),
+      ...(this.statisticalPValue !== null ? { pValue: this.statisticalPValue } : {}),
+      ...(this.statisticalAlpha !== null ? { alpha: this.statisticalAlpha } : {}),
+      ...(this.statisticalConfidenceLevel !== null ? { confidenceLevel: this.statisticalConfidenceLevel } : {}),
+      ...(this.statisticalCiLower !== null || this.statisticalCiUpper !== null
+        ? { confidenceInterval: { lower: this.statisticalCiLower, upper: this.statisticalCiUpper } }
+        : {}),
+      ...(this.statisticalMean !== null ? { mean: this.statisticalMean } : {}),
+      ...(this.statisticalStandardDeviation !== null ? { standardDeviation: this.statisticalStandardDeviation } : {}),
+      studyDesign: this.statisticalStudyDesign,
+      ...(this.statisticalConclusion.trim() ? { conclusion: this.statisticalConclusion.trim() } : {})
     } : this.mode()==='claim_map' ? { claims:this.parseJson(this.claimsJson) }
       : this.mode()==='provenance' ? { records:this.parseJson(this.provenanceJson) }
       : this.mode()==='framework' ? { framework:this.frameworkKind, values:this.parseRecord(this.frameworkJson) }
@@ -68,7 +94,7 @@ export class AdvancedResearchMethodsLabTabComponent {
 
     this.api.runResearchMethodsLab(this.mode(),p).subscribe({
       next:r=>{this.result.set(r.result);this.running.set(false);},
-      error:e=>{this.error.set(e?.error?.error||'هەڵەیەک ڕوویدا.');this.running.set(false);}
+      error:e=>{this.error.set(e?.error?.error||e?.message||'هەڵەیەک ڕوویدا.');this.running.set(false);}
     });
   }
   loadControlPlane(): void {
