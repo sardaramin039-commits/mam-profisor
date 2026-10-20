@@ -3,6 +3,8 @@ name: Release Verification Evidence
 on:
   workflow_dispatch:
   push:
+    branches:
+      - "release-candidate/**"
     tags:
       - "v*"
 
