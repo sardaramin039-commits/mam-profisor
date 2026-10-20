@@ -84,9 +84,11 @@ export async function executeMultiAgentPipeline(
   const qa = asRecord(data.qaGateResult);
   const apa = asStrings(citation.formattedCitationsAPA || citation.formattedReferencesAPA);
   const harvard = asStrings(citation.formattedCitationsHarvard || citation.formattedReferencesHarvard);
-  const scores = sources.map(source => source.confidenceScore).filter(score => score > 0);
+  const scores: number[] = sources
+    .map((source: { confidenceScore: number }) => source.confidenceScore)
+    .filter((score: number) => score > 0);
   const sourceConfidenceAverage = scores.length
-    ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+    ? Math.round(scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length)
     : 0;
 
   return {
