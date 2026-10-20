@@ -4,7 +4,7 @@
     <p class="text-[11px] text-slate-400 mt-1">ئامرازێکی قووڵ بۆ systematic review، sample-size، evidence mapping و provenance.</p>
     <div class="flex flex-wrap gap-2 mt-4">
       @for (item of [
-        {k:'prisma',l:'PRISMA 2020'},{k:'power',l:'Power & Effect Size'},{k:'framework',l:'PICO/PICOS/PECO/SPIDER'},
+        {k:'prisma',l:'PRISMA 2020'},{k:'power',l:'Power & Effect Size'},{k:'statistics_integrity',l:'Statistical Integrity'},{k:'framework',l:'PICO/PICOS/PECO/SPIDER'},
         {k:'risk_bias',l:'Risk of Bias'},{k:'evidence_grade',l:'Evidence Certainty'},{k:'methodology_gate',l:'Methodology Gate'},{k:'reporting_guideline',l:'Reporting Guidelines'},{k:'claim_map',l:'Claim و Citation'},{k:'provenance',l:'Full-text Provenance'}
       ]; track item.k) {
         <button (click)="mode.set($any(item.k))" class="px-3 py-2 rounded-xl text-xs border" [class.border-cyan-500]="mode()===item.k" [class.text-cyan-300]="mode()===item.k">{{item.l}}</button>
@@ -51,6 +51,32 @@
       <input [(ngModel)]="power" type="number" step="0.01" class="input" placeholder="Power"><input [(ngModel)]="mean1" type="number" class="input" placeholder="Mean 1"><input [(ngModel)]="mean2" type="number" class="input" placeholder="Mean 2">
       <input [(ngModel)]="sd1" type="number" class="input" placeholder="SD 1"><input [(ngModel)]="sd2" type="number" class="input" placeholder="SD 2">
       <input [(ngModel)]="n1" type="number" class="input" placeholder="N1"><input [(ngModel)]="n2" type="number" class="input" placeholder="N2">
+    </div>
+  } @else if (mode()==='statistics_integrity') {
+    <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+      <p class="text-xs text-slate-300">ژمارەکان بە شێوەی deterministic پشکنین دەکرێن؛ ئەمە جێگرەوەی شیکاریی ئاماریی تەواو نییە.</p>
+      <div class="grid md:grid-cols-3 gap-2">
+        <input [(ngModel)]="statisticalSampleSize" type="number" min="1" step="1" class="input" placeholder="Sample size">
+        <input [(ngModel)]="statisticalEventCount" type="number" min="0" step="1" class="input" placeholder="Event count">
+        <input [(ngModel)]="statisticalReportedPercent" type="number" min="0" max="100" step="0.1" class="input" placeholder="Reported percent">
+        <input [(ngModel)]="statisticalPValue" type="number" min="0" max="1" step="0.001" class="input" placeholder="p-value">
+        <input [(ngModel)]="statisticalAlpha" type="number" min="0.000001" max="0.5" step="0.01" class="input" placeholder="Alpha (default 0.05)">
+        <input [(ngModel)]="statisticalConfidenceLevel" type="number" min="0.5" max="0.999999" step="0.01" class="input" placeholder="Confidence level (default 0.95)">
+        <input [(ngModel)]="statisticalCiLower" type="number" step="0.01" class="input" placeholder="CI lower bound">
+        <input [(ngModel)]="statisticalCiUpper" type="number" step="0.01" class="input" placeholder="CI upper bound">
+        <input [(ngModel)]="statisticalMean" type="number" step="0.01" class="input" placeholder="Mean">
+        <input [(ngModel)]="statisticalStandardDeviation" type="number" min="0" step="0.01" class="input" placeholder="Standard deviation">
+        <select [(ngModel)]="statisticalStudyDesign" class="input">
+          <option value="unknown">Study design not set</option>
+          <option value="randomized_trial">Randomized trial</option>
+          <option value="quasi_experimental">Quasi-experimental</option>
+          <option value="observational">Observational</option>
+          <option value="cross_sectional">Cross-sectional</option>
+          <option value="descriptive">Descriptive</option>
+          <option value="qualitative">Qualitative</option>
+        </select>
+      </div>
+      <textarea [(ngModel)]="statisticalConclusion" rows="3" class="area" placeholder="Conclusion text (used only to flag possible causal overstatement)"></textarea>
     </div>
   } @else if (mode()==='framework') {
     <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
