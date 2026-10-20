@@ -308,7 +308,7 @@ export class CitationIntelligenceService {
         const page = clean(claim.page || claim.pageNumber);
         const meta = citationMetadata({ ...source, title, authors }, page);
         let number = citationNumber + 1;
-        if (style === 'IEEE' || style === 'ChicagoNB') {
+        if (style === 'IEEE') {
           const existing = referenceNumberBySource.get(sourceId);
           if (existing) number = existing;
           else {
@@ -317,7 +317,10 @@ export class CitationIntelligenceService {
             referenceNumberBySource.set(sourceId, number);
           }
         } else {
+          // Chicago Notes–Bibliography numbers each note occurrence, even
+          // when the same work is cited more than once.
           citationNumber += 1;
+          number = citationNumber;
         }
 
         const citation: CitationRecord = {
