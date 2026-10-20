@@ -223,7 +223,9 @@ export class ClaimEvidenceGraphService {
           sourceId: actualSourceId || undefined,
           doiOrIsbn: source.doiOrIsbn || source.doi || undefined,
           // LLM-proposed page numbers are not bibliographic proof.
-          pageNumber: source.pageNumber != null ? String(source.pageNumber) : undefined,
+          pageNumber: source.pageNumberVerified === true && source.pageNumber != null
+            ? String(source.pageNumber)
+            : undefined,
           provenance: source.evidenceProvenance || 'unknown'
         });
       }
