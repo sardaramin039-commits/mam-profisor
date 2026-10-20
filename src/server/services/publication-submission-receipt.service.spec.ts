@@ -11,7 +11,7 @@ const base = {
   journalName: 'Test Journal',
   manuscriptType: 'article',
   submissionFingerprint: 'a'.repeat(64),
-  note: 'Submitted through the journal portal.',
+  note: 'User reports submitting through the journal portal.',
   externalReference: 'EXT-123',
   submittedAt: '2026-10-08T15:00:00.000Z'
 };
@@ -61,6 +61,29 @@ describe('P16 immutable submission receipt', () => {
     });
     expect(result.status).toBe('VERIFIED');
     expect(result.errors).toHaveLength(0);
+  });
+
+  it('marks new receipts as user-reported and never as externally verified', () => {
+    const receipt = buildSubmissionReceipt(base);
+    const verification = verifySubmissionReceipt(receipt);
+    expect(receipt.receiptVersion).toBe(2);
+    expect(receipt.submissionConfirmation).toBe('USER_REPORTED_UNVERIFIED');
+    expect(verification.status).toBe('VERIFIED');
+    expect(verification.verificationScope).toBe('INTERNAL_RECEIPT_INTEGRITY_ONLY');
+    expect(verification.externalSubmissionVerified).toBe(false);
+    expect(verification.submissionConfirmation).toBe('USER_REPORTED_UNVERIFIED');
+  });
+
+  it('rejects a modified submission-confirmation scope', () => {
+    const receipt = buildSubmissionReceipt(base);
+    const result = verifySubmissionReceipt({
+      ...receipt,
+      submissionConfirmation: 'EXTERNALLY_CONFIRMED' as never
+    });
+    expect(result.status).toBe('INVALID');
+    expect(result.externalSubmissionVerified).toBe(false);
+    expect(result.errors.some(error => error.includes('hash mismatch'))).toBe(true);
+    expect(result.errors.some(error => error.includes('confirmation scope'))).toBe(true);
   });
 
   it('rejects a tampered receipt hash', () => {
