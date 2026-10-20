@@ -44,12 +44,6 @@ function validateEvidenceMetrics(input: ResearchValidationInput, blockers: strin
   const coverage = input.evidenceCoverage;
   const claimsValid = claimsCount === undefined || isValidCount(claimsCount);
   const evidenceValid = evidenceCount === undefined || isValidCount(evidenceCount);
-  const coverageProvided = coverage !== undefined;
-  const coverageValid = coverageProvided &&
-    Number.isFinite(coverage) &&
-    coverage >= 0 &&
-    coverage <= 100;
-
   if (
     claimsValid &&
     claimsCount !== undefined &&
@@ -61,14 +55,17 @@ function validateEvidenceMetrics(input: ResearchValidationInput, blockers: strin
       blockers.push('Claims exist without any recorded evidence.');
     }
 
-    if (!coverageProvided) {
+    if (coverage === undefined) {
       blockers.push('Evidence coverage is not recorded for the declared claims.');
-    } else if (!coverageValid) {
+    } else if (!Number.isFinite(coverage) || coverage < 0 || coverage > 100) {
       blockers.push('Evidence coverage must be a finite percentage from 0 to 100.');
     } else if (coverage < 80) {
       blockers.push('Evidence coverage is below the 80% release threshold.');
     }
-  } else if (coverageProvided && !coverageValid) {
+  } else if (
+    coverage !== undefined &&
+    (!Number.isFinite(coverage) || coverage < 0 || coverage > 100)
+  ) {
     blockers.push('Evidence coverage must be a finite percentage from 0 to 100.');
   }
 }
