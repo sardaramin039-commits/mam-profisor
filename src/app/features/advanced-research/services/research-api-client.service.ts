@@ -19,6 +19,7 @@ import {
   AiPresentationSlide, AiStudyPlannerResult, TableExtractorResult, AcademicReferenceItem,
   ProfessorModeLevel, ResearchMemoryState, ResearchIntegrityAuditResult
 } from '../models/multi-agent.types';
+import { executeMultiAgentPipeline } from './multi-agent-api-adapter';
 
 export interface ResearchControlPlaneState {
   projectId: string; stage: string;
@@ -31,7 +32,7 @@ export class ResearchApiClientService {
   private geminiManager = inject(GeminiRequestManagerService);
 
   runMultiAgentPipeline(topic: string, professorMode: ProfessorModeLevel, memory: ResearchMemoryState): Observable<MultiAgentResponse> {
-    return this.notConfigured('runMultiAgentPipeline');
+    return from(executeMultiAgentPipeline(topic, professorMode, memory));
   }
 
   runFactCheck(statement: string, professorMode: ProfessorModeLevel): Observable<FactCheckResult> {
