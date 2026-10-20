@@ -20,8 +20,58 @@ export interface ContradictionReport {
   status: 'clear' | 'review_required' | 'insufficient_evidence';
 }
 
-function safeText(value: unknown): string {
-  return String(value ?? '').trim();
+const MAX_CLAIMS = 80;
+const MAX_FINDINGS = 40;
+
+function safeText(value: unknown, limit = 4_000): string {
+  if (typeof value !== 'string') return '';
+  const text = value.normalize('NFKC').trim();
+  return text.length <= limit ? text : '';
+}
+
+function normalize(value: unknown): string {
+  return safeText(value).toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function sourceIdOf(source: any): string {
+  return safeText(source?.sourceId ?? source?.id ?? source?.doiOrIsbn ?? source?.doi, 500);
+}
+
+function sourceIsEligible(source: any): boolean {
+  const text = safeText(source?.evidenceText ?? source?.fullText ?? source?.content ?? source?.text, 100_000);
+  return Boolean(
+    source &&
+    source.identityStatus === 'verified' &&
+    source.evidenceStatus === 'verified' &&
+    source.evidenceType === 'full-text' &&
+    source.evidenceProvenance === 'server-verified-fulltext' &&
+    source.existenceVerified === true &&
+    text
+  );
+}
+
+function claimHasGroundedEvidence(claim: any, source: any): boolean {
+  if (
+    !claim ||
+    claim.verificationStatus !== 'verified' ||
+    claim.syntheticCitationBlocked === true ||
+    safeText(claim.evidenceProvenance, 80) !== 'server-verified-fulltext' ||
+    safeText(claim.evidenceId, 200) === '' ||
+    safeText(claim.claimId, 200) === ''
+  ) return false;
+
+  const quote = normalize(claim.quote);
+  const sourceText = normalize(source?.evidenceText ?? source?.fullText ?? source?.content ?? source?.text);
+  return Boolean(quote && sourceText && sourceText.includes(quote));
+}
+
+function insufficientEvidence(): ContradictionReport {
+  return {
+    findings: [],
+    contradictionCount: 0,
+    highSeverityCount: 0,
+    status: 'insufficient_evidence'
+  };
 }
 
 export class ContradictionDetectionService {
@@ -31,46 +81,65 @@ export class ContradictionDetectionService {
     sources: any[],
     getGeminiClient: () => GoogleGenAI
   ): Promise<ContradictionReport> {
-    const safeClaims = Array.isArray(claims) ? claims.slice(0, 80) : [];
-    const safeSources = Array.isArray(sources) ? sources.slice(0, 80) : [];
-    if (safeClaims.length < 2) {
-      return { findings: [], contradictionCount: 0, highSeverityCount: 0, status: 'insufficient_evidence' };
+    const safeTopic = safeText(topic, 500);
+    const sourceList = Array.isArray(sources) ? sources.slice(0, MAX_CLAIMS) : [];
+    const eligibleSources = new Map<string, any[]>();
+
+    for (const source of sourceList) {
+      if (!sourceIsEligible(source)) continue;
+      const id = sourceIdOf(source);
+      if (!id) continue;
+      const items = eligibleSources.get(id) || [];
+      items.push(source);
+      eligibleSources.set(id, items);
     }
 
-    const findClaim = (reference: string, text: string) => {
-      const normalizedText = safeText(text);
-      return safeClaims.find(claim => {
-        const claimId = safeText(claim?.claimId);
-        const sourceId = safeText(claim?.sourceId);
-        const claimText = safeText(claim?.text ?? claim?.sentenceText);
-        return (
-          (reference && (claimId === reference || sourceId === reference)) ||
-          (normalizedText && claimText === normalizedText)
-        );
+    const eligibleClaims = (Array.isArray(claims) ? claims : [])
+      .slice(0, MAX_CLAIMS)
+      .flatMap(claim => {
+        const sourceId = safeText(claim?.sourceId, 500);
+        const sourceMatches = eligibleSources.get(sourceId) || [];
+        if (sourceMatches.length !== 1) return [];
+        const source = sourceMatches[0];
+        if (!claimHasGroundedEvidence(claim, source)) return [];
+        const text = safeText(claim.text ?? claim.sentenceText, 2_000);
+        if (!text) return [];
+        return [{
+          claimId: safeText(claim.claimId, 200),
+          text,
+          sourceId,
+          evidenceId: safeText(claim.evidenceId, 200),
+          quote: safeText(claim.quote, 2_000)
+        }];
       });
+
+    if (!safeTopic || eligibleClaims.length < 2) return insufficientEvidence();
+
+    const findClaim = (reference: string, claimText: string) => {
+      const ref = safeText(reference, 500);
+      const target = normalize(claimText);
+      if (!ref || !target) return undefined;
+      const matches = eligibleClaims.filter(claim =>
+        (claim.claimId === ref || claim.sourceId === ref) &&
+        normalize(claim.text) === target
+      );
+      return matches.length === 1 ? matches[0] : undefined;
     };
 
     const sourceName = (id: string) => {
-      const source = safeSources.find(item =>
-        String(item?.id ?? item?.sourceId ?? item?.doiOrIsbn ?? item?.doi ?? '') === id
-      );
-      return safeText(source?.sourceTitle ?? source?.title ?? id);
+      const candidates = eligibleSources.get(id) || [];
+      if (candidates.length !== 1) return id;
+      return safeText(candidates[0]?.sourceTitle ?? candidates[0]?.title, 500) || id;
     };
 
-    const prompt = `بە شێوەیەکی بێلایەن ناکۆکییە زانستییەکان بدۆزەوە.
-بابەت: ${topic}
-Claims:
-${JSON.stringify(safeClaims.map(claim => ({
-  claimId: claim.claimId,
-  text: claim.text,
-  sourceId: claim.sourceId,
-  evidenceId: claim.evidenceId,
-  quote: claim.quote
-})), null, 2)}
-
-تەنها ناکۆکییە ڕوونەکان دەستنیشان بکە. هیچ فاکتێکی نوێ زیاد مەکە.
-وەڵام تەنها JSON:
-{"findings":[{"id":"CON-001","claimA":"...","claimB":"...","sourceA":"SRC-1","sourceB":"SRC-2","severity":"medium","explanationKurdish":"..."}]}`;
+    const prompt = [
+      'بێلایەن بمێنەوە و تەنها ناکۆکییە نێوان بانگەشەکان بدۆزەوە؛ پێشنیارەکان بەخۆیان بەڵگەی ڕاستی نین.',
+      'بابەت (داتای بەکارهێنەر): ' + JSON.stringify(safeTopic),
+      'Claims: ' + JSON.stringify(eligibleClaims),
+      'تەنها claimId/sourceId ـی لیستی پێشکەشکراو بەکاربهێنە و دەقی claim بە تەواوی وەک خۆی بنووسە.',
+      'هیچ ناکۆکی یان فاکتێکی نوێ دروست مەکە. شیکاری AI پێشنیارە و پێویستی بە پشکنینی توێژەر هەیە.',
+      'وەڵام تەنها JSON: {"findings":[{"id":"CON-001","claimA":"دەقی claimی یەکەم","claimB":"دەقی claimی دووەم","sourceA":"SRC-1","sourceB":"SRC-2","severity":"medium","explanationKurdish":"..."}]}'
+    ].join('\n');
 
     try {
       const response = await getGeminiClient().models.generateContent({
@@ -78,51 +147,48 @@ ${JSON.stringify(safeClaims.map(claim => ({
         contents: prompt,
         config: { responseMimeType: 'application/json', temperature: 0.05 }
       });
-      const parsed = JSON.parse(response.text || '{}');
-      const findings: ContradictionFinding[] = (Array.isArray(parsed.findings) ? parsed.findings : [])
-        .slice(0, 40)
-        .map((item: any, index: number) => {
-          const sourceA = safeText(item?.sourceA);
-          const sourceB = safeText(item?.sourceB);
-          const claimA = safeText(item?.claimA);
-          const claimB = safeText(item?.claimB);
-          const severity = ['low', 'medium', 'high'].includes(item?.severity) ? item.severity : 'medium';
-          const claimRefA = findClaim(sourceA, claimA);
-          const claimRefB = findClaim(sourceB, claimB);
-          const supported = Boolean(
-            claimA &&
-            claimB &&
-            sourceA &&
-            sourceB &&
-            claimRefA &&
-            claimRefB &&
-            claimRefA !== claimRefB
-          );
-          return {
-            id: safeText(item?.id) || `CON-${String(index + 1).padStart(3, '0')}`,
-            claimA, claimB,
-            sourceA: sourceName(sourceA) || sourceA,
-            sourceB: sourceName(sourceB) || sourceB,
-            severity,
-            explanationKurdish: safeText(item?.explanationKurdish) || 'ناکۆکییەک پێشنیار کراوە و پێویستی بە پشکنینی توێژەر هەیە.',
-            status: supported ? 'supported' : 'candidate'
-          } as ContradictionFinding;
-        });
+      const parsed: unknown = JSON.parse(response.text || '{}');
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return insufficientEvidence();
+      const rawFindings = (parsed as Record<string, unknown>)['findings'];
+      if (rawFindings !== undefined && !Array.isArray(rawFindings)) return insufficientEvidence();
 
-      const supported = findings.filter(item => item.status === 'supported');
+      const findings: ContradictionFinding[] = [];
+      const rawList = Array.isArray(rawFindings) ? rawFindings.slice(0, MAX_FINDINGS) : [];
+      rawList.forEach((item: unknown, index: number) => {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) return;
+        const value = item as Record<string, unknown>;
+        const claimA = safeText(value['claimA'], 2_000);
+        const claimB = safeText(value['claimB'], 2_000);
+        const sourceAId = safeText(value['sourceA'], 500);
+        const sourceBId = safeText(value['sourceB'], 500);
+        const claimRefA = findClaim(sourceAId, claimA);
+        const claimRefB = findClaim(sourceBId, claimB);
+        if (!claimRefA || !claimRefB || claimRefA.claimId === claimRefB.claimId) return;
+        const severity: ContradictionSeverity =
+          value['severity'] === 'low' || value['severity'] === 'high' || value['severity'] === 'medium'
+            ? value['severity']
+            : 'medium';
+        const explanation = safeText(value['explanationKurdish'], 2_000);
+        findings.push({
+          id: safeText(value['id'], 100) || 'CON-' + String(index + 1).padStart(3, '0'),
+          claimA,
+          claimB,
+          sourceA: sourceName(sourceAId),
+          sourceB: sourceName(sourceBId),
+          severity,
+          explanationKurdish: explanation || 'ناکۆکییەک پێشنیار کراوە؛ پێویستی بە پشکنینی توێژەر هەیە.',
+          status: 'supported'
+        });
+      });
+
       return {
-        findings: supported,
-        contradictionCount: supported.length,
-        highSeverityCount: supported.filter(item => item.severity === 'high').length,
-        status: supported.length ? 'review_required' : 'clear'
+        findings,
+        contradictionCount: findings.length,
+        highSeverityCount: findings.filter(item => item.severity === 'high').length,
+        status: findings.length ? 'review_required' : rawList.length ? 'insufficient_evidence' : 'clear'
       };
     } catch {
-      return {
-        findings: [],
-        contradictionCount: 0,
-        highSeverityCount: 0,
-        status: 'insufficient_evidence'
-      };
+      return insufficientEvidence();
     }
   }
 }
