@@ -22,7 +22,7 @@ export class AcademicSearchService {
 
   private normalizeQuery(query: string): string | null {
     if (typeof query !== 'string') return null;
-    const normalized = query.normalize('NFKC').trim().replace(/\\s+/g, ' ');
+    const normalized = query.normalize('NFKC').trim().replace(/\s+/g, ' ');
     if (!normalized || normalized.length > AcademicSearchService.MAX_QUERY_LENGTH) return null;
     return normalized;
   }
