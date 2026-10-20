@@ -122,7 +122,7 @@ describe('citation intelligence strict evidence gate', () => {
     expect(result('Harvard')?.bibliography).toContain('pp. 34-45');
   });
 
-  it('reuses the same IEEE and Chicago NB reference number for the same source', () => {
+  it('reuses IEEE source numbers but gives each Chicago NB note its own marker', () => {
     const paragraphs = [
       { claims: [verifiedClaim] },
       { claims: [{ ...verifiedClaim, citationId: 'CIT-SECOND' }] }
@@ -132,7 +132,7 @@ describe('citation intelligence strict evidence gate', () => {
     expect(ieee.citations.every(item => item.bibliography.startsWith('[1] '))).toBe(true);
 
     const chicago = service.build(paragraphs, [article], 'ChicagoNB');
-    expect(chicago.citations.map(item => item.inText)).toEqual(['¹', '¹']);
+    expect(chicago.citations.map(item => item.inText)).toEqual(['¹', '²']);
     expect(chicago.citations.every(item => Boolean(item.footnote))).toBe(true);
   });
 
