@@ -41,10 +41,6 @@ function countOccurrences(text: string, fragment: string): number {
   return count;
 }
 
-function trimIdentifierPunctuation(value: string): string {
-  return value.replace(/[.,;:!?،؛)\]}]+$/u, '');
-}
-
 function protectedFragments(text: string): string[] {
   const matches = [
     ...(text.match(/\[[0-9٠-٩۰-۹]+(?:\s*[,;]\s*[0-9٠-٩۰-۹]+)*\]/gu) || []),
@@ -55,7 +51,7 @@ function protectedFragments(text: string): string[] {
     ...(text.match(/\bISSN:?\s*[0-9X-]{8,10}\b/giu) || []),
     ...(text.match(/[0-9٠-٩۰-۹]+(?:[.,٫٬][0-9٠-٩۰-۹]+)?\s*%?/gu) || [])
   ];
-  return matches.map(trimIdentifierPunctuation).filter(Boolean);
+  return matches.filter(Boolean);
 }
 
 function protectedMaterialPreserved(original: string, candidate: string): boolean {
