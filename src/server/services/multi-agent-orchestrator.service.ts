@@ -16,6 +16,16 @@ import { textSimilarityService } from './text-similarity.service';
 import { observabilityService } from './observability.service';
 import { researchIntelligenceService } from './research-intelligence.service';
 import { enrichSourcesWithFullText } from './full-text-evidence.service';
+import {
+  AgentStageExecutionError,
+  createAgentHandoffManifest,
+  fingerprintStageInput,
+  multiAgentExecutionPolicyService
+} from './multi-agent-execution-policy.service';
+import type {
+  AgentHandoffManifest,
+  AgentStageReceipt
+} from './multi-agent-execution-policy.service';
 
 export interface MultiAgentOrchestrationRequest {
   topic: string;
@@ -27,6 +37,8 @@ export interface MultiAgentOrchestrationRequest {
 
 export interface MultiAgentOrchestrationResult {
   executionPipelineLog: Array<{ step: string; agentName: string; status: string; timestamp: string }>;
+  executionReceipts: AgentStageReceipt[];
+  agentHandoffs: AgentHandoffManifest[];
   identityVerifiedSourcesCount: number;
   citationEligibleSourcesCount: number;
   verifiedSourcesCount: number;
@@ -51,15 +63,81 @@ function sourceKey(source: any): string {
   return String(source?.id ?? source?.sourceId ?? source?.doi ?? source?.title ?? '').trim();
 }
 
+const MAX_PIPELINE_TIMEOUT_MS = 8 * 60 * 1000;
+
 export class MultiAgentOrchestratorService {
   public async executePipeline(
     request: MultiAgentOrchestrationRequest,
-    getGeminiClient: () => GoogleGenAI
+    getGeminiClient: () => GoogleGenAI,
+    signal?: AbortSignal
+  ): Promise<MultiAgentOrchestrationResult> {
+    const controller = new AbortController();
+    const cancelFromCaller = () => controller.abort(signal?.reason ?? new Error('request cancelled'));
+    if (signal?.aborted) cancelFromCaller();
+    else signal?.addEventListener('abort', cancelFromCaller, { once: true });
+    const pipelineTimer = setTimeout(
+      () => controller.abort(new Error('multi-agent pipeline deadline exceeded')),
+      MAX_PIPELINE_TIMEOUT_MS
+    );
+    try {
+      return await this.executePipelineControlled(request, getGeminiClient, controller.signal);
+    } finally {
+      clearTimeout(pipelineTimer);
+      signal?.removeEventListener('abort', cancelFromCaller);
+    }
+  }
+
+  private async executePipelineControlled(
+    request: MultiAgentOrchestrationRequest,
+    getGeminiClient: () => GoogleGenAI,
+    executionSignal: AbortSignal
   ): Promise<MultiAgentOrchestrationResult> {
     const startTime = Date.now();
     const pipelineLog: Array<{ step: string; agentName: string; status: string; timestamp: string }> = [];
     const log = (step: string, agentName: string, status: string) =>
       pipelineLog.push({ step, agentName, status, timestamp: new Date().toISOString() });
+    const executionReceipts: AgentStageReceipt[] = [];
+    const agentHandoffs: AgentHandoffManifest[] = [];
+
+    const runStage = async <T>(
+      stageId: string,
+      agentName: string,
+      input: unknown,
+      operation: (signal: AbortSignal) => Promise<T>,
+      options: { timeoutMs?: number; retrySafe?: boolean } = {}
+    ): Promise<T> => {
+      const elapsedMs = Date.now() - startTime;
+      const remainingMs = MAX_PIPELINE_TIMEOUT_MS - elapsedMs;
+      const inputFingerprint = fingerprintStageInput(input);
+      if (remainingMs <= 0) {
+        const timestamp = new Date().toISOString();
+        const receipt: AgentStageReceipt = {
+          stageId, agentName, status: 'timed_out', attempts: 0, retryCount: 0,
+          timeoutMs: 0, durationMs: 0, startedAt: timestamp, finishedAt: timestamp,
+          inputFingerprint, errorCode: 'timeout'
+        };
+        executionReceipts.push(receipt);
+        log(stageId, agentName, 'timed_out; pipeline deadline exceeded');
+        throw new AgentStageExecutionError(receipt);
+      }
+
+      const outcome = await multiAgentExecutionPolicyService.execute({
+        stageId,
+        agentName,
+        operation,
+        signal: executionSignal,
+        timeoutMs: Math.min(options.timeoutMs ?? 45_000, remainingMs),
+        retrySafe: options.retrySafe === true,
+        maxRetries: options.retrySafe === true ? 1 : 0,
+        inputFingerprint
+      });
+      executionReceipts.push(outcome.receipt);
+      if (outcome.status !== 'succeeded') {
+        log(stageId, agentName, `${outcome.status}; code=${outcome.receipt.errorCode ?? 'stage_failed'}`);
+        throw new AgentStageExecutionError(outcome.receipt);
+      }
+      return outcome.value as T;
+    };
 
     const profile = disciplineProfileService.getProfile(request.discipline);
     const rawSources = Array.isArray(request.rawSources) ? request.rawSources.slice(0, 100) : [];
@@ -67,7 +145,13 @@ export class MultiAgentOrchestratorService {
     let discovery: { sources: any[]; providers: string[] } = { sources: [], providers: [] };
 
     if (effectiveSources.length === 0) {
-      const discovered = await researchIntelligenceService.discover(request.topic, request.discipline);
+      const discovered = await runStage(
+        'source_discovery',
+        'Automatic Source Discovery Agent',
+        { topic: request.topic, discipline: request.discipline },
+        async () => researchIntelligenceService.discover(request.topic, request.discipline),
+        { timeoutMs: 30_000, retrySafe: true }
+      );
       effectiveSources = discovered.sources.slice(0, 100);
       discovery = { sources: effectiveSources, providers: discovered.providers };
       log(
@@ -88,20 +172,44 @@ export class MultiAgentOrchestratorService {
       .filter(claim => claim.length >= 20)
       .slice(0, 30);
     const retrievalClaims = evidenceClaims.length > 0 ? evidenceClaims : [request.topic];
-    effectiveSources = await enrichSourcesWithFullText(effectiveSources, retrievalClaims);
+    effectiveSources = await runStage(
+      'fulltext_retrieval',
+      'Server Full-text Retrieval Agent',
+      { sourceIds: effectiveSources.map(sourceKey), claims: retrievalClaims },
+      async () => enrichSourcesWithFullText(effectiveSources, retrievalClaims),
+      { timeoutMs: 60_000 }
+    );
 
-    const verification = await sourceVerificationService.verifySources(effectiveSources, getGeminiClient);
+    const verification = await runStage(
+      'source_verification',
+      'Source Verification Agent',
+      { sourceIds: effectiveSources.map(sourceKey), claimCount: retrievalClaims.length },
+      async () => sourceVerificationService.verifySources(effectiveSources, getGeminiClient),
+      { timeoutMs: 90_000 }
+    );
     const citationEligibleSources = verification.citationEligibleSources;
+    agentHandoffs.push(createAgentHandoffManifest({
+      fromStage: 'source_verification',
+      toStage: 'grounded_generation',
+      sourceIds: effectiveSources.map(sourceKey),
+      citationEligibleSourceIds: citationEligibleSources.map(source => source.sourceId)
+    }));
     log(
       '02',
       'Source Verification Agent',
       `${verification.verifiedSources.length} identity-verified; ${citationEligibleSources.length} citation-eligible`
     );
 
-    const structure = await academicWritingEngineService.generateArgumentArchitecture(
-      request.topic,
-      request.discipline,
-      getGeminiClient
+    const structure = await runStage(
+      'argument_architecture',
+      'Argument & Methodology Agent',
+      { topic: request.topic, discipline: request.discipline },
+      async () => academicWritingEngineService.generateArgumentArchitecture(
+        request.topic,
+        request.discipline,
+        getGeminiClient
+      ),
+      { timeoutMs: 60_000 }
     );
     log('03', 'Argument & Methodology Agent', 'Built discipline-specific argument architecture');
 
@@ -134,11 +242,18 @@ export class MultiAgentOrchestratorService {
     const candidateDraft = request.draftText?.trim()
       || `${structure.thesisStatement}\n\n${structure.overallConclusion}`;
 
-    const grounded = await evidenceGroundingService.generateGroundedContent(
-      request.topic,
-      candidateDraft,
-      evidenceChunks,
-      getGeminiClient
+    const grounded = await runStage(
+      'grounded_generation',
+      'Evidence-Grounded Writer Agent',
+      { topic: request.topic, draftFingerprint: fingerprintStageInput(candidateDraft),
+        evidenceSourceIds: evidenceChunks.map(chunk => chunk.sourceId) },
+      async () => evidenceGroundingService.generateGroundedContent(
+        request.topic,
+        candidateDraft,
+        evidenceChunks,
+        getGeminiClient
+      ),
+      { timeoutMs: 90_000 }
     );
     log('04', 'Evidence-Grounded Writer Agent',
       `${grounded.integrityMetrics.verifiedClaims}/${grounded.integrityMetrics.totalClaims} claims citation-grounded`);
@@ -147,9 +262,16 @@ export class MultiAgentOrchestratorService {
       ? grounded.paragraphs.map(paragraph => paragraph.text).join('\n\n').trim()
       : candidateDraft;
 
-    const languageAnalysis = await kurdishAcademicLanguageService.analyzeAndRefineLanguage(
-      groundedText,
-      getGeminiClient
+    const languageAnalysis = await runStage(
+      'kurdish_language_refinement',
+      'Kurdish Academic Language Agent',
+      { draftFingerprint: fingerprintStageInput(groundedText),
+        protectedCitationCount: grounded.verifiedCitations.length },
+      async () => kurdishAcademicLanguageService.analyzeAndRefineLanguage(
+        groundedText,
+        getGeminiClient
+      ),
+      { timeoutMs: 60_000 }
     );
     log('05', 'Kurdish Academic Language Agent', 'Validated Sorani grammar and academic terminology');
 
@@ -160,11 +282,18 @@ export class MultiAgentOrchestratorService {
       )
     ].filter(Boolean)));
 
-    const humanProse = await humanScholarlyProseService.refineGrounded(
-      languageAnalysis.refinedTextKurdish,
-      profile,
-      protectedFragments,
-      getGeminiClient
+    const humanProse = await runStage(
+      'scholarly_prose_refinement',
+      'Natural Scholarly Prose Agent',
+      { draftFingerprint: fingerprintStageInput(languageAnalysis.refinedTextKurdish),
+        protectedFragmentCount: protectedFragments.length },
+      async () => humanScholarlyProseService.refineGrounded(
+        languageAnalysis.refinedTextKurdish,
+        profile,
+        protectedFragments,
+        getGeminiClient
+      ),
+      { timeoutMs: 60_000 }
     );
     log('06', 'Natural Scholarly Prose Agent',
       humanProse.preservationPassed === false
@@ -194,23 +323,52 @@ export class MultiAgentOrchestratorService {
       })
       .filter((source): source is NonNullable<typeof source> => Boolean(source));
 
-    const graph = await claimEvidenceGraphService.buildGraph(
-      request.topic,
-      finalText,
-      graphSources,
-      getGeminiClient
+    const graph = await runStage(
+      'claim_evidence_graph',
+      'Claim-Evidence Graph Agent',
+      { topic: request.topic, draftFingerprint: fingerprintStageInput(finalText),
+        verifiedSourceIds: graphSources.map(sourceKey) },
+      async () => claimEvidenceGraphService.buildGraph(
+        request.topic,
+        finalText,
+        graphSources,
+        getGeminiClient
+      ),
+      { timeoutMs: 60_000 }
     );
     log('07', 'Claim-Evidence Graph Agent', `${graph.claims.length} final claims analyzed`);
+    agentHandoffs.push(createAgentHandoffManifest({
+      fromStage: 'grounded_generation',
+      toStage: 'claim_evidence_graph',
+      sourceIds: graphSources.map(sourceKey),
+      citationEligibleSourceIds: graph.claims
+        .filter(claim => claim.verificationStatus === 'verified')
+        .map(claim => claim.sourceId)
+    }));
 
-    const contradictions = await contradictionDetectionService.analyze(
-      request.topic,
-      graph.claims,
-      citationEligibleSources,
-      getGeminiClient
+    const contradictions = await runStage(
+      'contradiction_analysis',
+      'Contradiction Agent',
+      { topic: request.topic, claimCount: graph.claims.length,
+        verifiedSourceIds: citationEligibleSources.map(source => source.sourceId) },
+      async () => contradictionDetectionService.analyze(
+        request.topic,
+        graph.claims,
+        citationEligibleSources,
+        getGeminiClient
+      ),
+      { timeoutMs: 60_000 }
     );
     log('08', 'Contradiction Agent', contradictions.contradictionCount
       ? `${contradictions.contradictionCount} contradiction(s) require review`
       : 'No supported contradictions found');
+    agentHandoffs.push(createAgentHandoffManifest({
+      fromStage: 'contradiction_analysis',
+      toStage: 'professor_review_and_qa',
+      sourceIds: citationEligibleSources.map(source => source.sourceId),
+      citationEligibleSourceIds: citationEligibleSources.map(source => source.sourceId),
+      conflictCount: contradictions.contradictionCount
+    }));
 
     const citationIntelligence = citationIntelligenceService.build(
       grounded.paragraphs,
@@ -231,38 +389,56 @@ export class MultiAgentOrchestratorService {
     });
     log('09', 'Academic Confidence Agent', confidence.labelKurdish);
 
-    const review = await academicReviewerService.evaluateThesis(
-      finalText,
-      request.topic,
-      getGeminiClient,
-      {
-        discipline: request.discipline,
-        verifiedSources: citationEligibleSources.map(source => ({
-          sourceId: source.sourceId,
-          sourceTitle: source.sourceTitle,
-          author: source.author,
-          year: source.year,
-          publisher: source.publisher,
-          doiOrIsbn: source.doiOrIsbn,
-          evidenceText: source.evidenceText,
-          pageNumber: source.pageNumber,
-          verificationStatus: 'verified' as const
-        }))
-      }
+    const review = await runStage(
+      'professor_review',
+      'Professor Reviewer Agent',
+      { draftFingerprint: fingerprintStageInput(finalText),
+        verifiedSourceIds: citationEligibleSources.map(source => source.sourceId),
+        conflictCount: contradictions.contradictionCount },
+      async () => academicReviewerService.evaluateThesis(
+        finalText,
+        request.topic,
+        getGeminiClient,
+        {
+          discipline: request.discipline,
+          verifiedSources: citationEligibleSources.map(source => ({
+            sourceId: source.sourceId,
+            sourceTitle: source.sourceTitle,
+            author: source.author,
+            year: source.year,
+            publisher: source.publisher,
+            doiOrIsbn: source.doiOrIsbn,
+            evidenceText: source.evidenceText,
+            pageNumber: source.pageNumber,
+            verificationStatus: 'verified' as const
+          }))
+        }
+      ),
+      { timeoutMs: 90_000 }
     );
     log('10', 'Professor Reviewer Agent', 'Completed independent academic review');
 
-    const qa = await academicQAGateService.runQAGate(
-      finalText,
-      citationEligibleSources,
-      getGeminiClient,
-      {
-        confidence,
-        similarity,
-        contradictionCount: contradictions.contradictionCount,
-        citationIntegrity: citationIntelligence.verifiedCitationCount,
-        totalClaims: grounded.integrityMetrics.totalClaims
-      }
+    const qa = await runStage(
+      'final_academic_qa',
+      'Final Academic QA Gate',
+      { draftFingerprint: fingerprintStageInput(finalText),
+        sourceCount: citationEligibleSources.length,
+        verifiedClaims: grounded.integrityMetrics.verifiedClaims,
+        totalClaims: grounded.integrityMetrics.totalClaims,
+        conflictCount: contradictions.contradictionCount },
+      async () => academicQAGateService.runQAGate(
+        finalText,
+        citationEligibleSources,
+        getGeminiClient,
+        {
+          confidence,
+          similarity,
+          contradictionCount: contradictions.contradictionCount,
+          citationIntegrity: citationIntelligence.verifiedCitationCount,
+          totalClaims: grounded.integrityMetrics.totalClaims
+        }
+      ),
+      { timeoutMs: 60_000 }
     );
     log('11', 'Final Academic QA Gate', qa.exportBlocked
       ? 'Export blocked pending evidence/review'
@@ -284,6 +460,8 @@ export class MultiAgentOrchestratorService {
 
     return {
       executionPipelineLog: pipelineLog,
+      executionReceipts,
+      agentHandoffs,
       identityVerifiedSourcesCount: verification.verifiedSources.length,
       citationEligibleSourcesCount: citationEligibleSources.length,
       verifiedSourcesCount: citationEligibleSources.length,
