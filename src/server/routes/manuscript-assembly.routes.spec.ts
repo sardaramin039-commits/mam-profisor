@@ -1,4 +1,4 @@
-import express, { type Request } from 'express';
+import express, { type Request, type Response as ExpressResponse } from 'express';
 import type { Server } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -27,7 +27,7 @@ let server: Server | undefined;
 async function startServer(): Promise<Server> {
   const app = express();
   app.use(express.json());
-  app.use((req: Request, _res: Response, next) => {
+  app.use((req: Request, _res: ExpressResponse, next) => {
     (req as Request & { user?: { uid: string } }).user = { uid: 'USER-1' };
     next();
   });
