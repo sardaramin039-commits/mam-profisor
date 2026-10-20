@@ -49,7 +49,7 @@ function protectedFragments(text: string): string[] {
   const matches = [
     ...(text.match(/\[[0-9٠-٩۰-۹]+(?:\s*[,;]\s*[0-9٠-٩۰-۹]+)*\]/gu) || []),
     ...(text.match(/\([^()\n]{1,160}\b(?:19|20)\d{2}[a-z]?\)/giu) || []),
-    ...(text.match(/\b10\.\d{4,9}\/[^^\s<>"']+/giu) || []),
+    ...(text.match(/\b10\.\d{4,9}\/[^\s<>"']+/giu) || []),
     ...(text.match(/https?:\/\/[^\s<>"']+/giu) || []),
     ...(text.match(/\bISBN(?:-1[03])?:?\s*[0-9X-]{10,20}\b/giu) || []),
     ...(text.match(/\bISSN:?\s*[0-9X-]{8,10}\b/giu) || []),
