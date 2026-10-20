@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { z } from 'zod';
 import { multiAgentOrchestratorService } from '../services/multi-agent-orchestrator.service';
+import { AgentStageExecutionError } from '../services/multi-agent-execution-policy.service';
 
 const orchestrationSchema = z.object({
   topic: z.string().trim().min(2).max(500),
@@ -26,17 +27,43 @@ export function createMultiAgentRouter(
       return;
     }
 
+    const controller = new AbortController();
+    const abortIfDisconnected = () => {
+      if (!res.writableEnded) controller.abort(new Error('client disconnected'));
+    };
+    req.once('aborted', abortIfDisconnected);
+    res.once('close', abortIfDisconnected);
+
     try {
       const result = await multiAgentOrchestratorService.executePipeline(
         parsed.data,
-        getGeminiClient
+        getGeminiClient,
+        controller.signal
       );
-      res.json({ success: true, result });
+      if (!res.destroyed && !res.headersSent) res.json({ success: true, result });
     } catch (err: unknown) {
-      console.error('MultiAgent Route Error:', err);
-      res.status(500).json({
-        error: 'کێشەیەک لە ڕێکخستنی بریکارەکاندا دروست بوو.'
-      });
+      if (err instanceof AgentStageExecutionError) {
+        if (!res.destroyed && !res.headersSent) {
+          res.status(err.httpStatus).json({
+            error: err.receipt.status === 'timed_out'
+              ? 'یەکێک لە قۆناغەکانی بریکارەکان کاتی پێویستی تێپەڕاند.'
+              : err.receipt.status === 'cancelled'
+                ? 'داواکاریی بریکارەکان هەڵوەشایەوە.'
+                : 'قۆناغێکی بریکار شکستی هێنا.',
+            executionReceipt: err.receipt
+          });
+        }
+      } else {
+        console.error('MultiAgent Route Error:', err);
+        if (!res.destroyed && !res.headersSent) {
+          res.status(500).json({
+            error: 'کێشەیەک لە ڕێکخستنی بریکارەکاندا دروست بوو.'
+          });
+        }
+      }
+    } finally {
+      req.removeListener('aborted', abortIfDisconnected);
+      res.removeListener('close', abortIfDisconnected);
     }
   });
 
