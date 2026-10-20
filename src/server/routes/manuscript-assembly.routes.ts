@@ -106,7 +106,12 @@ export function createManuscriptAssemblyRouter(): Router {
 
       // Validate the same user-supplied sections that will enter the persisted/exported manuscript.
       // Citation eligibility comes from the server-owned evidence lookup above, never the request's boolean.
-      const integritySections: ManuscriptSectionInput[] = [];
+      const integritySections: ManuscriptSectionInput[] = [{
+        sectionId: 'manuscript-title',
+        title: 'ناونیشان',
+        order: 0,
+        body: parsed.data.title
+      }];
       if (parsed.data.abstract?.trim()) {
         integritySections.push({
           sectionId: 'manuscript-abstract',
