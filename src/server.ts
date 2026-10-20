@@ -33,6 +33,7 @@ import { createPublicationSubmissionIntegrityRouter } from './server/routes/publ
 import { createPublicationSubmissionLifecycleRouter } from './server/routes/publication-submission-lifecycle.routes';
 import { createPublicationSubmissionManifestRouter } from './server/routes/publication-submission-manifest.routes';
 import { createPublicationSubmissionEditorialRouter } from './server/routes/publication-submission-editorial.routes';
+import { createResearchMethodsLabRouter } from './server/routes/research-methods-lab.routes';
 import { createDefenseRehearsalRouter } from './server/routes/defense-rehearsal.routes';
 import { createPlagiarismRouter } from './server/routes/plagiarism.routes';
 import { getGeminiClient } from './server/services/gemini.service';
@@ -75,6 +76,7 @@ app.use('/api/docs', createApiDocsRouter());
 
 // Enable optional authentication and rate limiting for scholarly AI tools and searches
 app.use('/api', optionalAuth, authenticatedRateLimiterMiddleware);
+app.use('/api/research-methods-lab', createResearchMethodsLabRouter());
 
 // Public & Scholarly AI Tools
 app.use('/api/ai-tools', requireAuth, createAiToolsRouter(getGeminiClient));
