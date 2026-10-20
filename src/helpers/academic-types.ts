@@ -8,7 +8,7 @@ export interface AcademicSourceItem {
   title: string;
   authors: string[];
   year: string;
-  sourceType: 'SemanticScholar' | 'PubMed' | 'OpenLibrary' | 'GoogleBooks' | 'InternetArchive' | 'DOAJ' | 'WorldCat' | 'Europeana' | 'LibraryOfCongress' | 'OAIPMH' | 'PeerReviewedJournal' | 'OpenAlex' | 'Crossref';
+  sourceType: 'SemanticScholar' | 'PubMed' | 'OpenLibrary' | 'GoogleBooks' | 'InternetArchive' | 'DOAJ' | 'WorldCat' | 'Europeana' | 'LibraryOfCongress' | 'OAIPMH' | 'PeerReviewedJournal' | 'OpenAlex' | 'Crossref' | 'MultiAgentResearchPipeline';
   url: string;
   snippet: string;
   citationCount?: number;
@@ -125,7 +125,8 @@ export interface MultiAgentResponse {
     methodologyCritique: string;
     improvementSuggestions: string[];
   };
-  factCheckerAgentOutput: FactCheckResult;
+  factCheckerAgentOutput?: FactCheckResult;
+  qaGateResult?: { exportBlocked: boolean; overallQAScore: number | null; criticalViolationsCount: number; kurdishSummaryStatus: string; checks: Array<{ ruleName?: string; passed?: boolean; severity?: 'warning' | 'critical'; detailsKurdish?: string; recommendedActionKurdish?: string }> };
   knowledgeGraph: KnowledgeGraphData;
   sourceConfidenceAverage: number;
 }
