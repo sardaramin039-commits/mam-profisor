@@ -2,6 +2,27 @@ import { describe, expect, it } from 'vitest';
 import { researchMethodsLabService } from './research-methods-lab.service';
 
 describe('ResearchMethodsLabService', () => {
+  it('blocks power analysis for invalid alpha rather than clamping it', () => {
+    const result = researchMethodsLabService.run('power', {
+      design: 'two_group_t', effect: 0.5, alpha: 0,
+      power: 0.8, mean1: 5, mean2: 6, sd1: 1, sd2: 1, n1: 30, n2: 30
+    }) as { calculationBlocked?: boolean; estimatedTotalN?: number; effectSize?: unknown; issues?: string[] };
+    expect(result.calculationBlocked).toBe(true);
+    expect(result.estimatedTotalN).toBeUndefined();
+    expect(result.effectSize).toBeUndefined();
+    expect(result.issues?.some(issue => issue.includes('alpha'))).toBe(true);
+  });
+
+  it('blocks power analysis for invalid group sample sizes', () => {
+    const result = researchMethodsLabService.run('power', {
+      design: 'two_group_t', effect: 0.5, alpha: 0.05,
+      power: 0.8, mean1: 5, mean2: 6, sd1: 1, sd2: 1, n1: 1, n2: 30
+    }) as { calculationBlocked?: boolean; estimatedTotalN?: number; issues?: string[] };
+    expect(result.calculationBlocked).toBe(true);
+    expect(result.estimatedTotalN).toBeUndefined();
+    expect(result.issues?.some(issue => issue.includes('sample sizes'))).toBe(true);
+  });
+
   it('builds PICO framework completeness deterministically', () => {
     const result = researchMethodsLabService.run('framework', {
       framework: 'PICO',
