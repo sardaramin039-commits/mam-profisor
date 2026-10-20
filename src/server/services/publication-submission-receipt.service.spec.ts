@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { sha256 } from './text-sha256.service';
 import {
   buildSubmissionReceipt,
   verifySubmissionReceipt
@@ -84,6 +85,31 @@ describe('P16 immutable submission receipt', () => {
     expect(result.externalSubmissionVerified).toBe(false);
     expect(result.errors.some(error => error.includes('hash mismatch'))).toBe(true);
     expect(result.errors.some(error => error.includes('confirmation scope'))).toBe(true);
+  });
+
+  it('continues to verify a legacy receipt with its original hash format', () => {
+    const legacyCanonical = JSON.stringify({
+      submissionId: base.submissionId,
+      userId: base.userId,
+      workspaceId: base.workspaceId,
+      journalName: base.journalName,
+      manuscriptType: base.manuscriptType,
+      submissionFingerprint: base.submissionFingerprint,
+      submissionVersionId: '',
+      note: base.note,
+      externalReference: base.externalReference,
+      submittedAt: base.submittedAt
+    });
+    const hash = sha256(legacyCanonical);
+    const legacyReceipt = {
+      id: 'REC-' + hash.slice(0, 32),
+      ...base,
+      immutableHash: hash
+    };
+    const result = verifySubmissionReceipt(legacyReceipt);
+    expect(result.status).toBe('VERIFIED');
+    expect(result.submissionConfirmation).toBe('LEGACY_CONFIRMATION_SCOPE_UNKNOWN');
+    expect(result.externalSubmissionVerified).toBe(false);
   });
 
   it('rejects a tampered receipt hash', () => {
