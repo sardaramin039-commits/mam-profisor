@@ -173,32 +173,68 @@ export class ClaimEvidenceGraphService {
       });
 
       const evidenceMap = new Map<string, EvidenceNode>();
+      const ambiguousEvidenceIds = new Set<string>();
+      let generatedEvidenceSequence = 0;
+
       for (const raw of rawEvidences) {
         const source = resolveUniqueSource(raw, safeSources);
-
         if (!source) continue;
 
-        evidenceMap.set(String(raw.evidenceId || `EVI-${evidenceMap.size + 1}`), {
-          evidenceId: String(raw.evidenceId || `EVI-${evidenceMap.size + 1}`),
-          text: String(raw.text || ''),
-          contextSnippet: String(raw.contextSnippet || ''),
+        const evidenceText = String(raw.text || '').trim();
+        // Evidence node contents must themselves be verbatim substrings of the
+        // matched server-verified source, not merely plausible LLM summaries.
+        if (!containsGroundedQuote(source, { quote: evidenceText })) continue;
+
+        let evidenceId = String(raw.evidenceId || '').trim();
+        if (!evidenceId) {
+          do {
+            generatedEvidenceSequence += 1;
+            evidenceId = `EVI-GENERATED-${generatedEvidenceSequence}`;
+          } while (evidenceMap.has(evidenceId) || ambiguousEvidenceIds.has(evidenceId));
+        }
+
+        // A duplicate identifier must not silently overwrite an earlier
+        // source/evidence binding. Invalidate the identifier in both cases.
+        if (ambiguousEvidenceIds.has(evidenceId)) continue;
+        if (evidenceMap.has(evidenceId)) {
+          evidenceMap.delete(evidenceId);
+          ambiguousEvidenceIds.add(evidenceId);
+          continue;
+        }
+
+        const contextCandidate = String(raw.contextSnippet || '').trim();
+        const contextSnippet = contextCandidate &&
+          containsGroundedQuote(source, { quote: contextCandidate })
+          ? contextCandidate
+          : evidenceText;
+        const actualSourceId = String(
+          source.id ||
+          source.sourceId ||
+          source.doiOrIsbn ||
+          source.doi ||
+          ''
+        ).trim();
+
+        evidenceMap.set(evidenceId, {
+          evidenceId,
+          text: evidenceText,
+          contextSnippet,
           sourceTitle: String(source.title || ''),
-          sourceId: String(
-            source.id ||
-            source.sourceId ||
-            source.doiOrIsbn ||
-            source.doi ||
-            ''
-          ) || undefined,
+          sourceId: actualSourceId || undefined,
           doiOrIsbn: source.doiOrIsbn || source.doi || undefined,
-          pageNumber: raw.pageNumber ? String(raw.pageNumber) : undefined,
-          provenance: source?.evidenceProvenance || 'unknown'
+          // LLM-proposed page numbers are not bibliographic proof.
+          pageNumber: source.pageNumberVerified === true && source.pageNumber != null
+            ? String(source.pageNumber)
+            : undefined,
+          provenance: source.evidenceProvenance || 'unknown'
         });
       }
 
       const claims: ClaimNode[] = rawClaims.map((raw, index) => {
         const proposedEvidenceId = String(raw.evidenceId || '');
-        const evidence = evidenceMap.get(proposedEvidenceId);
+        const evidence = ambiguousEvidenceIds.has(proposedEvidenceId)
+          ? undefined
+          : evidenceMap.get(proposedEvidenceId);
         const source = evidence
           ? safeSources.find(candidate => {
               const candidateId = String(
@@ -216,11 +252,19 @@ export class ClaimEvidenceGraphService {
               );
             })
           : undefined;
+        const claimSourceId = String(raw.sourceId || '').trim();
+        const evidenceSourceId = String(evidence?.sourceId || '').trim();
+        const claimedSourceMatches = !claimSourceId ||
+          Boolean(evidenceSourceId && claimSourceId === evidenceSourceId);
+        const quoteMatchesLinkedEvidence = Boolean(
+          evidence && containsGroundedQuote({ evidenceText: evidence.text }, raw)
+        );
 
         const grounded = Boolean(
           source &&
           evidence &&
-          containsGroundedQuote(source, raw) &&
+          claimedSourceMatches &&
+          quoteMatchesLinkedEvidence &&
           source?.evidenceType === 'full-text' &&
           source?.evidenceProvenance === 'server-verified-fulltext'
         );
