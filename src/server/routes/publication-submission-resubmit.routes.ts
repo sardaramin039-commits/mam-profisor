@@ -152,7 +152,15 @@ export function createPublicationSubmissionResubmitRouter(): Router {
           revisionPlanId: revisionGate.plan!.id
         }
       );
-      res.json({ success: true, submission: record, integrity, package: submission });
+      res.json({
+        success: true,
+        submission: record,
+        integrity,
+        package: submission,
+        submissionConfirmation: 'USER_REPORTED_UNVERIFIED',
+        externalSubmissionVerified: false,
+        message: 'ئەم کارە تەنها وەشانی نوێی package ـەکە لە lifecycle ـی ناوخۆیی تۆمار دەکات؛ گۆڤار هیچ ناردنێکی دەرەکیی لەلایەن ئەپەوە وەرنەگرتووە.'
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Resubmission failed.';
       res.status(409).json({ success: false, error: message });
