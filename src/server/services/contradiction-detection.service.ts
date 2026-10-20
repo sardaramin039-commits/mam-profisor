@@ -185,7 +185,7 @@ export class ContradictionDetectionService {
         findings,
         contradictionCount: findings.length,
         highSeverityCount: findings.filter(item => item.severity === 'high').length,
-        status: findings.length ? 'review_required' : 'clear'
+        status: findings.length ? 'review_required' : rawList.length ? 'insufficient_evidence' : 'clear'
       };
     } catch {
       return insufficientEvidence();
