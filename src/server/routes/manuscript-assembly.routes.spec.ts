@@ -1,4 +1,4 @@
-import express, { type Request, type Response } from 'express';
+import express, { type Request } from 'express';
 import type { Server } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
