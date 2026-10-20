@@ -1,4 +1,9 @@
 <div class="space-y-6">
+        @if (multiAgent.pipelineError(); as error) {
+          <div role="alert" class="rounded-xl border border-rose-800 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
+            {{ error }}
+          </div>
+        }
         <!-- Search Control -->
         <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
           <span class="block text-xs font-bold text-slate-300">تەوەرە یان ناونیشانی توێژینەوەی ئەکادیمی:</span>
