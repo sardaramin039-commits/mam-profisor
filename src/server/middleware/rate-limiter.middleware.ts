@@ -24,6 +24,8 @@ function isAiPath(path: string): boolean {
     normalized.startsWith('/library/ocr') ||
     normalized.startsWith('/chatgpt-sources/') ||
     normalized.startsWith('/multi-agent/') ||
+    // This nested route retrieves external full text and invokes evidence-grounded generation.
+    normalized === '/writing/grounded_generate' ||
     normalized === '/refine' ||
     normalized.startsWith('/platform/multi-agent-orchestrate') ||
     normalized === '/generate_chapter' ||
