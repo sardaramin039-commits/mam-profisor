@@ -10,7 +10,7 @@ afterEach(() => {
 
 describe('academic provider identifier validation', () => {
   it('normalizes DOI resolver prefixes and trailing citation punctuation', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({
       message: {
         title: ['Validated Study'],
         author: [{ given: 'Ada', family: 'Lovelace' }],
@@ -62,7 +62,7 @@ describe('academic provider identifier validation', () => {
   });
 
   it('normalizes ISSN spaces and validates its check digit', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({
       message: { title: 'Journal of Example Studies', publisher: 'Scholarly Press' }
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
