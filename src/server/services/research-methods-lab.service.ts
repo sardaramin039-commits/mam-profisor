@@ -111,6 +111,12 @@ function power(p: Record<string, unknown>) {
   const targetPower = num(p['power'], Number.NaN);
   const rawEffect = num(p['effect'], Number.NaN);
   const design = String(p['design'] || '');
+  const n1 = num(p['n1'], Number.NaN);
+  const n2 = num(p['n2'], Number.NaN);
+  const mean1 = num(p['mean1'], Number.NaN);
+  const mean2 = num(p['mean2'], Number.NaN);
+  const sd1 = num(p['sd1'], Number.NaN);
+  const sd2 = num(p['sd2'], Number.NaN);
   const validAlpha = Number.isFinite(alpha) && alpha >= 0.000001 && alpha <= 0.5;
   const validPower = Number.isFinite(targetPower) && targetPower >= 0.5 && targetPower <= 0.999;
   const absoluteEffect = Math.abs(rawEffect);
@@ -118,15 +124,24 @@ function power(p: Record<string, unknown>) {
     ? Number.isFinite(rawEffect) && absoluteEffect >= 0.001 && absoluteEffect <= 0.99
     : design === 'two_group_t' && Number.isFinite(rawEffect) &&
       absoluteEffect >= 0.001 && absoluteEffect <= 10;
+  const validSamples = Number.isSafeInteger(n1) && n1 >= 2 &&
+    Number.isSafeInteger(n2) && n2 >= 2;
+  const validMeans = Number.isFinite(mean1) && Number.isFinite(mean2);
+  const validStandardDeviations = Number.isFinite(sd1) && sd1 > 0 &&
+    Number.isFinite(sd2) && sd2 > 0;
 
-  if (!validAlpha || !validPower || !validEffect) {
+  if (!validAlpha || !validPower || !validEffect || !validSamples ||
+      !validMeans || !validStandardDeviations) {
     return {
       calculationBlocked: true,
       error: 'Invalid statistical parameters; values were not silently clamped.',
       issues: [
         ...(!validAlpha ? ['alpha must be between 0.000001 and 0.5.'] : []),
         ...(!validPower ? ['power must be between 0.5 and 0.999.'] : []),
-        ...(!validEffect ? ['effect size is outside the valid range for the selected design.'] : [])
+        ...(!validEffect ? ['effect size is outside the valid range for the selected design.'] : []),
+        ...(!validSamples ? ['both group sample sizes must be safe integers of at least 2.'] : []),
+        ...(!validMeans ? ['group means must be finite numbers.'] : []),
+        ...(!validStandardDeviations ? ['group standard deviations must be finite and greater than zero.'] : [])
       ]
     };
   }
