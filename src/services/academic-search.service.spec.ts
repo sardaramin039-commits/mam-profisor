@@ -151,7 +151,7 @@ describe('AcademicSearchService', () => {
 
     expect(await service.searchOpenAlex('   ')).toEqual([]);
     expect(await service.searchCrossRef('x'.repeat(501))).toEqual([]);
-    expect(await service.searchGoogleBooks('\\n \\t ')).toEqual([]);
+    expect(await service.searchGoogleBooks('\n \t ')).toEqual([]);
     expect(await service.searchAll('x'.repeat(501))).toEqual([]);
 
     expect(get).not.toHaveBeenCalled();
