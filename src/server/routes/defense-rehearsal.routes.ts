@@ -116,11 +116,19 @@ export function createDefenseRehearsalRouter(): Router {
 
       res.status(blocked ? 409 : 200).json({
         success: !blocked,
+        assessmentScope: 'AUTOMATED_REHEARSAL_ONLY',
+        humanCommitteeDecision: false,
+        readinessIsCertification: false,
+        scoreInterpretation: 'heuristic_practice_feedback',
         controlPlane: control,
         readiness: session.readiness,
         questions: session.questions,
         assessments,
-        answerSummary: { attempted: assessments.length, averageScore, status: averageScore >= 80 ? 'STRONG' : averageScore >= 55 ? 'ADEQUATE' : 'NEEDS_REHEARSAL' }
+        answerSummary: { attempted: assessments.length, averageScore, status: averageScore >= 80 ? 'STRONG' : averageScore >= 55 ? 'ADEQUATE' : 'NEEDS_REHEARSAL' },
+        limitations: [
+          'ئەم هەڵسەنگاندنە ڕاهێنانێکی خۆکارە، نە بڕیاری لێژنەی مرۆیی.',
+          'نمرەکان ڕێنماییی ڕاهێنانن و بەڵگەی کوالێتیی زانستی یان ئامادەبوونی ڕاستەقینەی بەرگری نین.'
+        ]
       });
     } catch (error) {
       console.error('Defense rehearsal error:', error);
