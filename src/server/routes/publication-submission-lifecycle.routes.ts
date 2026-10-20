@@ -181,7 +181,13 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
             externalReference: parsed.data.externalReference
           }
         );
-        res.json({ success: true, submission });
+        res.json({
+          success: true,
+          submission,
+          submissionConfirmation: 'USER_REPORTED_UNVERIFIED',
+          externalSubmissionVerified: false,
+          message: 'ئەم تۆمارە بانگەشەی بەکارهێنەرە لە ناردنەکەیە؛ سیستەم هیچ ناردنێکی ڕاستەقینەی بۆ گۆڤار نەکردووە و بەڵگەی دەرەکی پشتڕاست نەکردووەتەوە.'
+        });
         return;
       }
 
@@ -260,17 +266,23 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
         return;
       }
 
+      // The saved receipt may describe an earlier submission version after a revision cycle.
+      // Verify its immutable identity, but report whether it still matches the current package separately.
       const verification = verifySubmissionReceipt(receipt, {
         submissionId: submission.id,
         userId,
-        workspaceId,
-        submissionFingerprint: submission.submissionFingerprint,
-        submissionVersionId: submission.currentVersionId
+        workspaceId
       });
+      const matchesCurrentVersion =
+        receipt.submissionFingerprint === submission.submissionFingerprint &&
+        receipt.submissionVersionId === submission.currentVersionId;
       res.status(verification.status === 'VERIFIED' ? 200 : 409).json({
         success: verification.status === 'VERIFIED',
         receipt,
-        verification
+        verification,
+        versionRelation: matchesCurrentVersion ? 'CURRENT_VERSION' : 'HISTORICAL_VERSION',
+        externalSubmissionVerified: false,
+        message: 'VERIFIED تەنها دروستیی hash و binding ـی receipt دەسەلمێنێت؛ نیشانەی پشتڕاستکردنەوەی دەرەکیی گۆڤار نییە.'
       });
     } catch (error) {
       console.error('Submission receipt read error:', error);
