@@ -70,8 +70,9 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
         // Explicit production allowlist: exact-origin match only.
         isAllowed = envAllowedOrigins.includes(requestOrigin.origin);
       } else {
-        // Development fallback: permit only localhost/loopback origins.
-        isAllowed = DEFAULT_ALLOWED_DOMAINS.includes(requestOrigin.hostname);
+        // Loopback fallback is for local development only. Production must configure an explicit allowlist.
+        const isDevelopment = String(process.env['NODE_ENV'] || '').toLowerCase() !== 'production';
+        isAllowed = isDevelopment && DEFAULT_ALLOWED_DOMAINS.includes(requestOrigin.hostname);
       }
     } catch {
       isAllowed = false;
