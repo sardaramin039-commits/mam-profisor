@@ -14,7 +14,7 @@ function makeStore(overrides: Partial<WorkspaceRevisionStore> = {}) {
   };
   const store: WorkspaceRevisionStore = {
     loadWorkspaceForOwner: vi.fn(async () => current),
-    appendRevisionAtomically: vi.fn(async () => 'saved'),
+    appendRevisionAtomically: vi.fn(async (): Promise<'saved' | 'conflict' | 'not_found'> => 'saved'),
     ...overrides
   };
   return { store, current };
@@ -103,7 +103,7 @@ describe('workspace revision ledger integrity', () => {
 
   it('fails closed when the atomic adapter reports a concurrent write', async () => {
     const { store } = makeStore({
-      appendRevisionAtomically: vi.fn(async () => 'conflict')
+      appendRevisionAtomically: vi.fn(async (): Promise<'saved' | 'conflict' | 'not_found'> => 'conflict')
     });
     const result = await new WorkspaceRevisionLedgerService().saveRevision({
       workspaceId: 'ws-1', actorId: 'user-1', expectedVersion: 2, snapshot: { title: 'race' }
