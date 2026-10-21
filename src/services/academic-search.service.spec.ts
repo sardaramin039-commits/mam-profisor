@@ -193,8 +193,8 @@ describe('AcademicSearchService', () => {
 
     const calls = get.mock.calls;
     expect((calls[0]?.[1] as { params?: Record<string, unknown> }).params?.['per-page']).toBe(50);
-    expect((calls[1]?.[1] as { params?: Record<string, unknown> }).params?.rows).toBe(1);
-    expect((calls[2]?.[1] as { params?: Record<string, unknown> }).params?.maxResults).toBe(5);
+    expect((calls[1]?.[1] as { params?: Record<string, unknown> }).params?.['rows']).toBe(1);
+    expect((calls[2]?.[1] as { params?: Record<string, unknown> }).params?.['maxResults']).toBe(5);
     expect((calls[3]?.[1] as { params?: Record<string, unknown> }).params?.['per-page']).toBe(17);
     expect((calls[4]?.[1] as { params?: Record<string, unknown> }).params?.rows).toBe(17);
     expect((calls[5]?.[1] as { params?: Record<string, unknown> }).params?.maxResults).toBe(17);
