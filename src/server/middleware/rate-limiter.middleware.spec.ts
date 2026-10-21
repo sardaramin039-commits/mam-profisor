@@ -60,7 +60,7 @@ describe('AI route rate budgets', () => {
     expect(last?.statusCode).toBe(429);
     expect(last?.nextCalled).toBe(false);
     expect(last?.headers.has('Retry-After')).toBe(true);
-    expect(last?.body?.retryAfterSeconds).toBeGreaterThan(0);
+    expect(last?.body?.['retryAfterSeconds']).toBeGreaterThan(0);
   });
 
   it('applies the stricter 30-per-minute user budget to grounded generation', () => {
