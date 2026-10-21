@@ -130,11 +130,11 @@ describe('Evidence Intelligence server-owned evidence boundary', () => {
     mocks.verifySources.mockImplementationOnce(async (sources: Array<Record<string, unknown>>) => {
       const source = sources[0];
       const report = {
-        sourceId: String(source.sourceId),
-        sourceTitle: String(source.title),
-        author: String(source.author),
-        year: String(source.year),
-        evidenceText: String(source.evidenceText),
+        sourceId: String(source['sourceId']),
+        sourceTitle: String(source['title']),
+        author: String(source['author']),
+        year: String(source['year']),
+        evidenceText: String(source['evidenceText']),
         evidenceType: 'full-text',
         evidenceProvenance: 'server-verified-fulltext',
         identityStatus: 'verified',

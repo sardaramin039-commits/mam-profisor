@@ -62,6 +62,12 @@ jobs:
       - name: Audit critical academic research client for fabricated results
         run: npm run integrity:audit
 
+      - name: ESLint and Angular template checks
+        run: npm run lint
+
+      - name: Angular unit tests
+        run: npm test
+
       - name: Security and server regression tests
         run: npm run test:server
 
