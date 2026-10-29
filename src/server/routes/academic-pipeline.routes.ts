@@ -7,9 +7,33 @@ const requestSchema = z.object({
   level: z.enum(['school', 'bachelor', 'master', 'phd', 'professor']).default('phd')
 }).strict();
 
-function writeEvent(res: Response, event: unknown): boolean {
+async function writeEvent(res: Response, event: unknown): Promise<boolean> {
   if (res.destroyed || res.writableEnded) return false;
-  return res.write(`data: ${JSON.stringify(event)}\n\n`);
+  const canContinue = res.write(`data: ${JSON.stringify(event)}\\n\\n`);
+  if (canContinue) return true;
+
+  // A false write result means backpressure, not a broken client. Wait for drain
+  // or stop only if the connection closes/errors while we are waiting.
+  return new Promise<boolean>(resolve => {
+    const cleanup = (): void => {
+      res.off('drain', onDrain);
+      res.off('close', onClose);
+      res.off('error', onClose);
+    };
+    const onDrain = (): void => {
+      cleanup();
+      resolve(!res.destroyed && !res.writableEnded);
+    };
+    const onClose = (): void => {
+      cleanup();
+      resolve(false);
+    };
+
+    res.once('drain', onDrain);
+    res.once('close', onClose);
+    res.once('error', onClose);
+    if (res.destroyed || res.writableEnded) onClose();
+  });
 }
 
 export function createAcademicPipelineRouter(): Router {
@@ -47,19 +71,19 @@ export function createAcademicPipelineRouter(): Router {
           await pipeline.return(undefined);
           return;
         }
-        if (!writeEvent(res, event)) {
+        if (!(await writeEvent(res, event))) {
           await pipeline.return(undefined);
           return;
         }
       }
       if (!disconnected && !res.destroyed) res.end();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'هەڵەیەکی نەزانراو ڕوویدا.';
-      writeEvent(res, {
+      // Keep provider, credential, and implementation details in server logs only.
+      console.error('[academic-pipeline] Streaming generation failed.', error);
+      await writeEvent(res, {
         stage: 'error',
         progressPercent: 0,
-        message: 'زنجیرەی نووسین تەواو نەبوو؛ دەقی پێشوو وەک خۆی بپارێزە.',
-        error: message
+        message: 'زنجیرەی نووسین بەهۆی کێشەیەکی سێرڤەر تەواو نەبوو؛ دەقی پێشوو وەک خۆی بپارێزە.'
       });
       if (!res.destroyed) res.end();
     }
