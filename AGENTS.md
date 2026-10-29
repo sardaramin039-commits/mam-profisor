@@ -2,7 +2,7 @@
 
 ## Non-negotiable project rules
 
-- Use npm and preserve `package-lock.json`. Do not introduce Bun or another package manager unless the repository owner explicitly changes this rule.
+- Use npm as the sole supported package manager and preserve `package-lock.json`; do not add a second package manager or alternate lockfile.
 - Keep source files under 500 lines. Split responsibilities into focused modules rather than compressing unrelated code to meet the limit.
 - Preserve existing user-facing features and Kurdish Sorani right-to-left behavior unless a change explicitly targets them.
 - Never commit secrets, API keys, credentials, real user data, or generated build artifacts.
