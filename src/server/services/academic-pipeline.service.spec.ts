@@ -98,7 +98,7 @@ describe('academic pipeline integrity and sequencing', () => {
     expect(stages).toContain('conclusion');
     expect(stages.at(-1)).toBe('completed');
     expect(events.at(-1)?.partialMarkdown).toContain('retrieved-not-verified');
-    expect(events.at(-1)?.partialMarkdown).toContain('source verification');
+    expect(events.at(-1)?.partialMarkdown).toContain('DOI/URL');
     expect(mocks.verifyAndRefineSection).toHaveBeenCalledOnce();
     expect(mocks.verifyAndRefineSection).toHaveBeenCalledWith(
       'A draft subsection that requires source verification.',
