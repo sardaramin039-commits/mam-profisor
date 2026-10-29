@@ -1,42 +1,151 @@
 <div class="p-5 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-5 font-sans text-right text-slate-100" dir="rtl">
   
   <!-- Top Title & Controls Header -->
-  <div class="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-3">
+  <div class="flex items-center justify-between border-b border-slate-800 pb-4 flex-wrap gap-3">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold shadow-md">
-        <mat-icon class="!text-xl">shield</mat-icon>
+      <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold shadow-md">
+        <mat-icon class="!text-2xl">verified_user</mat-icon>
       </div>
       <div>
-        <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2 font-serif">
-          سیستەمی توندی پشتڕاستکردنەوە و ڕیزبەندی سەرچاوەکان (Research Integrity Suite)
-          <span class="text-[9.5px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono font-bold">
-            Anti-Hallucination Active
+        <h3 class="text-sm md:text-base font-bold text-slate-100 flex items-center gap-2 font-serif flex-wrap">
+          سەرچاوەی پشتڕاستکراو و سیستەمی دژە-خەیاڵی (Verified Academic Sources)
+          <span class="text-[9.5px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-mono font-bold">
+            Zero Hallucination Guaranteed
           </span>
         </h3>
-        <p class="text-[10.5px] text-slate-400 font-serif">
-          ڕێکاری زانستی: Search، Retrieve، Read، Verify، Cite
+        <p class="text-[11px] text-slate-400 font-serif mt-0.5">
+          پشتڕاستکردنەوەی ڕاستەقینەی مێتاداتا لە Crossref و OpenAlex؛ هیچ سەرچاوە و DOI و ژمارەی لاپەڕەیەکی دەستکرد دروست ناکرێت.
         </p>
       </div>
     </div>
 
-    <button
-      type="button"
-      (click)="copyAuditReport()"
-      class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
-      <mat-icon class="!text-xs text-amber-400">content_copy</mat-icon>
-      <span>{{ copiedReport() ? 'کۆپی کرا!' : 'کۆپیکردنی ڕاپۆرتی Audit' }}</span>
-    </button>
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        (click)="openManualEntry()"
+        class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+        <mat-icon class="!text-sm">add_circle</mat-icon>
+        <span>زیادکردنی سەرچاوەی دەستی</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="copyAuditReport()"
+        class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+        <mat-icon class="!text-xs text-amber-400">content_copy</mat-icon>
+        <span>{{ copiedReport() ? 'کۆپی کرا!' : 'کۆپیکردنی ڕاپۆرتی Audit' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Real-Time Metrics Badges -->
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-center text-xs font-serif">
+    <div class="p-2.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-0.5">
+      <span class="text-[10px] text-slate-400 block">سەرجەم سەرچاوەکان</span>
+      <span class="text-sm font-bold font-mono text-indigo-400">{{ totalSourcesCount() }}</span>
+      <span class="text-[9px] text-slate-500 block">تۆمارکراو</span>
+    </div>
+
+    <div class="p-2.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-0.5">
+      <span class="text-[10px] text-slate-400 block">پشتڕاستکراوە (Verified)</span>
+      <span class="text-sm font-bold font-mono text-emerald-400">{{ verifiedCount() }}</span>
+      <span class="text-[9px] text-slate-500 block">لە لایەن داتابەیس</span>
+    </div>
+
+    <div class="p-2.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-0.5">
+      <span class="text-[10px] text-slate-400 block">پەسەندکراو (Approved)</span>
+      <span class="text-sm font-bold font-mono text-cyan-400">{{ approvedCount() }}</span>
+      <span class="text-[9px] text-slate-500 block">شیاو بۆ Citation</span>
+    </div>
+
+    <div class="p-2.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-0.5">
+      <span class="text-[10px] text-slate-400 block">پێداچوونەوە (Review)</span>
+      <span class="text-sm font-bold font-mono text-amber-400">{{ needsReviewCount() }}</span>
+      <span class="text-[9px] text-slate-500 block">ناتەواو / دەستی</span>
+    </div>
+
+    <div class="p-2.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-0.5">
+      <span class="text-[10px] text-slate-400 block">شکستخواردوو (Failed)</span>
+      <span class="text-sm font-bold font-mono text-rose-400">{{ failedCount() }}</span>
+      <span class="text-[9px] text-slate-500 block">قەدەغە بۆ دەستنووس</span>
+    </div>
+  </div>
+
+  <!-- Live Metadata Retrieval Form (Crossref & OpenAlex) -->
+  <div class="p-4 bg-slate-950/70 border border-slate-800 rounded-xl space-y-3">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div class="flex items-center gap-2">
+        <mat-icon class="!text-sm text-indigo-400">cloud_download</mat-icon>
+        <h4 class="text-xs font-bold text-slate-200 font-serif">
+          هێنان و پشکنینی فەرمی لە Crossref و OpenAlex:
+        </h4>
+      </div>
+      <div class="flex items-center gap-1.5 text-[10.5px] font-mono">
+        <label class="text-slate-400">داتابەیس:</label>
+        <select
+          [ngModel]="selectedProvider()"
+          (ngModelChange)="selectedProvider.set($event)"
+          class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200 text-[11px] focus:outline-none">
+          <option value="auto">Auto (Crossref + OpenAlex)</option>
+          <option value="crossref">Crossref (DOI / Title)</option>
+          <option value="openalex">OpenAlex (Works)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 flex-wrap">
+      <div class="relative flex-1 min-w-[260px]">
+        <input
+          type="text"
+          [ngModel]="lookupQuery()"
+          (ngModelChange)="lookupQuery.set($event)"
+          (keydown.enter)="executeLiveRetrieval()"
+          placeholder="بۆ نموونە: 10.1016/j.lingua.2021.103098 یان ناونیشانی توێژینەوە..."
+          class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-sans"
+        />
+      </div>
+
+      <button
+        type="button"
+        (click)="executeLiveRetrieval()"
+        [disabled]="isRetrieving() || !lookupQuery().trim()"
+        class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer shadow-md">
+        @if (isRetrieving()) {
+          <mat-icon class="!text-sm animate-spin">refresh</mat-icon>
+          <span>خەریکی پشتڕاستکردنەوەیە...</span>
+        } @else {
+          <mat-icon class="!text-sm">search_check</mat-icon>
+          <span>پشکنین و هێنانەوە</span>
+        }
+      </button>
+    </div>
+
+    @if (retrievalStatusMessage()) {
+      <div class="p-2 rounded-lg bg-indigo-950/50 border border-indigo-500/30 text-xs text-indigo-300 flex items-center gap-2">
+        <mat-icon class="!text-xs animate-spin">sync</mat-icon>
+        <span>{{ retrievalStatusMessage() }}</span>
+      </div>
+    }
   </div>
 
   <!-- Navigation Tabs for the Subsystems -->
   <div class="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-800 text-xs font-serif">
     <button
       type="button"
+      (click)="activeTab.set('VERIFICATION')"
+      [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
+        (activeTab() === 'VERIFICATION' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
+      <mat-icon class="!text-sm text-emerald-300">fact_check</mat-icon>
+      <span>کارتەکانی سەرچاوەی پشتڕاستکراو (Source Cards)</span>
+    </button>
+
+    <button
+      type="button"
       (click)="activeTab.set('INTEGRITY_DASHBOARD')"
       [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
-        (activeTab() === 'INTEGRITY_DASHBOARD' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
+        (activeTab() === 'INTEGRITY_DASHBOARD' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
       <mat-icon class="!text-sm text-emerald-300">analytics</mat-icon>
-      <span>📊 Thesis Integrity Dashboard</span>
+      <span>داشبۆردی دەستپاکی (Integrity Dashboard)</span>
     </button>
 
     <button
@@ -45,16 +154,7 @@
       [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
         (activeTab() === 'RERANKING' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
       <mat-icon class="!text-sm text-indigo-300">swap_vert</mat-icon>
-      <span>ڕیزبەندی پەیوەندیی بەڵگە</span>
-    </button>
-
-    <button
-      type="button"
-      (click)="activeTab.set('VERIFICATION')"
-      [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
-        (activeTab() === 'VERIFICATION' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
-      <mat-icon class="!text-sm">fact_check</mat-icon>
-      <span>1. Workflow & Verification</span>
+      <span>ڕیزبەندی بەڵگە (Reranking)</span>
     </button>
 
     <button
@@ -63,7 +163,7 @@
       [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
         (activeTab() === 'RANKING' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
       <mat-icon class="!text-sm">leaderboard</mat-icon>
-      <span>2. Source Ranking (Tiers)</span>
+      <span>ئاستەکان (Tiers)</span>
     </button>
 
     <button
@@ -72,7 +172,7 @@
       [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
         (activeTab() === 'DEDUPLICATION' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
       <mat-icon class="!text-sm">filter_alt</mat-icon>
-      <span>3. Deduplication (Canonical)</span>
+      <span>لادانی دووبارەبوونەوە</span>
     </button>
 
     <button
@@ -81,7 +181,7 @@
       [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
         (activeTab() === 'EVIDENCE_LINK' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
       <mat-icon class="!text-sm">link</mat-icon>
-      <span>4. Evidence Linking & AI Label</span>
+      <span>بەستنەوەی بەڵگە</span>
     </button>
 
     <button
@@ -90,9 +190,260 @@
       [class]="'px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ' + 
         (activeTab() === 'RESEARCH_GATE' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700')">
       <mat-icon class="!text-sm">gavel</mat-icon>
-      <span>5. Pre-Writing Research Gate</span>
+      <span>دەروازەی ڕێگریی پێش نووسین</span>
     </button>
   </div>
+
+  <!-- TAB: MAIN SEARCHABLE SOURCE CARDS -->
+  @if (activeTab() === 'VERIFICATION') {
+    <div class="space-y-4">
+      <!-- Search & Filters Toolbar -->
+      <div class="flex items-center justify-between flex-wrap gap-2.5 p-3 bg-slate-950/60 rounded-xl border border-slate-800">
+        <!-- Search bar -->
+        <div class="flex items-center gap-2 flex-1 min-w-[220px]">
+          <mat-icon class="!text-sm text-slate-400">search</mat-icon>
+          <input
+            type="text"
+            [ngModel]="sourceVerificationService.searchQuery()"
+            (ngModelChange)="setSearchQuery($event)"
+            placeholder="گەڕان بەپێی ناونیشان، نووسەر، DOI، گۆڤار یان بانگەشە..."
+            class="w-full bg-transparent text-xs text-slate-200 placeholder-slate-500 focus:outline-none font-sans"
+          />
+        </div>
+
+        <!-- Filter pills -->
+        <div class="flex items-center gap-1 text-[11px] font-serif">
+          <button
+            type="button"
+            (click)="setStatusFilter('ALL')"
+            [class]="sourceVerificationService.statusFilter() === 'ALL' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'"
+            class="px-2.5 py-1 rounded-lg transition cursor-pointer">
+            هەموو ({{ totalSourcesCount() }})
+          </button>
+          <button
+            type="button"
+            (click)="setStatusFilter('VERIFIED')"
+            [class]="sourceVerificationService.statusFilter() === 'VERIFIED' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'"
+            class="px-2.5 py-1 rounded-lg transition cursor-pointer">
+            پشتڕاستکراوە ({{ verifiedCount() }})
+          </button>
+          <button
+            type="button"
+            (click)="setStatusFilter('NEEDS_REVIEW')"
+            [class]="sourceVerificationService.statusFilter() === 'NEEDS_REVIEW' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'"
+            class="px-2.5 py-1 rounded-lg transition cursor-pointer">
+            پێداچوونەوە ({{ needsReviewCount() }})
+          </button>
+          <button
+            type="button"
+            (click)="setStatusFilter('FAILED')"
+            [class]="sourceVerificationService.statusFilter() === 'FAILED' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'"
+            class="px-2.5 py-1 rounded-lg transition cursor-pointer">
+            شکستخواردوو ({{ failedCount() }})
+          </button>
+        </div>
+      </div>
+
+      <!-- Verified Source Cards List -->
+      <div class="space-y-3">
+        @for (src of verifiedSources(); track src.id) {
+          <div [class]="'p-4 rounded-xl border space-y-3 transition-all font-serif text-xs ' +
+            (src.status === 'VERIFIED' ? 'bg-emerald-950/20 border-emerald-800/80 shadow-sm' :
+             src.status === 'NEEDS_REVIEW' ? 'bg-amber-950/20 border-amber-800/80' : 'bg-rose-950/20 border-rose-800/80')">
+
+            <!-- Card Header: Badges & Provider -->
+            <div class="flex items-center justify-between border-b pb-2.5 border-white/10 flex-wrap gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
+                <!-- Status Badge -->
+                @if (src.status === 'VERIFIED') {
+                  <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[10px] border border-emerald-500/40 flex items-center gap-1">
+                    <mat-icon class="!text-xs">verified</mat-icon>
+                    <span>VERIFIED</span>
+                  </span>
+                } @else if (src.status === 'NEEDS_REVIEW') {
+                  <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono font-bold text-[10px] border border-amber-500/40 flex items-center gap-1">
+                    <mat-icon class="!text-xs">warning</mat-icon>
+                    <span>NEEDS REVIEW</span>
+                  </span>
+                } @else {
+                  <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-mono font-bold text-[10px] border border-rose-500/40 flex items-center gap-1">
+                    <mat-icon class="!text-xs">cancel</mat-icon>
+                    <span>FAILED</span>
+                  </span>
+                }
+
+                <!-- User Approval Badge -->
+                @if (src.userApproved) {
+                  <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold text-[10px] border border-cyan-500/30 flex items-center gap-1">
+                    <mat-icon class="!text-xs">thumb_up</mat-icon>
+                    <span>پەسەندکراوی بەکارهێنەر</span>
+                  </span>
+                } @else {
+                  <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-medium text-[10px] border border-slate-700">
+                    هێشتا پەسەند نەکراوە
+                  </span>
+                }
+
+                <!-- Provider Badge -->
+                <span class="text-[10px] text-indigo-300 bg-indigo-950/80 border border-indigo-800 px-2 py-0.5 rounded font-mono uppercase">
+                  {{ src.provider }}
+                </span>
+
+                <!-- Retrieval Time -->
+                <span class="text-[9.5px] text-slate-400 font-mono">
+                  🕒 {{ src.retrievalTime | date:'short' }}
+                </span>
+              </div>
+
+              <!-- Action Controls Row -->
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <!-- Approval Toggle Button -->
+                @if (src.status === 'VERIFIED') {
+                  @if (!src.userApproved) {
+                    <button
+                      type="button"
+                      (click)="onApproveSource(src.id)"
+                      class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-[10.5px] transition flex items-center gap-1 cursor-pointer shadow-sm">
+                      <mat-icon class="!text-xs">check</mat-icon>
+                      <span>پەسەندکردن</span>
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="onRevokeApproval(src.id)"
+                      class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold rounded-lg text-[10.5px] transition flex items-center gap-1 cursor-pointer">
+                      <mat-icon class="!text-xs">undo</mat-icon>
+                      <span>هەڵوەشاندنەوە</span>
+                    </button>
+
+                    <!-- Insert Citation Button (GATED to verified & approved) -->
+                    <button
+                      type="button"
+                      (click)="onInsertCitation(src, 'inline')"
+                      class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold rounded-lg text-[10.5px] transition flex items-center gap-1 cursor-pointer shadow-sm">
+                      <mat-icon class="!text-xs">format_quote</mat-icon>
+                      <span>دانان وەک ژێدەر (Citation)</span>
+                    </button>
+                  }
+                } @else {
+                  <span class="text-[10px] text-rose-400 font-bold bg-rose-950/60 px-2 py-0.5 rounded border border-rose-900/60 flex items-center gap-1" title="تەنها سەرچاوەی VERIFIED شیاوە بۆ دانان">
+                    <mat-icon class="!text-xs">block</mat-icon>
+                    <span>Citation قەدەغەیە</span>
+                  </span>
+                }
+
+                <!-- Trace claim button -->
+                <button
+                  type="button"
+                  (click)="openClaimTrace(src.id)"
+                  class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-[10px] transition flex items-center gap-1 cursor-pointer"
+                  title="بەستنەوە بە بانگەشەی زانستی">
+                  <mat-icon class="!text-xs">link</mat-icon>
+                  <span>بانگەشە</span>
+                </button>
+
+                <!-- Delete button -->
+                <button
+                  type="button"
+                  (click)="onRemoveSource(src.id)"
+                  class="p-1 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 rounded transition cursor-pointer"
+                  title="سڕینەوەی ئەم سەرچاوەیە">
+                  <mat-icon class="!text-xs">delete</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- Card Body: Bibliographic Details -->
+            <div class="space-y-1">
+              <h4 class="font-bold text-slate-100 text-sm leading-snug">{{ src.title }}</h4>
+              
+              <div class="flex items-center gap-2 text-[11px] text-slate-300 flex-wrap">
+                <span><strong>نووسەر(ان):</strong> {{ src.authors.join('، ') || 'نادیار' }}</span>
+                <span>•</span>
+                <span><strong>ساڵ:</strong> {{ src.year }}</span>
+                @if (src.venue) {
+                  <span>•</span>
+                  <span class="text-indigo-300"><strong>گۆڤار / دەزگا:</strong> {{ src.venue }}</span>
+                }
+              </div>
+
+              <!-- DOI & Canonical URL Links -->
+              <div class="flex items-center gap-3 text-[10.5px] pt-1 flex-wrap">
+                @if (src.doi) {
+                  <a
+                    [href]="'https://doi.org/' + src.doi"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-indigo-400 hover:text-indigo-300 underline font-mono flex items-center gap-1">
+                    <mat-icon class="!text-xs">open_in_new</mat-icon>
+                    <span>doi:{{ src.doi }}</span>
+                  </a>
+                }
+                @if (src.url) {
+                  <a
+                    [href]="src.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-slate-400 hover:text-slate-200 underline font-mono flex items-center gap-1 truncate max-w-xs">
+                    <mat-icon class="!text-xs">link</mat-icon>
+                    <span>{{ src.url }}</span>
+                  </a>
+                }
+              </div>
+            </div>
+
+            <!-- Failure / Needs Review Banner with Request User Sources button -->
+            @if (src.status !== 'VERIFIED') {
+              <div class="p-3 rounded-lg bg-rose-950/40 border border-rose-800/60 flex items-center justify-between flex-wrap gap-2 text-xs">
+                <div class="space-y-0.5">
+                  <span class="font-bold text-rose-300 flex items-center gap-1">
+                    <mat-icon class="!text-xs">error_outline</mat-icon>
+                    هۆکاری نەسەلماندن:
+                  </span>
+                  <p class="text-[11px] text-rose-200/90 leading-relaxed">
+                    {{ src.failureReason || 'ئەم سەرچاوەیە ناتەواوە یان لە داتابەیسی دەرەکیدا بە فەرمی نەسەلمێندراوە.' }}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  (click)="openManualEntry(src.title, src.doi)"
+                  class="px-3 py-1.5 bg-rose-700 hover:bg-rose-600 text-white font-bold rounded-lg text-[10.5px] transition flex items-center gap-1 cursor-pointer">
+                  <mat-icon class="!text-xs">edit_note</mat-icon>
+                  <span>داواکردنی سەرچاوەی دەستی لە بەکارهێنەر</span>
+                </button>
+              </div>
+            }
+
+            <!-- Claim-to-Source Traceability Display -->
+            @if (src.claimText) {
+              <div class="p-2.5 bg-black/40 border border-slate-800 rounded-lg space-y-1 text-[11px]">
+                <span class="font-bold text-indigo-300 flex items-center gap-1 text-[10px]">
+                  <mat-icon class="!text-xs">hub</mat-icon>
+                  بانگەشەی ئەکادیمی بەستراوە (Academic Claim Traceability):
+                </span>
+                <p class="text-slate-200 leading-relaxed">"{{ src.claimText }}"</p>
+                @if (src.evidenceSnippet) {
+                  <p class="text-slate-400 text-[10.5px]">بەڵگە: {{ src.evidenceSnippet }}</p>
+                }
+                @if (src.pageNumber) {
+                  <span class="text-amber-400 font-mono text-[10px]">لاپەڕە: {{ src.pageNumber }}</span>
+                }
+              </div>
+            }
+          </div>
+        } @empty {
+          <div class="p-12 text-center text-slate-500 bg-slate-950/50 rounded-2xl border border-dashed border-slate-800 space-y-2">
+            <mat-icon class="!text-4xl !w-10 !h-10 text-slate-600 mx-auto">menu_book</mat-icon>
+            <h5 class="text-xs font-bold text-slate-300 font-serif">هیچ سەرچاوەیەک نەدۆزرایەوە</h5>
+            <p class="text-[11px] text-slate-400 font-serif max-w-md mx-auto">
+              تکایە لە کێڵگەی سەرەوە DOI یان ناونیشان بنووسە بۆ هێنانەوەی ڕاستەوخۆ لە Crossref و OpenAlex، یان دوگمەی 'زیادکردنی سەرچاوەی دەستی' بەکاربهێنە.
+            </p>
+          </div>
+        }
+      </div>
+    </div>
+  }
 
   <!-- TAB: INTEGRITY DASHBOARD -->
   @if (activeTab() === 'INTEGRITY_DASHBOARD') {
@@ -152,7 +503,7 @@
                 </div>
                 <div class="flex items-center gap-2 font-mono text-[10.5px]">
                   <span class="text-indigo-400 font-bold bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">
-                    نمرەی relevance ـی heuristic: {{ item.crossEncoderScore }}
+                    نمرەی relevance: {{ item.crossEncoderScore }}
                   </span>
                   <span class="text-slate-400">Lexical: {{ item.lexicalMatchRatio }}</span>
                 </div>
@@ -176,242 +527,43 @@
     </div>
   }
 
-  <!-- TAB 1: Workflow & Verification -->
-  @if (activeTab() === 'VERIFICATION') {
-    <div class="space-y-4">
-      <!-- 5-Step Pipeline Visualizer Ribbon -->
-      <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl grid grid-cols-5 gap-1 text-center text-[10.5px] font-bold font-serif">
-        <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
-          <span class="text-indigo-400 block font-mono">1. Search</span>
-          <span class="text-slate-300">گەڕان لە گەنجینە</span>
-        </div>
-        <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
-          <span class="text-indigo-400 block font-mono">2. Retrieve</span>
-          <span class="text-slate-300">دۆزینەوەی دەق</span>
-        </div>
-        <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
-          <span class="text-indigo-400 block font-mono">3. Read</span>
-          <span class="text-slate-300">خوێندنەوەی بەڵگە</span>
-        </div>
-        <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 space-y-0.5">
-          <span class="text-amber-400 block font-mono">4. Verify</span>
-          <span class="text-slate-300">تەبایی لۆژیکی</span>
-        </div>
-        <div class="p-2 rounded-lg bg-emerald-950/60 border border-emerald-800/80 space-y-0.5">
-          <span class="text-emerald-400 block font-mono">5. Cite</span>
-          <span class="text-emerald-300">Citationی کۆتایی</span>
-        </div>
-      </div>
-
-      <!-- Quick Tester Form -->
-      <div class="p-4 bg-slate-800/50 border border-slate-700/80 rounded-xl space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-200 font-serif flex items-center gap-1.5">
-            <mat-icon class="!text-sm text-indigo-400">add_task</mat-icon>
-            تاقیکردنەوەی پشتڕاستکردنەوە بۆ سەرچاوەیەکی نوێ (Audit Test):
-          </span>
-          <span class="text-[10px] text-slate-400 font-serif">💡 هیچی خەیاڵی (Hallucinated) وەرناگیرێت</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-          <div>
-            <label class="block text-[10.5px] font-bold text-slate-300 mb-1">بانگەشە / داواکاری توێژینەوە (Research Claim):</label>
-            <input
-              type="text"
-              [(ngModel)]="claimInput"
-              placeholder="بۆ نموونە: زمانی سۆرانی ڕێزمانی ستاندارد لە سەدەی بیستەم وەرگرتووە..."
-              class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-serif" />
-          </div>
-
-          <div>
-            <label class="block text-[10.5px] font-bold text-slate-300 mb-1">ناوی کتێب / گۆڤار (Title):</label>
-            <input
-              type="text"
-              [(ngModel)]="titleInput"
-              placeholder="ڕێزمانی سۆرانیی ئەکادیمی (Google Books)"
-              class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-serif" />
-          </div>
-
-          <div>
-            <label class="block text-[10.5px] font-bold text-slate-300 mb-1">نووسەر (Author):</label>
-            <input
-              type="text"
-              [(ngModel)]="authorInput"
-              placeholder="د. ئەحمەد ڕەزا"
-              class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-serif" />
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-[10.5px] font-bold text-slate-300 mb-1">ساڵی چاپ:</label>
-              <input
-                type="number"
-                [(ngModel)]="yearInput"
-                placeholder="2022"
-                class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-mono" />
-            </div>
-            <div>
-              <label class="block text-[10.5px] font-bold text-slate-300 mb-1">ژمارەی لاپەڕە (تەنها ئەگەر تەواوە):</label>
-              <input
-                type="text"
-                [(ngModel)]="pageInput"
-                placeholder="ل 45"
-                class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-mono" />
-            </div>
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-[10.5px] font-bold text-slate-300 mb-1">
-              دەقی ڕاستەقینەی بەڵگە لە کتێبەکەوە (Exact Evidence Snippet - mandatory for VERIFIED):
-            </label>
-            <textarea
-              [(ngModel)]="snippetInput"
-              rows="2"
-              placeholder="دەقی ڕاستەقینە کە لە سەرچاوەکەوە خوێندراوەتەوە لێرەدا بنووسە..."
-              class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-serif leading-relaxed"></textarea>
-          </div>
-        </div>
-
-        <div class="flex justify-end">
-          <button
-            type="button"
-            (click)="runVerificationTest()"
-            [disabled]="!claimInput.trim()"
-            class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-md">
-            <mat-icon class="!text-sm">verified</mat-icon>
-            <span>ئەنجامدانی پشتڕاستکردنەوە لە لایەن سیستەمەکەوە</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Records List Categorized -->
-      <div class="space-y-3">
-        @for (item of filteredRecords(); track item.id) {
-          <div [class]="'p-4 rounded-xl border space-y-2 transition-all font-serif text-xs ' + 
-            (item.verificationStatus === 'VERIFIED' ? 'bg-emerald-950/20 border-emerald-800/80' : 
-             item.verificationStatus === 'PARTIALLY_VERIFIED' ? 'bg-amber-950/20 border-amber-800/80' : 'bg-rose-950/20 border-rose-800/80')">
-            
-            <div class="flex items-center justify-between border-b pb-2 border-white/10">
-              <div class="flex items-center gap-2">
-                @if (item.verificationStatus === 'VERIFIED') {
-                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[10px] border border-emerald-500/40">
-                    🟢 VERIFIED (پشتڕاستکراوەتەوە)
-                  </span>
-                } @else if (item.verificationStatus === 'PARTIALLY_VERIFIED') {
-                  <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold text-[10px] border border-amber-500/40">
-                    🟡 PARTIALLY VERIFIED (بەشێکی)
-                  </span>
-                } @else {
-                  <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono font-bold text-[10px] border border-rose-500/40">
-                    🔴 UNVERIFIED (پشتڕاستنەکراوە)
-                  </span>
-                }
-                <span class="text-[10px] text-indigo-300 bg-indigo-950/80 border border-indigo-800 px-2 py-0.5 rounded font-mono">
-                  {{ item.tier }} | نمرەی heuristic: {{ item.reliabilityScore }}/100
-                </span>
-              </div>
-
-              @if (item.verificationStatus === 'VERIFIED') {
-                <span class="text-[10.5px] text-emerald-400 font-bold flex items-center gap-1">
-                  <mat-icon class="!text-xs">check_circle</mat-icon>
-                  ڕێگەپێدراو بۆ Citationی کۆتایی
-                </span>
-              } @else {
-                <span class="text-[10.5px] text-rose-400 font-bold flex items-center gap-1">
-                  <mat-icon class="!text-xs">block</mat-icon>
-                  Citation قەدەغەیە
-                </span>
-              }
-            </div>
-
-            <div>
-              <h4 class="font-bold text-slate-100 text-sm">{{ item.title }}</h4>
-              <p class="text-slate-400 text-[11px] mt-0.5">
-                نووسەر: {{ item.author }} {{ item.publicationYear ? '(' + item.publicationYear + ')' : '' }} — {{ item.publisherOrJournal }}
-                @if (item.pageNumber) {
-                  <strong class="text-amber-300 font-mono">| {{ item.pageNumber }}</strong>
-                }
-              </p>
-            </div>
-
-            <div class="p-2.5 bg-black/40 border border-slate-800 rounded-lg text-slate-300 text-[11px] leading-relaxed">
-              <strong class="text-slate-400 text-[10px] block mb-0.5">بەڵگەی خوێندراوەوە (Exact Evidence Snippet):</strong>
-              "{{ item.exactEvidenceSnippet }}"
-            </div>
-
-            @if (item.verificationNotes) {
-              <p class="text-[10.5px] text-slate-400 italic">
-                💬 تێبینی: {{ item.verificationNotes }}
-              </p>
-            }
-          </div>
-        }
-      </div>
-    </div>
-  }
-
-  <!-- TAB 2: Source Ranking (Tiers) -->
+  <!-- TAB: Source Ranking (Tiers) -->
   @if (activeTab() === 'RANKING') {
-    <div class="space-y-4">
+    <div class="space-y-4 font-serif">
       <div class="p-4 bg-indigo-950/30 border border-indigo-800/60 rounded-xl space-y-2">
-        <h4 class="text-xs font-bold text-indigo-300 flex items-center gap-1.5 font-serif">
+        <h4 class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
           <mat-icon class="!text-sm text-indigo-400">workspace_premium</mat-icon>
           سیستەمی ڕیزبەندی سەرچاوەکان (Source Tier Ranking Hierarchy):
         </h4>
-        <p class="text-[11px] text-slate-300 leading-relaxed font-serif">
-          Tier ـەکان بۆ prioritize کردنی گەڕانن؛ بڕیاری Citation بە verification status، بەڵگەی خوێندراوەوە و provenance ـەوە دەدرێت. سەرچاوەی گشتی بە تەنها نابێت ببێتە بەڵگەی Verified.
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          Tier 1 پێکهاتووە لە داتابەیسە باوەڕپێکراوە باڵاکانی Crossref, OpenAlex, Semantic Scholar, DOAJ. تەنها ئەو سەرچاوەیانەی لەمانەوە بە سەرکەوتوویی بسەلمێندرێن شیاون بۆ پەسەندکردنی Citation.
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 font-serif">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div class="p-3.5 bg-emerald-950/30 border border-emerald-800/80 rounded-xl space-y-2">
           <span class="text-xs font-bold text-emerald-300 bg-emerald-500/20 px-2.5 py-0.5 rounded border border-emerald-500/40 inline-block font-mono">
             Tier 1 — Academic / Primary
           </span>
-          <p class="text-[10.5px] text-slate-300">Google Books, OpenAlex, Crossref, Semantic Scholar, DOAJ, PubMed, Library of Congress, WorldCat</p>
+          <p class="text-[10.5px] text-slate-300">Crossref, OpenAlex, Google Books, DOAJ, PubMed, University Press</p>
           <div class="text-[10px] text-emerald-400 font-mono font-bold">Reliability Score: 85-100 / 100</div>
         </div>
 
         <div class="p-3.5 bg-amber-950/30 border border-amber-800/80 rounded-xl space-y-2">
           <span class="text-xs font-bold text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded border border-amber-500/40 inline-block font-mono">
-            Tier 2 — Digital Libraries / Archives
+            Tier 2 — Digital Archives
           </span>
-          <p class="text-[10.5px] text-slate-300">Internet Archive, Open Library, Europeana, University repositories, Digital archives</p>
+          <p class="text-[10.5px] text-slate-300">Internet Archive, Open Library, Institutional Repositories</p>
           <div class="text-[10px] text-amber-400 font-mono font-bold">Reliability Score: 70-84 / 100</div>
         </div>
 
         <div class="p-3.5 bg-slate-800/60 border border-slate-700/80 rounded-xl space-y-2">
           <span class="text-xs font-bold text-slate-300 bg-slate-700 px-2.5 py-0.5 rounded border border-slate-600 inline-block font-mono">
-            Tier 3 — General Web Sources
+            Tier 3 — General Web
           </span>
-          <p class="text-[10.5px] text-slate-300">Websites, Blogs, General online pages (Used strictly as secondary fallback)</p>
+          <p class="text-[10.5px] text-slate-300">ماڵپەڕە گشتییەکان، پێویستی بە بەڵگەی دەستییە</p>
           <div class="text-[10px] text-slate-400 font-mono font-bold">Reliability Score: 40-69 / 100</div>
         </div>
-      </div>
-
-      <!-- Ranked List View -->
-      <div class="space-y-2 pt-2">
-        <h4 class="text-xs font-bold text-slate-200 font-serif">ڕیزبەندی سەرچاوە دۆزراوەکان بەپێی باوەڕپێکراوی:</h4>
-        @for (src of deduplicatedSources(); track src.id) {
-          <div class="p-3 bg-slate-800/80 border border-slate-700/80 rounded-xl flex items-center justify-between gap-3 text-xs font-serif">
-            <div class="space-y-1">
-              <div class="flex items-center gap-2">
-                <span class="font-bold text-slate-100">{{ src.title }}</span>
-                <span class="text-[10px] text-indigo-300 bg-indigo-950 border border-indigo-800 px-2 py-0.5 rounded font-mono">
-                  {{ src.tier }} ({{ src.tierName }})
-                </span>
-              </div>
-              <p class="text-[11px] text-slate-400">{{ src.author }} ({{ src.publicationYear || 'نادیار' }}) — {{ src.publisherOrJournal }}</p>
-            </div>
-
-            <div class="text-left font-mono">
-              <span class="text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded border border-emerald-800/80 block">
-                Score: {{ src.reliabilityScore }}/100
-              </span>
-              <span class="text-[10px] text-slate-400 mt-0.5 block">Status: {{ src.verificationStatus }}</span>
-            </div>
-          </div>
-        }
       </div>
     </div>
   }
@@ -423,5 +575,172 @@
     [linkedClaims]="linkedClaims()"
     [researchGateAudit]="researchGateAudit()">
   </app-source-evidence-tabs>
+
+  <!-- MODAL: MANUAL SOURCE ENTRY -->
+  @if (showManualSourceModal()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
+      <div class="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl p-5 space-y-4 shadow-2xl font-serif text-right text-xs">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h4 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <mat-icon class="text-indigo-400">menu_book</mat-icon>
+            داواکردنی سەرچاوەی دەستی لە بەکارهێنەر (Enter User Source)
+          </h4>
+          <button type="button" (click)="closeManualEntry()" class="text-slate-400 hover:text-white">
+            <mat-icon class="!text-sm">close</mat-icon>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="md:col-span-2">
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">ناونیشانی سەرچاوە / کتێب / توێژینەوە (پێویستە):</label>
+            <input
+              type="text"
+              [(ngModel)]="manualTitle"
+              placeholder="ناونیشانی فەرمی..."
+              class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-sans"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">نووسەر(ان) (بە فاریزە جیایان بکەرەوە):</label>
+            <input
+              type="text"
+              [(ngModel)]="manualAuthor"
+              placeholder="د. ئەحمەد، د. سۆران..."
+              class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-sans"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">ساڵی بڵاوبوونەوە:</label>
+            <input
+              type="number"
+              [(ngModel)]="manualYear"
+              placeholder="2023"
+              class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">گۆڤار / زانکۆ / چاپخانە:</label>
+            <input
+              type="text"
+              [(ngModel)]="manualVenue"
+              placeholder="گۆڤاری زانکۆی سۆران..."
+              class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-sans"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">DOI (ئەگەر هەیە):</label>
+            <input
+              type="text"
+              [(ngModel)]="manualDoi"
+              placeholder="10.xxxx/..."
+              class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">لینک یان URLی فەرمی:</label>
+            <input
+              type="url"
+              [(ngModel)]="manualUrl"
+              placeholder="https://..."
+              class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">بانگەشە یان بەڵگەی پەیوەندیدار لە تێزدا:</label>
+            <textarea
+              [(ngModel)]="manualClaim"
+              rows="2"
+              placeholder="ئەم سەرچاوەیە چ دەسەلمێنێت لە تێزەکەتدا..."
+              class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500"></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 border-t border-slate-800 pt-3">
+          <button
+            type="button"
+            (click)="closeManualEntry()"
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition cursor-pointer">
+            پاشگەزبوونەوە
+          </button>
+          <button
+            type="button"
+            (click)="submitManualSource()"
+            [disabled]="!manualTitle.trim()"
+            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-bold rounded-xl transition cursor-pointer">
+            پشکنین و تۆمارکردن
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: CLAIM-TO-SOURCE TRACEABILITY -->
+  @if (claimTraceSourceId()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
+      <div class="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-2xl p-5 space-y-4 shadow-2xl font-serif text-right text-xs">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h4 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <mat-icon class="text-indigo-400">hub</mat-icon>
+            بەستنەوەی بانگەشە بە سەرچاوە (Claim-to-Source Traceability)
+          </h4>
+          <button type="button" (click)="claimTraceSourceId.set(null)" class="text-slate-400 hover:text-white">
+            <mat-icon class="!text-sm">close</mat-icon>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">بانگەشەی ئەکادیمی (Thesis Claim):</label>
+            <textarea
+              [(ngModel)]="claimTraceText"
+              rows="3"
+              placeholder="دەقی بانگەشەکە بنووسە کە لە تێزدا پشت بەم سەرچاوەیە دەبەستێت..."
+              class="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">دەقی بەڵگەی دەقاودەق (Evidence Snippet):</label>
+            <textarea
+              [(ngModel)]="claimTraceSnippet"
+              rows="2"
+              placeholder="ڕستەی سەلمێنەر لە سەرچاوەکەوە..."
+              class="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">ژمارەی لاپەڕە لە سەرچاوەکە:</label>
+            <input
+              type="text"
+              [(ngModel)]="claimTracePage"
+              placeholder="بۆ نموونە: ٤٥ یان 120-125"
+              class="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
+            />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 border-t border-slate-800 pt-3">
+          <button
+            type="button"
+            (click)="claimTraceSourceId.set(null)"
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition cursor-pointer">
+            داخستن
+          </button>
+          <button
+            type="button"
+            (click)="saveClaimTrace()"
+            [disabled]="!claimTraceText.trim()"
+            class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-bold rounded-xl transition cursor-pointer">
+            چەسپاندنی بەستنەوە
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 
 </div>

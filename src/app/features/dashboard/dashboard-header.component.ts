@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { BackupRestoreService } from '../../core/services/backup-restore.service';
+import { UserReputationService } from '../../services/user-reputation.service';
 
 type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_drive' | 'platform';
 
@@ -83,6 +84,11 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
           <span>دۆخی خوێندنەوە</span>
         </button>
 
+        <button type="button" class="mam-sidebar-action" (click)="openReputation.emit(); closeMobileNav()">
+          <mat-icon class="!text-amber-400">military_tech</mat-icon>
+          <span>سیستەمی ناوبانگ ({{ reputationService.score() }} خاڵ - {{ reputationService.tierLabel() }})</span>
+        </button>
+
         <button type="button" class="mam-sidebar-action" (click)="toggleDarkMode.emit()">
           <mat-icon>{{ academicDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
           <span>{{ academicDarkMode() ? 'ڕووناکی' : 'تاریکی' }}</span>
@@ -159,6 +165,19 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
           <span>ئاستی پڕۆ • Pro Active</span>
         </div>
 
+        <!-- User Reputation Badge & System -->
+        <button type="button" class="mam-top-action cursor-pointer hover:border-amber-400/50" (click)="openReputation.emit()" title="سیستەمی ناوبانگ و متمانەی ئەکادیمی">
+          <mat-icon class="!text-amber-400 !text-sm">military_tech</mat-icon>
+          <span class="text-xs font-bold text-amber-300">{{ reputationService.score() }} خاڵ</span>
+          <span class="text-[10px] bg-amber-950/80 text-amber-300 border border-amber-600/50 px-1.5 py-0.5 rounded font-mono">{{ reputationService.tierLabel() }}</span>
+        </button>
+
+        <!-- Dark Mode Toggle in Topbar -->
+        <button type="button" class="mam-top-action cursor-pointer" (click)="toggleDarkMode.emit()" [title]="academicDarkMode() ? 'گۆڕین بۆ دۆخی ڕووناک' : 'گۆڕین بۆ باری شاراوە (تاریک)'">
+          <mat-icon class="!text-amber-300">{{ academicDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          <span>{{ academicDarkMode() ? 'ڕووناک' : 'تاریک' }}</span>
+        </button>
+
         <!-- 1-Click Backup / Restore Action Buttons in Topbar -->
         <button type="button" class="mam-top-action" (click)="backupService.exportFullBackup()" title="داگرتنی هەموو داتاکانی تێز بە فایلی JSON">
           <mat-icon>download</mat-icon>
@@ -203,6 +222,7 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
 })
 export class DashboardHeaderComponent {
   readonly backupService = inject(BackupRestoreService);
+  readonly reputationService = inject(UserReputationService);
 
   mainTab = input<MainTab>('editor');
   currentUser = input<any>(null);
@@ -219,6 +239,7 @@ export class DashboardHeaderComponent {
   clearEditor = output<void>();
   toggleFocusMode = output<void>();
   exportWordOrPdf = output<void>();
+  openReputation = output<void>();
 
   mobileNavOpen = signal(false);
 

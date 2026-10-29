@@ -8,6 +8,8 @@ import { EditorService } from '../editor/services/editor';
 import { Data } from '../../services/data';
 import { ExportContractService, ExportGateResponse } from '../../services/export-contract.service';
 import { UNIVERSITIES, UniversityFormatPreset } from '../academic-suite/university-layout-formatter.component';
+import { SourceVerificationService } from '../../services/source-verification.service';
+import { WordCountControllerService } from '../../services/word-count-controller.service';
 import { CameraReadyService } from '../camera-ready-publishing/services/camera-ready.service';
 
 @Component({
@@ -113,6 +115,8 @@ export class ExportWordComponent {
   private data = inject(Data);
   private http = inject(HttpClient);
   private exportContractService = inject(ExportContractService);
+  private sourceVerificationService = inject(SourceVerificationService);
+  private wordCountController = inject(WordCountControllerService);
 
   universities = UNIVERSITIES;
   selectedUniId = signal<string>('salahaddin');
@@ -166,29 +170,17 @@ export class ExportWordComponent {
     this.exportSuccess.set(null);
 
     try {
-      const documentText = chapters
-        .map(chapter => `### ${chapter.title}\n${chapter.content}`)
-        .join('\n\n');
+      // 1. Strict Word-Count Gate Check
+      const wcValidation = this.wordCountController.validateForExport(chapters);
+      if (!wcValidation.valid) {
+        throw new Error('بلۆککردنی هەناردەی Word بەهۆی ژمارەی وشەکان: ' + wcValidation.errors.join(' | '));
+      }
 
-      const qa = await firstValueFrom(
-        this.http.post<ExportGateResponse>('/api/platform/qa-gate', {
-          documentText,
-          sources: this.data.sourcesList().map(s => ({
-            id: s.id,
-            title: s.title,
-            author: s.author,
-            year: s.year,
-            doi: s.doi,
-            isbn: s.isbn,
-            publisher: s.publisher,
-            claimText: s.claimText,
-            evidenceText: s.evidenceText,
-            pageNumber: s.pageNumber
-          }))
-        })
-      );
-
-      this.exportContractService.assertApproved(qa);
+      // 2. Strict Verified-Source Gate Check
+      const sourceValidation = this.sourceVerificationService.validateForExport(chapters);
+      if (!sourceValidation.valid) {
+        throw new Error('بلۆککردنی هەناردەی Word بەهۆی کێشەی سەرچاوەکان: ' + sourceValidation.errors.join(' | '));
+      }
 
       const matchedManuscript = this.data.historyList().find(saved =>
         saved.chapters.length === chapters.length &&
@@ -200,6 +192,37 @@ export class ExportWordComponent {
       const discipline = matchedManuscript?.discipline || 'زانستە گشتییەکان';
       const academicLevel = matchedManuscript?.academicLevel || 'ماستەر';
 
+      // Build Verified Sources Audit Report
+      const verifiedSourcesReport = this.sourceVerificationService.sources()
+        .filter(s => s.status === 'VERIFIED' && s.userApproved)
+        .map(s => ({
+          title: s.title,
+          author: s.authors.join('، ') || 'نووسەر',
+          year: s.year,
+          venue: s.venue,
+          doi: s.doi,
+          url: s.url,
+          provider: s.provider,
+          retrievalTime: s.retrievalTime,
+          status: s.status
+        }));
+
+      // Build Word Count Audit Report
+      const manuscriptAudit = this.wordCountController.manuscriptAudit();
+      const wordCountAuditReport = {
+        targetWords: manuscriptAudit.targetWords,
+        currentWords: manuscriptAudit.currentWords,
+        remainingWords: manuscriptAudit.remainingWords,
+        percentage: manuscriptAudit.percentage,
+        chapterAudits: manuscriptAudit.chapterAudits.map(ca => ({
+          chapterTitle: ca.chapterTitle,
+          targetWords: ca.targetWords,
+          currentWords: ca.currentWords,
+          bodyWords: ca.bodyWords,
+          statusLabel: ca.statusLabel
+        }))
+      };
+
       const blob = await this.wordExportService.generateDocxBlob(
         this.title().trim() || 'توێژینەوەی_زانستی',
         discipline,
@@ -207,14 +230,15 @@ export class ExportWordComponent {
         chapters,
         {
           customUniversityId: this.selectedUniId(),
-          sources: this.data.sourcesList().map(s => ({
-            id: s.id,
+          sources: verifiedSourcesReport.map(s => ({
             title: s.title,
             author: s.author,
             year: s.year,
             doi: s.doi,
-            publisher: s.publisher
-          }))
+            publisher: s.venue
+          })),
+          verifiedSourcesReport,
+          wordCountAuditReport
         }
       );
 
@@ -224,10 +248,10 @@ export class ExportWordComponent {
       a.download = `${(this.title().trim() || 'توێژینەوەی_زانستی').replace(/\s+/g, '_')}.docx`;
       a.click();
       URL.revokeObjectURL(url);
-      this.exportSuccess.set('فایلی Word بە سەرکەوتوویی دابەزێندرا.');
-    } catch (error) {
-      console.error('Secure Word export failed:', error);
-      this.exportError.set('پشکنینی Export یان دروستکردنی فایل سەرکەوتوو نەبوو.');
+      this.exportSuccess.set('فایلی Word بە سەرکەوتوویی بە هەردوو ڕاپۆرتی سەرچاوە و ژمارەی وشەوە دابەزێندرا.');
+    } catch (error: any) {
+      console.error('Word export failed:', error);
+      this.exportError.set(error?.message || 'پشکنینی Export یان دروستکردنی فایل سەرکەوتوو نەبوو.');
     } finally {
       this.isExporting.set(false);
     }
@@ -240,26 +264,71 @@ export class ExportWordComponent {
       return;
     }
 
+    this.exportError.set(null);
+    this.exportSuccess.set(null);
+
     try {
+      // 1. Strict Word-Count Gate Check
+      const wcValidation = this.wordCountController.validateForExport(chapters);
+      if (!wcValidation.valid) {
+        throw new Error('بلۆککردنی هەناردەی PDF بەهۆی ژمارەی وشەکان: ' + wcValidation.errors.join(' | '));
+      }
+
+      // 2. Strict Verified-Source Gate Check
+      const sourceValidation = this.sourceVerificationService.validateForExport(chapters);
+      if (!sourceValidation.valid) {
+        throw new Error('بلۆککردنی هەناردەی PDF بەهۆی کێشەی سەرچاوەکان: ' + sourceValidation.errors.join(' | '));
+      }
+
+      const verifiedSourcesReport = this.sourceVerificationService.sources()
+        .filter(s => s.status === 'VERIFIED' && s.userApproved)
+        .map(s => ({
+          title: s.title,
+          author: s.authors.join('، ') || 'نووسەر',
+          year: s.year,
+          venue: s.venue,
+          doi: s.doi,
+          url: s.url,
+          provider: s.provider,
+          retrievalTime: s.retrievalTime,
+          status: s.status
+        }));
+
+      const manuscriptAudit = this.wordCountController.manuscriptAudit();
+      const wordCountAuditReport = {
+        targetWords: manuscriptAudit.targetWords,
+        currentWords: manuscriptAudit.currentWords,
+        remainingWords: manuscriptAudit.remainingWords,
+        percentage: manuscriptAudit.percentage,
+        chapterAudits: manuscriptAudit.chapterAudits.map(ca => ({
+          chapterTitle: ca.chapterTitle,
+          targetWords: ca.targetWords,
+          currentWords: ca.currentWords,
+          bodyWords: ca.bodyWords,
+          statusLabel: ca.statusLabel
+        }))
+      };
+
       this.wordExportService.exportToPrintablePdf({
         title: this.title().trim() || 'توێژینەوەی_زانستی',
         discipline: 'زانستە ئەکادیمییەکان',
         academicLevel: 'ماستەر / دکتۆرا',
         chapters,
         customUniversityId: this.selectedUniId(),
-        sources: this.data.sourcesList().map(s => ({
-          id: s.id,
+        sources: verifiedSourcesReport.map(s => ({
           title: s.title,
           author: s.author,
           year: s.year,
           doi: s.doi,
-          publisher: s.publisher
-        }))
+          publisher: s.venue
+        })),
+        verifiedSourcesReport,
+        wordCountAuditReport
       });
-      this.exportSuccess.set('لاپەڕەی چاپ و بەرهەمهێنانی PDF کرایەوە.');
-    } catch (error) {
+      this.exportSuccess.set('لاپەڕەی چاپ و بەرهەمهێنانی PDF بە ڕاپۆرتە پەسەندکراوەکانەوە کرایەوە.');
+    } catch (error: any) {
       console.error('PDF export failed:', error);
-      this.exportError.set('کردنەوەی پەنجەرەی چاپ سەرکەوتوو نەبوو.');
+      this.exportError.set(error?.message || 'کردنەوەی پەنجەرەی چاپ سەرکەوتوو نەبوو.');
     }
   }
 }

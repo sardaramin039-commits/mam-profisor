@@ -13,9 +13,11 @@ export interface ChapterSnapshot {
   customTOCOn?: boolean;
 }
 
+import { KurdishWordCounter } from '../helpers/kurdish-word-counter';
+
 export function countKurdishWords(text: string | undefined | null): number {
   if (!text) return 0;
-  return text.trim().split(/\s+/).filter(Boolean).length;
+  return KurdishWordCounter.countWords(text, { excludeBibliography: true, excludeTitles: true });
 }
 
 export type { SubBranchItem, AxisItem } from '../domain/models';

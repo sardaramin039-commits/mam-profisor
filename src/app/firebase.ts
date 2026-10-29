@@ -17,7 +17,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Suppress non-fatal offline/network notices to prevent monitoring false alarms
-setLogLevel('error');
+setLogLevel('silent');
 
 function getOrInitFirestore(): Firestore {
   try {

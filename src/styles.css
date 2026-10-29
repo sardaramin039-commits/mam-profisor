@@ -82,4 +82,83 @@ body {
   animation: fadeInBadge 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* =========================================================================
+   Universal Dark Mode (باری شاراوە) - شێوازی تاریک بۆ سەرانسەری بەرنامەکە
+   ========================================================================= */
+html.dark, body.academic-dark, .academic-dark, [data-theme="dark"] {
+  --color-editorial-bg: #0b1117;
+  --color-editorial-text: #f0f6fc;
+  --color-editorial-sidebar: #101923;
+  --color-editorial-border: #223242;
+  --color-editorial-muted: #94a3b8;
+  color-scheme: dark;
+  background-color: #0b1117 !important;
+  color: #f0f6fc !important;
+}
+
+.academic-dark body {
+  background-color: #0b1117 !important;
+  color: #f0f6fc !important;
+}
+
+.academic-dark .bg-white,
+.academic-dark .bg-slate-50,
+.academic-dark .bg-neutral-50,
+.academic-dark .bg-stone-50,
+.academic-dark [class*="bg-[#FDFCFB]"],
+.academic-dark [class*="bg-[#F8F6F2]"],
+.academic-dark [class*="bg-[#FAF8F5]"],
+.academic-dark [class*="bg-[#FBF9F5]"] {
+  background-color: #111b27 !important;
+  color: #f1f5f9 !important;
+  border-color: #223446 !important;
+}
+
+.academic-dark .text-slate-800,
+.academic-dark .text-slate-900,
+.academic-dark .text-stone-800,
+.academic-dark .text-stone-900,
+.academic-dark .text-neutral-900,
+.academic-dark .text-black,
+.academic-dark [class*="text-[#1A1A1A]"] {
+  color: #f8fafc !important;
+}
+
+.academic-dark .text-slate-600,
+.academic-dark .text-slate-700,
+.academic-dark .text-stone-600,
+.academic-dark .text-stone-700,
+.academic-dark [class*="text-[#8C8273]"] {
+  color: #cbd5e1 !important;
+}
+
+.academic-dark .text-slate-500,
+.academic-dark .text-stone-500 {
+  color: #94a3b8 !important;
+}
+
+.academic-dark .border-slate-200,
+.academic-dark .border-stone-200,
+.academic-dark [class*="border-[#E5E1DA]"],
+.academic-dark [class*="border-[#D8D2C2]"] {
+  border-color: #223446 !important;
+}
+
+.academic-dark input:not([type="checkbox"]):not([type="radio"]),
+.academic-dark textarea,
+.academic-dark select {
+  background-color: #0b131d !important;
+  color: #f1f5f9 !important;
+  border-color: #26384a !important;
+}
+
+.academic-dark .scrollbar-thin::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+.academic-dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-color: #0f172a;
+}
+
+
 

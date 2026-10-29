@@ -36,6 +36,7 @@ import { createPublicationSubmissionEditorialRouter } from './server/routes/publ
 import { createResearchMethodsLabRouter } from './server/routes/research-methods-lab.routes';
 import { createDefenseRehearsalRouter } from './server/routes/defense-rehearsal.routes';
 import { createPlagiarismRouter } from './server/routes/plagiarism.routes';
+import { createGeminiEvolutionRouter } from './server/routes/gemini-evolution.routes';
 import { getGeminiClient } from './server/services/gemini.service';
 import { rateLimiterMiddleware, authenticatedRateLimiterMiddleware } from './server/middleware/rate-limiter.middleware';
 import { securityHeadersMiddleware, promptSanitizerMiddleware } from './server/middleware/security.middleware';
@@ -94,6 +95,7 @@ app.use('/api/platform', createAcademicPlatformRouter(getGeminiClient));
 app.use('/api/writing', requireAuth, createEvidenceIntelligenceRouter(getGeminiClient));
 app.use('/api/rag', createRagRouter(getGeminiClient));
 app.use('/api/multi-agent', requireAuth, createMultiAgentRouter(getGeminiClient));
+app.use('/api/gemini', createGeminiEvolutionRouter());
 
 // Protected State & Workspace Persistence Endpoints (Strict Authentication Guard)
 app.use('/api/workspace', requireAuth, createResearchProjectStateRouter(getGeminiClient));

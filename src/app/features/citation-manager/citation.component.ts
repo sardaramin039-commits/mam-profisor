@@ -7,6 +7,7 @@ import { AutomatedBibliographyGeneratorComponent } from './components/automated-
 import { D3CitationGraphComponent } from '../d3-charts/d3-citation-graph.component';
 import { ApiBibliographySearchComponent } from './components/api-bibliography-search.component';
 import { ChatGptSourcesHubComponent } from './components/chatgpt-sources-hub.component';
+import { VerifiedSourceCardsComponent } from './components/verified-source-cards.component';
 
 @Component({
   selector: 'app-citation-feature',
@@ -18,7 +19,8 @@ import { ChatGptSourcesHubComponent } from './components/chatgpt-sources-hub.com
     AutomatedBibliographyGeneratorComponent,
     D3CitationGraphComponent,
     ApiBibliographySearchComponent,
-    ChatGptSourcesHubComponent
+    ChatGptSourcesHubComponent,
+    VerifiedSourceCardsComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -136,39 +138,9 @@ import { ChatGptSourcesHubComponent } from './components/chatgpt-sources-hub.com
         <app-api-bibliography-search></app-api-bibliography-search>
       }
 
-      <!-- Tab 4: Sources List -->
+      <!-- Tab 4: Searchable Verified Source Cards (Crossref & OpenAlex) -->
       @if (activeSubTab() === 'sources_list') {
-        <div class="max-h-80 overflow-y-auto p-3 space-y-3 bg-slate-950/40 rounded-xl border border-slate-800">
-          @if (sources().length === 0) {
-            <div class="flex flex-col items-center justify-center text-center text-slate-400 p-4 space-y-1">
-              <mat-icon class="text-2xl text-indigo-400">menu_book</mat-icon>
-              <p class="text-xs">هیچ سەرچاوەیەک تۆمار نەکراوە. دوگمەی زیادکردن داگرە.</p>
-            </div>
-          } @else {
-            @for (source of sources(); track source.id) {
-              <div class="p-3 bg-slate-800/60 border border-slate-700/80 rounded-xl flex items-start justify-between gap-3 hover:border-indigo-500/50 transition-colors">
-                <div class="space-y-1">
-                  <div class="flex items-center gap-2">
-                    <h4 class="text-xs font-semibold text-slate-200">{{ source.title }}</h4>
-                    @if (source.citationEligible === true) {
-                      <span class="text-[9.5px] px-2 py-0.5 rounded font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                        🟢 VERIFIED
-                      </span>
-                    } @else {
-                      <span class="text-[9.5px] px-2 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                        🟡 REVIEW REQUIRED
-                      </span>
-                    }
-                  </div>
-                  <p class="text-[11px] text-slate-400">{{ source.author }} ({{ source.year }}) - {{ source.publisher }}</p>
-                  <span class="inline-block bg-slate-900 text-indigo-300 px-2 py-0.5 rounded text-[10px] uppercase border border-slate-700 font-mono">
-                    {{ source.sourceType }}
-                  </span>
-                </div>
-              </div>
-            }
-          }
-        </div>
+        <app-verified-source-cards></app-verified-source-cards>
       }
 
       <!-- Tab 5: Strict Source Verification System Sub-Module -->

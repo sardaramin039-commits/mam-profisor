@@ -35,24 +35,18 @@
             ],
             "allowedCommonJsDependencies": [
               "node-domexception",
-              "fetch-blob"
+              "fetch-blob",
+              "docx"
             ],
             "externalDependencies": [
-              "@google/genai",
               "firebase-admin",
               "pg",
               "drizzle-orm",
               "express",
               "dotenv",
               "axios",
-              "zod",
-              "docx"
-            ],
-            "server": "src/main.server.ts",
-            "outputMode": "server",
-            "ssr": {
-              "entry": "src/server.ts"
-            }
+              "zod"
+            ]
           },
           "configurations": {
             "production": {
@@ -84,15 +78,13 @@
               "extractLicenses": false,
               "sourceMap": false,
               "externalDependencies": [
-                "@google/genai",
                 "firebase-admin",
                 "pg",
                 "drizzle-orm",
                 "express",
                 "dotenv",
                 "axios",
-                "zod",
-                "docx"
+                "zod"
               ]
             }
           },

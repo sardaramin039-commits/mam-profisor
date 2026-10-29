@@ -5,6 +5,7 @@ import { AppNotificationsService } from '../core/app.notifications';
 import { countKurdishWords } from './data';
 import { ChapterItemModel as ChapterItem, SubBranchItem } from '../domain/models';
 import { buildAcademicThesisOutline } from '../helpers/outline-structure';
+import { SourceVerificationService } from './source-verification.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +14,7 @@ export class ManuscriptBridgeActionsService {
   private editorService = inject(EditorService);
   private editorSyncFeedback = inject(EditorSyncFeedbackService);
   private toastService = inject(AppNotificationsService);
+  private sourceVerificationService = inject(SourceVerificationService);
 
   /**
    * Applies given text into the active chapter or active sub-branch in the manuscript.
@@ -337,19 +339,19 @@ export class ManuscriptBridgeActionsService {
   }
 
   injectAcademicSourceCitation(source: any, mode: 'inline' | 'footnote' | 'bibliography' = 'inline', targetChapter?: ChapterItem | null): void {
-    const author = source?.author || 'نووسەر';
-    const year = source?.year || '2026';
-    const page = source?.pageNumber || source?.page || '٤٥';
-    const title = source?.title || source?.bookTitle || 'سەرچاوە';
-
-    let formatted = '';
-    if (mode === 'inline') {
-      formatted = `(${author}، ${year}: ${page})`;
-    } else if (mode === 'footnote') {
-      formatted = `[^١]: ${author}، «${title}» (${year})، ل. ${page}.`;
-    } else {
-      formatted = `\n${author} (${year}). *${title}*. دەزگای بڵاوکردنەوە.\n`;
+    // Strict Verification Gating: Only VERIFIED and user-approved records can be inserted
+    const check = this.sourceVerificationService.isEligibleForCitation(source);
+    if (!check.eligible) {
+      this.toastService.showError(
+        'دانانی سەرچاوە ڕەتکرایەوە (Unverified/Unapproved)',
+        check.reason || 'تەنها ئەو سەرچاوەیانە شیاون بۆ دانان کە بە فەرمی لە Crossref یان OpenAlex پشتڕاستکراونەتەوە و لە لایەن بەکارهێنەرەوە پەسەند کراون.'
+      );
+      return;
     }
+
+    const verifiedRecord = check.source || source;
+    // Format citation without inventing non-existent metadata
+    const formatted = this.sourceVerificationService.formatCitation(verifiedRecord, mode);
 
     if (typeof document !== 'undefined') {
       const textarea = (document.querySelector('#chapterTextarea') as HTMLTextAreaElement) || document.querySelector('textarea');
@@ -368,9 +370,10 @@ export class ManuscriptBridgeActionsService {
     if (activeChapter) {
       const prevContent = activeChapter.content || '';
       const updatedContent = prevContent ? `${prevContent}\n${formatted}` : formatted;
-      this.editorService.updateChapterContent(activeChapter.id, updatedContent, 'دانانی سەرچاوە لە دەقدا');
+      this.editorService.updateChapterContent(activeChapter.id, updatedContent, 'دانانی سەرچاوەی پشتڕاستکراو لە دەقدا');
     }
 
-    this.toastService.showSuccess('سەرچاوە دانرا', `سەرچاوەی «${author}» خرایە ناو دەقی سەرنووسەر.`);
+    const displayName = verifiedRecord.authors?.[0] || verifiedRecord.title;
+    this.toastService.showSuccess('سەرچاوەی پەسەندکراو دانرا', `سەرچاوەی «${displayName}» بە سەرکەوتوویی خرایە ناو دەقی سەرنووسەر.`);
   }
 }

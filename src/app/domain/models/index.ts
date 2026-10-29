@@ -45,6 +45,10 @@ export interface SubBranchItem {
   status: 'pending' | 'writing' | 'completed' | 'expanding';
   content?: string;
   expansionRounds?: number;
+  executiveSummary?: string;
+  closingParagraph?: string;
+  suggestedCitations?: string[];
+  keyConceptsCovered?: string[];
 }
 
 export interface AxisItem {

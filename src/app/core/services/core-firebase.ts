@@ -32,10 +32,12 @@ export class CoreFirebase {
         } else {
           this.userRole.set('student');
           this.userClaims.set({});
-          try {
-            await signInAnonymously(auth);
-          } catch (anonErr) {
-            console.warn('Anonymous guest sign-in fallback:', anonErr);
+          if (typeof window !== 'undefined' && navigator.onLine) {
+            try {
+              await signInAnonymously(auth);
+            } catch {
+              // Gracefully operate as offline guest
+            }
           }
         }
         this.isAuthLoading.set(false);

@@ -1,12 +1,12 @@
+import { KurdishWordCounter } from '../../helpers/kurdish-word-counter';
+
 /**
  * Academic text formatting and word count utilities.
  */
 export class AcademicFormatter {
   static countWords(text: string): number {
     if (!text) return 0;
-    const cleanText = text.replace(/<[^>]*>/g, ' ').trim();
-    if (!cleanText) return 0;
-    return cleanText.split(/\s+/).filter(w => w.length > 0).length;
+    return KurdishWordCounter.countWords(text, { excludeBibliography: true, excludeTitles: true });
   }
 
   static estimateReadingTime(wordCount: number): number {

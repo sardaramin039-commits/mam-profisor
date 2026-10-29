@@ -18,11 +18,7 @@
           <p>گەڕان، خوێندنەوە و بەڕێوەبردنی سەرچاوەکانی کتێبخانە لە یەک شوێن.</p>
         </div>
       </section>
-      @defer (on idle) {
-        <app-library-workspace></app-library-workspace>
-      } @placeholder {
-        <div class="mam-defer-placeholder"><mat-icon>auto_stories</mat-icon><span>کتێبخانە خەریکی ئامادەبوونە...</span></div>
-      }
+      <app-library-workspace></app-library-workspace>
     }
 
     @case ('editor') {
@@ -175,39 +171,27 @@
       <section class="mam-page-head">
         <div><span class="mam-eyebrow">RESEARCH</span><h1>ناوەندی توێژینەوەی پێشکەوتوو</h1><p>گەڕان، هەڵسەنگاندنی بەڵگە و مێتۆدەکانی توێژینەوە لە یەک شوێن.</p></div>
       </section>
-      @defer (on idle) {
-        <app-advanced-research-hub></app-advanced-research-hub>
-      } @placeholder {
-        <div class="mam-defer-placeholder"><mat-icon>science</mat-icon><span>ناوەندی توێژینەوە خەریکی ئامادەبوونە...</span></div>
-      }
+      <app-advanced-research-hub></app-advanced-research-hub>
     }
 
     @case ('platform') {
       <section class="mam-page-head">
         <div><span class="mam-eyebrow">QUALITY</span><h1>پشکنین و بڕواپێکراوی</h1><p>QA، بەڵگە، سەرچاوە و ئەنجامی پشکنین لە یەک شوێن.</p></div>
       </section>
-      @defer (on idle) {
-        <app-academic-platform></app-academic-platform>
-      } @placeholder {
-        <div class="mam-defer-placeholder"><mat-icon>fact_check</mat-icon><span>پلاتفۆرمی پشکنین خەریکی ئامادەبوونە...</span></div>
-      }
+      <app-academic-platform></app-academic-platform>
     }
 
     @case ('google_drive') {
       <section class="mam-page-head">
         <div><span class="mam-eyebrow">INTEGRATIONS</span><h1>هاوبەشی و فایل</h1><p>هێنان و بەڕێوەبردنی ناوەڕۆک لە خزمەتگوزارییە بەستراوەکان.</p></div>
       </section>
-      @defer (on idle) {
-        <div class="mam-integration-stack">
-          <app-google-drive-integration [thesisTitle]="manuscriptTitle()" [thesisContent]="activeChapter()?.content || ''"></app-google-drive-integration>
-          <app-gmail-integration [thesisContent]="activeChapter()?.content || ''"></app-gmail-integration>
-          <app-google-sheets-integration [thesisTitle]="manuscriptTitle()"></app-google-sheets-integration>
-          <app-google-keep-integration></app-google-keep-integration>
-          <app-google-tasks-integration></app-google-tasks-integration>
-        </div>
-      } @placeholder {
-        <div class="mam-defer-placeholder"><mat-icon>cloud</mat-icon><span>خزمەتگوزارییەکانی گووگڵ خەریکی ئامادەبوونن...</span></div>
-      }
+      <div class="mam-integration-stack">
+        <app-google-drive-integration [thesisTitle]="manuscriptTitle()" [thesisContent]="activeChapter()?.content || ''"></app-google-drive-integration>
+        <app-gmail-integration [thesisContent]="activeChapter()?.content || ''"></app-gmail-integration>
+        <app-google-sheets-integration [thesisTitle]="manuscriptTitle()"></app-google-sheets-integration>
+        <app-google-keep-integration></app-google-keep-integration>
+        <app-google-tasks-integration></app-google-tasks-integration>
+      </div>
     }
 
     @case ('suite') {
@@ -220,48 +204,40 @@
         <div><h2>کۆمەڵە ئامرازە ئەکادیمییەکان</h2><p>گەڕان و بەکارهێنانی ئامرازەکان بە شێوەیەکی ڕێکخراوتر لە پێشوو.</p></div>
       </section>
 
-      @defer (on idle) {
-        <app-ai-tools-suite></app-ai-tools-suite>
-      } @placeholder {
-        <div class="mam-defer-placeholder"><mat-icon>build</mat-icon><span>ئامرازەکان خەریکی ئامادەبوونن...</span></div>
-      }
+      <app-ai-tools-suite></app-ai-tools-suite>
 
       <details class="mam-secondary-tools">
         <summary><mat-icon>apps</mat-icon><span>ئامرازە پێشووەکان</span><small>بە شێوەی کۆکراوە، نەک هەمووی لە یەک پەڕە</small></summary>
-        @defer (on idle) {
-          <div class="mam-legacy-grid">
-            <app-export-word></app-export-word>
-            <app-harvard-review></app-harvard-review>
-            <app-literature-gap></app-literature-gap>
-            <app-academic-plagiarism-checker></app-academic-plagiarism-checker>
-            <app-python-sandbox></app-python-sandbox>
-            <app-latex></app-latex>
-            <app-glossary></app-glossary>
-            <app-thesis-defense-simulator></app-thesis-defense-simulator>
-            <app-citation-feature></app-citation-feature>
-            <app-search-engine></app-search-engine>
-            <app-research-feature></app-research-feature>
-            <app-elite-review></app-elite-review>
-            <app-speech-dictation (dictatedTextAppended)="appendDictatedSpeechText($event)"></app-speech-dictation>
-            <app-formality-tone-control (configChanged)="onFormalityConfigChanged($event)"></app-formality-tone-control>
-            <app-text-lineage-connector (parentSelected)="onLineageParentChanged($event)"></app-text-lineage-connector>
-            <app-d3-chord-diagram [data]="chapterCrossData()"></app-d3-chord-diagram>
-            <app-kurdish-academic-evaluator [textToEvaluate]="activeChapter()?.content || ''"></app-kurdish-academic-evaluator>
-            <app-academic-glossary-table></app-academic-glossary-table>
-            <app-logical-consistency-checker [initialText]="activeChapter()?.content || ''"></app-logical-consistency-checker>
-            <app-editor-pomodoro-timer [activeText]="activeChapter()?.content || ''"></app-editor-pomodoro-timer>
-            <app-academic-additions-sidebar (insertRequested)="onInsertAcademicAddition($event)"></app-academic-additions-sidebar>
-            <app-concept-graph></app-concept-graph>
-            <app-thesis-health-report [thesisText]="activeChapter()?.content || ''"></app-thesis-health-report>
-            <app-daily-research-pulse [totalWordsInput]="activeChapter()?.wordCount || 0" [citationsCountInput]="sources().length" [glossaryCountInput]="filteredGlossary().length"></app-daily-research-pulse>
-            <app-citation-health-check [chapterText]="activeChapter()?.content || ''"></app-citation-health-check>
-            <app-chapter-timeline-view [chapterId]="activeChapter()?.id || 1" [chapterContent]="activeChapter()?.content || ''" (restoreRequested)="updateActiveChapterContent($event)"></app-chapter-timeline-view>
-            <app-grammar-syntax-floating-panel [chapterContent]="activeChapter()?.content || ''" (textUpdated)="updateActiveChapterContent($event)"></app-grammar-syntax-floating-panel>
-            <app-split-view-editor [chapterContent]="activeChapter()?.content || ''" (applyCorrections)="updateActiveChapterContent($event)"></app-split-view-editor>
-          </div>
-        } @placeholder {
-          <div class="mam-defer-placeholder"><mat-icon>apps</mat-icon><span>ئامرازە پێشووەکان خەریکی ئامادەبوونن...</span></div>
-        }
+        <div class="mam-legacy-grid">
+          <app-export-word></app-export-word>
+          <app-harvard-review></app-harvard-review>
+          <app-literature-gap></app-literature-gap>
+          <app-academic-plagiarism-checker></app-academic-plagiarism-checker>
+          <app-python-sandbox></app-python-sandbox>
+          <app-latex></app-latex>
+          <app-glossary></app-glossary>
+          <app-thesis-defense-simulator></app-thesis-defense-simulator>
+          <app-citation-feature></app-citation-feature>
+          <app-search-engine></app-search-engine>
+          <app-research-feature></app-research-feature>
+          <app-elite-review></app-elite-review>
+          <app-speech-dictation (dictatedTextAppended)="appendDictatedSpeechText($event)"></app-speech-dictation>
+          <app-formality-tone-control (configChanged)="onFormalityConfigChanged($event)"></app-formality-tone-control>
+          <app-text-lineage-connector (parentSelected)="onLineageParentChanged($event)"></app-text-lineage-connector>
+          <app-d3-chord-diagram [data]="chapterCrossData()"></app-d3-chord-diagram>
+          <app-kurdish-academic-evaluator [textToEvaluate]="activeChapter()?.content || ''"></app-kurdish-academic-evaluator>
+          <app-academic-glossary-table></app-academic-glossary-table>
+          <app-logical-consistency-checker [initialText]="activeChapter()?.content || ''"></app-logical-consistency-checker>
+          <app-editor-pomodoro-timer [activeText]="activeChapter()?.content || ''"></app-editor-pomodoro-timer>
+          <app-academic-additions-sidebar (insertRequested)="onInsertAcademicAddition($event)"></app-academic-additions-sidebar>
+          <app-concept-graph></app-concept-graph>
+          <app-thesis-health-report [thesisText]="activeChapter()?.content || ''"></app-thesis-health-report>
+          <app-daily-research-pulse [totalWordsInput]="activeChapter()?.wordCount || 0" [citationsCountInput]="sources().length" [glossaryCountInput]="filteredGlossary().length"></app-daily-research-pulse>
+          <app-citation-health-check [chapterText]="activeChapter()?.content || ''"></app-citation-health-check>
+          <app-chapter-timeline-view [chapterId]="activeChapter()?.id || 1" [chapterContent]="activeChapter()?.content || ''" (restoreRequested)="updateActiveChapterContent($event)"></app-chapter-timeline-view>
+          <app-grammar-syntax-floating-panel [chapterContent]="activeChapter()?.content || ''" (textUpdated)="updateActiveChapterContent($event)"></app-grammar-syntax-floating-panel>
+          <app-split-view-editor [chapterContent]="activeChapter()?.content || ''" (applyCorrections)="updateActiveChapterContent($event)"></app-split-view-editor>
+        </div>
       </details>
     }
 

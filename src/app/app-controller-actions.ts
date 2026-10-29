@@ -192,7 +192,17 @@ export abstract class AppControllerActions extends AppControllerBase {
   }
 
   toggleAcademicDarkMode() {
-    this.academicDarkMode.update(v => !v);
+    this.academicDarkMode.update(v => {
+      const next = !v;
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('mam_dark_mode', String(next));
+          document.documentElement.classList.toggle('dark', next);
+          document.body.classList.toggle('academic-dark', next);
+        } catch {}
+      }
+      return next;
+    });
   }
 
   isManuscriptCompleted(item: any): boolean {
@@ -467,23 +477,14 @@ export abstract class AppControllerActions extends AppControllerBase {
   verifyCitationsLive(c: any) { this.bridge.verifyCitationsLive(c); } runAcademicConsultation() { this.bridge.runAcademicConsultation(); }
   appendConsultationToActiveChapter(c: any, text: string = '') { this.bridge.appendConsultationToActiveChapter(c, text); }
   auditAIIntegrity(chapter: any) { this.bridge.auditAIIntegrity(chapter); } summarizeThesisContext() { this.bridge.summarizeThesisContext(); }
-  anonymizeActiveChapterData(chapter: any) { this.bridge.anonymizeActiveChapterData(chapter); } recalibrateWithIntuition(chapter: any) { this.bridge.recalibrateWithIntuition(chapter); }
-  generateVivaQuestions(chapter: any) { this.bridge.generateVivaQuestions(chapter); } generateAcademicAdditions(chapter: any) { this.bridge.generateAcademicAdditions(chapter); }
-  appendAdditionsToChapter(chapter: any, addition: any) { this.bridge.appendAdditionsToChapter(chapter, addition); } appendMethodologyLayoutToChapter(chapter: any) { this.bridge.appendMethodologyLayoutToChapter(chapter); }
-  analyzeSoraniPhoneticsAndDialect(chapter: any) { this.bridge.analyzeSoraniPhoneticsAndDialect(chapter); } constructMethodologyAndHypotheses(chapter: any) { this.bridge.constructMethodologyAndHypotheses(chapter); }
-  appendStatsExplanationToChapter(chapter: any) { this.bridge.appendStatsExplanationToChapter(chapter); } simulateEmpiricalStats(chapter: any) { this.bridge.simulateEmpiricalStats(chapter); }
-  applyHarvardActionableImprovement(c: any, item?: any) { this.bridge.applyHarvardActionableImprovement(c, item); } runHarvardAcademicReview(c: any) { this.bridge.runHarvardAcademicReview(c); }
-  appendLiteratureGapParagraphToChapter(c: any, text?: any) { this.bridge.appendLiteratureGapParagraphToChapter(c, text); } analyzeLiteratureGap(c: any) { this.bridge.analyzeLiteratureGap(c); }
-  applyEliteCoAuthorMitigatedText(c: any) { this.bridge.applyEliteCoAuthorMitigatedText(c); } analyzeEliteCoAuthorHub(c: any) { this.bridge.analyzeEliteCoAuthorHub(c); }
-  applyParaphrasedAlternativeToChapter(c: any, alt?: any) { this.bridge.applyParaphrasedAlternativeToChapter(c, alt); } applyParaphrasedText(c: any) { this.bridge.applyParaphrasedText(c); }
-  runAcademicParaphrase() { this.bridge.runAcademicParaphrase(); } writeSingleChapter(id: number) { this.bridge.writeSingleChapter(id); }
-  writeAllChapters() { this.bridge.writeAllChapters(); } generateMultiStyleCitation() { this.bridge.generateMultiStyleCitation(); }
-  checkChapterPlagiarism(chapter: any) { this.bridge.checkChapterPlagiarism(chapter); } exportSandboxPDF() { this.bridge.exportSandboxPDF(); }
-  appendPythonSandboxOutputToChapter(chapter: any) { this.bridge.appendPythonSandboxOutputToChapter(chapter); } executePythonDatasetInterpreter(chapter: any) { this.bridge.executePythonDatasetInterpreter(chapter); }
-  copyLatexCode(code: string) { this.bridge.copyLatexCode(code); } generateEliteAcademicAssessment(chapter: any) { this.bridge.generateEliteAcademicAssessment(chapter); }
-  copyCitationsToClipboard(txt: string) { this.bridge.copyCitationsToClipboard(txt); } appendCitationToChapter(chapter: any) { this.bridge.appendCitationToChapter(chapter); }
-  analyzeChapterRigor(c: any) { this.bridge.analyzeChapterRigor(c); } resetViva() { this.bridge.resetViva(); }
-  submitVivaDefense(c: any) { this.bridge.submitVivaDefense(c); }
+  anonymizeActiveChapterData(chapter: any) { this.bridge.anonymizeActiveChapterData(chapter); } recalibrateWithIntuition(chapter: any) { this.bridge.recalibrateWithIntuition(chapter); } generateVivaQuestions(chapter: any) { this.bridge.generateVivaQuestions(chapter); } generateAcademicAdditions(chapter: any) { this.bridge.generateAcademicAdditions(chapter); }
+  appendAdditionsToChapter(chapter: any, addition: any) { this.bridge.appendAdditionsToChapter(chapter, addition); } appendMethodologyLayoutToChapter(chapter: any) { this.bridge.appendMethodologyLayoutToChapter(chapter); } analyzeSoraniPhoneticsAndDialect(chapter: any) { this.bridge.analyzeSoraniPhoneticsAndDialect(chapter); } constructMethodologyAndHypotheses(chapter: any) { this.bridge.constructMethodologyAndHypotheses(chapter); }
+  appendStatsExplanationToChapter(chapter: any) { this.bridge.appendStatsExplanationToChapter(chapter); } simulateEmpiricalStats(chapter: any) { this.bridge.simulateEmpiricalStats(chapter); } applyHarvardActionableImprovement(c: any, item?: any) { this.bridge.applyHarvardActionableImprovement(c, item); } runHarvardAcademicReview(c: any) { this.bridge.runHarvardAcademicReview(c); }
+  appendLiteratureGapParagraphToChapter(c: any, text?: any) { this.bridge.appendLiteratureGapParagraphToChapter(c, text); } analyzeLiteratureGap(c: any) { this.bridge.analyzeLiteratureGap(c); } applyEliteCoAuthorMitigatedText(c: any) { this.bridge.applyEliteCoAuthorMitigatedText(c); } analyzeEliteCoAuthorHub(c: any) { this.bridge.analyzeEliteCoAuthorHub(c); }
+  applyParaphrasedAlternativeToChapter(c: any, alt?: any) { this.bridge.applyParaphrasedAlternativeToChapter(c, alt); } applyParaphrasedText(c: any) { this.bridge.applyParaphrasedText(c); } runAcademicParaphrase() { this.bridge.runAcademicParaphrase(); } writeSingleChapter(id: number) { this.bridge.writeSingleChapter(id); }
+  writeAllChapters() { this.bridge.writeAllChapters(); } generateMultiStyleCitation() { this.bridge.generateMultiStyleCitation(); } checkChapterPlagiarism(chapter: any) { this.bridge.checkChapterPlagiarism(chapter); } exportSandboxPDF() { this.bridge.exportSandboxPDF(); }
+  appendPythonSandboxOutputToChapter(chapter: any) { this.bridge.appendPythonSandboxOutputToChapter(chapter); } executePythonDatasetInterpreter(chapter: any) { this.bridge.executePythonDatasetInterpreter(chapter); } copyLatexCode(code: string) { this.bridge.copyLatexCode(code); } generateEliteAcademicAssessment(chapter: any) { this.bridge.generateEliteAcademicAssessment(chapter); }
+  copyCitationsToClipboard(txt: string) { this.bridge.copyCitationsToClipboard(txt); } appendCitationToChapter(chapter: any) { this.bridge.appendCitationToChapter(chapter); } analyzeChapterRigor(c: any) { this.bridge.analyzeChapterRigor(c); } resetViva() { this.bridge.resetViva(); } submitVivaDefense(c: any) { this.bridge.submitVivaDefense(c); }
   applyManuscriptUpdate(text: string, mode: 'replace' | 'append' = 'append') {
     this.manuscriptBridgeActions.applyManuscriptUpdate(text, mode, this.viewedChapter() || this.activeChapter(), undefined, this.refineForm?.value, this.manuscriptTitle());
     if (this.viewedChapter()) {

@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { GoogleGenAI } from '@google/genai';
 import { AppNotificationsService } from '../core/app.notifications';
 import { AcademicStoreService } from './academic-store.service';
 import { DigitalLibraryService } from './digital-library.service';
@@ -38,7 +39,7 @@ export class GeminiRequestManagerService {
   public lastWarning = signal<string | null>(null);
 
   readonly apiKeys = signal<string[]>(this.loadApiKeysFromStorage());
-  readonly preferredModel = signal<'gemini-2.5-flash' | 'gemini-2.5-pro'>(this.loadModelFromStorage());
+  readonly preferredModel = signal<string>(this.loadModelFromStorage());
   readonly currentKeyIndex = signal<number>(0);
 
   private loadApiKeysFromStorage(): string[] {
@@ -48,10 +49,10 @@ export class GeminiRequestManagerService {
     } catch { return []; }
   }
 
-  private loadModelFromStorage(): 'gemini-2.5-flash' | 'gemini-2.5-pro' {
+  private loadModelFromStorage(): string {
     if (typeof window === 'undefined') return 'gemini-2.5-flash';
     try {
-      return localStorage.getItem('MAM_GEMINI_MODEL') === 'gemini-2.5-pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+      return localStorage.getItem('MAM_GEMINI_MODEL') || 'gemini-2.5-flash';
     } catch { return 'gemini-2.5-flash'; }
   }
 
@@ -63,7 +64,7 @@ export class GeminiRequestManagerService {
     if (typeof window !== 'undefined') localStorage.setItem('MAM_GEMINI_API_KEYS', unique.join(','));
   }
 
-  public setPreferredModel(model: 'gemini-2.5-flash' | 'gemini-2.5-pro'): void {
+  public setPreferredModel(model: string): void {
     this.preferredModel.set(model);
     if (typeof window !== 'undefined') localStorage.setItem('MAM_GEMINI_MODEL', model);
   }
@@ -307,47 +308,42 @@ export class GeminiRequestManagerService {
 
   public async callGeminiApi(contents: any, systemInstruction?: string, retryCount = 0): Promise<string> {
     const keys = this.apiKeys();
-    const model = this.preferredModel();
+    const model = this.preferredModel() || 'gemini-2.5-pro';
 
     if (keys.length > 0) {
       const currentKey = keys[this.currentKeyIndex() % keys.length];
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`;
-      const payload: any = {
-        contents: Array.isArray(contents) ? contents : [{ role: 'user', parts: [{ text: String(contents) }] }],
-        generationConfig: { temperature: 0.35, maxOutputTokens: 8192 }
-      };
-      if (systemInstruction) {
-        payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-      }
+      const promptText = typeof contents === 'string' ? contents : JSON.stringify(contents);
 
       try {
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+        const ai = new GoogleGenAI({ apiKey: currentKey });
+        const config: {
+          temperature: number;
+          thinkingConfig?: { thinkingBudget?: number };
+          systemInstruction?: string;
+        } = {
+          temperature: 0.35,
+          thinkingConfig: { thinkingBudget: 8192 }
+        };
+        if (systemInstruction) {
+          config.systemInstruction = systemInstruction;
+        }
+
+        const response = await ai.models.generateContent({
+          model,
+          contents: promptText,
+          config
         });
 
-        if (resp.status === 429 || resp.status === 503) {
-          this.notifications.showWarning('بەربەستی کوۆتا', `کێشەی (${resp.status}) - خولانەوە بۆ کلیلی دواتر`);
+        if (response.text && response.text.trim().length > 0) {
+          return response.text.trim();
+        }
+      } catch (err: any) {
+        const errMsg = err?.message || String(err);
+        if ((errMsg.includes('429') || errMsg.includes('Quota') || errMsg.includes('RESOURCE_EXHAUSTED')) && retryCount < keys.length) {
+          this.notifications.showWarning('سنووری کوۆتا', 'خولانەوە بۆ کلیلی دواتر لە حەوزی API');
           this.rotateToNextKey();
-          if (retryCount < keys.length) {
-            return this.callGeminiApi(contents, systemInstruction, retryCount + 1);
-          }
+          return this.callGeminiApi(contents, systemInstruction, retryCount + 1);
         }
-
-        if (resp.ok) {
-          const data = await resp.json();
-          const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (typeof txt === 'string' && txt.trim().length > 0) return txt.trim();
-        } else {
-          const errBody = await resp.text().catch(() => '');
-          if ((errBody.includes('RESOURCE_EXHAUSTED') || errBody.includes('Quota')) && retryCount < keys.length) {
-            this.notifications.showWarning('سنووری کوۆتا', 'خولانەوە بۆ کلیلی دواتر لە حەوزی API');
-            this.rotateToNextKey();
-            return this.callGeminiApi(contents, systemInstruction, retryCount + 1);
-          }
-        }
-      } catch (err) {
         if (retryCount < keys.length - 1) {
           this.rotateToNextKey();
           return this.callGeminiApi(contents, systemInstruction, retryCount + 1);

@@ -207,7 +207,10 @@ export abstract class AppControllerBase implements OnInit {
   isHistoryLoading = this.data.isHistoryLoading;
   isFirebaseSaving = this.data.isFirebaseSaving;
 
-  academicDarkMode = signal<boolean>(false);
+  academicDarkMode = signal<boolean>(
+    typeof window !== 'undefined' ? localStorage.getItem('mam_dark_mode') === 'true' : false
+  );
+  isReputationModalOpen = signal<boolean>(false);
   chapters = signal<ChapterItem[]>([]);
   activeReview = signal<StructureReviewResult | null>(null);
   isReviewingStructure = signal<boolean>(false);
@@ -311,6 +314,11 @@ export abstract class AppControllerBase implements OnInit {
   ngOnInit(): void {
     this.bridge.refineForm = this.refineForm;
     this.startupService.init();
+    if (typeof window !== 'undefined') {
+      const isDark = this.academicDarkMode();
+      document.documentElement.classList.toggle('dark', isDark);
+      document.body.classList.toggle('academic-dark', isDark);
+    }
   }
 
 }

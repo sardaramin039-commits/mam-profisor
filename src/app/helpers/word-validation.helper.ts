@@ -1,4 +1,5 @@
 import { ChapterItemModel as ChapterItem } from '../domain/models';
+import { KurdishWordCounter } from './kurdish-word-counter';
 
 export interface WordValidationStatus {
   pct: number;
@@ -43,7 +44,9 @@ export function calculateWordValidationStatus(
   }
 
   const targetWords = targetWordsGetter(chapter);
-  const currentWords = chapter.wordCount || (chapter.content ? chapter.content.trim().split(/\s+/).filter(Boolean).length : 0);
+  const currentWords = chapter.content
+    ? KurdishWordCounter.countWords(chapter.content, { excludeBibliography: true, excludeTitles: true })
+    : (chapter.wordCount || 0);
   const pct = targetWords > 0 ? Math.round((currentWords / targetWords) * 100) : 0;
   const currentPages = Number((currentWords / 350).toFixed(1));
   const targetPages = Number((targetWords / 350).toFixed(1));

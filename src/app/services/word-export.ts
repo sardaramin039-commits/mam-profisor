@@ -5,6 +5,7 @@ import { PublishingMetadata } from '../features/camera-ready-publishing/models/c
 import { UNIVERSITIES, UniversityFormatPreset } from '../features/academic-suite/university-layout-formatter.component';
 import { TEMPLATES as APPENDIX_TEMPLATES } from '../features/academic-suite/thesis-appendices-generator.component';
 import { toSoraniNumber } from '../pipes/sorani-number.pipe';
+import { ExportReportBuilder, VerifiedSourceExportItem, WordCountExportAudit } from './export-report-builder';
 
 export interface ExportChapterData { title: string; content: string; }
 export interface ExportSourceItem { id?: string; title: string; author: string; year?: number | string; doi?: string; publisher?: string; }
@@ -17,6 +18,8 @@ export interface FullManuscriptExportOptions {
   abstractText?: string;
   customUniversityId?: string;
   appendices?: Array<{ title: string; content: string }>;
+  verifiedSourcesReport?: VerifiedSourceExportItem[];
+  wordCountAuditReport?: WordCountExportAudit;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -235,6 +238,16 @@ export class WordExportService {
       });
     }
 
+    // Reports: Source Verification and Word Count Compliance
+    if (options?.verifiedSourcesReport) {
+      const vReports = ExportReportBuilder.buildDocxVerificationReport(options.verifiedSourcesReport);
+      mainBodyChildren.push(...vReports);
+    }
+    if (options?.wordCountAuditReport) {
+      const wcReports = ExportReportBuilder.buildDocxWordCountReport(options.wordCountAuditReport);
+      mainBodyChildren.push(...wcReports);
+    }
+
     const document = new Document({
       sections: [
         // Section 1: Front Matter with Abjad / Roman Pagination & Unnumbered Title Page
@@ -442,6 +455,10 @@ p { margin-bottom: 16px; text-indent: 0.8cm; }
         html += `<h2 class="sub-title">${app.title}</h2><div class="meta-card"><pre style="font-family: inherit; white-space: pre-wrap; font-size: 12pt;">${app.content}</pre></div>\n`;
       });
       html += `<div class="footer-badge">لاپەڕە ${toSoraniNumber(pageNum++)}</div>\n</div>\n`;
+    }
+
+    if (options.verifiedSourcesReport?.length || options.wordCountAuditReport) {
+      html += ExportReportBuilder.buildHtmlReports(options.verifiedSourcesReport || [], options.wordCountAuditReport);
     }
 
     html += `</body></html>`;

@@ -49,6 +49,8 @@ import { VipWritingQualityComponent } from './features/editor/components/vip-wri
 import { FloatingAcademicToolbarComponent } from './features/editor/components/floating-academic-toolbar.component';
 import { AcademicQualityCenterComponent } from './features/academic-quality-center/academic-quality-center';
 import { EditorAutoSaveStatusComponent } from './features/editor/components/editor-auto-save-status.component';
+import { StrictWordCountWidgetComponent } from './features/editor/components/strict-word-count-widget.component';
+import { UserReputationModalComponent } from './features/user-reputation/user-reputation-modal.component';
 
 export const BASIC_VIEW_IMPORTS = [
   CommonModule,
@@ -104,6 +106,8 @@ export const WORKSPACE_FEATURE_IMPORTS = [
   VipWritingQualityComponent,
   FloatingAcademicToolbarComponent,
   AcademicQualityCenterComponent,
+  StrictWordCountWidgetComponent,
+  UserReputationModalComponent,
 ] as const;
 
 /** Legacy aggregate kept for compatibility with feature code outside template sections. */
@@ -161,4 +165,6 @@ export const APP_VIEW_IMPORTS = [
   FloatingAcademicToolbarComponent,
   AcademicQualityCenterComponent,
   EditorAutoSaveStatusComponent,
+  StrictWordCountWidgetComponent,
+  UserReputationModalComponent,
 ];

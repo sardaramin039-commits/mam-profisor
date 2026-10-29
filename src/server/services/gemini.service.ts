@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { GeminiAutoEvolutionEngine, getAutoEvolutionEngine } from './GeminiAutoEvolutionEngine';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -21,6 +22,8 @@ export function isTransientError(error: unknown): boolean {
 
 let geminiClientsPool: GoogleGenAI[] = [];
 let nextClientIndex = 0;
+
+export { getAutoEvolutionEngine };
 
 export function getGeminiClient(): GoogleGenAI {
   const keysEnv = process.env['GEMINI_API_KEY'];
@@ -48,6 +51,8 @@ export function getGeminiClient(): GoogleGenAI {
 
   if (geminiClientsPool.length !== keys.length) {
     nextClientIndex = 0;
+    const engine = getAutoEvolutionEngine();
+
     geminiClientsPool = keys.map((key, index) => {
       const client = new GoogleGenAI({
         apiKey: key,
@@ -59,7 +64,7 @@ export function getGeminiClient(): GoogleGenAI {
       });
 
       const originalGenerateContent = client.models.generateContent.bind(client.models);
-      
+
       interface RobustGoogleGenAI {
         models: {
           generateContent: (params: unknown) => Promise<unknown>;
@@ -68,32 +73,41 @@ export function getGeminiClient(): GoogleGenAI {
       }
 
       const robustClient = client as unknown as RobustGoogleGenAI;
-      
+
       robustClient.models.generateContent = async (params: unknown) => {
         let lastError: unknown = null;
-        const typedParams = params as { model?: string; config?: { thinkingConfig?: unknown; [key: string]: unknown }; [key: string]: unknown };
-        const originalModel = typedParams?.model || 'gemini-3.8-flash';
+        const typedParams = params as {
+          model?: string;
+          config?: { thinkingConfig?: { thinkingBudget?: number }; [key: string]: unknown };
+          [key: string]: unknown;
+        };
 
-        const modelSequence = [originalModel];
-        const textModelsBackup = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
-        for (const m of textModelsBackup) {
-          if (!modelSequence.includes(m)) {
-            modelSequence.push(m);
-          }
+        // دۆزینەوەی خۆکاری نوێترین مۆدێلەکانی AI Studio بە شێوەی داینامیک
+        const discovered = await engine.discoverLatestModels().catch(() => ({ pro: 'gemini-2.5-pro', flash: 'gemini-2.5-flash' }));
+        const requestedModel = typedParams?.model;
+        
+        let targetModel = requestedModel;
+        if (!targetModel || targetModel.includes('flash')) {
+          targetModel = discovered.flash;
+        } else if (targetModel.includes('pro')) {
+          targetModel = discovered.pro;
         }
 
-        for (const targetModel of modelSequence) {
-          let currentParams = { ...typedParams, model: targetModel };
+        const modelSequence = [targetModel, discovered.flash, discovered.pro].filter((v, i, a) => a.indexOf(v) === i);
+
+        for (const currentTargetModel of modelSequence) {
+          let currentParams = { ...typedParams, model: currentTargetModel };
           if (currentParams['config'] && typeof currentParams['config'] === 'object') {
             const cleanedConfig = { ...(currentParams['config'] as Record<string, unknown>) };
             if (!cleanedConfig['maxOutputTokens']) {
               cleanedConfig['maxOutputTokens'] = 8192;
             }
-            if (!cleanedConfig['thinkingConfig'] && (targetModel.startsWith('gemini-3.8') || targetModel.startsWith('gemini-3.1'))) {
-              cleanedConfig['thinkingConfig'] = { thinkingBudget: 1024 };
-            }
-            if (!targetModel.startsWith('gemini-3.8') && !targetModel.startsWith('gemini-3.1')) {
-              delete cleanedConfig['thinkingConfig'];
+            // چالاککردنی Deep Thinking Budget (8192) بۆ مۆدێلە توانادارەکان
+            if (
+              !cleanedConfig['thinkingConfig'] &&
+              (currentTargetModel.includes('pro') || currentTargetModel.includes('3.8') || currentTargetModel.includes('2.5'))
+            ) {
+              cleanedConfig['thinkingConfig'] = { thinkingBudget: 8192 };
             }
             const tools = cleanedConfig['tools'];
             if (tools && Array.isArray(tools) && tools.length > 0) {
@@ -105,7 +119,7 @@ export function getGeminiClient(): GoogleGenAI {
           for (let attempt = 0; attempt < keys.length; attempt++) {
             const activeIndex = (index + attempt) % keys.length;
             const activeClient = geminiClientsPool[activeIndex] as unknown as RobustGoogleGenAI;
-            
+
             let lastKeyError: unknown = null;
             let success = false;
             let result: unknown = null;
@@ -128,12 +142,19 @@ export function getGeminiClient(): GoogleGenAI {
                 lastKeyError = error;
                 const errMsg = error instanceof Error ? error.message : String(error);
                 const isTransient = isTransientError(error);
-                
-                console.warn(`[GEMINI ATTEMPT FAIL] SDK call failed for key index ${activeIndex} with model ${targetModel} (Attempt ${retry + 1}/3). Error: ${errMsg}.`);
-                
-                if (isTransient && retry < 1) {
-                  const sleepTime = 500;
-                  console.warn(`[GEMINI RETRY] Transient error detected. Quick retry in ${sleepTime}ms...`);
+
+                console.warn(`[GEMINI ATTEMPT FAIL] SDK call failed for key index ${activeIndex} with model ${currentTargetModel} (Attempt ${retry + 1}/3). Error: ${errMsg}.`);
+
+                // خۆچاککردنەوە لە کاتی کارنەکردنی thinkingBudget
+                if (errMsg.toLowerCase().includes('thinking')) {
+                  if (currentParams.config && typeof currentParams.config === 'object') {
+                    delete (currentParams.config as Record<string, unknown>)['thinkingConfig'];
+                  }
+                }
+
+                if (isTransient) {
+                  const sleepTime = 1000 * Math.pow(2, retry);
+                  console.warn(`[GEMINI RETRY] Transient/Quota error detected. Exponential backoff in ${sleepTime}ms...`);
                   await delay(sleepTime);
                 } else {
                   break;
@@ -145,7 +166,7 @@ export function getGeminiClient(): GoogleGenAI {
               return result;
             } else {
               lastError = lastKeyError;
-              console.warn(`[GEMINI FAILOVER] Attempt exhausted for key index ${activeIndex} with model ${targetModel}. Trying next fallback options if available...`);
+              console.warn(`[GEMINI FAILOVER] Attempt exhausted for key index ${activeIndex} with model ${currentTargetModel}. Trying next key/model in pool...`);
             }
           }
         }
