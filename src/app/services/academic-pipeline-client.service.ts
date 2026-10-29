@@ -1,4 +1,4 @@
-import { Inject, Injectable, InjectionToken } from '@angular/core';
+import { inject, Injectable, InjectionToken } from '@angular/core';
 import { auth } from '../firebase';
 
 export type AcademicPipelineLevel = 'school' | 'bachelor' | 'master' | 'phd' | 'professor';
@@ -41,9 +41,7 @@ export const ACADEMIC_PIPELINE_AUTH = new InjectionToken<AcademicPipelineAuthPro
  */
 @Injectable({ providedIn: 'root' })
 export class AcademicPipelineClientService {
-  public constructor(
-    @Inject(ACADEMIC_PIPELINE_AUTH) private readonly authProvider: AcademicPipelineAuthProvider
-  ) {}
+  private readonly authProvider = inject(ACADEMIC_PIPELINE_AUTH);
 
   public async generate(
     request: AcademicPipelineRequest,
