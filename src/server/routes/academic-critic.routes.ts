@@ -8,7 +8,7 @@ const refineSchema = z.object({
   subSectionTitle: z.string().trim().min(1).max(500)
 }).strict();
 
-export function createAcademicCriticRouter(getGeminiClient: () => GoogleGenAI): Router {
+export function createAcademicCriticRouter(): Router {
   const router = Router();
 
   router.post('/refine-section', async (req: Request, res: Response): Promise<void> => {
@@ -29,9 +29,13 @@ export function createAcademicCriticRouter(getGeminiClient: () => GoogleGenAI): 
       );
       res.json(result);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'هەڵەیەکی نەزانراو ڕوویدا.';
-      console.error('[academic-critic] section refinement failed:', error);
-      res.status(502).json({ error: 'پشکنینی ئەکادیمی تەواو نەبوو؛ دەقی بنەڕەتی بپارێزە.', message });
+      // Provider errors may contain request details; keep those details out of client responses/logs.
+      const errorName = error instanceof Error ? error.name : typeof error;
+      console.error('[academic-critic] section refinement failed:', errorName);
+      res.status(502).json({
+        error: 'پشکنینی ئەکادیمی تەواو نەبوو؛ دەقی بنەڕەتی بپارێزە.',
+        code: 'ACADEMIC_CRITIC_FAILED'
+      });
     }
   });
 
