@@ -1,7 +1,7 @@
 import { Type, type GoogleGenAI, type Schema } from '@google/genai';
 import { generateGeminiContent } from './gemini.service';
 import { academicLevelCriticService, type AcademicLevel } from './academic-level-critic.service';
-import { researchIntelligenceService } from './research-intelligence.service';
+import { academicSourceDiscoveryService } from './academic-source-discovery.service';
 
 export type AcademicPipelineStage =
   | 'grounding'
@@ -224,14 +224,15 @@ export async function* executeAcademicPipeline(params: {
 
   const discipline = cleanString(params.discipline, 200) || 'گشتی';
   let discovered: unknown[] = [];
-  if (params.getGeminiClient) {
-    try {
-      const result = await researchIntelligenceService.discover(title, discipline, params.getGeminiClient);
-      discovered = Array.isArray(result.sources) ? result.sources : [];
-    } catch {
-      // An unavailable provider must not be replaced with invented sources.
-      discovered = [];
-    }
+  try {
+    discovered = await academicSourceDiscoveryService.discover(
+      title,
+      discipline,
+      params.getGeminiClient
+    );
+  } catch {
+    // An unavailable provider must not be replaced with invented sources.
+    discovered = [];
   }
   const sourceCandidates = normalizeSourceCandidates(discovered);
   const sourceContext = sourceCandidates.length
