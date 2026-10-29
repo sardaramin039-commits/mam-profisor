@@ -18,6 +18,7 @@ export interface SubmissionAuditEvent {
   previousHash: string;
   eventHash: string;
   legacyAnchor?: boolean;
+  integrityGatePassed?: boolean;
 }
 
 export type SubmissionAuditStatus = 'VERIFIED' | 'INVALID' | 'LEGACY_UNSEEDED' | 'LEGACY_RECONSTRUCTED';
@@ -41,6 +42,7 @@ export interface BuildSubmissionAuditEventInput {
   occurredAt: string;
   previousHash: string;
   legacyAnchor?: boolean;
+  integrityGatePassed?: boolean;
 }
 
 function clean(value: unknown): string {
@@ -58,7 +60,8 @@ function eventPayload(input: BuildSubmissionAuditEventInput): string {
     receiptId: clean(input.receiptId),
     occurredAt: clean(input.occurredAt),
     previousHash: clean(input.previousHash),
-    legacyAnchor: input.legacyAnchor === true
+    legacyAnchor: input.legacyAnchor === true,
+    ...(input.integrityGatePassed === true ? { integrityGatePassed: true } : {})
   });
 }
 
@@ -82,7 +85,8 @@ export function buildSubmissionAuditEvent(input: BuildSubmissionAuditEventInput)
     occurredAt: clean(input.occurredAt),
     previousHash: clean(input.previousHash),
     eventHash,
-    ...(input.legacyAnchor ? { legacyAnchor: true } : {})
+    ...(input.legacyAnchor ? { legacyAnchor: true } : {}),
+    ...(input.integrityGatePassed ? { integrityGatePassed: true } : {})
   };
 }
 
@@ -99,7 +103,8 @@ function verifyEvent(event: SubmissionAuditEvent, expectedPreviousHash: string, 
     receiptId: event.receiptId,
     occurredAt: event.occurredAt,
     previousHash: event.previousHash,
-    legacyAnchor: event.legacyAnchor
+    legacyAnchor: event.legacyAnchor,
+    integrityGatePassed: event.integrityGatePassed
   });
   if (expected.id !== event.id) return `Audit event id mismatch at ${event.id}.`;
   return expected.eventHash === event.eventHash ? null : `Audit event hash mismatch at ${event.id}.`;
@@ -137,7 +142,11 @@ export function verifySubmissionAuditChain(
     if (index === 0 && event.previousHash !== '') errors.push('The first audit event must have an empty previous hash.');
     if (!legacyAnchor && index === 0 && event.version !== 1) errors.push('The first non-legacy audit event must be version 1.');
     if (index > 0 && event.from !== previousStatus) errors.push(`Audit state mismatch at version ${event.version}.`);
-    if (index > 0 && event.from && !canTransition(event.from, event.to).allowed) {
+    const integrityGatedPromotion = event.from === 'DRAFT' && event.to === 'READY' && event.integrityGatePassed === true;
+    if (event.integrityGatePassed && !integrityGatedPromotion) {
+      errors.push(`Invalid integrity-gate marker at audit version ${event.version}.`);
+    }
+    if (index > 0 && event.from && !canTransition(event.from, event.to).allowed && !integrityGatedPromotion) {
       errors.push(`Invalid lifecycle transition at audit version ${event.version}.`);
     }
     previousHash = event.eventHash;
