@@ -16,8 +16,8 @@ vi.mock('./academic-level-critic.service', () => ({
   }
 }));
 
-vi.mock('./research-intelligence.service', () => ({
-  researchIntelligenceService: {
+vi.mock('./academic-source-discovery.service', () => ({
+  academicSourceDiscoveryService: {
     discover: mocks.discover
   }
 }));
@@ -44,7 +44,7 @@ const validOutline = {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.discover.mockResolvedValue({ sources: [] });
+  mocks.discover.mockResolvedValue([]);
 });
 
 describe('academic pipeline integrity and sequencing', () => {
@@ -78,8 +78,7 @@ describe('academic pipeline integrity and sequencing', () => {
 
   it('uses validated external source candidates and labels them unverified', async () => {
     const getGeminiClient = () => ({} as never);
-    mocks.discover.mockResolvedValue({
-      sources: [
+    mocks.discover.mockResolvedValue([
         {
           id: 'source-1',
           title: 'A real indexed candidate',
@@ -99,8 +98,7 @@ describe('academic pipeline integrity and sequencing', () => {
           title: 'Duplicate candidate',
           url: 'https://doi.org/10.1234/example'
         }
-      ]
-    });
+    ]);
     mocks.generateGeminiContent
       .mockResolvedValueOnce(validOutline)
       .mockResolvedValueOnce('A cautious introduction that identifies evidence gaps.')
