@@ -6,5 +6,12 @@
     "outDir": "./out-tsc/spec",
     "types": ["vitest/globals"]
   },
-  "include": ["src/**/*.d.ts", "src/**/*.spec.ts"]
+  "include": ["src/**/*.d.ts", "src/**/*.spec.ts"],
+  "exclude": [
+    "src/server/**/*.spec.ts",
+    "src/routes/**/*.spec.ts",
+    "src/services/**/*.spec.ts",
+    "src/helpers/**/*.spec.ts",
+    "src/middleware/**/*.spec.ts"
+  ]
 }
