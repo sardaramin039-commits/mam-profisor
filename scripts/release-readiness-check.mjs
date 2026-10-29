@@ -159,20 +159,12 @@ if (rootDependencyNames.some(name => runtimeReferencePattern.test(name))) {
   errors.push('a forbidden runtime is listed as a direct project dependency');
 }
 if (lock.packages?.['node_modules/' + optionalTypesName]) {
-  errors.push('optional runtime type package is actually installed in package-lock.json');
+  errors.push('unsupported runtime type package is installed in package-lock.json');
 }
 
 const lockReferences = collectLockReferences(lock);
-const allowedOptionalPeerPaths = new Set([
-  'packages.node_modules/drizzle-orm.peerDependencies.' + optionalTypesName,
-  'packages.node_modules/drizzle-orm.peerDependenciesMeta.' + optionalTypesName
-]);
-const unexpectedLockReferences = lockReferences.filter(path => !allowedOptionalPeerPaths.has(path));
-if (unexpectedLockReferences.length || lockReferences.length !== allowedOptionalPeerPaths.size) {
-  errors.push('unexpected runtime references in npm lock metadata: ' + (unexpectedLockReferences.join(', ') || lockReferences.join(', ')));
-}
-if (lock.packages?.['node_modules/drizzle-orm']?.peerDependenciesMeta?.[optionalTypesName]?.optional !== true) {
-  errors.push('the optional upstream peer metadata changed; review it before accepting the npm lockfile');
+if (lockReferences.length) {
+  errors.push('unsupported runtime references are forbidden in npm lock metadata: ' + lockReferences.join(', '));
 }
 
 if (!manifest.scripts?.build || !manifest.scripts?.typecheck) {
