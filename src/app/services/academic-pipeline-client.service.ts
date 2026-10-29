@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable, InjectionToken } from '@angular/core';
 import { auth } from '../firebase';
 
 export type AcademicPipelineLevel = 'school' | 'bachelor' | 'master' | 'phd' | 'professor';
@@ -25,12 +25,26 @@ export interface AcademicPipelineRequest {
   discipline?: string;
 }
 
+export interface AcademicPipelineAuthProvider {
+  authStateReady(): Promise<unknown>;
+  currentUser: { getIdToken(): Promise<string> } | null;
+}
+
+export const ACADEMIC_PIPELINE_AUTH = new InjectionToken<AcademicPipelineAuthProvider>(
+  'ACADEMIC_PIPELINE_AUTH',
+  { providedIn: 'root', factory: () => auth }
+);
+
 /**
  * Browser client for the protected Express SSE endpoint.
  * Firebase credentials are obtained at request time and are never persisted by this service.
  */
 @Injectable({ providedIn: 'root' })
 export class AcademicPipelineClientService {
+  public constructor(
+    @Inject(ACADEMIC_PIPELINE_AUTH) private readonly authProvider: AcademicPipelineAuthProvider
+  ) {}
+
   public async generate(
     request: AcademicPipelineRequest,
     onEvent: (event: AcademicPipelineEvent) => void,
@@ -45,8 +59,8 @@ export class AcademicPipelineClientService {
       throw new Error('بواری زانستی دەبێت لە نێوان ١ و ٢٠٠ پیت بێت.');
     }
 
-    await auth.authStateReady();
-    const currentUser = auth.currentUser;
+    await this.authProvider.authStateReady();
+    const currentUser = this.authProvider.currentUser;
     if (!currentUser) {
       throw new Error('بۆ بەکارهێنانی زنجیرەی نووسین، تکایە سەرەتا بچۆ ژوورەوە.');
     }
