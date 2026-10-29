@@ -156,6 +156,14 @@ const FIVE_CHAPTER_STANDARD: StandardChapterTemplate[] = [
           </label>
         </div>
 
+        <label class="block text-xs text-slate-300 space-y-1.5">
+          <span class="font-bold">بواری زانستی / دیسیپلین</span>
+          <input type="text" maxlength="200" [value]="pipelineDiscipline()"
+            (input)="pipelineDiscipline.set($any($event.target).value)"
+            placeholder="نموونە: مێژوو، پەروەردە، ئەدەب، پزیشکی..."
+            class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none" />
+        </label>
+
         <div class="flex items-center gap-2 flex-wrap">
           <button type="button" (click)="generateAcademicDraft()"
             [disabled]="isPipelineRunning() || pipelineTitle().trim().length < 2"
@@ -274,6 +282,7 @@ export class ThesisStructureOrganizerComponent {
 
   readonly pipelineTitle = signal('');
   readonly pipelineLevel = signal<AcademicPipelineLevel>('phd');
+  readonly pipelineDiscipline = signal('گشتی');
   readonly isPipelineRunning = signal(false);
   readonly pipelineComplete = signal(false);
   readonly pipelineProgress = signal(0);
@@ -315,7 +324,7 @@ export class ThesisStructureOrganizerComponent {
 
     try {
       const result = await this.academicPipeline.generate(
-        { title, level: this.pipelineLevel() },
+        { title, level: this.pipelineLevel(), discipline: this.pipelineDiscipline() },
         (event: AcademicPipelineEvent) => {
           this.pipelineProgress.set(event.progressPercent);
           this.pipelineStatus.set(event.message);
