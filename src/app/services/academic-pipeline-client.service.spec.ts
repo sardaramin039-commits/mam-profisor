@@ -64,7 +64,8 @@ describe('AcademicPipelineClientService', () => {
     });
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
       title: 'Research title',
-      level: 'phd'
+      level: 'phd',
+      discipline: 'گشتی'
     });
   });
 
