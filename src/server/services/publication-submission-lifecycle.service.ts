@@ -223,7 +223,8 @@ class PublicationSubmissionLifecycleService {
         to: 'READY',
         note: 'P14 submission integrity gate passed.',
         occurredAt,
-        previousHash: current.auditHeadHash
+        previousHash: current.auditHeadHash,
+        integrityGatePassed: true
       });
       const updated: SubmissionLifecycleRecord = {
         ...current,
