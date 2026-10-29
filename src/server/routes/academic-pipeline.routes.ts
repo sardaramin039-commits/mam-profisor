@@ -9,7 +9,7 @@ const requestSchema = z.object({
 
 async function writeEvent(res: Response, event: unknown): Promise<boolean> {
   if (res.destroyed || res.writableEnded) return false;
-  const canContinue = res.write(`data: ${JSON.stringify(event)}\\n\\n`);
+  const canContinue = res.write(`data: ${JSON.stringify(event)}\n\n`);
   if (canContinue) return true;
 
   // A false write result means backpressure, not a broken client. Wait for drain
