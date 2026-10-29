@@ -1,4 +1,5 @@
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { createServer as createNetServer } from 'node:net';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, resolve, relative } from 'node:path';
 
@@ -92,5 +93,100 @@ if (!browserFiles.some(file => /\.(?:m?js)$/i.test(file))) {
   console.error(`Production smoke check failed: no JavaScript bundle found under ${relative(outputRoot, assetRoot)}.`);
   process.exit(1);
 }
+
+
+function reserveLoopbackPort() {
+  return new Promise((resolvePort, reject) => {
+    const probe = createNetServer();
+    probe.once('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const address = probe.address();
+      if (!address || typeof address === 'string') {
+        probe.close(() => reject(new Error('Could not reserve a TCP port for the server smoke test.')));
+        return;
+      }
+      const port = address.port;
+      probe.close(error => error ? reject(error) : resolvePort(port));
+    });
+  });
+}
+
+async function stopServerProcess(child) {
+  if (!child.pid || child.exitCode !== null || child.signalCode !== null) return;
+  await new Promise(resolveExit => {
+    const timer = setTimeout(() => {
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+    }, 2500);
+    child.once('exit', () => {
+      clearTimeout(timer);
+      resolveExit();
+    });
+    child.kill('SIGTERM');
+  });
+}
+
+async function verifyLiveServer() {
+  const port = await reserveLoopbackPort();
+  const child = spawn(process.execPath, [serverEntry], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      PORT: String(port),
+      HOST: '127.0.0.1',
+      NODE_ENV: 'production',
+      TRUST_PROXY: 'false'
+    },
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  let output = '';
+  let spawnError;
+  const appendOutput = chunk => {
+    output = (output + chunk.toString()).slice(-6000);
+  };
+  child.stdout.on('data', appendOutput);
+  child.stderr.on('data', appendOutput);
+  child.on('error', error => {
+    spawnError = error;
+  });
+
+  try {
+    const deadline = Date.now() + 15000;
+    let lastError = 'server did not become healthy before the deadline';
+
+    while (Date.now() < deadline) {
+      if (spawnError) throw spawnError;
+      if (child.exitCode !== null || child.signalCode !== null) break;
+
+      try {
+        const response = await fetch('http://127.0.0.1:' + port + '/healthz', {
+          signal: AbortSignal.timeout(1200)
+        });
+        if (response.ok) {
+          const body = await response.json();
+          if (body?.status !== 'ok') {
+            throw new Error('The health endpoint returned an unexpected response body.');
+          }
+          console.log('Live SSR server smoke check passed: /healthz returned HTTP ' + response.status + '.');
+          return;
+        }
+        lastError = 'health endpoint returned HTTP ' + response.status;
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : String(error);
+      }
+
+      await new Promise(resolveDelay => setTimeout(resolveDelay, 200));
+    }
+
+    throw new Error(
+      'Live SSR server smoke check failed: ' + lastError +
+      (output ? '\nLast server output:\n' + output : '')
+    );
+  } finally {
+    await stopServerProcess(child);
+  }
+}
+
+await verifyLiveServer();
 
 console.log(`Production smoke check passed: SSR entry ${relative(outputRoot, serverEntry)} syntax valid; ${relative(outputRoot, indexFile)}; ${browserFiles.length} browser artifact(s); ${localRefs.length} local bundle references resolved.`);
