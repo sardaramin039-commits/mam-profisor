@@ -1,14 +1,17 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { researchIntelligenceService } from './research-intelligence.service';
 import { sourceVerificationService } from './source-verification.service';
+import { academicSearchService } from '../../services/academic-search.service';
 
 const originalFetch = globalThis.fetch;
+const originalSearchAll = academicSearchService.searchAll;
 const originalOpenAiKey = process.env['OPENAI_API_KEY'];
 const originalOpenAiDiscovery = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
 const originalBillable = process.env['ALLOW_BILLABLE_AI'];
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  academicSearchService.searchAll = originalSearchAll;
   if (originalOpenAiKey === undefined) delete process.env['OPENAI_API_KEY'];
   else process.env['OPENAI_API_KEY'] = originalOpenAiKey;
   if (originalOpenAiDiscovery === undefined) delete process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
@@ -72,6 +75,7 @@ describe('research intelligence source deduplication', () => {
     process.env['OPENAI_API_KEY'] = '';
     process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = 'false';
     process.env['ALLOW_BILLABLE_AI'] = 'false';
+    academicSearchService.searchAll = async () => [];
     globalThis.fetch = (async (input: RequestInfo | URL) => {
       const url = String(input);
       if (!url.includes('semanticscholar.org')) return response({});
@@ -334,7 +338,7 @@ describe('claim to evidence linking', () => {
       expect(result.evidenceLinks).toHaveLength(1);
       expect(result.evidenceLinks[0]?.sourceId).toBe('S-EVID-1');
       expect(result.evidenceLinks[0]?.overlapScore).toBeGreaterThanOrEqual(70);
-      expect(result.evidenceLinks[0]?.verificationStatus).toBe('verified');
+      expect(result.evidenceLinks[0]?.verificationStatus).toBe('unverified');
       expect(result.evidenceLinks[0]?.claimCitationEligible).toBe(false);
       expect(result.evidenceLinks[0]?.evidenceUrl).toBe('https://example.org/evidence');
       expect(result.evidenceLinks[0]?.evidenceType).toBe('abstract');
@@ -387,14 +391,37 @@ describe('strict citation evidence gate', () => {
         trustLevel: 'C',
         existenceVerified: true,
         identityStatus: 'verified',
-        evidenceStatus: 'not_available',
-        citationEligible: false,
+        evidenceStatus: 'verified',
+        evidenceVerificationMethod: 'exact-normalized-claim-match',
+        evidenceText: 'peer tutoring improves academic achievement among students',
+        evidenceType: 'full-text',
+        evidenceProvenance: 'server-verified-fulltext',
+        citationEligible: true,
         metadataAccuracy: 100,
         peerReviewed: false,
         rejectedAsFabricated: false,
         kurdishVerificationDetails: 'verified identity'
       }],
-      citationEligibleSources: [],
+      citationEligibleSources: [{
+        sourceId: 'S-FULL-1',
+        sourceTitle: 'Full Text Study',
+        author: 'Researcher',
+        publisher: 'Journal',
+        integrityScore: 90,
+        trustLevel: 'C',
+        existenceVerified: true,
+        identityStatus: 'verified',
+        evidenceStatus: 'verified',
+        evidenceVerificationMethod: 'exact-normalized-claim-match',
+        evidenceText: 'peer tutoring improves academic achievement among students',
+        evidenceType: 'full-text',
+        evidenceProvenance: 'server-verified-fulltext',
+        citationEligible: true,
+        metadataAccuracy: 100,
+        peerReviewed: false,
+        rejectedAsFabricated: false,
+        kurdishVerificationDetails: 'verified identity'
+      }],
       rejectedSources: [],
       unverifiedSources: [],
       allReports: [{
@@ -406,8 +433,12 @@ describe('strict citation evidence gate', () => {
         trustLevel: 'C',
         existenceVerified: true,
         identityStatus: 'verified',
-        evidenceStatus: 'not_available',
-        citationEligible: false,
+        evidenceStatus: 'verified',
+        evidenceVerificationMethod: 'exact-normalized-claim-match',
+        evidenceText: 'peer tutoring improves academic achievement among students',
+        evidenceType: 'full-text',
+        evidenceProvenance: 'server-verified-fulltext',
+        citationEligible: true,
         metadataAccuracy: 100,
         peerReviewed: false,
         rejectedAsFabricated: false,
