@@ -81,7 +81,9 @@ describe('academic pipeline SSE route', () => {
     ]);
     expect(mocks.executeAcademicPipeline).toHaveBeenCalledWith({
       title: 'Research title',
-      level: 'phd'
+      level: 'phd',
+      discipline: 'گشتی',
+      getGeminiClient: undefined
     });
   });
 
