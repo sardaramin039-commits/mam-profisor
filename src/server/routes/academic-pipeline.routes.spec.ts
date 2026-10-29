@@ -87,9 +87,10 @@ describe('academic pipeline SSE route', () => {
 
   it('does not expose provider errors or secret-like values to clients', async () => {
     const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    mocks.executeAcademicPipeline.mockImplementation(() => (async function* () {
+    mocks.executeAcademicPipeline.mockImplementation(async function* () {
+      yield { stage: 'grounding', progressPercent: 5, message: 'starting' };
       throw new Error('SECRET_PROVIDER_API_KEY=do-not-return');
-    })());
+    });
 
     const response = await fetch(`${await baseUrl()}/api/academic-pipeline/stream`, {
       method: 'POST',
