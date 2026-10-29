@@ -1,6 +1,5 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
-import type { GoogleGenAI } from '@google/genai';
 import { academicLevelCriticService } from '../services/academic-level-critic.service';
 
 const refineSchema = z.object({
@@ -26,8 +25,7 @@ export function createAcademicCriticRouter(getGeminiClient: () => GoogleGenAI): 
       const result = await academicLevelCriticService.verifyAndRefineSection(
         parsed.data.draftMarkdown,
         parsed.data.level,
-        parsed.data.subSectionTitle,
-        getGeminiClient
+        parsed.data.subSectionTitle
       );
       res.json(result);
     } catch (error: unknown) {
