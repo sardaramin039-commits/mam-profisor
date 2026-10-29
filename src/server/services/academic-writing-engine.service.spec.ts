@@ -47,7 +47,7 @@ describe('AcademicWritingEngineService evidence and output safety', () => {
 
     expect(blank.status).toBe('degraded');
     expect(overlong.status).toBe('degraded');
-    expect(blank.arguments[0]?.evidenceQuotes).toEqual([]);
+    expect(blank.arguments).toEqual([]);
     expect(client.models.generateContent).not.toHaveBeenCalled();
     expect(overlong.researchQuestion.length).toBeLessThan(600);
   });
@@ -89,7 +89,8 @@ describe('AcademicWritingEngineService evidence and output safety', () => {
     );
 
     expect(result.status).toBe('degraded');
-    expect(result.arguments[0]?.evidenceQuotes).toEqual([]);
-    expect(result.overallConclusion).toContain('Evidence');
+    expect(result.arguments).toEqual([]);
+    expect(result.overallConclusion).toBe('');
+    expect(result.degradationReason).toBe('invalid_model_response');
   });
 });

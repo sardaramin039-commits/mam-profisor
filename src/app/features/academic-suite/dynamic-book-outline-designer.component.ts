@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { EditorService } from '../editor/services/editor';
 import { AppNotificationsService } from '../../core/app.notifications';
-import { buildAcademicThesisOutline } from '../../helpers/outline-structure';
+import { ChapterItemModel, AxisItem } from '../../domain/models';
+import { GeminiRequestManagerService } from '../../services/gemini-request-manager.service';
 
 export interface KurdishStandardEvaluation {
   status: 'compliant' | 'warning' | 'needs_adjustment';
@@ -56,6 +57,32 @@ export interface KurdishStandardEvaluation {
             مۆنۆگرافی چڕ
           </button>
         </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+        <label class="space-y-1.5 text-xs font-bold text-slate-300">
+          <span class="block">ناونیشانی توێژینەوە یان کتێب</span>
+          <input type="text" [ngModel]="bookTitle()" (ngModelChange)="bookTitle.set($event)"
+                 class="w-full rounded-lg bg-slate-900 border border-slate-700 p-2 text-slate-100"
+                 placeholder="ناونیشانی ورد بنووسە" maxlength="300" />
+        </label>
+        <label class="space-y-1.5 text-xs font-bold text-slate-300">
+          <span class="block">بوار یان دیسیپلین</span>
+          <input type="text" [ngModel]="discipline()" (ngModelChange)="discipline.set($event)"
+                 class="w-full rounded-lg bg-slate-900 border border-slate-700 p-2 text-slate-100"
+                 placeholder="وەک مێژوو، پەروەردە، زمان" maxlength="120" />
+        </label>
+        <label class="space-y-1.5 text-xs font-bold text-slate-300">
+          <span class="block">ئاستی ئەکادیمی</span>
+          <select [ngModel]="academicLevel()" (ngModelChange)="academicLevel.set($event)"
+                  class="w-full rounded-lg bg-slate-900 border border-slate-700 p-2 text-slate-100">
+            <option value="قوتابخانە">قوتابخانە</option>
+            <option value="بەکالۆریۆس">بەکالۆریۆس</option>
+            <option value="ماستەر">ماستەر</option>
+            <option value="دکتۆرا">دکتۆرا</option>
+            <option value="مامۆستای زانکۆ">مامۆستای زانکۆ</option>
+          </select>
+        </label>
       </div>
 
       <!-- Controls Matrix: Pages, Words-per-page, Subsections -->
@@ -198,9 +225,10 @@ export interface KurdishStandardEvaluation {
         <button
           type="button"
           (click)="applyDesignedOutline()"
+          [disabled]="isGenerating()"
           class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-md">
           <mat-icon class="!text-sm !w-4 !h-4">done_all</mat-icon>
-          <span>جێبەجێکردن و ڕێکخستنی پێڕست لە نووسیندا</span>
+          <span>{{ isGenerating() ? 'داڕشتنی پێڕستی تایبەت بە بابەتەکە...' : 'دروستکردنی پێڕستی داینامیکی لەلایەن Gemini' }}</span>
         </button>
       </div>
     </div>
@@ -209,6 +237,12 @@ export interface KurdishStandardEvaluation {
 export class DynamicBookOutlineDesignerComponent {
   private editorService = inject(EditorService);
   private toastService = inject(AppNotificationsService);
+  private geminiManager = inject(GeminiRequestManagerService);
+
+  bookTitle = signal<string>('');
+  discipline = signal<string>('');
+  academicLevel = signal<string>('دکتۆرا');
+  isGenerating = signal<boolean>(false);
 
   targetPages = signal<number>(50);
   wordsPerPage = signal<number>(350);
@@ -288,27 +322,80 @@ export class DynamicBookOutlineDesignerComponent {
     }
   }
 
-  applyDesignedOutline(): void {
-    const chapters = buildAcademicThesisOutline({
-      title: 'کتێبی زانستی و لێکۆڵینەوەی ئەکادیمی',
-      targetPages: this.targetPages(),
-      writingType: 'book',
-      includeDedication: true,
-      includeTOC: true,
-      includeIntro: true,
-      includeConclusion: true,
-      includeRecommendations: true,
-      includeReferences: true
-    });
-
-    this.editorService.setChapters(chapters);
-    if (chapters.length > 0) {
-      this.editorService.activeChapterId.set(chapters[0].id);
+  async applyDesignedOutline(): Promise<void> {
+    const title = this.bookTitle().trim();
+    const discipline = this.discipline().trim();
+    const academicLevel = this.academicLevel();
+    if (!title || !discipline || this.isGenerating()) {
+      this.toastService.showWarning('زانیاری تەواو نییە', 'ناونیشان و بوار پێش دروستکردنی پێڕست پڕ بکەرەوە.');
+      return;
     }
 
-    this.toastService.showSuccess(
-      'پێڕستی داینامیکی جێگیرکرا',
-      `پێڕستی کتێبەکە بە سەرکەوتوویی بەپێی ${this.targetPages()} لاپەڕە و ${this.totalWordsBudget()} وشە ڕێکخرا (${chapters.length} بەش).`
-    );
+    this.isGenerating.set(true);
+    const prompt = `پێڕستێکی نوێ و تایبەت بە بابەتی خوارەوە بۆ کتێب/توێژینەوەی ئەکادیمی بە زمانی کوردیی سۆرانی دروست بکە.
+ناونیشان: ${JSON.stringify(title)}
+بوار: ${JSON.stringify(discipline)}
+ئاست: ${JSON.stringify(academicLevel)}
+ژمارەی فەسلەی سەرەکی: لە 2 تا ${this.majorChaptersCount()}.
+ژمارەی تەوەر بۆ هەر فەسلێک: تا ${this.subtopicsPerChapter()}.
+بودجەی وشە: ${this.totalWordsBudget()}؛ ئامانجی وشە بۆ هەر بەشێک نزیکەی ${this.wordsPerSubsection()}.
+پێویستە پێڕستەکە لەسەر بنەمای خودی ناونیشان و دیسیپلینەکە دروست بێت، نە قاڵبی گشتی.
+ئاستی قوتابخانە سادە و گونجاو بۆ تەمەنی خوێندکار بێت؛ بەکالۆریۆس بنەمای زانستی و سەرچاوەی پەیوەندیدار بخوازێت؛ ماستەر ڕەخنە و مێتۆدۆلۆژیی ڕوون بخوازێت؛ دکتۆرا بۆشایی مەعریفی و بەشداریی نوێ بخوازێت؛ ئاستی مامۆستای زانکۆ synthesis و ئارگیومێنتی قووڵ بخوازێت.
+هیچ سەرچاوە، citation، ساڵ، ئامار یان دەرئەنجامی پشتڕاستنەکراو دروست مەکە.
+وەڵام تەنها JSON بێت بە شێوەی:
+{"chapters":[{"title":"ناونیشانی بەش","description":"ئەرکی شیکاریی ئەم بەشە","subtopics":["تەوەرێکی تایبەت بە بابەتەکە"]}]}
+ژمارەی فەسلەکان بەپێی سنووری داواکراو بێت و ناونیشانە دووبارەکان و قاڵبی بەتاڵ بەکارمەهێنە.`;
+
+    try {
+      const raw = await this.geminiManager.callGeminiApi(
+        prompt,
+        'You are an academic outline architect. Use the requested academic level and discipline. Return only schema-conforming JSON; do not invent bibliographic facts.'
+      );
+      const cleaned = raw.replace(/^\`\`\`(?:json)?\s*/i, '').replace(/\s*\`\`\`$/i, '').trim();
+      const parsed = JSON.parse(cleaned) as { chapters?: Array<{ title?: unknown; description?: unknown; subtopics?: unknown }> };
+      const generated = Array.isArray(parsed.chapters) ? parsed.chapters.flatMap(item => {
+        const chapterTitle = typeof item?.title === 'string' ? item.title.trim().slice(0, 300) : '';
+        if (!chapterTitle) return [];
+        const description = typeof item.description === 'string' ? item.description.trim().slice(0, 1000) : '';
+        const subtopics = Array.isArray(item.subtopics)
+          ? item.subtopics.filter((value): value is string => typeof value === 'string').map(value => value.trim()).filter(Boolean).slice(0, this.subtopicsPerChapter())
+          : [];
+        return [{ title: chapterTitle, description, subtopics }];
+      }) : [];
+      if (!generated.length) throw new Error('The model returned no usable chapter headings.');
+
+      const wordBudget = this.totalWordsBudget();
+      const chapters: ChapterItemModel[] = generated.map((item, index) => {
+        const chapterId = index + 1;
+        const chapterTargetWords = Math.max(200, Math.round(wordBudget / generated.length));
+        const axes: AxisItem[] = item.subtopics.map((subtopic, subIndex) => ({
+          id: `${chapterId}.${subIndex + 1}`,
+          code: `تەوەری ${subIndex + 1}`,
+          title: subtopic,
+          targetWords: Math.max(100, Math.round(chapterTargetWords / Math.max(1, item.subtopics.length))),
+          wordCount: 0,
+          branches: []
+        }));
+        return {
+          id: chapterId,
+          title: item.title,
+          wordCount: 0,
+          status: 'pending',
+          content: '',
+          academicNotes: item.description,
+          customTargetWords: chapterTargetWords,
+          customTOCOn: true,
+          axes
+        };
+      });
+
+      this.editorService.setChapters(chapters);
+      if (chapters.length > 0) this.editorService.activeChapterId.set(chapters[0].id);
+      this.toastService.showSuccess('پێڕستی داینامیکی دروستکرا', `Gemini ${chapters.length} بەشی تایبەت بە "${title}"ی دروست کرد. سەرچاوەکان هێشتا بە پشتڕاستکراو دانانرێن.`);
+    } catch {
+      this.toastService.showWarning('پێڕست دروست نەکرا', 'وەڵامی بەردەست لە پشکنینی JSON تێنەپەڕی. ناونیشان و بوار پشکنین بکە و دووبارە هەوڵ بدە؛ هیچ قاڵبی جێگیر جێگای پێڕستی AI ناگرێتەوە.');
+    } finally {
+      this.isGenerating.set(false);
+    }
   }
 }

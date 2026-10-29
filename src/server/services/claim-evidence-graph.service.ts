@@ -133,7 +133,7 @@ export class ClaimEvidenceGraphService {
     try {
       const ai = getGeminiClient();
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'flash',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',

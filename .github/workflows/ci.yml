@@ -28,8 +28,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22.23.4'
           cache: npm
+
+      - name: Ensure npm matches packageManager
+        run: npm install --global npm@10.9.8 && test "$(npm --version)" = "10.9.8"
 
       - name: Install locked dependencies
         run: npm ci
@@ -61,6 +64,12 @@ jobs:
 
       - name: Audit critical academic research client for fabricated results
         run: npm run integrity:audit
+
+      - name: ESLint and Angular template checks
+        run: npm run lint
+
+      - name: Angular unit tests (browser-safe specs)
+        run: npm test
 
       - name: Security and server regression tests
         run: npm run test:server

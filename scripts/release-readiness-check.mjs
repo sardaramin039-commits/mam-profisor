@@ -15,6 +15,9 @@ const requiredFiles = [
   'scripts/anti-hallucination-audit.mjs',
   'scripts/verify-file-line-limits.mjs',
   'scripts/release-smoke-check.mjs',
+  'scripts/verify-server-artifacts.mjs',
+  'src/server/server-runtime.ts',
+  'src/server/server-runtime.spec.ts',
   'src/app/features/advanced-research/services/research-api-client.service.ts'
 ];
 
@@ -129,6 +132,20 @@ if (!lockedRoot) {
 
 if (!manifest.scripts?.build || !manifest.scripts?.typecheck) {
   errors.push('required npm scripts "build" and "typecheck" must exist');
+}
+if (
+  !manifest.scripts?.['build:prod'] ||
+  !manifest.scripts?.prestart ||
+  !manifest.scripts?.start ||
+  !manifest.scripts?.['start:prod']
+) {
+  errors.push('required npm production scripts "build:prod", "prestart", "start", and "start:prod" must exist');
+}
+if (manifest.engines?.node !== '>=22.22.2' || manifest.engines?.npm !== '>=10.9.0') {
+  errors.push('unsupported runtime range; expected Node.js >=22.22.2 and npm >=10.9.0');
+}
+if (!existsSync('.npmrc') || !readFileSync('.npmrc', 'utf8').split(/\r?\n/u).includes('engine-strict=true')) {
+  errors.push('.npmrc must enforce the Node.js and npm engine ranges');
 }
 
 for (const [name, command] of Object.entries(manifest.scripts || {})) {

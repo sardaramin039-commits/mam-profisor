@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { EditorService } from '../editor/services/editor';
 import { AppNotificationsService } from '../../core/app.notifications';
+import { AcademicPipelineClientService } from '../../services/academic-pipeline-client.service';
+import type {
+  AcademicPipelineEvent,
+  AcademicPipelineLevel
+} from '../../services/academic-pipeline-client.service';
 
 export interface StandardChapterTemplate {
   number: number;
@@ -113,6 +118,113 @@ const FIVE_CHAPTER_STANDARD: StandardChapterTemplate[] = [
         </button>
       </div>
 
+      <!-- Authenticated, evidence-aware academic writing pipeline -->
+      <section class="bg-slate-950/80 border border-emerald-900/50 rounded-xl p-4 space-y-3" aria-labelledby="academic-pipeline-title">
+        <div class="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h4 id="academic-pipeline-title" class="text-sm font-bold text-emerald-300">زنجیرەی نووسینی ئەکادیمی بە AI</h4>
+            <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">
+              ڕەشنووس بە قۆناغ دروست دەکرێت. زانیاریی گەڕان‌کراو بە خۆکار پشتڕاستکراو نییە و پێش ئاماژەدان دەبێت سەرچاوە و بەڵگەکان بپشکنرێن؛ لیستی ژێدەر بە ساختە زیاد ناکرێت.
+            </p>
+          </div>
+          @if (isPipelineRunning()) {
+            <button type="button" (click)="cancelAcademicDraft()"
+              class="px-3 py-1.5 bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 rounded-lg text-xs font-bold">
+              هەڵوەشاندنەوە
+            </button>
+          }
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_190px] gap-3">
+          <label class="block text-xs text-slate-300 space-y-1.5">
+            <span class="font-bold">ناونیشانی توێژینەوە</span>
+            <input type="text" maxlength="500" [value]="pipelineTitle()"
+              (input)="pipelineTitle.set($any($event.target).value)"
+              placeholder="ناونیشانی ورد و دیاریکراوی توێژینەوە بنووسە"
+              class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none" />
+          </label>
+          <label class="block text-xs text-slate-300 space-y-1.5">
+            <span class="font-bold">ئاستی ئەکادیمی</span>
+            <select [value]="pipelineLevel()" (change)="setPipelineLevel($any($event.target).value)"
+              class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none">
+              <option value="school">قۆناغی قوتابخانە</option>
+              <option value="bachelor">بەکالۆریۆس</option>
+              <option value="master">ماستەر</option>
+              <option value="phd">دکتۆرا</option>
+              <option value="professor">ئاستی پرۆفیسۆر</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="block text-xs text-slate-300 space-y-1.5">
+          <span class="font-bold">بواری زانستی / دیسیپلین</span>
+          <input type="text" maxlength="200" [value]="pipelineDiscipline()"
+            (input)="pipelineDiscipline.set($any($event.target).value)"
+            placeholder="نموونە: مێژوو، پەروەردە، ئەدەب، پزیشکی..."
+            class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none" />
+        </label>
+
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" (click)="generateAcademicDraft()"
+            [disabled]="isPipelineRunning() || pipelineTitle().trim().length < 2"
+            class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-slate-950 rounded-lg text-xs font-bold flex items-center gap-1.5">
+            <mat-icon class="!text-sm !w-4 !h-4">auto_awesome</mat-icon>
+            {{ isPipelineRunning() ? 'خەریکی نووسینە...' : 'دەستپێکردنی نووسینی قۆناغ بە قۆناغ' }}
+          </button>
+          <span class="text-[10px] text-slate-500">پێویستی بە چوونەژوورەوەی بەکارهێنەر هەیە.</span>
+        </div>
+
+        @if (isPipelineRunning() || pipelineStatus()) {
+          <div class="space-y-1.5" aria-live="polite">
+            <div class="flex items-center justify-between gap-2 text-xs text-slate-300">
+              <span>{{ pipelineStatus() }}</span>
+              <span class="font-mono text-emerald-300">{{ pipelineProgress() }}٪</span>
+            </div>
+            <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-500 transition-all duration-300"
+                [style.width.%]="pipelineProgress()"></div>
+            </div>
+          </div>
+        }
+
+        @if (generatedDraft()) {
+          <div class="space-y-2 border-t border-slate-800 pt-3">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <h5 class="text-xs font-bold text-slate-100">ڕەشنووسی بەرهەمهاتوو</h5>
+              <div class="flex items-center gap-2">
+                <button type="button" (click)="copyGeneratedDraft()"
+                  class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs">کۆپیکردن</button>
+              </div>
+            </div>
+            <textarea readonly [value]="generatedDraft()" rows="10"
+              class="w-full max-h-[420px] min-h-[220px] resize-y bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 leading-7 font-mono"
+              aria-label="ڕەشنووسی بەرهەمهاتوو"></textarea>
+            @if (!pipelineComplete()) {
+              <p class="text-[11px] text-amber-300" role="status">
+                ئەم دەقە هێشتا بە تەواوی نەکۆتایی هاتووە؛ تەنها دەتوانیت کۆپی بکەیت، زیادکردنی بەشی ناتەواو ڕێگەپێدراو نییە.
+              </p>
+            }
+            <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-2">
+              <label class="text-xs text-slate-300 space-y-1.5">
+                <span class="font-bold">بەشی مەبەست بۆ زیادکردنی ڕەشنووس</span>
+                <select [value]="targetChapterId()" (change)="targetChapterId.set($any($event.target).value)"
+                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100">
+                  <option value="">بەشێک دیاری بکە</option>
+                  @for (chapter of availableChapters(); track chapter.id) {
+                    <option [value]="chapter.id">{{ chapter.title }}{{ chapter.isLocked ? ' (داخراو)' : '' }}</option>
+                  }
+                </select>
+              </label>
+              <button type="button" (click)="appendGeneratedDraft()"
+                [disabled]="isPipelineRunning() || !pipelineComplete() || !targetChapterId() || !generatedDraft().trim()"
+                class="self-end px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold">
+                زیادکردن بەبێ سڕینەوەی دەقی پێشوو
+              </button>
+            </div>
+          </div>
+        }
+      </section>
+
       <!-- Chapter Completeness Progress -->
       <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-3">
@@ -165,6 +277,19 @@ const FIVE_CHAPTER_STANDARD: StandardChapterTemplate[] = [
 export class ThesisStructureOrganizerComponent {
   private editorService = inject(EditorService);
   private toastService = inject(AppNotificationsService);
+  private readonly academicPipeline = inject(AcademicPipelineClientService);
+  private pipelineAbortController: AbortController | null = null;
+
+  readonly pipelineTitle = signal('');
+  readonly pipelineLevel = signal<AcademicPipelineLevel>('phd');
+  readonly pipelineDiscipline = signal('گشتی');
+  readonly isPipelineRunning = signal(false);
+  readonly pipelineComplete = signal(false);
+  readonly pipelineProgress = signal(0);
+  readonly pipelineStatus = signal('');
+  readonly generatedDraft = signal('');
+  readonly targetChapterId = signal('');
+  readonly availableChapters = computed(() => this.editorService.chapters());
 
   standardChapters = signal<StandardChapterTemplate[]>(FIVE_CHAPTER_STANDARD);
 
@@ -176,6 +301,115 @@ export class ThesisStructureOrganizerComponent {
     const count = this.currentChaptersCount();
     return Math.min(100, Math.round((count / 5) * 100));
   });
+
+  setPipelineLevel(value: string): void {
+    const allowed: AcademicPipelineLevel[] = ['school', 'bachelor', 'master', 'phd', 'professor'];
+    if (allowed.includes(value as AcademicPipelineLevel)) {
+      this.pipelineLevel.set(value as AcademicPipelineLevel);
+    }
+  }
+
+  async generateAcademicDraft(): Promise<void> {
+    const title = this.pipelineTitle().trim();
+    if (title.length < 2 || this.isPipelineRunning()) return;
+
+    const controller = new AbortController();
+    this.pipelineAbortController = controller;
+    this.isPipelineRunning.set(true);
+    this.pipelineProgress.set(0);
+    this.pipelineComplete.set(false);
+    this.pipelineStatus.set('دەستپێکردنی گەڕان و بنیاتنانی نەخشە...');
+    this.generatedDraft.set('');
+    let assembled = '';
+
+    try {
+      const result = await this.academicPipeline.generate(
+        { title, level: this.pipelineLevel(), discipline: this.pipelineDiscipline() },
+        (event: AcademicPipelineEvent) => {
+          this.pipelineProgress.set(event.progressPercent);
+          this.pipelineStatus.set(event.message);
+          if (event.partialMarkdown?.trim()) {
+            assembled = assembled ? assembled + '\n\n' + event.partialMarkdown : event.partialMarkdown;
+            this.generatedDraft.set(assembled);
+          }
+        },
+        controller.signal
+      );
+      this.generatedDraft.set(result);
+      this.pipelineComplete.set(true);
+      this.pipelineProgress.set(100);
+      this.pipelineStatus.set('ڕەشنووس تەواو بوو؛ سەرچاوەکان هێشتا پێویستیان بە پشتڕاستکردنەوە هەیە.');
+      this.toastService.showSuccess(
+        'ڕەشنووس بەردەستە',
+        'دەقی بەرهەمهاتوو پارێزراوە؛ پێش بەکارهێنانی ئەکادیمی، ژێدەر و بەڵگەکان پشتڕاست بکەرەوە.'
+      );
+    } catch (error: unknown) {
+      if (controller.signal.aborted) {
+        this.pipelineStatus.set('داواکاریی نووسین هەڵوەشێندرایەوە؛ دەقی بەرهەمهاتووی پێشوو بپارێزە.');
+      } else {
+        const message = error instanceof Error
+          ? error.message
+          : 'زنجیرەی نووسین تەواو نەبوو؛ دواتر دووبارە هەوڵ بدە.';
+        this.pipelineStatus.set(message);
+        this.toastService.showWarning('نووسینی ئەکادیمی تەواو نەبوو', message);
+      }
+    } finally {
+      this.isPipelineRunning.set(false);
+      this.pipelineAbortController = null;
+    }
+  }
+
+  cancelAcademicDraft(): void {
+    this.pipelineAbortController?.abort();
+  }
+
+  async copyGeneratedDraft(): Promise<void> {
+    const draft = this.generatedDraft();
+    if (!draft.trim()) return;
+    try {
+      await navigator.clipboard.writeText(draft);
+      this.toastService.showSuccess('کۆپی کرا', 'ڕەشنووس بۆ کلیپبۆرد کۆپی کرا.');
+    } catch {
+      this.toastService.showWarning('کۆپیکردن نەکرا', 'دەقی خوارەوە بە دەستی هەڵبژێرە و کۆپی بکە.');
+    }
+  }
+
+  appendGeneratedDraft(): void {
+    if (!this.pipelineComplete()) {
+      this.toastService.showWarning('ڕەشنووس ناتەواوە', 'تەنها ڕەشنووسی تەواو دەتوانرێت زیاد بکرێت.');
+      return;
+    }
+    const selectedValue = this.targetChapterId().trim();
+    const selectedId = Number(selectedValue);
+    if (!selectedValue || !Number.isSafeInteger(selectedId) || selectedId < 1) {
+      this.toastService.showWarning('بەش دیاری نەکرا', 'سەرەتا بەشی مەبەست دیاری بکە.');
+      return;
+    }
+
+    const target = this.editorService.chapters().find(chapter => chapter.id === selectedId);
+    if (!target) {
+      this.toastService.showWarning('بەش نەدۆزرایەوە', 'لیستی بەشەکان نوێ بکەرەوە و بەشێکی بوون‌هەبوو دیاری بکە.');
+      return;
+    }
+    if (target.isLocked) {
+      this.toastService.showWarning('بەش داخراوە', 'بەشی داخراو ناتوانرێت دەستکاری بکرێت.');
+      return;
+    }
+
+    const draft = this.generatedDraft().trim();
+    if (!draft) return;
+    const existing = (target.content || '').trim();
+    const combined = existing ? existing + '\n\n' + draft : draft;
+    this.editorService.updateChapterContent(
+      target.id,
+      combined,
+      'AI academic pipeline draft appended by user'
+    );
+    this.toastService.showSuccess(
+      'ڕەشنووس زیاد کرا',
+      'دەقی نوێ بە کۆتایی بەشی دیاریکراو زیاد کرا؛ هیچ دەقی پێشووت سڕایەوە نییە.'
+    );
+  }
 
   applyStandard5Chapters(): void {
     const existing = this.editorService.chapters();

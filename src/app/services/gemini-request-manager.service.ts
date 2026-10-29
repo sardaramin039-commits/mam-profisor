@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { generateGeminiTextWithRotation } from '../../lib/gemini-browser-client';
 import { AppNotificationsService } from '../core/app.notifications';
 import { AcademicStoreService } from './academic-store.service';
 import { DigitalLibraryService } from './digital-library.service';
@@ -38,7 +39,7 @@ export class GeminiRequestManagerService {
   public lastWarning = signal<string | null>(null);
 
   readonly apiKeys = signal<string[]>(this.loadApiKeysFromStorage());
-  readonly preferredModel = signal<'gemini-2.5-flash' | 'gemini-2.5-pro'>(this.loadModelFromStorage());
+  readonly preferredModel = signal<'flash' | 'pro'>(this.loadModelFromStorage());
   readonly currentKeyIndex = signal<number>(0);
 
   private loadApiKeysFromStorage(): string[] {
@@ -48,11 +49,11 @@ export class GeminiRequestManagerService {
     } catch { return []; }
   }
 
-  private loadModelFromStorage(): 'gemini-2.5-flash' | 'gemini-2.5-pro' {
-    if (typeof window === 'undefined') return 'gemini-2.5-flash';
+  private loadModelFromStorage(): 'flash' | 'pro' {
+    if (typeof window === 'undefined') return 'flash';
     try {
-      return localStorage.getItem('MAM_GEMINI_MODEL') === 'gemini-2.5-pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
-    } catch { return 'gemini-2.5-flash'; }
+      return /pro/i.test(localStorage.getItem('MAM_GEMINI_MODEL') || '') ? 'pro' : 'flash';
+    } catch { return 'flash'; }
   }
 
   public setApiKeys(keysInput: string | string[]): void {
@@ -63,7 +64,7 @@ export class GeminiRequestManagerService {
     if (typeof window !== 'undefined') localStorage.setItem('MAM_GEMINI_API_KEYS', unique.join(','));
   }
 
-  public setPreferredModel(model: 'gemini-2.5-flash' | 'gemini-2.5-pro'): void {
+  public setPreferredModel(model: 'flash' | 'pro'): void {
     this.preferredModel.set(model);
     if (typeof window !== 'undefined') localStorage.setItem('MAM_GEMINI_MODEL', model);
   }
@@ -305,60 +306,22 @@ export class GeminiRequestManagerService {
     return { content: accumulatedText, wordCount: finalWords };
   }
 
-  public async callGeminiApi(contents: any, systemInstruction?: string, retryCount = 0): Promise<string> {
+  public async callGeminiApi(contents: any, systemInstruction?: string, _retryCount = 0): Promise<string> {
     const keys = this.apiKeys();
-    const model = this.preferredModel();
-
     if (keys.length > 0) {
-      const currentKey = keys[this.currentKeyIndex() % keys.length];
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`;
-      const payload: any = {
-        contents: Array.isArray(contents) ? contents : [{ role: 'user', parts: [{ text: String(contents) }] }],
-        generationConfig: { temperature: 0.35, maxOutputTokens: 8192 }
-      };
-      if (systemInstruction) {
-        payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-      }
-
       try {
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (resp.status === 429 || resp.status === 503) {
-          this.notifications.showWarning('بەربەستی کوۆتا', `کێشەی (${resp.status}) - خولانەوە بۆ کلیلی دواتر`);
-          this.rotateToNextKey();
-          if (retryCount < keys.length) {
-            return this.callGeminiApi(contents, systemInstruction, retryCount + 1);
-          }
-        }
-
-        if (resp.ok) {
-          const data = await resp.json();
-          const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (typeof txt === 'string' && txt.trim().length > 0) return txt.trim();
-        } else {
-          const errBody = await resp.text().catch(() => '');
-          if ((errBody.includes('RESOURCE_EXHAUSTED') || errBody.includes('Quota')) && retryCount < keys.length) {
-            this.notifications.showWarning('سنووری کوۆتا', 'خولانەوە بۆ کلیلی دواتر لە حەوزی API');
-            this.rotateToNextKey();
-            return this.callGeminiApi(contents, systemInstruction, retryCount + 1);
-          }
-        }
-      } catch (err) {
-        if (retryCount < keys.length - 1) {
-          this.rotateToNextKey();
-          return this.callGeminiApi(contents, systemInstruction, retryCount + 1);
-        }
+        const result = await generateGeminiTextWithRotation(keys, this.currentKeyIndex(), contents, systemInstruction, this.preferredModel());
+        this.currentKeyIndex.set(result.nextKeyIndex);
+        return result.text;
+      } catch (error) {
+        console.warn('Direct Gemini generation failed; trying the server proxy.', error);
+        this.rotateToNextKey();
       }
     }
 
-    // Server proxy fallback
     try {
       const promptText = typeof contents === 'string' ? contents : JSON.stringify(contents);
-      const resp = await fetch('/api/generate_chapter', {
+      const response = await fetch('/api/generate_chapter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -367,14 +330,17 @@ export class GeminiRequestManagerService {
           discipline: 'ئەکادیمی',
           writingType: 'academic',
           academicLevel: 'ماستەر',
-          targetWordsPerChapter: 1200
+          targetWordsPerChapter: 1200,
+          systemInstruction
         })
       });
-      if (resp.ok) {
-        const data = await resp.json();
+      if (response.ok) {
+        const data = await response.json();
         return typeof data?.content === 'string' ? data.content.trim() : '';
       }
-    } catch {}
+    } catch (error) {
+      console.warn('Gemini server proxy was unavailable.', error);
+    }
     return '';
   }
 

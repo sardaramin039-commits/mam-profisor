@@ -4,7 +4,7 @@ import {
   verifySubmissionAuditChain
 } from './publication-submission-audit.service';
 
-function event(version: number, from: 'DRAFT' | 'READY' | 'SUBMITTED' | null, to: 'DRAFT' | 'READY' | 'SUBMITTED', previousHash: string) {
+function event(version: number, from: 'DRAFT' | 'READY' | 'SUBMITTED' | null, to: 'DRAFT' | 'READY' | 'SUBMITTED', previousHash: string, integrityGatePassed = false) {
   return buildSubmissionAuditEvent({
     submissionId: 'SUB-1',
     version,
@@ -12,19 +12,28 @@ function event(version: number, from: 'DRAFT' | 'READY' | 'SUBMITTED' | null, to
     to,
     note: version === 1 ? 'Created' : 'Transitioned',
     occurredAt: '2026-10-08T15:00:0' + version + '.000Z',
-    previousHash
+    previousHash,
+    ...(integrityGatePassed ? { integrityGatePassed: true } : {})
   });
 }
 
 describe('P17 submission audit chain', () => {
   it('verifies a valid multi-event chain', () => {
     const first = event(1, null, 'DRAFT', '');
-    const second = event(2, 'DRAFT', 'READY', first.eventHash);
+    const second = event(2, 'DRAFT', 'READY', first.eventHash, true);
     const third = event(3, 'READY', 'SUBMITTED', second.eventHash);
     const report = verifySubmissionAuditChain([third, first, second], 'SUBMITTED', 3);
     expect(report.status).toBe('VERIFIED');
     expect(report.eventCount).toBe(3);
     expect(report.latestHash).toBe(third.eventHash);
+  });
+
+  it('rejects draft promotion without the integrity-gate marker', () => {
+    const first = event(1, null, 'DRAFT', '');
+    const second = event(2, 'DRAFT', 'READY', first.eventHash);
+    const report = verifySubmissionAuditChain([first, second], 'READY', 2);
+    expect(report.status).toBe('INVALID');
+    expect(report.errors.some(error => error.includes('Invalid lifecycle transition'))).toBe(true);
   });
 
   it('detects a broken previous-hash link', () => {

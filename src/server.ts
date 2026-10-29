@@ -18,6 +18,8 @@ import { createAcademicSearchIntegrationsRouter } from './server/routes/academic
 import { createChatGptAcademicSourcesRouter } from './server/routes/academic-source-chatgpt.routes';
 import { createAdvancedAcademicToolsRouter } from './server/routes/advanced-academic-tools.routes';
 import { createAcademicPlatformRouter } from './server/routes/academic-platform.routes';
+import { createAcademicCriticRouter } from './server/routes/academic-critic.routes';
+import { createAcademicPipelineRouter } from './server/routes/academic-pipeline.routes';
 import { createEvidenceIntelligenceRouter } from './server/routes/evidence-intelligence.routes';
 import { createRagRouter } from './server/routes/rag.routes';
 import { createMultiAgentRouter } from './server/routes/multi-agent.routes';
@@ -44,6 +46,7 @@ import { agentsRouter } from './routes/agents.router';
 import { academicRouter as modularAcademicRouter } from './routes/academic.router';
 import { libraryRouter as modularLibraryRouter } from './routes/library.router';
 import { errorMiddleware } from './middleware/error.middleware';
+import { startHttpServer } from './server/server-runtime';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -91,6 +94,8 @@ app.use('/api', createAcademicSearchIntegrationsRouter(getGeminiClient));
 app.use('/api/chatgpt-sources', requireAuth, createChatGptAcademicSourcesRouter());
 app.use('/api', createAdvancedAcademicToolsRouter(getGeminiClient));
 app.use('/api/platform', createAcademicPlatformRouter(getGeminiClient));
+app.use('/api/academic-critic', requireAuth, createAcademicCriticRouter());
+app.use('/api/academic-pipeline', requireAuth, createAcademicPipelineRouter(getGeminiClient));
 app.use('/api/writing', requireAuth, createEvidenceIntelligenceRouter(getGeminiClient));
 app.use('/api/rag', createRagRouter(getGeminiClient));
 app.use('/api/multi-agent', requireAuth, createMultiAgentRouter(getGeminiClient));
@@ -117,6 +122,11 @@ app.use('/api/library-catalog', modularLibraryRouter);
 
 // Global Error Handler Middleware for API routes
 app.use('/api', errorMiddleware);
+
+// Minimal unauthenticated health endpoint for platform probes and production smoke checks.
+app.get('/healthz', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 
 /**
  * Serve static files from /browser
@@ -145,10 +155,7 @@ app.use((req, res, next) => {
  * Start the server if this module is the main entry point, or it is ran via PM2.
  */
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
-  const port = process.env['PORT'] || 3000;
-  app.listen(port, () => {
-    console.log(`Node Express server listening on http://localhost:${port}`);
-  });
+  startHttpServer(app);
 }
 
 /**
