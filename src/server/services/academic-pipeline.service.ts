@@ -143,7 +143,6 @@ function validateBlueprint(value: unknown): PipelineBlueprint {
 export async function* executeAcademicPipeline(params: {
   title: string;
   level: AcademicLevel;
-  getGeminiClient: () => import('@google/genai').GoogleGenAI;
 }): AsyncGenerator<AcademicPipelineEvent, void, unknown> {
   const title = cleanString(params.title, MAX_TITLE_LENGTH);
   if (!title) throw new Error('A research title is required.');
@@ -222,8 +221,7 @@ export async function* executeAcademicPipeline(params: {
     const review = await academicLevelCriticService.verifyAndRefineSection(
       draft,
       params.level,
-      item.sub.title,
-      params.getGeminiClient
+      item.sub.title
     );
     const refined = review.refinedMarkdown || draft;
     const paragraphs = refined.trim().split(/\n\s*\n/u);
