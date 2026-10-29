@@ -127,7 +127,11 @@ async function stopServerProcess(child) {
 
 async function verifyLiveServer() {
   const port = await reserveLoopbackPort();
-  const child = spawn(process.execPath, [serverEntry], {
+  // When invoked by npm run release:smoke, start through npm itself so the
+  // prestart artifact guard and the production start command are tested too.
+  const npmCli = process.env['npm_execpath'];
+  const startArgs = npmCli ? [npmCli, 'start'] : [serverEntry];
+  const child = spawn(process.execPath, startArgs, {
     cwd: process.cwd(),
     env: {
       ...process.env,
