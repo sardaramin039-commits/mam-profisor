@@ -1,19 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({
+const mocks = {
   authStateReady: vi.fn(),
-  getIdToken: vi.fn(),
-  currentUser: null as { getIdToken: () => Promise<string> } | null
-}));
+  getIdToken: vi.fn()
+};
 
-vi.mock('../firebase', () => ({
-  auth: {
-    authStateReady: mocks.authStateReady,
-    get currentUser() {
-      return mocks.currentUser;
-    }
-  }
-}));
+const authProvider = {
+  authStateReady: mocks.authStateReady,
+  currentUser: null as { getIdToken: () => Promise<string> } | null
+};
 
 import { AcademicPipelineClientService } from './academic-pipeline-client.service';
 
@@ -35,7 +30,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.stubGlobal('fetch', vi.fn());
   mocks.getIdToken.mockResolvedValue('verified-test-id-token');
-  mocks.currentUser = { getIdToken: mocks.getIdToken };
+  authProvider.currentUser = { getIdToken: mocks.getIdToken };
   mocks.authStateReady.mockResolvedValue(undefined);
 });
 
@@ -47,7 +42,7 @@ describe('AcademicPipelineClientService', () => {
       'down":"## Research title"}\n\n',
       'data: {"stage":"completed","progressPercent":100,"message":"Completed","partialMarkdown":"## Conclusion"}\n\n'
     ]));
-    const service = new AcademicPipelineClientService();
+    const service = new AcademicPipelineClientService(authProvider);
     const events: string[] = [];
 
     const result = await service.generate(
@@ -70,9 +65,9 @@ describe('AcademicPipelineClientService', () => {
   });
 
   it('does not call the protected endpoint when no Firebase user is signed in', async () => {
-    mocks.currentUser = null;
+    authProvider.currentUser = null;
     const fetchMock = vi.mocked(fetch);
-    const service = new AcademicPipelineClientService();
+    const service = new AcademicPipelineClientService(authProvider);
 
     await expect(service.generate(
       { title: 'Research title', level: 'master' },
@@ -86,7 +81,7 @@ describe('AcademicPipelineClientService', () => {
       '{"error":"INTERNAL_PROVIDER_SECRET"}',
       { status: 401, headers: { 'Content-Type': 'application/json' } }
     ));
-    const service = new AcademicPipelineClientService();
+    const service = new AcademicPipelineClientService(authProvider);
 
     await expect(service.generate(
       { title: 'Research title', level: 'master' },
@@ -98,7 +93,7 @@ describe('AcademicPipelineClientService', () => {
     vi.mocked(fetch).mockResolvedValue(streamResponse([
       'data: {"stage":"error","progressPercent":0,"message":"Generation failed safely"}\n\n'
     ]));
-    const service = new AcademicPipelineClientService();
+    const service = new AcademicPipelineClientService(authProvider);
 
     await expect(service.generate(
       { title: 'Research title', level: 'phd' },
