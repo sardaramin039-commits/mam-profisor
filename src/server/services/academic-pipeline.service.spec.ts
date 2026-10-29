@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   generateGeminiContent: vi.fn(),
-  verifyAndRefineSection: vi.fn()
+  verifyAndRefineSection: vi.fn(),
+  discover: vi.fn()
 }));
 
 vi.mock('./gemini.service', () => ({
@@ -12,6 +13,12 @@ vi.mock('./gemini.service', () => ({
 vi.mock('./academic-level-critic.service', () => ({
   academicLevelCriticService: {
     verifyAndRefineSection: mocks.verifyAndRefineSection
+  }
+}));
+
+vi.mock('./research-intelligence.service', () => ({
+  researchIntelligenceService: {
+    discover: mocks.discover
   }
 }));
 
@@ -37,6 +44,7 @@ const validOutline = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.discover.mockResolvedValue({ sources: [] });
 });
 
 describe('academic pipeline integrity and sequencing', () => {
@@ -45,16 +53,15 @@ describe('academic pipeline integrity and sequencing', () => {
 
     await expect(iterator.next()).rejects.toThrow('research title is required');
     expect(mocks.generateGeminiContent).not.toHaveBeenCalled();
+    expect(mocks.discover).not.toHaveBeenCalled();
   });
 
   it('rejects an outline with no chapters instead of falling back to a generic thesis template', async () => {
-    mocks.generateGeminiContent
-      .mockResolvedValueOnce('Retrieved context; not independently verified.')
-      .mockResolvedValueOnce({
-        introductionOutline: [],
-        chapters: [],
-        conclusionOutline: []
-      });
+    mocks.generateGeminiContent.mockResolvedValueOnce({
+      introductionOutline: [],
+      chapters: [],
+      conclusionOutline: []
+    });
 
     const iterator = executeAcademicPipeline({ title: 'A valid research topic', level: 'master' });
     expect(await iterator.next()).toMatchObject({
@@ -69,9 +76,32 @@ describe('academic pipeline integrity and sequencing', () => {
     await expect(iterator.next()).rejects.toThrow('contains no chapters');
   });
 
-  it('sequences outline, writing, critique, and conclusion without inventing verified citations', async () => {
+  it('uses validated external source candidates and labels them unverified', async () => {
+    const getGeminiClient = () => ({} as never);
+    mocks.discover.mockResolvedValue({
+      sources: [
+        {
+          id: 'source-1',
+          title: 'A real indexed candidate',
+          authors: ['Example Author'],
+          year: 2024,
+          sourceType: 'Crossref',
+          url: 'https://doi.org/10.1234/example',
+          abstract: 'A short metadata description.'
+        },
+        {
+          id: 'unsafe',
+          title: 'Untrusted URL',
+          url: 'javascript:alert(1)'
+        },
+        {
+          id: 'duplicate',
+          title: 'Duplicate candidate',
+          url: 'https://doi.org/10.1234/example'
+        }
+      ]
+    });
     mocks.generateGeminiContent
-      .mockResolvedValueOnce('Retrieved source candidates; retrieved-not-verified.')
       .mockResolvedValueOnce(validOutline)
       .mockResolvedValueOnce('A cautious introduction that identifies evidence gaps.')
       .mockResolvedValueOnce('A draft subsection that requires source verification.')
@@ -85,10 +115,24 @@ describe('academic pipeline integrity and sequencing', () => {
     const events = [];
     for await (const event of executeAcademicPipeline({
       title: 'A topic-specific research title',
-      level: 'phd'
+      level: 'phd',
+      discipline: 'History',
+      getGeminiClient
     })) {
       events.push(event);
     }
+
+    expect(mocks.discover).toHaveBeenCalledWith(
+      'A topic-specific research title',
+      'History',
+      getGeminiClient
+    );
+    const blueprintEvent = events.find(event => event.stage === 'blueprint' && event.partialMarkdown);
+    expect(blueprintEvent?.partialMarkdown).toContain('A real indexed candidate');
+    expect(blueprintEvent?.partialMarkdown).toContain('https://doi.org/10.1234/example');
+    expect(blueprintEvent?.partialMarkdown).toContain('retrieved-not-verified');
+    expect(blueprintEvent?.partialMarkdown).not.toContain('javascript:');
+    expect(mocks.generateGeminiContent.mock.calls[0]?.[0].prompt).toContain('A real indexed candidate');
 
     const stages = events.map(event => event.stage);
     expect(stages[0]).toBe('grounding');
@@ -105,6 +149,6 @@ describe('academic pipeline integrity and sequencing', () => {
       'phd',
       'First subsection'
     );
-    expect(mocks.generateGeminiContent).toHaveBeenCalledTimes(5);
+    expect(mocks.generateGeminiContent).toHaveBeenCalledTimes(4);
   });
 });
