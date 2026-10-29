@@ -150,7 +150,7 @@ function normalizeSourceCandidates(value: unknown): PipelineSourceCandidate[] {
 }
 
 function formatSourceCandidate(source: PipelineSourceCandidate, index: number): string {
-  const title = source.title.replace(/[|\\r\\n]/gu, ' ');
+  const title = source.title.replace(/[|]/gu, ' ');
   const authors = source.authors.length ? source.authors.join(', ') : 'نووسەر لە metadata ـدا نەدۆزرایەوە';
   const year = source.year || 'n.d.';
   return String(index + 1) + '. ' + title + ' | ' + authors + ' | ' + year +
@@ -210,6 +210,8 @@ function validateBlueprint(value: unknown): PipelineBlueprint {
 export async function* executeAcademicPipeline(params: {
   title: string;
   level: AcademicLevel;
+  discipline?: string;
+  getGeminiClient?: () => GoogleGenAI;
 }): AsyncGenerator<AcademicPipelineEvent, void, unknown> {
   const title = cleanString(params.title, MAX_TITLE_LENGTH);
   if (!title) throw new Error('A research title is required.');
