@@ -224,7 +224,8 @@ export interface KurdishStandardEvaluation {
 
         <button
           type="button"
-          (click)="applyDesignedOutline()"\n          [disabled]="isGenerating()"
+          (click)="applyDesignedOutline()"
+          [disabled]="isGenerating()"
           class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-md">
           <mat-icon class="!text-sm !w-4 !h-4">done_all</mat-icon>
           <span>{{ isGenerating() ? 'داڕشتنی پێڕستی تایبەت بە بابەتەکە...' : 'دروستکردنی پێڕستی داینامیکی لەلایەن Gemini' }}</span>
