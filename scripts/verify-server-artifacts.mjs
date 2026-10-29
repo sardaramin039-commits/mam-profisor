@@ -18,7 +18,7 @@ function hasBrowserBundle(directory) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const fullPath = join(directory, entry.name);
     if (entry.isDirectory() && hasBrowserBundle(fullPath)) return true;
-    if (entry.isFile() && /\\.(?:m?js)$/iu.test(entry.name)) return true;
+    if (entry.isFile() && /\.(?:m?js)$/iu.test(entry.name)) return true;
   }
   return false;
 }
