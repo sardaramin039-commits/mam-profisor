@@ -184,7 +184,7 @@ if (
 if (manifest.engines?.node !== '>=22.22.2' || manifest.engines?.npm !== '>=10.9.0') {
   errors.push('unsupported runtime range; expected Node.js >=22.22.2 and npm >=10.9.0');
 }
-if (!existsSync('.npmrc') || !readFileSync('.npmrc', 'utf8').split(/\\r?\\n/u).includes('engine-strict=true')) {
+if (!existsSync('.npmrc') || !readFileSync('.npmrc', 'utf8').split(/\r?\n/u).includes('engine-strict=true')) {
   errors.push('.npmrc must enforce the Node.js and npm engine ranges');
 }
 
