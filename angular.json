@@ -121,7 +121,11 @@
             "runner": "vitest",
             "buildTarget": "app:build:development",
             "exclude": [
-              "src/server/routes/publication-submission-editorial.routes.spec.ts"
+              "src/server/**/*.spec.ts",
+              "src/routes/**/*.spec.ts",
+              "src/services/**/*.spec.ts",
+              "src/helpers/**/*.spec.ts",
+              "src/middleware/**/*.spec.ts"
             ]
           }
         },
