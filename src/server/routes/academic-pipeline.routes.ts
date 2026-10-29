@@ -79,7 +79,8 @@ export function createAcademicPipelineRouter(): Router {
       if (!disconnected && !res.destroyed) res.end();
     } catch (error: unknown) {
       // Keep provider, credential, and implementation details in server logs only.
-      console.error('[academic-pipeline] Streaming generation failed.', error);
+      const errorName = error instanceof Error ? error.name : typeof error;
+      console.error('[academic-pipeline] Streaming generation failed:', errorName);
       await writeEvent(res, {
         stage: 'error',
         progressPercent: 0,
