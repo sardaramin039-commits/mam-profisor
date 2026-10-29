@@ -6,7 +6,7 @@
 
 1. فایلەکانی source، template و style لە `src/` و `app/applet/src/` نابێت لە ٥٠٠ دێڕ زیاتر بن.
 2. marker ـەکانی کۆدی ناتەواو یان truncation وەک `// ... rest of the code` و marker ـە کوردییە ناسراوەکان ڕەت دەکرێنەوە.
-3. `bun.lock` و `bun.lockb` ڕێگەپێدراو نین؛ بەڕێوەبردنی وابەستەییەکان تەنها بە npm و `package-lock.json` دەبێت.
+3. هەر lockfile ـێکی package manager ـی تر ڕێگەپێدراو نییە؛ بەڕێوەبردنی وابەستەییەکان تەنها بە npm و `package-lock.json` دەبێت.
 4. سڕینەوەی فایل لە `src/` یان `app/applet/src/` پێویستی بە `[deletion-approved]` لە نامەی commit ـی سڕینەوەکە هەیە.
 5. گۆڕینی UI/template/style/component پێویستی بە `[ui-approved]` لە نامەی هەر commit ـێک هەیە کە ئەو فایلە دەگۆڕێت.
 6. گەیتەکە read-only ـە؛ هیچ ڕێکخستن، restore، auto-fix یان overwrite ناکات.

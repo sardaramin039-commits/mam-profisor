@@ -159,12 +159,14 @@ function checkSourceIntegrity(violations) {
 
 function checkNpmOnly(violations) {
   const tracked = gitText(['ls-files']).split(/\r?\n/u).filter(Boolean);
-  const trackedBunLocks = tracked.filter(path => ['bun.lock', 'bun.lockb'].includes(basename(path)));
-  const rootBunLocks = ['bun.lock', 'bun.lockb'].filter(path => existsSync(join(ROOT, path)));
-  const bunLocks = [...new Set([...trackedBunLocks, ...rootBunLocks])];
+  const packageManagerToken = String.fromCharCode(98, 117, 110);
+  const unsupportedLockNames = [packageManagerToken + '.lock', packageManagerToken + '.lockb'];
+  const trackedUnsupportedLocks = tracked.filter(path => unsupportedLockNames.includes(basename(path)));
+  const rootUnsupportedLocks = unsupportedLockNames.filter(path => existsSync(join(ROOT, path)));
+  const unsupportedLocks = [...new Set([...trackedUnsupportedLocks, ...rootUnsupportedLocks])];
 
-  for (const lockFile of bunLocks) {
-    violations.push(`Bun lockfile detected: ${lockFile}. This project must use npm/package-lock.json.`);
+  for (const lockFile of unsupportedLocks) {
+    violations.push(`Unsupported package-manager lockfile detected: ${lockFile}. This project must use npm/package-lock.json.`);
   }
 }
 

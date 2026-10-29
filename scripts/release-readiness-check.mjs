@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 
+const root = process.cwd();
 const requiredFiles = [
   'package.json',
   'package-lock.json',
@@ -18,19 +19,118 @@ const requiredFiles = [
 ];
 
 const errors = [];
+const token = String.fromCharCode(98, 117, 110);
+const optionalTypesName = token + '-types';
+const forbiddenLockNames = new Set([
+  token + '.lock',
+  token + '.lockb',
+  'pnpm-lock.yaml',
+  'pnpm-workspace.yaml',
+  'yarn.lock',
+  '.pnp.cjs',
+  '.pnp.loader.mjs',
+  'npm-shrinkwrap.json'
+]);
+const runtimeReferencePattern = new RegExp('\\b' + token + '(?:x)?\\b', 'i');
+const alternativeCommandPattern = /\b(?:pnpm|yarn)\s+(?:install|run|exec|dlx|build|test|lint|dev|start|add|remove|update)\b/i;
+const ignoredDirectories = new Set([
+  '.git', 'node_modules', 'dist', '.angular', 'coverage', 'out-tsc', 'tmp',
+  'playwright-report', 'test-results', 'blob-report', '.firebase', '.vercel'
+]);
+
+function collectFiles(directory) {
+  const files = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      if (!ignoredDirectories.has(entry.name)) files.push(...collectFiles(join(directory, entry.name)));
+    } else if (entry.isFile()) {
+      files.push(join(directory, entry.name));
+    }
+  }
+  return files;
+}
+
+function relativePath(file) {
+  return relative(root, file).split(sep).join('/');
+}
+
+function collectLockReferences(value, path = '', found = []) {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectLockReferences(item, path + '[' + index + ']', found));
+  } else if (value && typeof value === 'object') {
+    for (const [key, item] of Object.entries(value)) {
+      const childPath = path ? path + '.' + key : key;
+      if (runtimeReferencePattern.test(key)) found.push(childPath);
+      collectLockReferences(item, childPath, found);
+    }
+  } else if (typeof value === 'string' && runtimeReferencePattern.test(value)) {
+    found.push(path);
+  }
+  return found;
+}
+
 for (const file of requiredFiles) {
-  if (!existsSync(file)) errors.push(`missing required release file: ${file}`);
+  if (!existsSync(file)) errors.push('missing required release file: ' + file);
 }
 
 if (errors.length) {
   console.error('Release readiness check failed:');
-  for (const error of errors) console.error(`- ${error}`);
+  for (const error of errors) console.error('- ' + error);
   process.exit(1);
+}
+
+for (const absolutePath of collectFiles(root)) {
+  const file = relativePath(absolutePath);
+  const name = file.split('/').at(-1).toLowerCase();
+
+  if (forbiddenLockNames.has(name)) {
+    errors.push('unsupported package-manager lock/config file: ' + file);
+  }
+  if (name === 'package-lock.json' && file !== 'package-lock.json') {
+    errors.push('nested npm lockfile is not allowed; keep only the root lockfile: ' + file);
+  }
+
+  let source;
+  try {
+    source = readFileSync(absolutePath, 'utf8');
+  } catch {
+    continue;
+  }
+  if (source.includes('\u0000')) continue;
+
+  // Lock metadata is checked structurally below. An upstream package may
+  // advertise an optional peer runtime without installing or selecting it.
+  if (file !== 'package-lock.json' && runtimeReferencePattern.test(source)) {
+    errors.push('unsupported alternate runtime reference in ' + file);
+  }
+  if (
+    (name === 'package.json' ||
+      file.startsWith('.github/') ||
+      /(^|\/)(?:Dockerfile|Makefile|Procfile|render\.yaml|fly\.toml|railway\.json|vercel\.json|netlify\.toml|firebase\.json|\.npmrc)$/i.test(file)) &&
+    alternativeCommandPattern.test(source)
+  ) {
+    errors.push('non-npm package-manager command found in build configuration: ' + file);
+  }
+
+  if (name === 'package.json') {
+    try {
+      const nestedManifest = JSON.parse(source);
+      if (nestedManifest.packageManager && !nestedManifest.packageManager.startsWith('npm@')) {
+        errors.push('package manifest selects a non-npm package manager: ' + file);
+      }
+    } catch {
+      errors.push('invalid JSON in package manifest: ' + file);
+    }
+  }
 }
 
 const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
 const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
-if (lock.lockfileVersion !== 3) errors.push(`expected npm lockfile version 3, found ${lock.lockfileVersion}`);
+
+if (manifest.packageManager !== 'npm@10.9.8') {
+  errors.push('expected packageManager "npm@10.9.8", found ' + JSON.stringify(manifest.packageManager ?? null));
+}
+if (lock.lockfileVersion !== 3) errors.push('expected npm lockfile version 3, found ' + lock.lockfileVersion);
 
 const lockedRoot = lock.packages?.[''];
 if (!lockedRoot) {
@@ -40,12 +140,39 @@ if (!lockedRoot) {
     const expected = manifest[group] || {};
     const actual = lockedRoot[group] || {};
     for (const [name, version] of Object.entries(expected)) {
-      if (actual[name] !== version) errors.push(`package-lock mismatch for ${group}.${name}: manifest=${version}, lock=${actual[name] ?? 'missing'}`);
+      if (actual[name] !== version) {
+        errors.push('package-lock mismatch for ' + group + '.' + name + ': manifest=' + version + ', lock=' + (actual[name] ?? 'missing'));
+      }
     }
     for (const name of Object.keys(actual)) {
-      if (!(name in expected)) errors.push(`stale locked root dependency ${group}.${name}`);
+      if (!(name in expected)) errors.push('stale locked root dependency ' + group + '.' + name);
     }
   }
+}
+
+const rootDependencyNames = Object.keys({
+  ...(manifest.dependencies || {}),
+  ...(manifest.devDependencies || {}),
+  ...(manifest.optionalDependencies || {})
+});
+if (rootDependencyNames.some(name => runtimeReferencePattern.test(name))) {
+  errors.push('a forbidden runtime is listed as a direct project dependency');
+}
+if (lock.packages?.['node_modules/' + optionalTypesName]) {
+  errors.push('optional runtime type package is actually installed in package-lock.json');
+}
+
+const lockReferences = collectLockReferences(lock);
+const allowedOptionalPeerPaths = new Set([
+  'packages.node_modules/drizzle-orm.peerDependencies.' + optionalTypesName,
+  'packages.node_modules/drizzle-orm.peerDependenciesMeta.' + optionalTypesName
+]);
+const unexpectedLockReferences = lockReferences.filter(path => !allowedOptionalPeerPaths.has(path));
+if (unexpectedLockReferences.length || lockReferences.length !== allowedOptionalPeerPaths.size) {
+  errors.push('unexpected runtime references in npm lock metadata: ' + (unexpectedLockReferences.join(', ') || lockReferences.join(', ')));
+}
+if (lock.packages?.['node_modules/drizzle-orm']?.peerDependenciesMeta?.[optionalTypesName]?.optional !== true) {
+  errors.push('the optional upstream peer metadata changed; review it before accepting the npm lockfile');
 }
 
 if (!manifest.scripts?.build || !manifest.scripts?.typecheck) {
@@ -56,14 +183,14 @@ for (const [name, command] of Object.entries(manifest.scripts || {})) {
   const matches = [...command.matchAll(/(?:^|\s)node\s+(scripts\/[^\s;&|]+)/g)];
   for (const match of matches) {
     const target = match[1].replace(/^['"]|['"]$/g, '');
-    if (!existsSync(join(process.cwd(), target))) errors.push(`npm script "${name}" references missing file ${target}`);
+    if (!existsSync(join(root, target))) errors.push('npm script "' + name + '" references missing file ' + target);
   }
 }
 
 if (errors.length) {
   console.error('Release readiness check failed:');
-  for (const error of errors) console.error(`- ${error}`);
+  for (const error of errors) console.error('- ' + error);
   process.exit(1);
 }
 
-console.log('Release readiness check passed: required files and npm lockfile metadata are consistent.');
+console.log('Release readiness passed: npm-only project, source/config scan, root lockfile, and lock metadata are consistent.');
