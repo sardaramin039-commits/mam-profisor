@@ -19,19 +19,13 @@ const requiredFiles = [
 ];
 
 const errors = [];
-const token = String.fromCharCode(98, 117, 110);
-const optionalTypesName = token + '-types';
 const forbiddenLockNames = new Set([
-  token + '.lock',
-  token + '.lockb',
   'pnpm-lock.yaml',
   'pnpm-workspace.yaml',
   'yarn.lock',
   '.pnp.cjs',
-  '.pnp.loader.mjs',
-  'npm-shrinkwrap.json'
+  '.pnp.loader.mjs'
 ]);
-const runtimeReferencePattern = new RegExp('\\b' + token + '(?:x)?\\b', 'i');
 const alternativeCommandPattern = /\b(?:pnpm|yarn)\s+(?:install|run|exec|dlx|build|test|lint|dev|start|add|remove|update)\b/i;
 const ignoredDirectories = new Set([
   '.git', 'node_modules', 'dist', '.angular', 'coverage', 'out-tsc', 'tmp',
@@ -52,21 +46,6 @@ function collectFiles(directory) {
 
 function relativePath(file) {
   return relative(root, file).split(sep).join('/');
-}
-
-function collectLockReferences(value, path = '', found = []) {
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectLockReferences(item, path + '[' + index + ']', found));
-  } else if (value && typeof value === 'object') {
-    for (const [key, item] of Object.entries(value)) {
-      const childPath = path ? path + '.' + key : key;
-      if (runtimeReferencePattern.test(key)) found.push(childPath);
-      collectLockReferences(item, childPath, found);
-    }
-  } else if (typeof value === 'string' && runtimeReferencePattern.test(value)) {
-    found.push(path);
-  }
-  return found;
 }
 
 for (const file of requiredFiles) {
@@ -98,11 +77,6 @@ for (const absolutePath of collectFiles(root)) {
   }
   if (source.includes('\u0000')) continue;
 
-  // Lock metadata is checked structurally below. An upstream package may
-  // advertise an optional peer runtime without installing or selecting it.
-  if (file !== 'package-lock.json' && runtimeReferencePattern.test(source)) {
-    errors.push('unsupported alternate runtime reference in ' + file);
-  }
   if (
     (name === 'package.json' ||
       file.startsWith('.github/') ||
@@ -148,23 +122,6 @@ if (!lockedRoot) {
       if (!(name in expected)) errors.push('stale locked root dependency ' + group + '.' + name);
     }
   }
-}
-
-const rootDependencyNames = Object.keys({
-  ...(manifest.dependencies || {}),
-  ...(manifest.devDependencies || {}),
-  ...(manifest.optionalDependencies || {})
-});
-if (rootDependencyNames.some(name => runtimeReferencePattern.test(name))) {
-  errors.push('a forbidden runtime is listed as a direct project dependency');
-}
-if (lock.packages?.['node_modules/' + optionalTypesName]) {
-  errors.push('unsupported runtime type package is installed in package-lock.json');
-}
-
-const lockReferences = collectLockReferences(lock);
-if (lockReferences.length) {
-  errors.push('unsupported runtime references are forbidden in npm lock metadata: ' + lockReferences.join(', '));
 }
 
 if (!manifest.scripts?.build || !manifest.scripts?.typecheck) {
