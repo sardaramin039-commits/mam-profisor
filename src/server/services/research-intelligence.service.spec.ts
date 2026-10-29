@@ -8,6 +8,7 @@ const originalSearchAll = academicSearchService.searchAll;
 const originalOpenAiKey = process.env['OPENAI_API_KEY'];
 const originalOpenAiDiscovery = process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'];
 const originalBillable = process.env['ALLOW_BILLABLE_AI'];
+const originalGoogleSearchGrounding = process.env['GEMINI_ENABLE_GOOGLE_SEARCH_GROUNDING'];
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
@@ -18,6 +19,8 @@ afterEach(() => {
   else process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] = originalOpenAiDiscovery;
   if (originalBillable === undefined) delete process.env['ALLOW_BILLABLE_AI'];
   else process.env['ALLOW_BILLABLE_AI'] = originalBillable;
+  if (originalGoogleSearchGrounding === undefined) delete process.env['GEMINI_ENABLE_GOOGLE_SEARCH_GROUNDING'];
+  else process.env['GEMINI_ENABLE_GOOGLE_SEARCH_GROUNDING'] = originalGoogleSearchGrounding;
 });
 
 function response(payload: unknown): Response {
@@ -171,6 +174,7 @@ describe('research intelligence verification flow', () => {
 
 describe('research intelligence resilience', () => {
   it('keeps the audit usable when one AI analysis module fails', async () => {
+    process.env['GEMINI_ENABLE_GOOGLE_SEARCH_GROUNDING'] = 'false';
     const originalDiscover = researchIntelligenceService.discover;
     const originalVerify = sourceVerificationService.verifySources;
 
@@ -227,7 +231,7 @@ describe('research intelligence resilience', () => {
         generateContent: async () => {
           callCount++;
           if (callCount === 2) throw new Error('forced methodology failure');
-          return { text: '{}' };
+          return { text: '{"status":"ok"}' };
         }
       }
     } as any;
