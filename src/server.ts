@@ -46,6 +46,7 @@ import { agentsRouter } from './routes/agents.router';
 import { academicRouter as modularAcademicRouter } from './routes/academic.router';
 import { libraryRouter as modularLibraryRouter } from './routes/library.router';
 import { errorMiddleware } from './middleware/error.middleware';
+import { startHttpServer } from './server/server-runtime';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -122,6 +123,11 @@ app.use('/api/library-catalog', modularLibraryRouter);
 // Global Error Handler Middleware for API routes
 app.use('/api', errorMiddleware);
 
+// Minimal unauthenticated health endpoint for platform probes and production smoke checks.
+app.get('/healthz', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 /**
  * Serve static files from /browser
  */
@@ -149,10 +155,7 @@ app.use((req, res, next) => {
  * Start the server if this module is the main entry point, or it is ran via PM2.
  */
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
-  const port = process.env['PORT'] || 3000;
-  app.listen(port, () => {
-    console.log(`Node Express server listening on http://localhost:${port}`);
-  });
+  startHttpServer(app);
 }
 
 /**
