@@ -22,6 +22,12 @@ for (const file of requiredFiles) {
   if (!existsSync(file)) errors.push(`missing required release file: ${file}`);
 }
 
+// This repository uses npm exclusively. Fail CI if a competing Bun lockfile
+// is accidentally committed, so package-manager ambiguity cannot return.
+for (const file of ['bun.lock', 'bun.lockb']) {
+  if (existsSync(file)) errors.push(`unsupported Bun lockfile found: ${file}; this repository must use npm only`);
+}
+
 if (errors.length) {
   console.error('Release readiness check failed:');
   for (const error of errors) console.error(`- ${error}`);
@@ -30,6 +36,10 @@ if (errors.length) {
 
 const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
 const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
+
+if (manifest.packageManager !== 'npm@10.9.8') {
+  errors.push(`expected packageManager "npm@10.9.8", found ${JSON.stringify(manifest.packageManager ?? null)}`);
+}
 if (lock.lockfileVersion !== 3) errors.push(`expected npm lockfile version 3, found ${lock.lockfileVersion}`);
 
 const lockedRoot = lock.packages?.[''];
@@ -53,7 +63,7 @@ if (!manifest.scripts?.build || !manifest.scripts?.typecheck) {
 }
 
 for (const [name, command] of Object.entries(manifest.scripts || {})) {
-  const matches = [...command.matchAll(/(?:^|\s)node\s+(scripts\/[^\s;&|]+)/g)];
+  const matches = [...command.matchAll(/(?:^|\\s)node\\s+(scripts\\/[^\\s;&|]+)/g)];
   for (const match of matches) {
     const target = match[1].replace(/^['"]|['"]$/g, '');
     if (!existsSync(join(process.cwd(), target))) errors.push(`npm script "${name}" references missing file ${target}`);
@@ -66,4 +76,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('Release readiness check passed: required files and npm lockfile metadata are consistent.');
+console.log('Release readiness check passed: npm-only policy, required files, and npm lockfile metadata are consistent.');
