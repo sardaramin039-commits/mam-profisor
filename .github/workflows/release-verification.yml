@@ -35,6 +35,9 @@ jobs:
           node --version
           npm --version
 
+      - name: Ensure npm matches packageManager
+        run: npm install --global npm@10.9.8 && test "$(npm --version)" = "10.9.8"
+
       - name: Install exact locked dependencies
         run: npm ci
 
