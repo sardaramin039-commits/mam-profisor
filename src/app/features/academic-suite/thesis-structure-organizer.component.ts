@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { EditorService } from '../editor/services/editor';
 import { AppNotificationsService } from '../../core/app.notifications';
-import {
-  AcademicPipelineClientService,
+import { AcademicPipelineClientService } from '../../services/academic-pipeline-client.service';
+import type {
   AcademicPipelineEvent,
   AcademicPipelineLevel
 } from '../../services/academic-pipeline-client.service';
@@ -191,6 +191,11 @@ const FIVE_CHAPTER_STANDARD: StandardChapterTemplate[] = [
             <textarea readonly [value]="generatedDraft()" rows="10"
               class="w-full max-h-[420px] min-h-[220px] resize-y bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 leading-7 font-mono"
               aria-label="ڕەشنووسی بەرهەمهاتوو"></textarea>
+            @if (!pipelineComplete()) {
+              <p class="text-[11px] text-amber-300" role="status">
+                ئەم دەقە هێشتا بە تەواوی نەکۆتایی هاتووە؛ تەنها دەتوانیت کۆپی بکەیت، زیادکردنی بەشی ناتەواو ڕێگەپێدراو نییە.
+              </p>
+            }
             <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-2">
               <label class="text-xs text-slate-300 space-y-1.5">
                 <span class="font-bold">بەشی مەبەست بۆ زیادکردنی ڕەشنووس</span>
@@ -203,7 +208,7 @@ const FIVE_CHAPTER_STANDARD: StandardChapterTemplate[] = [
                 </select>
               </label>
               <button type="button" (click)="appendGeneratedDraft()"
-                [disabled]="isPipelineRunning() || !targetChapterId() || !generatedDraft().trim()"
+                [disabled]="isPipelineRunning() || !pipelineComplete() || !targetChapterId() || !generatedDraft().trim()"
                 class="self-end px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold">
                 زیادکردن بەبێ سڕینەوەی دەقی پێشوو
               </button>
@@ -270,6 +275,7 @@ export class ThesisStructureOrganizerComponent {
   readonly pipelineTitle = signal('');
   readonly pipelineLevel = signal<AcademicPipelineLevel>('phd');
   readonly isPipelineRunning = signal(false);
+  readonly pipelineComplete = signal(false);
   readonly pipelineProgress = signal(0);
   readonly pipelineStatus = signal('');
   readonly generatedDraft = signal('');
@@ -302,6 +308,7 @@ export class ThesisStructureOrganizerComponent {
     this.pipelineAbortController = controller;
     this.isPipelineRunning.set(true);
     this.pipelineProgress.set(0);
+    this.pipelineComplete.set(false);
     this.pipelineStatus.set('دەستپێکردنی گەڕان و بنیاتنانی نەخشە...');
     this.generatedDraft.set('');
     let assembled = '';
@@ -320,6 +327,7 @@ export class ThesisStructureOrganizerComponent {
         controller.signal
       );
       this.generatedDraft.set(result);
+      this.pipelineComplete.set(true);
       this.pipelineProgress.set(100);
       this.pipelineStatus.set('ڕەشنووس تەواو بوو؛ سەرچاوەکان هێشتا پێویستیان بە پشتڕاستکردنەوە هەیە.');
       this.toastService.showSuccess(
@@ -358,8 +366,13 @@ export class ThesisStructureOrganizerComponent {
   }
 
   appendGeneratedDraft(): void {
-    const selectedId = Number(this.targetChapterId());
-    if (!Number.isSafeInteger(selectedId) || selectedId < 0) {
+    if (!this.pipelineComplete()) {
+      this.toastService.showWarning('ڕەشنووس ناتەواوە', 'تەنها ڕەشنووسی تەواو دەتوانرێت زیاد بکرێت.');
+      return;
+    }
+    const selectedValue = this.targetChapterId().trim();
+    const selectedId = Number(selectedValue);
+    if (!selectedValue || !Number.isSafeInteger(selectedId) || selectedId < 1) {
       this.toastService.showWarning('بەش دیاری نەکرا', 'سەرەتا بەشی مەبەست دیاری بکە.');
       return;
     }
