@@ -1,4 +1,5 @@
-import { Type, type Schema, type GoogleGenAI } from '@google/genai';
+import { Type, type Schema } from '@google/genai';
+import { generateGeminiContent } from './gemini.service';
 
 export type AcademicLevel = 'school' | 'bachelor' | 'master' | 'phd' | 'professor';
 
@@ -64,8 +65,7 @@ export class AcademicLevelCriticService {
   public async verifyAndRefineSection(
     draftMarkdown: string,
     level: AcademicLevel,
-    subSectionTitle: string,
-    getGeminiClient: () => GoogleGenAI
+    subSectionTitle: string
   ): Promise<CriticEvaluation> {
     const original = typeof draftMarkdown === 'string' ? draftMarkdown.trim() : '';
     const title = typeof subSectionTitle === 'string' ? subSectionTitle.trim().slice(0, 500) : '';
@@ -86,25 +86,13 @@ export class AcademicLevelCriticService {
       original
     ].join('\n\n');
 
-    const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: 'Perform conservative academic language editing. Never invent or remove evidence. Return valid JSON only.',
-        responseMimeType: 'application/json',
-        responseSchema: criticSchema,
-        temperature: 0.2
-      }
+    const parsed = await generateGeminiContent<unknown>({
+      mode: 'fast_critic',
+      systemInstruction: 'Perform conservative academic language editing. Never invent or remove evidence. Return valid JSON only.',
+      prompt,
+      responseSchema: criticSchema,
+      temperature: 0.2
     });
-    const responseText = response.text?.trim();
-    if (!responseText) throw new Error('Gemini returned an empty academic-critic response.');
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(responseText);
-    } catch (error) {
-      throw new Error('Gemini returned invalid JSON for academic critique.', { cause: error });
-    }
     return normalizeEvaluation(parsed, original);
   }
 }
