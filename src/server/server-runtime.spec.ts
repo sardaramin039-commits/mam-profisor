@@ -4,7 +4,6 @@ import { resolveServerRuntimeConfig, startHttpServer } from './server-runtime';
 
 afterEach(() => {
   vi.restoreAllMocks();
-  process.exitCode = 0;
 });
 
 describe('server runtime configuration', () => {
