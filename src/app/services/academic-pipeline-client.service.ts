@@ -39,15 +39,12 @@ export const ACADEMIC_PIPELINE_AUTH = new InjectionToken<AcademicPipelineAuthPro
  * Browser client for the protected Express SSE endpoint.
  * Firebase credentials are obtained at request time and are never persisted by this service.
  */
-@Injectable({ providedIn: 'root' })
-export class AcademicPipelineClientService {
-  private readonly authProvider = inject(ACADEMIC_PIPELINE_AUTH);
-
-  public async generate(
-    request: AcademicPipelineRequest,
-    onEvent: (event: AcademicPipelineEvent) => void,
-    signal?: AbortSignal
-  ): Promise<string> {
+export async function generateAcademicPipelineWithAuth(
+  authProvider: AcademicPipelineAuthProvider,
+  request: AcademicPipelineRequest,
+  onEvent: (event: AcademicPipelineEvent) => void,
+  signal?: AbortSignal
+): Promise<string> {
     const title = typeof request.title === 'string' ? request.title.trim() : '';
     if (title.length < 2 || title.length > 500) {
       throw new Error('ناونیشانی توێژینەوە دەبێت لە نێوان ٢ و ٥٠٠ پیت بێت.');
@@ -57,8 +54,8 @@ export class AcademicPipelineClientService {
       throw new Error('بواری زانستی دەبێت لە نێوان ١ و ٢٠٠ پیت بێت.');
     }
 
-    await this.authProvider.authStateReady();
-    const currentUser = this.authProvider.currentUser;
+    await authProvider.authStateReady();
+    const currentUser = authProvider.currentUser;
     if (!currentUser) {
       throw new Error('بۆ بەکارهێنانی زنجیرەی نووسین، تکایە سەرەتا بچۆ ژوورەوە.');
     }
@@ -184,5 +181,17 @@ export class AcademicPipelineClientService {
       throw new Error('زنجیرەی نووسین بە بێ ئەنجامی تەواو کۆتایی هات؛ دەقی پێشوو بپارێزە.');
     }
     return assembledMarkdown.trim();
+}
+
+@Injectable({ providedIn: 'root' })
+export class AcademicPipelineClientService {
+  private readonly authProvider = inject(ACADEMIC_PIPELINE_AUTH);
+
+  public generate(
+    request: AcademicPipelineRequest,
+    onEvent: (event: AcademicPipelineEvent) => void,
+    signal?: AbortSignal
+  ): Promise<string> {
+    return generateAcademicPipelineWithAuth(this.authProvider, request, onEvent, signal);
   }
 }
