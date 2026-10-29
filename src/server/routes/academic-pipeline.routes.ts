@@ -1,7 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { executeAcademicPipeline } from '../services/academic-pipeline.service';
-import { getGeminiClient } from '../services/gemini.service';
 
 const requestSchema = z.object({
   title: z.string().trim().min(2).max(500),
@@ -39,8 +38,7 @@ export function createAcademicPipelineRouter(): Router {
 
     const pipeline = executeAcademicPipeline({
       title: parsed.data.title,
-      level: parsed.data.level,
-      getGeminiClient
+      level: parsed.data.level
     });
 
     try {
