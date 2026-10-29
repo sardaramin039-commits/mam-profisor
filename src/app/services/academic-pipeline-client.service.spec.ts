@@ -3,14 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   authStateReady: vi.fn(),
   getIdToken: vi.fn(),
-  isSignedIn: true
+  currentUser: null as { getIdToken: () => Promise<string> } | null
 }));
 
 vi.mock('../firebase', () => ({
   auth: {
     authStateReady: mocks.authStateReady,
     get currentUser() {
-      return mocks.isSignedIn ? { getIdToken: mocks.getIdToken } : null;
+      return mocks.currentUser;
     }
   }
 }));
@@ -34,9 +34,9 @@ function streamResponse(chunks: string[], status = 200): Response {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.stubGlobal('fetch', vi.fn());
-  mocks.isSignedIn = true;
-  mocks.authStateReady.mockResolvedValue(undefined);
   mocks.getIdToken.mockResolvedValue('verified-test-id-token');
+  mocks.currentUser = { getIdToken: mocks.getIdToken };
+  mocks.authStateReady.mockResolvedValue(undefined);
 });
 
 describe('AcademicPipelineClientService', () => {
@@ -69,7 +69,7 @@ describe('AcademicPipelineClientService', () => {
   });
 
   it('does not call the protected endpoint when no Firebase user is signed in', async () => {
-    mocks.isSignedIn = false;
+    mocks.currentUser = null;
     const fetchMock = vi.mocked(fetch);
     const service = new AcademicPipelineClientService();
 
