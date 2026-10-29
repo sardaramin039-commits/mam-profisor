@@ -1,10 +1,12 @@
 import { Router, type Request, type Response } from 'express';
+import type { GoogleGenAI } from '@google/genai';
 import { z } from 'zod';
 import { executeAcademicPipeline } from '../services/academic-pipeline.service';
 
 const requestSchema = z.object({
   title: z.string().trim().min(2).max(500),
-  level: z.enum(['school', 'bachelor', 'master', 'phd', 'professor']).default('phd')
+  level: z.enum(['school', 'bachelor', 'master', 'phd', 'professor']).default('phd'),
+  discipline: z.string().trim().min(1).max(200).default('گشتی')
 }).strict();
 
 async function writeEvent(res: Response, event: unknown): Promise<boolean> {
@@ -36,7 +38,7 @@ async function writeEvent(res: Response, event: unknown): Promise<boolean> {
   });
 }
 
-export function createAcademicPipelineRouter(): Router {
+export function createAcademicPipelineRouter(getGeminiClient?: () => GoogleGenAI): Router {
   const router = Router();
 
   router.post('/stream', async (req: Request, res: Response): Promise<void> => {
@@ -62,7 +64,9 @@ export function createAcademicPipelineRouter(): Router {
 
     const pipeline = executeAcademicPipeline({
       title: parsed.data.title,
-      level: parsed.data.level
+      level: parsed.data.level,
+      discipline: parsed.data.discipline,
+      getGeminiClient
     });
 
     try {
