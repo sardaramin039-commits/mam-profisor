@@ -1,5 +1,4 @@
-import { TestBed } from '@angular/core/testing';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = {
   authStateReady: vi.fn(),
@@ -11,12 +10,7 @@ const authProvider = {
   currentUser: null as { getIdToken: () => Promise<string> } | null
 };
 
-import {
-  ACADEMIC_PIPELINE_AUTH,
-  AcademicPipelineClientService
-} from './academic-pipeline-client.service';
-
-let service: AcademicPipelineClientService;
+import { generateAcademicPipelineWithAuth } from './academic-pipeline-client.service';
 
 function streamResponse(chunks: string[], status = 200): Response {
   const encoder = new TextEncoder();
@@ -38,18 +32,6 @@ beforeEach(() => {
   mocks.getIdToken.mockResolvedValue('verified-test-id-token');
   authProvider.currentUser = { getIdToken: mocks.getIdToken };
   mocks.authStateReady.mockResolvedValue(undefined);
-  TestBed.configureTestingModule({
-    providers: [
-      AcademicPipelineClientService,
-      { provide: ACADEMIC_PIPELINE_AUTH, useValue: authProvider }
-    ]
-  });
-  service = TestBed.inject(AcademicPipelineClientService);
-});
-
-afterEach(() => {
-  TestBed.resetTestingModule();
-  vi.unstubAllGlobals();
 });
 
 describe('AcademicPipelineClientService', () => {
@@ -62,7 +44,7 @@ describe('AcademicPipelineClientService', () => {
     ]));
     const events: string[] = [];
 
-    const result = await service.generate(
+    const result = await generateAcademicPipelineWithAuth(authProvider, 
       { title: 'Research title', level: 'phd' },
       event => events.push(event.stage)
     );
@@ -85,7 +67,7 @@ describe('AcademicPipelineClientService', () => {
     authProvider.currentUser = null;
     const fetchMock = vi.mocked(fetch);
 
-    await expect(service.generate(
+    await expect(generateAcademicPipelineWithAuth(authProvider, 
       { title: 'Research title', level: 'master' },
       () => undefined
     )).rejects.toThrow('تکایە سەرەتا بچۆ ژوورەوە');
@@ -98,7 +80,7 @@ describe('AcademicPipelineClientService', () => {
       { status: 401, headers: { 'Content-Type': 'application/json' } }
     ));
 
-    await expect(service.generate(
+    await expect(generateAcademicPipelineWithAuth(authProvider, 
       { title: 'Research title', level: 'master' },
       () => undefined
     )).rejects.toThrow('دەسەڵاتی بەکارهێنان پشتڕاست نەکرایەوە');
@@ -109,7 +91,7 @@ describe('AcademicPipelineClientService', () => {
       'data: {"stage":"error","progressPercent":0,"message":"Generation failed safely"}\n\n'
     ]));
 
-    await expect(service.generate(
+    await expect(generateAcademicPipelineWithAuth(authProvider, 
       { title: 'Research title', level: 'phd' },
       () => undefined
     )).rejects.toThrow('Generation failed safely');
