@@ -61,7 +61,7 @@ if (!manifest.scripts?.build || !manifest.scripts?.typecheck) {
 }
 
 for (const [name, command] of Object.entries(manifest.scripts || {})) {
-  const matches = [...command.matchAll(/(?:^|\\s)node\\s+(scripts\\/[^\\s;&|]+)/g)];
+  const matches = [...command.matchAll(/(?:^|\s)node\s+(scripts\/[^\s;&|]+)/g)];
   for (const match of matches) {
     const target = match[1].replace(/^['"]|['"]$/g, '');
     if (!existsSync(join(process.cwd(), target))) errors.push(`npm script "${name}" references missing file ${target}`);
