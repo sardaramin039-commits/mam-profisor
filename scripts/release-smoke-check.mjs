@@ -111,17 +111,40 @@ function reserveLoopbackPort() {
   });
 }
 
+function signalServerProcessTree(child, signal) {
+  if (!child.pid) return;
+  if (process.platform !== 'win32') {
+    try {
+      process.kill(-child.pid, signal);
+      return;
+    } catch {
+      // Fall through to the direct-child fallback when no process group exists.
+    }
+  }
+  if (child.exitCode === null && child.signalCode === null) child.kill(signal);
+}
+
 async function stopServerProcess(child) {
-  if (!child.pid || child.exitCode !== null || child.signalCode !== null) return;
-  await new Promise(resolveExit => {
-    const timer = setTimeout(() => {
-      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+  if (!child.pid) return;
+  await new Promise(resolveClose => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(forceTimer);
+      clearTimeout(finalTimer);
+      child.off('close', finish);
+      resolveClose();
+    };
+    const forceTimer = setTimeout(() => {
+      signalServerProcessTree(child, 'SIGKILL');
     }, 2500);
-    child.once('exit', () => {
-      clearTimeout(timer);
-      resolveExit();
-    });
-    child.kill('SIGTERM');
+    const finalTimer = setTimeout(() => {
+      signalServerProcessTree(child, 'SIGKILL');
+      finish();
+    }, 5000);
+    child.once('close', finish);
+    signalServerProcessTree(child, 'SIGTERM');
   });
 }
 
@@ -133,6 +156,7 @@ async function verifyLiveServer() {
   const startArgs = npmCli ? [npmCli, 'start'] : [serverEntry];
   const child = spawn(process.execPath, startArgs, {
     cwd: process.cwd(),
+    detached: process.platform !== 'win32',
     env: {
       ...process.env,
       PORT: String(port),
