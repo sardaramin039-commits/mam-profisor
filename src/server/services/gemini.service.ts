@@ -7,6 +7,8 @@ const engine = new GeminiCoreEngine();
 export { isTransientGeminiError as isTransientError };
 export { GeminiAutoEvolutionEngine } from './gemini-auto-evolution-engine';
 export { GeminiCoreEngine } from './gemini/core-engine';
+export { AcademicKnowledgeVault } from './gemini/pdf-and-cache-manager';
+export type { UploadedAcademicFile, ThesisMasterCacheRequest } from './gemini/pdf-and-cache-manager';
 export type { GenerationRequestConfig, GeminiGenerationMode } from './gemini/core-engine';
 
 export function getGeminiClient(): GoogleGenAI {
