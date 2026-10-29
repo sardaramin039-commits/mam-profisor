@@ -65,6 +65,9 @@ for (const absolutePath of collectFiles(root)) {
   if (forbiddenLockNames.has(name)) {
     errors.push('unsupported package-manager lock/config file: ' + file);
   }
+  if (name !== 'package-lock.json' && /(?:^|[-.])lock(?:b)?(?:\.|$)/i.test(name)) {
+    errors.push('unsupported alternate lockfile; keep the root npm lockfile only: ' + file);
+  }
   if (name === 'package-lock.json' && file !== 'package-lock.json') {
     errors.push('nested npm lockfile is not allowed; keep only the root lockfile: ' + file);
   }
