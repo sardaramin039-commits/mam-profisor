@@ -270,7 +270,7 @@ export class GeminiAutoEvolutionEngine {
       systemInstruction: options.systemInstruction,
       temperature: options.temperature ?? 0.25
     };
-    if (options.enableThinking === true && options.taskType === 'deep_academic_reasoning') {
+    if (options.enableThinking !== false && options.taskType === 'deep_academic_reasoning') {
       config['thinkingConfig'] = { thinkingBudget: options.thinkingBudgetTokens ?? 8192 };
     }
     if (options.enableGoogleSearchGrounding) {
