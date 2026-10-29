@@ -1,8 +1,5 @@
 import type { Schema } from '@google/genai';
-import {
-  GeminiAutoEvolutionEngine,
-  type AdvancedGenerationOptions
-} from '../gemini-auto-evolution-engine';
+import { GeminiAutoEvolutionEngine } from '../gemini-auto-evolution-engine';
 
 export type GeminiGenerationMode = 'deep_thinking' | 'search_grounded' | 'fast_critic';
 
@@ -18,10 +15,8 @@ export interface GenerationRequestConfig {
 }
 
 /**
- * Server-side facade over the repository's shared Gemini engine.
- *
- * Keep this module under src/server: it uses server-owned credentials through
- * GeminiAutoEvolutionEngine and must never be imported by Angular browser code.
+ * Server-side facade over the shared Gemini engine.
+ * Never import this module into Angular browser code: credentials are server-owned.
  */
 export class GeminiCoreEngine {
   constructor(
@@ -52,39 +47,22 @@ export class GeminiCoreEngine {
   }
 
   public async generate<T = string>(request: GenerationRequestConfig): Promise<T> {
-    const contents = [
+    const parts = [
       ...(request.fileUris ?? []).map(file => ({
         fileData: { fileUri: file.fileUri, mimeType: file.mimeType }
       })),
       { text: request.prompt }
     ];
-
-    const options: AdvancedGenerationOptions = {
-      taskType: request.mode === 'fast_critic'
-        ? 'fast_formatting'
-        : request.mode === 'search_grounded'
-          ? 'grounded_fact_checking'
-          : 'deep_academic_reasoning',
-      systemInstruction: request.systemInstruction,
-      prompt: JSON.stringify(contents),
-      responseSchema: request.mode === 'search_grounded' ? undefined : request.responseSchema,
-      enableThinking: request.mode === 'deep_thinking',
-      thinkingBudgetTokens: request.thinkingBudgetTokens ?? 8192,
-      enableGoogleSearchGrounding: request.mode === 'search_grounded',
-      cachedContextName: request.cachedContentName,
-      temperature: request.temperature
-    };
-
-    // Preserve the SDK's native multimodal content structure instead of serializing
-    // file parts into a prompt string.
     const client = this.engine.getClient();
-    const modelHint = request.mode === 'fast_critic' ? 'flash' : 'pro';
     const config: Record<string, unknown> = {
       systemInstruction: request.systemInstruction,
       temperature: request.temperature ?? 0.25
     };
+
     if (request.mode === 'deep_thinking') {
-      config['thinkingConfig'] = { thinkingBudget: request.thinkingBudgetTokens ?? 8192 };
+      config['thinkingConfig'] = {
+        thinkingBudget: request.thinkingBudgetTokens ?? 8192
+      };
     }
     if (request.mode === 'search_grounded') {
       config['tools'] = [{ googleSearch: {} }];
@@ -92,14 +70,15 @@ export class GeminiCoreEngine {
       config['responseMimeType'] = 'application/json';
       config['responseSchema'] = request.responseSchema;
     }
-    if (request.cachedContentName) config['cachedContent'] = request.cachedContentName;
+    if (request.cachedContentName) {
+      config['cachedContent'] = request.cachedContentName;
+    }
 
-    // The managed client transparently applies dynamic model selection, supported
-    // thinking configuration, key rotation, and bounded retries.
-    void options;
+    // The managed client applies dynamic model selection, supported thinking
+    // settings, key rotation, and bounded retries to this request.
     const response = await client.models.generateContent({
-      model: modelHint,
-      contents: [{ role: 'user', parts: contents }],
+      model: request.mode === 'fast_critic' ? 'flash' : 'pro',
+      contents: [{ role: 'user', parts }],
       config: config as Parameters<typeof client.models.generateContent>[0]['config']
     });
 
@@ -109,10 +88,9 @@ export class GeminiCoreEngine {
       try {
         return JSON.parse(text) as T;
       } catch (error) {
-        throw new Error(
-          'Gemini returned invalid JSON for the requested response schema.',
-          { cause: error }
-        );
+        throw new Error('Gemini returned invalid JSON for the requested response schema.', {
+          cause: error
+        });
       }
     }
     return text as unknown as T;
