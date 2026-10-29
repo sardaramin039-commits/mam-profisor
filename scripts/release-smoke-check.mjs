@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, resolve, relative } from 'node:path';
 
@@ -9,6 +10,7 @@ if (!existsSync(outputRoot) || !statSync(outputRoot).isDirectory()) {
 
 const browserRoot = join(outputRoot, 'browser');
 const serverRoot = join(outputRoot, 'server');
+const serverEntry = join(serverRoot, 'server.mjs');
 const files = [];
 
 function walk(directory) {
@@ -21,6 +23,25 @@ function walk(directory) {
 }
 
 walk(outputRoot);
+
+if (!existsSync(serverEntry) || !statSync(serverEntry).isFile()) {
+  console.error('Production smoke check failed: expected SSR server entry dist/app/server/server.mjs is missing.');
+  process.exit(1);
+}
+
+const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
+if (!manifest.scripts?.start?.includes('dist/app/server/server.mjs')) {
+  console.error('Production smoke check failed: npm start does not target the built SSR server entry.');
+  process.exit(1);
+}
+
+const serverSyntax = spawnSync(process.execPath, ['--check', serverEntry], { encoding: 'utf8' });
+if (serverSyntax.error || serverSyntax.status !== 0) {
+  console.error('Production smoke check failed: the SSR server entry is not valid Node.js syntax.');
+  if (serverSyntax.error) console.error(serverSyntax.error.message);
+  if (serverSyntax.stderr) console.error(serverSyntax.stderr.trim());
+  process.exit(1);
+}
 
 // In Angular SSR outputMode=server, the canonical browser directory contains JS/CSS
 // bundles; HTML shells may live only in prerendered-routes rather than browser/index.html.
@@ -72,4 +93,4 @@ if (!browserFiles.some(file => /\.(?:m?js)$/i.test(file))) {
   process.exit(1);
 }
 
-console.log(`Production smoke check passed: ${relative(outputRoot, indexFile)}; ${browserFiles.length} browser artifact(s); ${localRefs.length} local bundle references resolved.`);
+console.log(`Production smoke check passed: SSR entry ${relative(outputRoot, serverEntry)} syntax valid; ${relative(outputRoot, indexFile)}; ${browserFiles.length} browser artifact(s); ${localRefs.length} local bundle references resolved.`);
