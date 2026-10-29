@@ -22,6 +22,7 @@ export interface AcademicPipelineEvent {
 export interface AcademicPipelineRequest {
   title: string;
   level: AcademicPipelineLevel;
+  discipline?: string;
 }
 
 /**
@@ -38,6 +39,10 @@ export class AcademicPipelineClientService {
     const title = typeof request.title === 'string' ? request.title.trim() : '';
     if (title.length < 2 || title.length > 500) {
       throw new Error('ناونیشانی توێژینەوە دەبێت لە نێوان ٢ و ٥٠٠ پیت بێت.');
+    }
+    const discipline = typeof request.discipline === 'string' ? request.discipline.trim() : 'گشتی';
+    if (!discipline || discipline.length > 200) {
+      throw new Error('بواری زانستی دەبێت لە نێوان ١ و ٢٠٠ پیت بێت.');
     }
 
     await auth.authStateReady();
@@ -58,7 +63,7 @@ export class AcademicPipelineClientService {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + token
       },
-      body: JSON.stringify({ title, level: request.level }),
+      body: JSON.stringify({ title, level: request.level, discipline }),
       signal
     });
 
