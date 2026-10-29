@@ -1,4 +1,3 @@
-import type { GoogleGenAI } from '@google/genai';
 import { GeminiCoreEngine } from './core-engine';
 
 export interface UploadedAcademicFile {
@@ -81,7 +80,7 @@ export class AcademicKnowledgeVault {
       throw new Error('One or more uploaded source files have an invalid URI or MIME type.');
     }
 
-    const parts: Array<Record<string, unknown>> = [
+    const parts = [
       { text: `Thesis title: ${title}\nApproved outline and structure:\n${outline}` },
       ...files.map(file => ({
         fileData: { fileUri: file.uri, mimeType: file.mimeType }
@@ -113,6 +112,3 @@ export class AcademicKnowledgeVault {
     }
   }
 }
-
-/** Structural helper keeps call sites independent of the concrete SDK client type. */
-export type AcademicKnowledgeVaultClient = GoogleGenAI;
