@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { ACADEMIC_OUTLINE_SCHEMA } from './gemini-auto-evolution-engine';
 import { disciplineProfileService } from './discipline-profile.service';
 
 export interface ArgumentNode {
@@ -16,6 +17,7 @@ export interface ThesisStructurePlan {
   thesisStatement: string;
   arguments: ArgumentNode[];
   overallConclusion: string;
+  degradationReason?: 'invalid_input' | 'generation_unavailable' | 'invalid_model_response';
 }
 
 function normalizeInput(value: unknown, maxLength: number): string {
@@ -33,21 +35,17 @@ function normalizeTextList(value: unknown, maxItems = 20, maxLength = 800): stri
     .slice(0, maxItems);
 }
 
-function degradedPlan(topic: string): ThesisStructurePlan {
-  const boundedTopic = topic || 'بابەتی دیارینەکراو';
+function degradedPlan(
+  _topic: string,
+  degradationReason: ThesisStructurePlan['degradationReason'] = 'generation_unavailable'
+): ThesisStructurePlan {
   return {
     status: 'degraded',
-    researchQuestion: `پرسیاری پێشنیارکراو بۆ توێژینەوەی «${boundedTopic}»؛ scope و ئەدەبیاتی پەیوەندیدار پشکنین بکە.`,
-    thesisStatement: `فرزیەی پێشنیارکراو بۆ «${boundedTopic}»؛ تا Evidence کۆنەکرێتەوە و پشکنین نەکرێت، وەک دەرئەنجامی سەلمێنراو وەری مەگرە.`,
-    arguments: [{
-      id: 'ARG-DRAFT-01',
-      claim: `خاڵێکی شیکاری پێشنیارکراو بۆ «${boundedTopic}»؛ پێویستی بە بەڵگەی ڕەسەن هەیە.`,
-      subArguments: ['ژێرپرسیاری یەکەم بۆ پشکنین', 'ژێرپرسیاری دووەم بۆ پشکنین'],
-      evidenceQuotes: [],
-      counterArguments: ['دژە-ئارگومێنتێکی ئەگەری دیاری بکە دوای خوێندنەوەی ئەدەبیات.'],
-      synthesisKurdish: 'ئەم بونیادە ڕەشنووسە؛ هیچ claim یان citation ـێک پشتڕاست نەکراوەتەوە.'
-    }],
-    overallConclusion: 'دەرئەنجامی کۆتایی تەنها دوای کۆکردنەوەی Evidence و پشکنینی توێژەر پڕ بکرێتەوە.'
+    researchQuestion: '',
+    thesisStatement: '',
+    arguments: [],
+    overallConclusion: '',
+    degradationReason
   };
 }
 
@@ -62,7 +60,7 @@ export class AcademicWritingEngineService {
   ): Promise<ThesisStructurePlan> {
     const safeTopic = normalizeInput(topic, 500);
     const safeDiscipline = normalizeInput(discipline, 120);
-    if (!safeTopic || !safeDiscipline) return degradedPlan(safeTopic);
+    if (!safeTopic || !safeDiscipline) return degradedPlan(safeTopic, 'invalid_input');
 
     const profile = disciplineProfileService.getProfile(safeDiscipline);
     const prompt = `تۆ سەرنووسەرێکی ئەکادیمیی زانکۆیییت. بونیادێکی ڕێکخراوی ئارگومێنتی بۆ بابەتی خوارەوە پێشنیار بکە.
@@ -96,9 +94,9 @@ export class AcademicWritingEngineService {
     try {
       const ai = getGeminiClient();
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'pro',
         contents: prompt,
-        config: { responseMimeType: 'application/json', temperature: 0.3 }
+        config: { responseMimeType: 'application/json', responseSchema: ACADEMIC_OUTLINE_SCHEMA, temperature: 0.25 }
       });
       const parsed = JSON.parse(response.text || '{}') as Record<string, unknown>;
       const researchQuestion = normalizeInput(parsed['researchQuestion'], 4_000);
@@ -136,7 +134,10 @@ export class AcademicWritingEngineService {
       return { status: 'generated', researchQuestion, thesisStatement, arguments: argumentsList, overallConclusion };
     } catch (error: unknown) {
       console.error('Error in AcademicWritingEngineService:', error);
-      return degradedPlan(safeTopic);
+      const reason = error instanceof Error && /incomplete|no usable arguments|json/i.test(error.message)
+        ? 'invalid_model_response'
+        : 'generation_unavailable';
+      return degradedPlan(safeTopic, reason);
     }
   }
 }

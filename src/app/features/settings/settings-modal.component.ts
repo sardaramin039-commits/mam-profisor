@@ -93,21 +93,21 @@ import { GeminiRequestManagerService } from '../../services/gemini-request-manag
             <div class="flex gap-2">
               <button
                 type="button"
-                (click)="geminiManager.setPreferredModel('gemini-2.5-flash')"
-                [class]="geminiManager.preferredModel() === 'gemini-2.5-flash' 
+                (click)="geminiManager.setPreferredModel('flash')"
+                [class]="geminiManager.preferredModel() === 'flash' 
                   ? 'bg-amber-600 text-white font-bold border-amber-500' 
                   : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750'"
                 class="px-3 py-1.5 rounded-lg border text-xs cursor-pointer transition">
-                gemini-2.5-flash
+                Flash (خۆکار)
               </button>
               <button
                 type="button"
-                (click)="geminiManager.setPreferredModel('gemini-2.5-pro')"
-                [class]="geminiManager.preferredModel() === 'gemini-2.5-pro' 
+                (click)="geminiManager.setPreferredModel('pro')"
+                [class]="geminiManager.preferredModel() === 'pro' 
                   ? 'bg-amber-600 text-white font-bold border-amber-500' 
                   : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750'"
                 class="px-3 py-1.5 rounded-lg border text-xs cursor-pointer transition">
-                gemini-2.5-pro
+                Pro (خۆکار)
               </button>
             </div>
           </div>

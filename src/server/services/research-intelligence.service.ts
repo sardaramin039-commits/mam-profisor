@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { discoverGoogleSearchSources } from './google-search-grounding.service';
 import { robustParseJson } from '../utils/json-repair';
 import { sourceVerificationService } from './source-verification.service';
 import { linkClaimsToEvidence } from './research-evidence-linking';
@@ -179,11 +180,13 @@ function safeJson(responseText: string, fallback: any): any {
 }
 
 export class ResearchIntelligenceService {
-  async discover(topic: string, discipline: string) {
+  async discover(topic: string, discipline: string, getGeminiClient?: () => GoogleGenAI) {
     const openAiEnabled =
       process.env['ENABLE_OPENAI_SOURCE_DISCOVERY'] === 'true' &&
       process.env['ALLOW_BILLABLE_AI'] === 'true' &&
       Boolean(process.env['OPENAI_API_KEY']?.trim());
+
+    const googleSearchSources = await discoverGoogleSearchSources(topic, discipline, getGeminiClient);
 
     if (openAiEnabled) {
       const result = await openAiChatGptService.discoverAcademicSources({
@@ -191,7 +194,7 @@ export class ResearchIntelligenceService {
         discipline,
         limit: 24
       });
-      const sources = dedupeSources(result.discoveredSources || [], 24);
+      const sources = dedupeSources([...(result.discoveredSources || []), ...googleSearchSources], 24);
       return {
         query: [topic.trim(), discipline.trim()].filter(Boolean).join(' '),
         sources,
@@ -202,11 +205,12 @@ export class ResearchIntelligenceService {
     }
 
     const free = await discoverFreeAcademicSources(topic, discipline);
+    const sources = dedupeSources([...free.sources, ...googleSearchSources], 24);
     return {
       query: free.query,
-      sources: free.sources,
-      total: free.sources.length,
-      providers: free.providers,
+      sources,
+      total: sources.length,
+      providers: [...new Set([...free.providers, ...(googleSearchSources.length ? ['GoogleSearch'] : [])])],
       verificationPolicy: 'Free academic-index candidates are not citations until identity and evidence are verified'
     };
   }
@@ -215,7 +219,7 @@ export class ResearchIntelligenceService {
     request: ResearchIntelligenceRequest,
     getGeminiClient: () => GoogleGenAI
   ): Promise<ResearchIntelligenceResult> {
-    const discovery = await this.discover(request.topic, request.discipline);
+    const discovery = await this.discover(request.topic, request.discipline, getGeminiClient);
     let ai: GoogleGenAI | undefined;
     let clientSetupError: unknown;
     try {
@@ -329,22 +333,22 @@ JSON:
     const analysisResults: PromiseSettledResult<{ text?: string }>[] = ai
       ? await Promise.allSettled([
           ai.models.generateContent({
-            model: 'gemini-3.8-flash',
+            model: 'pro',
             contents: plannerPrompt,
             config: { responseMimeType: 'application/json', temperature: 0.2 }
           }),
           ai.models.generateContent({
-            model: 'gemini-3.8-flash',
+            model: 'pro',
             contents: methodologyPrompt,
             config: { responseMimeType: 'application/json', temperature: 0.1 }
           }),
           ai.models.generateContent({
-            model: 'gemini-3.8-flash',
+            model: 'flash',
             contents: factPrompt,
             config: { responseMimeType: 'application/json', temperature: 0.1 }
           }),
           ai.models.generateContent({
-            model: 'gemini-3.8-flash',
+            model: 'flash',
             contents: consistencyPrompt,
             config: { responseMimeType: 'application/json', temperature: 0.1 }
           })
@@ -356,10 +360,10 @@ JSON:
 
     const textOf = (result: PromiseSettledResult<{ text?: string }>): string =>
       result.status === 'fulfilled' ? String(result.value.text || '') : '';
-    const statusOf = (result: PromiseSettledResult<{ text?: string }>): 'ok' | 'degraded' =>
-      result.status === 'fulfilled' && typeof result.value?.text === 'string' && result.value.text.trim().length > 0
-        ? 'ok'
-        : 'degraded';
+    const statusOf = (result: PromiseSettledResult<{ text?: string }>): 'ok' | 'degraded' => {
+      if (result.status !== 'fulfilled' || typeof result.value?.text !== 'string' || !result.value.text.trim()) return 'degraded';
+      return Object.keys(safeJson(result.value.text, {})).length > 0 ? 'ok' : 'degraded';
+    };
 
     const plannerRes = analysisResults[0];
     const methodologyRes = analysisResults[1];
@@ -436,15 +440,18 @@ JSON:
         consistency: statusOf(consistencyRes)
       },
       planner: safeJson(textOf(plannerRes), {
-        researchQuestion: request.researchQuestion || '',
+        status: 'degraded',
+        generated: false,
+        reasonCode: 'PLANNER_UNAVAILABLE',
+        researchQuestion: '',
         subQuestions: [],
         objectives: [],
-        searchConcepts: [request.topic],
+        searchConcepts: [],
         inclusionCriteria: [],
         exclusionCriteria: [],
         evidenceNeeds: [],
         plannedSections: [],
-        riskNotes: ['پلان بەهۆی کێشەی AI بە تەواوی نەدرا.']
+        riskNotes: []
       }),
       factCheck,
       evidenceLinks,
@@ -452,7 +459,8 @@ JSON:
         overallScore: null,
         status: 'review',
         checks: [],
-        blockingIssues: ['پشکنینی مێتۆدۆلۆژیا تەواو نەبوو.'],
+        blockingIssues: [],
+        reasonCode: 'METHODOLOGY_UNAVAILABLE',
         strengths: []
       }),
       consistency: safeJson(textOf(consistencyRes), {
@@ -460,7 +468,8 @@ JSON:
         status: 'review',
         conflicts: [],
         stableElements: [],
-        normalizationSuggestions: []
+        normalizationSuggestions: [],
+        reasonCode: 'CONSISTENCY_UNAVAILABLE'
       }),
       sourceVerification: {
         received: verificationSources.length,
