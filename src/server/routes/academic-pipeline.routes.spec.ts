@@ -70,7 +70,7 @@ describe('academic pipeline SSE route', () => {
       body: JSON.stringify({ title: 'Research title' })
     });
     const body = await response.text();
-    const records = body.split('\\n\\n').filter(Boolean);
+    const records = body.split('\n\n').filter(Boolean);
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('text/event-stream');
@@ -99,7 +99,7 @@ describe('academic pipeline SSE route', () => {
     const body = await response.text();
 
     expect(response.status).toBe(200);
-    expect(body).toContain('stage\\\":\\\"error');
+    expect(body).toContain('"stage":"error"');
     expect(body).not.toContain('SECRET_PROVIDER_API_KEY');
     expect(body).not.toContain('do-not-return');
     expect(errorLog).toHaveBeenCalledOnce();
