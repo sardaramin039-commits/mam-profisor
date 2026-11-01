@@ -21,6 +21,7 @@ import {
   glossaryExpansionSchema,
   groundedGenerationSchema
 } from '../utils/thesis-writing.schemas';
+import { buildLevelSystemInstruction, getLevelProfile } from '../../lib/gemini/LevelProfiles';
 
 export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): Router {
   const router = Router();
@@ -35,7 +36,8 @@ export function createThesisWritingRouter(getGeminiClient: () => GoogleGenAI): R
     try {
       const { title, discipline, writingType, academicLevel, size, chaptersList } = req.body;
       const ai = getGeminiClient();
-      const systemPrompt = SYSTEM_PROMPT_REVIEW_STRUCTURE;
+      const levelInstruction = buildLevelSystemInstruction(academicLevel);
+      const systemPrompt = `${SYSTEM_PROMPT_REVIEW_STRUCTURE}\n\n${levelInstruction}`;
       const userPrompt = `پێداچوونەوە بکە بە جێکەوت و پێکهاتەی کارەکەمان:
 ناونیشانی سەرەکی: "${title}"
 بواری زانستی: ${discipline}
@@ -206,6 +208,7 @@ ${comparisonPrompt}
       const adaptiveThinkingBudget = Number(thinkingTokens) > 0 ? Number(thinkingTokens) : Math.min(16000, Math.max(4096, Math.round(targetWordsNum * 6)));
       const adaptiveOutputTokens = Number(writingTokens) > 0 ? Number(writingTokens) : Math.min(32000, Math.max(8192, Math.round(targetWordsNum * 8)));
 
+      const levelInstruction = buildLevelSystemInstruction(academicLevel);
       const config: {
         systemInstruction?: string;
         responseMimeType?: string;
@@ -214,7 +217,7 @@ ${comparisonPrompt}
         maxOutputTokens?: number;
         thinkingConfig?: { thinkingBudget?: number };
       } = {
-        systemInstruction: systemPrompt + '\n📌 چڕیی زانستی: دەبێت هەموو ڕستەیەک زانیاری و بەڵگەی نوێ بدات و بە تەواوی لە درێژدادڕی دوور بکەوێتەوە.',
+        systemInstruction: `${systemPrompt}\n\n${levelInstruction}\n\n📌 چڕیی زانستی: دەبێت هەموو ڕستەیەک زانیاری و بەڵگەی نوێ بدات و بە تەواوی لە درێژدادڕی دوور بکەوێتەوە.`,
         responseMimeType: 'application/json',
         temperature: temperature || 0.65,
         maxOutputTokens: adaptiveOutputTokens,

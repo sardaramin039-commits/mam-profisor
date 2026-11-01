@@ -95,8 +95,8 @@
             </div>
           }
 
-          <!-- Academic Inspection & Verification Modules (پشکنین، چێک و هەڵسەنگاندنی بەشەکە) -->
-          @if (!isFocusMode()) {
+          <!-- Academic Inspection & Verification Modules (Hidden for Clean Minimalist View) -->
+          @if (false) {
             <div class="space-y-5 pt-4 border-t-2 border-stone-200">
               <app-viewed-chapter-integrity [host]="host"></app-viewed-chapter-integrity>
               <app-viewed-chapter-context [host]="host"></app-viewed-chapter-context>

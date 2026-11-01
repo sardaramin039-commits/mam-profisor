@@ -45,29 +45,14 @@
       </section>
 
       <section class="mam-workflow">
-        <button type="button" class="mam-step cursor-pointer text-right bg-transparent border-0" (click)="mainTab.set('advanced_research')">
+        <button type="button" class="mam-step cursor-pointer text-right bg-transparent border-0 active" (click)="mainTab.set('editor')">
           <span>١</span>
-          <div><strong>نەخشەسازیی توێژینەوە</strong><small>Blueprint & Setup</small></div>
+          <div><strong>نووسینی توێژینەوە</strong><small>Thesis Editor & Outline</small></div>
         </button>
         <div class="mam-step-line"></div>
         <button type="button" class="mam-step cursor-pointer text-right bg-transparent border-0" (click)="mainTab.set('library')">
           <span>٢</span>
-          <div><strong>کتێبخانە و سەرچاوەکان</strong><small>Digital Library & Citations</small></div>
-        </button>
-        <div class="mam-step-line"></div>
-        <button type="button" class="mam-step cursor-pointer text-right bg-transparent border-0 active" (click)="mainTab.set('editor')">
-          <span>٣</span>
-          <div><strong>نووسینگە و دەستنووس</strong><small>Thesis Editor & Copilot</small></div>
-        </button>
-        <div class="mam-step-line"></div>
-        <button type="button" class="mam-step cursor-pointer text-right bg-transparent border-0" (click)="mainTab.set('platform')">
-          <span>٤</span>
-          <div><strong>پشکنینی زانستی و زمانەوانی</strong><small>Quality & Plagiarism</small></div>
-        </button>
-        <div class="mam-step-line"></div>
-        <button type="button" class="mam-step cursor-pointer text-right bg-transparent border-0" (click)="mainTab.set('suite')">
-          <span>٥</span>
-          <div><strong>چاپ و بەرگریی تێز</strong><small>Formatting & Viva Defense</small></div>
+          <div><strong>کتێبخانەی سەرچاوەکان</strong><small>Digital Library & Citations</small></div>
         </button>
       </section>
 
@@ -106,65 +91,6 @@
           <app-window-two [host]="host"></app-window-two>
         </section>
       </div>
-
-      <details class="mam-secondary-tools" [class.hidden]="isFocusMode()">
-        <summary><mat-icon>fact_check</mat-icon><span>پشکنینی کوالیتیی نووسین</span><small>زمان، پێکهاتە، بەڵگە، توندوتۆڵی و پێشنیاری چاکسازی</small></summary>
-        <div class="mam-secondary-grid">
-          <app-vip-writing-quality
-            [chapterText]="activeChapter()?.content || ''"
-            [academicLevel]="refineForm.get('academicLevel')?.value"
-            [discipline]="refineForm.get('discipline')?.value">
-          </app-vip-writing-quality>
-        </div>
-      </details>
-
-      <details class="mam-secondary-tools">
-        <summary><mat-icon>rate_review</mat-icon><span>publication و پێداچوونەوە</span><small>بڕیاری editor، revision و ئامادەبوون بۆ دووبارەناردن</small></summary>
-        <div class="mam-secondary-grid">
-          <app-publication-workflow-panel [host]="host"></app-publication-workflow-panel>
-        </div>
-      </details>
-
-      <details class="mam-secondary-tools" open>
-        <summary><mat-icon>menu_book</mat-icon><span>ئامادەکاریی چاپی ڕاستەوخۆ و بەرگری (Camera-Ready & Defense)</span><small>لاپەڕەی پێشەکی، زانیاریی سپاردن (ISBN)، سێشنی بەرگری (P11/P12)، و پاشکۆکان</small></summary>
-        <div class="mam-secondary-grid">
-          <app-camera-ready-publishing-panel [host]="host"></app-camera-ready-publishing-panel>
-        </div>
-      </details>
-
-      <details class="mam-secondary-tools">
-        <summary><mat-icon>stars</mat-icon><span>کەماڵی ئەکادیمی و پێوەرە نێودەوڵەتییەکان (Scopus / WoS Standards)</span><small>پوختەی دووزمانەی IMRAD، ماتریسی ڕۆڵی نووسەران (CRediT)، بەڵێننامەی ئەسڵییەت و ئامار</small></summary>
-        <div class="mam-secondary-grid">
-          <app-academic-perfection-panel [host]="host"></app-academic-perfection-panel>
-        </div>
-      </details>
-
-      <details class="mam-secondary-tools">
-        <summary><mat-icon>calculate</mat-icon><span>١. ژمێرەری قەبارەی نموونەی توێژینەوە (Sample Size Calculator)</span><small>هاوکێشەی یامانی و کۆکران، ئاستی متمانە و داڕشتنی ڕستەی فەرمیی میتۆدۆلۆژیا</small></summary>
-        <div class="mam-secondary-grid">
-          <app-sample-size-calculator [activeChapter]="activeChapter()"></app-sample-size-calculator>
-        </div>
-      </details>
-
-      <details class="mam-secondary-tools" open>
-        <summary><mat-icon>dashboard_customize</mat-icon><span>ناوەندی ٥٠ ئامرازی بنەڕەتیی ئەکادیمی (مام پڕۆفیسۆر)</span><small>دەنگنووسی، زاراوەسازی، سەرچاوەی DOI، ڕێسای ژێدەرەکان و پێکهاتەی ٥ بەش</small></summary>
-        <div class="mam-secondary-grid">
-          <app-fifty-academic-tools-suite [activeChapter]="activeChapter()"></app-fifty-academic-tools-suite>
-        </div>
-      </details>
-
-      <details class="mam-secondary-tools">
-        <summary><mat-icon>tune</mat-icon><span>ئامرازە یارمەتیدەرەکان</span><small>گەڕان، وشەنامە و هاوکاری ئەکادیمی</small></summary>
-        <div class="mam-secondary-grid">
-          <app-global-search [host]="host"></app-global-search>
-          <app-academic-tools [host]="host"></app-academic-tools>
-        </div>
-      </details>
-
-      <details class="mam-secondary-tools">
-        <summary><mat-icon>analytics</mat-icon><span>ئاماری پڕۆژە و پێشکەوتن</span><small>پێوانەکان و دۆخی گشتی</small></summary>
-        <div class="mam-secondary-grid"><app-workspace-analytics [host]="host"></app-workspace-analytics></div>
-      </details>
     }
 
     @case ('advanced_research') {

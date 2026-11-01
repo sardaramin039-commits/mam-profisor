@@ -227,7 +227,7 @@ export abstract class AppControllerBase implements OnInit {
 
   isNewBlankThesisModalOpen = signal<boolean>(false);
   newThesisTitleInput = signal<string>('تێزی ئەکادیمی نوێ');
-  newThesisDegreeInput = signal<'bachelor' | 'master' | 'phd'>('master');
+  newThesisDegreeInput = signal<'school' | 'bachelor' | 'master' | 'phd'>('master');
   newThesisStructureInput = signal<'humanities' | 'empirical'>('humanities');
 
   // Paraphrasing and Copilot state signals
@@ -287,7 +287,7 @@ export abstract class AppControllerBase implements OnInit {
     includeDedication: [true], includeIntro: [true], includeTOC: [true],
     includeConclusion: [true], includeRecommendations: [true], includeReferences: [true],
     thesisStructureType: ['humanities'],
-    ragModel: ['gemini-3.1-pro-preview'], ragLimit: [8],
+    ragModel: ['gemini-2.5-pro'], ragLimit: [8],
     temperature: [0.7], thinkingTokens: [2048], writingTokens: [8192],
     thesisDefense: [false]
   });

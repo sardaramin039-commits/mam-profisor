@@ -1,64 +1,42 @@
-    
-    @if (chapters().length > 0) {
-      <div class="mam-action-dock">
-        <div class="mam-action-dock-inner">
-          
-          <!-- Info tag -->
-          <div class="mam-dock-status">
-            <mat-icon class="text-emerald-700 leading-none">menu_book</mat-icon>
-            <div class="text-right">
-              <span class="mam-dock-count">بەرهەمی کایەی پەڕتووکی مام:</span>
-              <span class="mam-dock-subtitle">ژمارەی بەشەکان: {{ chapters().length }} بەش گشتی</span>
-            </div>
-          </div>
-
-          <!-- Bottom bar operations row -->
-          <div class="mam-dock-actions">
-            <!-- 1. پشکنینی وردی بەش -->
-            <button (click)="reviewStructure()" [disabled]="isReviewingStructure()" class="mam-dock-btn" title="پشکنینی پێکهاتە و زاراوەسازیی بەشەکە">
-              @if (isReviewingStructure()) {
-                <span class="w-3.5 h-3.5 border-2 border-stone-400 border-t-amber-400 rounded-full animate-spin"></span>
-                <span class="text-amber-400 font-bold">خەریکی پشکنینە...</span>
-              } @else {
-                <mat-icon class="!text-sm !w-4 !h-4">insights</mat-icon>
-                <span>پشکنینی بەش</span>
-              }
-            </button>
-
-            <!-- 2. نووسینی یارمەتیدەری AI -->
-            <button (click)="autoWrite()" [disabled]="isWritingProgress() || isHumanizingProgress() || isReviewingStructure()" class="mam-dock-btn mam-dock-primary" title="نووسینی ناوەڕۆکی بەشەکە بە ژیریی دەستکرد">
-              @if (isWritingProgress()) {
-                <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                <span>AI خەریکی نووسینە...</span>
-              } @else {
-                <mat-icon class="!text-sm !w-4 !h-4">flash_on</mat-icon>
-                <span>نووسینی AI</span>
-              }
-            </button>
-
-            <!-- 3. پەرەپێدانی ئەکادیمی -->
-            <button (click)="autoHumanize()" [disabled]="isWritingProgress() || isHumanizingProgress() || isReviewingStructure() || !chapters().length || !chapters()[0].content" class="mam-dock-btn mam-dock-review" title="بەرزکردنەوەی ئاستی زاراوە و ڕستەسازیی دەق">
-              @if (isHumanizingProgress()) {
-                <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                <span>خەریکی پەرەپێدانە...</span>
-              } @else {
-                <mat-icon class="!text-sm !w-4 !h-4">psychology</mat-icon>
-                <span>پەرەپێدانی دەق</span>
-              }
-            </button>
-
-            <!-- 4. هەناردەی Word -->
-            <button (click)="saveAll()" [disabled]="isExportingWord() || !chapters().length || !chapters()[0].content" class="mam-dock-btn mam-dock-save" title="داگرتنی هەموو بەشەکان لە فایلی Word (.docx)">
-              @if (isExportingWord()) {
-                <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                <span>خەریکی هەناردەیە...</span>
-              } @else {
-                <mat-icon class="!text-sm !w-4 !h-4">cloud_download</mat-icon>
-                <span>هەناردەی Word</span>
-              }
-            </button>
-          </div>
-
+@if (chapters().length > 0) {
+  <div class="mam-action-dock">
+    <div class="mam-action-dock-inner font-serif">
+      
+      <!-- Info tag -->
+      <div class="mam-dock-status">
+        <mat-icon class="text-emerald-700 leading-none">menu_book</mat-icon>
+        <div class="text-right">
+          <span class="mam-dock-count font-bold">تێزی زانستیی مام پڕۆفیسۆر</span>
+          <span class="mam-dock-subtitle font-mono">{{ chapters().length }} بەش</span>
         </div>
       </div>
-    }
+
+      <!-- Bottom bar operations row: exactly 3 essential buttons -->
+      <div class="mam-dock-actions">
+        <!-- 1. دۆخی خوێندنەوە -->
+        <button type="button" (click)="openReadingMode()" class="mam-dock-btn" title="خوێندنەوەی دەستنووس لە دۆخی کتێبی فەرمی">
+          <mat-icon class="!text-sm !w-4 !h-4 text-amber-500">menu_book</mat-icon>
+          <span>دۆخی خوێندنەوە</span>
+        </button>
+
+        <!-- 2. پاشەکەوتکردن -->
+        <button type="button" (click)="saveAll()" class="mam-dock-btn" title="پاشەکەوتکردنی تەواوی گۆڕانکارییەکان">
+          <mat-icon class="!text-sm !w-4 !h-4 text-emerald-400">save</mat-icon>
+          <span>پاشەکەوتکردن</span>
+        </button>
+
+        <!-- 3. داگرتن بە Word / PDF -->
+        <button type="button" (click)="exportWordOrPdf()" [disabled]="isExportingWord() || !chapters().length" class="mam-dock-btn mam-dock-save" title="داگرتنی تێز بە فایلی فەرمیی Word یان PDF">
+          @if (isExportingWord()) {
+            <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            <span>خەریکی داگرتنە...</span>
+          } @else {
+            <mat-icon class="!text-sm !w-4 !h-4">cloud_download</mat-icon>
+            <span>داگرتن بە Word / PDF</span>
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

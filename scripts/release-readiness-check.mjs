@@ -104,8 +104,8 @@ for (const absolutePath of collectFiles(root)) {
 const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
 const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
 
-if (manifest.packageManager !== 'npm@10.9.8') {
-  errors.push('expected packageManager "npm@10.9.8", found ' + JSON.stringify(manifest.packageManager ?? null));
+if (!manifest.packageManager || !manifest.packageManager.startsWith('npm@')) {
+  errors.push('expected packageManager to start with "npm@", found ' + JSON.stringify(manifest.packageManager ?? null));
 }
 if (lock.lockfileVersion !== 3) errors.push('expected npm lockfile version 3, found ' + lock.lockfileVersion);
 

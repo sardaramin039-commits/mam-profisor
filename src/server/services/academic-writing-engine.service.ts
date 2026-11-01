@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { disciplineProfileService } from './discipline-profile.service';
+import { GeminiCoreEngine } from '../../lib/gemini/core-engine';
 
 export interface ArgumentNode {
   id: string;
@@ -95,8 +96,13 @@ export class AcademicWritingEngineService {
 
     try {
       const ai = getGeminiClient();
+      let targetModel = 'gemini-2.5-flash';
+      try {
+        const { flash } = await GeminiCoreEngine.getInstance().getOptimalModels();
+        if (flash) targetModel = flash;
+      } catch {}
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: targetModel,
         contents: prompt,
         config: { responseMimeType: 'application/json', temperature: 0.3 }
       });

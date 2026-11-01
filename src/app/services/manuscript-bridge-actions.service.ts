@@ -1,16 +1,19 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { EditorService } from '../features/editor/services/editor';
 import { EditorSyncFeedbackService } from './editor-sync-feedback.service';
 import { AppNotificationsService } from '../core/app.notifications';
 import { countKurdishWords } from './data';
 import { ChapterItemModel as ChapterItem, SubBranchItem } from '../domain/models';
-import { buildAcademicThesisOutline } from '../helpers/outline-structure';
+import { buildAcademicThesisOutline, buildChaptersFromAcademicBlueprint } from '../helpers/outline-structure';
 import { SourceVerificationService } from './source-verification.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ManuscriptBridgeActionsService {
+  private http = inject(HttpClient);
   private editorService = inject(EditorService);
   private editorSyncFeedback = inject(EditorSyncFeedbackService);
   private toastService = inject(AppNotificationsService);
@@ -310,7 +313,48 @@ export class ManuscriptBridgeActionsService {
     this.toastService.showSuccess('لق سڕایەوە', 'لقەکە لە تەوەرەکە سڕایەوە.');
   }
 
-  aiGenerateStructure(chaptersSignal: { (): ChapterItem[]; update: (fn: (val: ChapterItem[]) => ChapterItem[]) => void; set: (val: ChapterItem[]) => void }, formValue: any): void {
+  aiGenerateStructure(
+    chaptersSignal: { (): ChapterItem[]; update: (fn: (val: ChapterItem[]) => ChapterItem[]) => void; set: (val: ChapterItem[]) => void },
+    formValue: any
+  ): void {
+    const title = formValue?.title || 'تێزی زانستی';
+    const discipline = formValue?.discipline || 'humanities';
+    const academicLevel = formValue?.academicLevel || 'master';
+
+    this.toastService.showInfo('نەخشەسازیی ئەکادیمی', 'خەریکی پەیوەندیکردن بە Gemini بۆ داڕشتنی نەخشەی تەواوی تێزەکە (Blueprint)...');
+
+    this.http.post<{ success: boolean; blueprint: any }>('/api/gemini/blueprint', {
+      title,
+      level: academicLevel,
+      discipline
+    }).subscribe({
+      next: (res) => {
+        if (res?.success && res.blueprint) {
+          const chapters = buildChaptersFromAcademicBlueprint(res.blueprint, title);
+          chaptersSignal.set(chapters);
+          this.editorService.chapters.set(chapters);
+          if (chapters.length > 0) {
+            this.editorService.activeChapterId.set(chapters[0].id);
+          }
+          this.toastService.showSuccess(
+            'پەیکەری تێز داڕێژرا',
+            `پەیکەری کالایبرەیکراوی «${res.blueprint.domainName || title}» بە پێڕستی خاڵبەندی، فەرهەنگۆک و تەواوی پێشەکییەکان جێگیر کرا.`
+          );
+        } else {
+          this.fallbackGenerateOutline(chaptersSignal, formValue);
+        }
+      },
+      error: (err) => {
+        console.warn('Blueprint API notice, using local generator:', err);
+        this.fallbackGenerateOutline(chaptersSignal, formValue);
+      }
+    });
+  }
+
+  private fallbackGenerateOutline(
+    chaptersSignal: { (): ChapterItem[]; update: (fn: (val: ChapterItem[]) => ChapterItem[]) => void; set: (val: ChapterItem[]) => void },
+    formValue: any
+  ): void {
     const options = {
       title: formValue?.title || 'تێزی زانستی',
       discipline: formValue?.discipline || 'humanities',

@@ -4,6 +4,11 @@
   [chapterTitle]="activeChapter()?.title || ''">
 </app-academic-rigor-banner>
 
+<!-- 🛡️ Strict Academic Integrity & Citation Verification Monitor (Warning System, Quality Score, Verification Feed) -->
+<app-citation-integrity-monitor
+  [chapterText]="activeChapter()?.content || ''">
+</app-citation-integrity-monitor>
+
 <!-- Configuration Alerts / Error display -->
 @if (errorStr()) {
   <div class="p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-2 rounded-xl my-2">
@@ -118,7 +123,13 @@
 
         <div>
           <label class="block font-bold text-stone-850 mb-1.5">پلەی ئەکادیمی (Degree):</label>
-          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+            <button
+              type="button"
+              (click)="newThesisDegreeInput.set('school')"
+              [class]="'p-2.5 rounded-lg border font-bold transition cursor-pointer ' + (newThesisDegreeInput() === 'school' ? 'bg-sky-700 text-white border-sky-700' : 'bg-stone-50 text-stone-700 border-stone-250 hover:bg-stone-100')">
+              ئاستی قوتابخانە
+            </button>
             <button
               type="button"
               (click)="newThesisDegreeInput.set('bachelor')"

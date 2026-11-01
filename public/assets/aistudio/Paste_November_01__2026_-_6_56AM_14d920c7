@@ -1,0 +1,1494 @@
+MASTER ALL-IN-ONE ARCHITECTURAL OVERHAUL & FULL INTEGRATION COMMAND:
+Work strictly inside `/app/applet` (or project root). Do NOT touch, read, or modify `bun.lock` or `bun.lockb`, and use `npm` exclusively. Execute all 3 phases below verbatim without truncating or omitting a single line of code:
+
+====================================================================
+PHASE 1: CLEANUP BLOAT, FIX SERVER MEMORY & WIRE FRONTEND CONTROLLERS
+====================================================================
+1. In `package.json`:
+   Change `"start": "node --max-old-space-size=3072 dist/app/server/server.mjs"` to:
+   `"start": "node dist/app/server/server.mjs"`
+   so the container never crashes from memory allocation limits.
+
+2. In `src/app/app-controller-base.ts`:
+   - Change `newThesisDegreeInput = signal<'bachelor' | 'master' | 'phd'>('master');` to:
+     `newThesisDegreeInput = signal<'school' | 'bachelor' | 'master' | 'phd'>('master');`
+   - In `refineForm`, change `ragModel: ['gemini-3.1-pro-preview']` to:
+     `ragModel: ['gemini-2.5-pro']`
+
+3. In `src/app/app-controller-actions.ts`:
+   - Update `createNewBlankThesis` signature to accept `level: 'school' | 'bachelor' | 'master' | 'phd' = 'master'` and calculate pages as:
+     `const pages = level === 'phd' ? 250 : level === 'master' ? 120 : level === 'bachelor' ? 40 : 8;`
+   - In `onCustomSourcesInput`, DELETE the 3 hardcoded dummy sources (`2024`, `2023`, `2022`) and filter exclusively from `this.academicStoreService.sources()`.
+
+====================================================================
+PHASE 2: OVERWRITE ALL 5 CORE GEMINI ENGINE FILES (`src/lib/gemini/`)
+====================================================================
+
+--- FILE 1: src/lib/gemini/LevelProfiles.ts ---
+export type AcademicLevel = "school" | "bachelor" | "master" | "phd";
+
+export type AcademicDomainKey =
+  | "religion"
+  | "politics"
+  | "economics"
+  | "sociology"
+  | "business_industry"
+  | "literature_arts"
+  | "sports"
+  | "culture"
+  | "linguistics_grammar"
+  | "psychology"
+  | "philosophy"
+  | "science_tech_internet"
+  | "chemistry"
+  | "physics"
+  | "mathematics"
+  | "electrical_engineering"
+  | "health_medicine"
+  | "general_academic";
+
+export interface DomainCalibrationRule {
+  key: AcademicDomainKey;
+  kurdishName: string;
+  keywords: string[];
+  methodologyAndTerminologyRules: string;
+}
+
+export interface LevelCalibrationProfile {
+  level: AcademicLevel;
+  kurdishTitle: string;
+  personaPrompt: string;
+  formAndContentAnatomy: string;
+  vocabularyAndStyleRules: string;
+  strictlyForbiddenRules: string;
+  introAndConclusionRules: string;
+  structure: {
+    totalWords: number;
+    introWords: number;
+    conclusionWords: number;
+    coreChaptersCount: number;
+    sectionsPerChapter: number;
+    subSectionsPerSection: number;
+    maxWordsPerSinglePass: number;
+    minSources: number;
+  };
+  citationMode: "simple_list" | "standard_footnotes" | "scholarly_multilingual_footnotes";
+  designSpec: {
+    fontFamily: string;
+    bodyFontSizePt: number;
+    h1SizePt: number;
+    h2SizePt: number;
+    h3SizePt: number;
+    footnoteSizePt: number;
+    lineHeight: number;
+    marginsCm: { top: number; bottom: number; right: number; left: number };
+    visualStyle: "modern_school_card" | "standard_university" | "formal_thesis_binding";
+  };
+}
+
+export const DOMAIN_PROFILES: Record<AcademicDomainKey, DomainCalibrationRule> = {
+  religion: {
+    key: "religion",
+    kurdishName: "بواری ئایینی و زانستە ئیسلامی و بەراوردکارییەکان",
+    keywords: ["ئایین", "ئیسلام", "قورئان", "فەرموودە", "فیقه", "تەفسیر", "عەقیدە", "شەریعەت", "سۆفیگەری", "تەفریت", "شلگیری"],
+    methodologyAndTerminologyRules:
+      "پشتبەستن بە دەقی قورئان و فەرموودەی دروست (بە دیاریکردنی سوورەت و ژمارەی ئایەت و سەرچاوەی فەرموودە)، بەراوردی فیقهی و شەرحی زانایانی کلاسیک و هاوچەرخ، و پاراستنی بێلایەنیی زانستی و ڕێزی پیرۆزییەکان."
+  },
+  politics: {
+    key: "politics",
+    kurdishName: "بواری زانستە سیاسییەکان و پەیوەندییە نێودەوڵەتییەکان",
+    keywords: ["سیاسی", "سیاسەت", "دەوڵەت", "حکومەت", "پەرلەمان", "دیپلۆماسی", "جیۆپۆلەتیک", "دیموکراسی", "هەڵبژاردن", "ئاسایش"],
+    methodologyAndTerminologyRules:
+      "شیکردنەوەی دامەزراوەیی، سیستەمی سیاسی، هاوسەنگیی هێز، جیۆپۆلەتیک و تیۆرییەکانی پەیوەندییە نێودەوڵەتییەکان بە بەڵگەی مێژوویی و یاسایی."
+  },
+  economics: {
+    key: "economics",
+    kurdishName: "بواری ئابووری و دارایی",
+    keywords: ["ئابووری", "دارایی", "بانک", "بازاڕ", "نەوت", "بودجە", "هەڵاوسان", "وەبەرهێنان", "گەشەی ئابووری", "باج"],
+    methodologyAndTerminologyRules:
+      "بەکارهێنانی چەمکە ماکرۆ و مایکرۆ-ئابوورییەکان، نیشاندەری دارایی، شیکاریی تێچوو-قازانج، و خستنەڕووی داتای ئابووریی سەلمێنراو."
+  },
+  sociology: {
+    key: "sociology",
+    kurdishName: "بواری کۆمەڵناسی و پرسە کۆمەڵایەتییەکان",
+    keywords: ["کۆمەڵناسی", "کۆمەڵایەتی", "کۆمەڵگە", "خێزان", "چین", "کلتوور", "گۆڕانی کۆمەڵایەتی", "شارنشینی", "جێندەر"],
+    methodologyAndTerminologyRules:
+      "شیکردنەوەی پێکهاتەی کۆمەڵایەتی، دامەزراوەکان، گۆڕانی بەهاکان و تیۆرییە کۆمەڵناسییەکان (کلاسیک و هاوچەرخ) لەگەڵ بەستنەوەی بە واقیعی کۆمەڵگەی کوردستان."
+  },
+  business_industry: {
+    key: "business_industry",
+    kurdishName: "بواری بازرگانی، کارگێڕی و پیشەسازی",
+    keywords: ["بازرگانی", "پیشەسازی", "کارگێڕی", "مارکێتینگ", "کۆمپانیا", "بەڕێوەبردن", "کارگە", "بەرهەمهێنان", "لۆجستی"],
+    methodologyAndTerminologyRules:
+      "پەیڕەوکردنی مۆدێلەکانی ستراتیژیی کار، زنجیرەی دابینکردن، کارگێڕیی کوالێتی، و شیکردنەوەی ژینگەی پیشەسازی و بازرگانی."
+  },
+  literature_arts: {
+    key: "literature_arts",
+    kurdishName: "بواری ئەدەب، ڕەخنەی ئەدەبی و هونەر",
+    keywords: ["ئەدەب", "شیعر", "ڕۆمان", "چیرۆک", "سەفەرنامە", "هونەر", "شانۆ", "سینەما", "مۆسیقا", "شێوەکاری", "ڕەخنە", "عەرووز", "سەروا"],
+    methodologyAndTerminologyRules:
+      "شیتەڵکردنی دەقی ئەدەبی و هونەری، شیکردنەوەی بنیاتگەری و گێڕانەوەناسی (شوێنکات، کارەکتەر، گۆشەنیگا)، وێنەی هونەری، کێش و سەروا، و هێنانەوەی نموونەی ڕاستەوخۆ لە دەقەکان."
+  },
+  sports: {
+    key: "sports",
+    kurdishName: "بواری پەروەردەی وەرزشی و زانستەکانی جووڵە",
+    keywords: ["وەرزش", "وەرزشی", "تۆپی پێ", "ڕاهێنان", "فسیۆلۆژیای وەرزش", "بایۆمیکانیک", "یاری", "پاڵەوانێتی"],
+    methodologyAndTerminologyRules:
+      "شیکردنەوەی زانستیی فسیۆلۆژیای ڕاهێنان، بایۆمیکانیکی جووڵە، دەروونناسیی وەرزشی، و پلانەکانی بارگرانیی مەشق."
+  },
+  culture: {
+    key: "culture",
+    kurdishName: "بواری فەرهەنگی، فۆلکلۆر و کەلەپوور",
+    keywords: ["فەرهەنگ", "فەرهەنگی", "فۆلکلۆر", "کەلەپوور", "مێژوو", "شارستانیەت", "نەریت", "ئەفسانە", "ناسنامە"],
+    methodologyAndTerminologyRules:
+      "لێکۆڵینەوەی مرۆڤناسیی فەرهەنگی (Cultural Anthropology)، پاراستنی کەلەپووری زارەکی و مێژوویی، و شیکردنەوەی هێما فەرهەنگییەکان."
+  },
+  linguistics_grammar: {
+    key: "linguistics_grammar",
+    kurdishName: "بواری زمانەوانی، ڕێزمان و زانستەکانی زمان",
+    keywords: ["زمان", "زمانەوانی", "ڕێزمان", "فۆنۆلۆژی", "مۆرفۆلۆژی", "سینتاکس", "واتاسازی", "پراگماتیک", "زاراوە", "شێوەزار"],
+    methodologyAndTerminologyRules:
+      "شیکردنەوەی وردی ئاستەکانی زمان (دەنگسازی، وشەسازی، ڕستەسازی، واتاسازی و پراگماتیک)، بەراوردی شێوەزارەکان و هێنانەوەی نموونەی ڕێزمانیی دەقاودەق."
+  },
+  psychology: {
+    key: "psychology",
+    kurdishName: "بواری دەروونناسی و زانستە پەروەردەییەکان",
+    keywords: ["دەروونناسی", "دەروونی", "پەروەردە", "قوتابی", "فێربوون", "ڕەفتار", "کەسایەتی", "گەشە", "پۆل"],
+    methodologyAndTerminologyRules:
+      "پشتبەستن بە تیۆرییە دەروونناسییەکان (مەعریفی، ڕەفتاری، شیکاری)، پێوەرە دەروونی و پەروەردەییەکان، و شیکردنەوەی قۆناغەکانی گەشە و فێربوون."
+  },
+  philosophy: {
+    key: "philosophy",
+    kurdishName: "بواری فەلسەفە، لۆژیک و فیکر",
+    keywords: ["فەلسەفە", "فەیلەسوف", "مێتافیزیک", "ئەخلاق", "ئیپستیمۆلۆژیا", "ئۆنتۆلۆژیا", "لۆژیک", "بوونگەرایی", "ڕۆشنگەری"],
+    methodologyAndTerminologyRules:
+      "داڕشتنی ئارگیومێنتی فەلسەفیی تۆکمە، شیکردنەوەی چەمکە بوونناسی و مەعریفەناسییەکان، و گەنگەشەی ڕەخنەگرانەی تێزی فەیلەسوفە کلاسیک و هاوچەرخەکان."
+  },
+  science_tech_internet: {
+    key: "science_tech_internet",
+    kurdishName: "بواری زانستی کۆمپیوتەر، تەکنەلۆجیا، ژیریی دەستکرد و ئینتەرنێت",
+    keywords: ["تەکنەلۆجیا", "ئینتەرنێت", "کۆمپیوتەر", "پڕۆگرامینگ", "ئەلگۆریتم", "ژیریی دەستکرد", "سایبەر", "تۆڕ", "داتابەیس", "دیجیتاڵ"],
+    methodologyAndTerminologyRules:
+      "ڕوونکردنەوەی تەلارسازیی سیستەم، ئەلگۆریتم، پڕۆتۆکۆڵەکانی تۆڕ، ئاسایشی سایبەری و پێوەرەکانی کارایی (Performance Metrics) بە زمانی تەکنیکیی ورد."
+  },
+  chemistry: {
+    key: "chemistry",
+    kurdishName: "بواری زانستی کیمیا",
+    keywords: ["کیمیا", "کیمیایی", "کارلێک", "ئاوێتە", "توخم", "گەرد", "گەردیلە", "ئەندامی", "ترش", "تفت"],
+    methodologyAndTerminologyRules:
+      "نووسینی هاوکێشە کیمیاییە هاوسەنگەکان، شیکردنەوەی پێکهاتەی گەردی و بەندە کیمیاییەکان، میکانیزمی کارلێک و مەرجە تاقیگەییەکان."
+  },
+  physics: {
+    key: "physics",
+    kurdishName: "بواری زانستی فیزیا",
+    keywords: ["فیزیا", "وزە", "هێز", "کوانتەم", "ڕێژەیی", "گەرمی", "ڕووناکی", "موگناتیس", "میخانیك", "فەلەکناسی"],
+    methodologyAndTerminologyRules:
+      "بەکارهێنانی یاسا فیزیاییەکان، پێناسەی بڕە فیزیاییەکان و یەکە پێوانەییەکان (SI Units)، هاوکێشەی بیرکاریی فیزیایی و شیکردنەوەی تاقیگەیی و تیۆری."
+  },
+  mathematics: {
+    key: "mathematics",
+    kurdishName: "بواری زانستی بیرکاری و ئامار",
+    keywords: ["بیرکاری", "ماتماتیک", "هاوکێشە", "جەبر", "ئەندازە", "کالکولۆس", "ئامار", "ئەگەر", "تیۆرم", "سەلماندن"],
+    methodologyAndTerminologyRules:
+      "پەیڕەوکردنی پێکهاتەی وردی بیرکاری: (پێناسە -> تیۆرم -> سەلماندنی هەنگاو بە هەنگاو -> نموونەی شیکارکراو) لەگەڵ نووسینی ڕوونی هاوکێشەکان."
+  },
+  electrical_engineering: {
+    key: "electrical_engineering",
+    kurdishName: "بواری ئەندازیاریی کارەبا و ئەلیکترۆنیک",
+    keywords: ["کارەبا", "ئەلیکترۆنیک", "ڤۆڵتیە", "تەزووی کارەبا", "سێرکێت", "مۆتۆڕ", "وزەی نوێبووەوە", "ترانسفۆرمەر", "کۆنترۆڵ"],
+    methodologyAndTerminologyRules:
+      "شیکردنەوەی سێرکێت و سیستەمی هێز، یاساکانی کیرشۆف و ئۆم، سیستەمەکانی کۆنترۆڵ و گواستنەوەی وزە بە هاوکێشە و پێوەری ئەندازیاری."
+  },
+  health_medicine: {
+    key: "health_medicine",
+    kurdishName: "بواری تەندروستی، پزیشکی و زانستە بایۆلۆژییەکان",
+    keywords: ["پزیشکی", "تەندروستی", "نەخۆشی", "چارەسەر", "دەرمان", "نەشتەرگەری", "فسیۆلۆژی", "توێکاری", "ڤایرۆس", "بەکتریا", "کلینیکی"],
+    methodologyAndTerminologyRules:
+      "پەیڕەوکردنی پزیشکیی بەڵگەدار (Evidence-Based Medicine)، پاتۆفسیۆلۆژی، نیشانە کلینیکییەکان، دەستنیشانکردن و پڕۆتۆکۆڵی چارەسەر بە زاراوەی زانستیی پزیشکی."
+  },
+  general_academic: {
+    key: "general_academic",
+    kurdishName: "بواری توێژینەوەی زانستی و ئەکادیمیی فرەڕەهەند",
+    keywords: [],
+    methodologyAndTerminologyRules:
+      "پەیڕەوکردنی میتۆدۆلۆژیای زانستیی ستاندارد، پێناسەی وردی چەمکەکان، شیکردنەوەی بەڵگەدار و پاراستنی یەکێتیی بابەتی."
+  }
+};
+
+export function detectAcademicDomain(title: string, explicitDiscipline?: string): DomainCalibrationRule {
+  const combined = `${title || ""} ${explicitDiscipline || ""}`.toLowerCase();
+  for (const key of Object.keys(DOMAIN_PROFILES) as AcademicDomainKey[]) {
+    if (key === "general_academic") continue;
+    const rule = DOMAIN_PROFILES[key];
+    if (rule.keywords.some((kw) => combined.includes(kw.toLowerCase()))) {
+      return rule;
+    }
+  }
+  return DOMAIN_PROFILES.general_academic;
+}
+
+// فلتەری پاکسازی و ستانداردکردنی ڕێنووسی یەکگرتووی کوردی
+export function normalizeKurdishAcademicProse(rawText: string): string {
+  if (!rawText) return "";
+  return rawText
+    .replace(/ك/g, "ک")
+    .replace(/ي/g, "ی")
+    .replace(/ى/g, "ی")
+    .replace(/ة/g, "ە")
+    .replace(/ه\u200c/g, "ە")
+    .replace(/ھ/g, "ه")
+    .replace(/([اأإآدذرزژوؤ])ه(\s|$|[.،؛:؟!])/g, "$1ە$2")
+    .replace(/\s+([،؛:؟!])/g, "$1")
+    .replace(/([،؛:؟!])(?=[^\s\d»"'\n)])/g, "$1 ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+export const LEVEL_PROFILES: Record<AcademicLevel, LevelCalibrationProfile> = {
+  school: {
+    level: "school",
+    kurdishTitle: "ئاستی قوتابخانە (ڕاپۆرتی قوتابیی نایاب)",
+    personaPrompt: `تۆ قوتابییەکی یەکەم، زیرەک و بەهرەمەندی قۆناغی قوتابخانەیت (ئامادەیی/بنەڕەتی). تۆ وەک مامۆستای زانکۆ یان فەیلەسوف قسە ناکەیت، بەڵکو وەک قوتابییەکی نایاب دەپەیڤیت کە بە زمانێکی کوردیی زۆر پاراو، شیرین، ڕوون و ڕێکخراو بابەتەکەی خوێندووەتەوە و بە شێوازێکی سەرنجڕاکێش دەیخاتە ڕوو.`,
+    formAndContentAnatomy: `
+- فۆڕمی پەرەگرافەکان: دەستپێکی ڕوون و ناساندنی سادە -> نموونەی زیندوو لە ژینگەی کوردستان -> پوختەی فێرکاری.
+- گرێدانی زنجیرەیی: هەر بەشێک بە زمانی سادە و شیرین بە بەشی پێش خۆیەوە گرێ دەدرێت.`,
+    vocabularyAndStyleRules: `
+- ڕستەکان با ڕوون، مامناوەند و پڕمانا بن.
+- لە هەر بەشێکدا نموونەی ڕوون و نزیک لە ژیانی ڕۆژانە بهێنەرەوە.
+- زانیارییەکان بە پەرەگرافی جوان و ڕێکخراو بنووسە.`,
+    strictlyForbiddenRules: `
+- بە هەموو شێوەیەک قەدەغەیە ئەم وشانە بەکاربهێنیت: (ئیپستیمۆلۆژیا، ئۆنتۆلۆژیا، هێرمینۆتیکا، جینۆلۆژیا، کرۆنۆتۆپ، پۆست-مۆدێرنیزم، دیالێکتیک، فینۆمینۆلۆژیا، میتۆدۆلۆژیا، پارادایم).
+- قەدەغەیە بنووسیت "گریمانەی توێژینەوە" یان "کەلێنی مەعریفی"؛ لەبری ئەوە بنووسە "ئامانجی ڕاپۆرتەکە" و "گرنگیی بابەتەکە".`,
+    introAndConclusionRules: `
+- پێشەکی: دەستپێکێکی سەرنجڕاکێش لەسەر پێناسەی گشتیی بابەتەکە، گرنگییەکەی، و لەم ڕاپۆرتەدا فێری چی دەبین.
+- ئەنجام و ڕاسپاردە: کورتەی گرنگترین ئەو زانیارییانەی فێربووین لەگەڵ سوود و پێشنیار بۆ قوتابییان.`,
+    structure: {
+      totalWords: 2400,
+      introWords: 350,
+      conclusionWords: 350,
+      coreChaptersCount: 3,
+      sectionsPerChapter: 1,
+      subSectionsPerSection: 2,
+      maxWordsPerSinglePass: 900,
+      minSources: 5
+    },
+    citationMode: "simple_list",
+    designSpec: {
+      fontFamily: "UniQAIDAR_SAMi, Vazirmatn, Arial",
+      bodyFontSizePt: 14,
+      h1SizePt: 17,
+      h2SizePt: 15,
+      h3SizePt: 14,
+      footnoteSizePt: 11,
+      lineHeight: 1.4,
+      marginsCm: { top: 2.0, bottom: 2.0, right: 2.2, left: 2.2 },
+      visualStyle: "modern_school_card"
+    }
+  },
+
+  bachelor: {
+    level: "bachelor",
+    kurdishTitle: "ئاستی زانکۆ - بەکالۆریۆس (پڕۆژەی دەرچوونی نایاب)",
+    personaPrompt: `تۆ خوێندکارێکی یەکەم و نایابی قۆناغی چوارەمی زانکۆیت کە "پڕۆژەی دەرچوونی بەکالۆریۆس" (Graduation Project) دەنووسێت. تۆ شارەزای بنەماکانی توێژینەوەی زانستیت: دەزانیت چۆن پێناسەی زمانەوانی و زاراوەیی بکەیت، چۆن بیروڕای سەرچاوەکان کۆبکەیتەوە و پۆلێنیان بکەیت، و چۆن لە بەشی پراکتیکیدا نموونەکان بە شێوەیەکی سیستماتیک شی بکەیتەوە.`,
+    formAndContentAnatomy: `
+- فۆڕمی زانستیی هەر لقێک: ١. ناساندنی چەمک و زاراوەکان ٢. خستنەڕووی دیدگای سەرچاوەکان بە پۆلێنکراوی ٣. شیکردنەوەی نموونەی پڕاکتیکی بە بەڵگە و پەراوێز.`,
+    vocabularyAndStyleRules: `
+- زمانی زانستیی زانکۆیی، بابەتی (Objective) و ڕێکخراو.
+- لە بەشی یەکەمدا پێناسەی چەمکەکان (لە ڕووی زمانەوانی و زاراوەییەوە) و مێژووی بابەتەکە ڕوون بکەرەوە.
+- لە بەشەکانی دواتردا جۆرەکان، تایبەتمەندییەکان و شیکردنەوەی نموونەکان بە بەڵگە و پەراوێزی زانستی بخەرە ڕوو.`,
+    strictlyForbiddenRules: `
+- قەدەغەیە زمانی سادەی قوتابخانەیی یان داڕشتنی بێ سەرچاوە بەکاربهێنیت.
+- قەدەغەیە بچیتە ناو فەلسەفەی زۆر قووڵ و ئاڵۆزی دکتۆرا بێ ڕوونکردنەوەی زانستیی ڕوون.`,
+    introAndConclusionRules: `
+- دەروازە: کێشەی توێژینەوە، گرنگی، ئامانج، هۆکاری هەڵبژاردنی بابەت، سنووری توێژینەوە و میتۆدی توێژینەوە بە ڕوونی.
+- ئەنجام و ڕاسپاردە: گرنگترین ئەو ئەنجامانەی توێژەر پێی گەیشتووە لەگەڵ ڕاسپاردەی زانستی.`,
+    structure: {
+      totalWords: 12000,
+      introWords: 1200,
+      conclusionWords: 900,
+      coreChaptersCount: 3,
+      sectionsPerChapter: 2,
+      subSectionsPerSection: 2,
+      maxWordsPerSinglePass: 1200,
+      minSources: 20
+    },
+    citationMode: "standard_footnotes",
+    designSpec: {
+      fontFamily: "UniQAIDAR_AZZAM, Traditional Arabic, Arial",
+      bodyFontSizePt: 14,
+      h1SizePt: 16,
+      h2SizePt: 15,
+      h3SizePt: 14,
+      footnoteSizePt: 12,
+      lineHeight: 1.5,
+      marginsCm: { top: 2.5, bottom: 2.5, right: 3.0, left: 2.5 },
+      visualStyle: "standard_university"
+    }
+  },
+
+  master: {
+    level: "master",
+    kurdishTitle: "ئاستی ماستەر (نامەی ماستەری نایاب)",
+    personaPrompt: `تۆ توێژەرێکی ئاستی خوێندنی باڵایت کە نامەی ماستەر (Master's Thesis) بە بەرزترین ستانداردی ئەکادیمی دەنووسێت. تۆ توانایەکی بەرزی داڕشتنی چوارچێوەی تیۆری، بەراوردکردنی قوتابخانە زانستییەکان، و شیکردنەوەی وردی دەق و داتاکانت هەیە.`,
+    formAndContentAnatomy: `
+- فۆڕمی ئەکادیمیی هەر لقێک: ١. داڕشتنی بنەمای تیۆری و چەمکی ٢. شیکردنەوەی بەڵگەدار لەسەر نموونە و داتاکان ٣. بەراوردکردنی بۆچوونە جیاوازەکان و دەرهێنانی دەرەنجامی لقەکە.`,
+    vocabularyAndStyleRules: `
+- زمانی ئەکادیمیی باڵا، شیکاری و بەراوردکاری.
+- هەر پەرەگرافێک لەسەر بنەمای (بیرۆکەی تەوەرەیی + بەڵگە و وەرگرتە لە سەرچاوە + شیکردنەوەی توێژەر) دادەڕێژرێت.
+- گرێدانی تەواوی چوارچێوەی تیۆری (بەشی یەکەم) بە شیکردنەوە پراکتیکییەکان (بەشی دووەم و سێیەم).`,
+    strictlyForbiddenRules: `
+- قەدەغەیە ڕیزکردنی زانیاریی مێژوویی و وەسفی بەبێ شیکردنەوەی ڕەخنەیی.
+- قەدەغەیە بەکارهێنانی سەردێڕی قاڵبیی گشتی کە چەمکەکانی ناونیشانەکەی تێدا نەبێت.`,
+    introAndConclusionRules: `
+- دەروازە: کێشەی توێژینەوە، پرسیارەکان، ئامانج، گریمانەکان، سنوور، میتۆدۆلۆژیا، و پێداچوونەوەی ڕەخنەیی بۆ توێژینەوەکانی پێشوو (Literature Review).
+- ئەنجام و ڕاسپاردە: وەڵامدانەوەی یەک بە یەکی پرسیارەکان و سەلماندنی گریمانەکان لەگەڵ ڕاسپاردەی زانستیی کردەیی.`,
+    structure: {
+      totalWords: 45000,
+      introWords: 3500,
+      conclusionWords: 2200,
+      coreChaptersCount: 3,
+      sectionsPerChapter: 3,
+      subSectionsPerSection: 2,
+      maxWordsPerSinglePass: 1300,
+      minSources: 75
+    },
+    citationMode: "scholarly_multilingual_footnotes",
+    designSpec: {
+      fontFamily: "UniQAIDAR_AZZAM, Traditional Arabic, Arial",
+      bodyFontSizePt: 14,
+      h1SizePt: 18,
+      h2SizePt: 16,
+      h3SizePt: 14,
+      footnoteSizePt: 12,
+      lineHeight: 1.5,
+      marginsCm: { top: 2.5, bottom: 2.5, right: 3.5, left: 2.5 },
+      visualStyle: "formal_thesis_binding"
+    }
+  },
+
+  phd: {
+    level: "phd",
+    kurdishTitle: "ئاستی دکتۆرا (تێزی دکتۆرای نایاب - PhD Dissertation)",
+    personaPrompt: `تۆ پڕۆفیسۆر و بیرمەندێکی ئەکادیمیی باڵایت کە تێزی دکتۆرا (PhD Dissertation) دەنووسێت. تۆ خاوەنی ڕوانگەی ڕەخنەیی، فەلسەفی و تیۆریی قووڵیت؛ بۆشاییەکی مەعریفی (Knowledge Gap) لە کتێبخانەی کوردیدا پڕ دەکەیتەوە، تێڕوانینە باوەکان هەڵدەوەشێنیتەوە و تێز و مۆدێلێکی نوێی مەعریفی پێشکەش دەکەیت.`,
+    formAndContentAnatomy: `
+- فۆڕمی ڕەخنەیی و فیکریی هەر لقێک: ١. هەڵکۆڵینی چەمکی و گفتوگۆی ڕەخنەگرانە لەگەڵ تیۆریستەکان ٢. شیتەڵکردنی قووڵی دەق، بەڵگە و دیاردەکان لە چەندین ڕەهەندەوە ٣. سەنتێزی مەعریفی و دەرخستنی تێز و بۆچوونی ڕەسەنی توێژەر.`,
+    vocabularyAndStyleRules: `
+- بەرزترین ئاستی زمانی ئەکادیمی، ڕەخنەیی و فیکریی کوردی.
+- گفتوگۆی قووڵ لەگەڵ تیۆریستە جیهانییەکان، شیتەڵکردنی فرەڕەهەندی دەق و دیاردەکان.
+- دیاربوونی کەسایەتیی زانستیی توێژەر (Authorial Voice) لە هەڵسەنگاندن و سەنتێزی کۆتایی هەموو لقێکدا.`,
+    strictlyForbiddenRules: `
+- قەدەغەیە سەردێڕی قاڵبی و گشتی، یان کۆپیکردنی دەقاودەقی ناونیشانەکە لە ناو کەوانە لە کۆتایی سەردێڕەکاندا.
+- قەدەغەیە کورتبڕی و خاڵبەندیی ڕووکەش لەبری پەرەگرافی شیکاریی قووڵ.`,
+    introAndConclusionRules: `
+- دەروازە: داڕشتنی قووڵی کێشەی توێژینەوە، پرسیاری سەرەکی و لاوەکی، گریمانەکان، میتۆدی تێکهەڵکێش، و دەستنیشانکردنی وردی کەلێنی مەعریفی لەچاو ئەدەبیاتی کوردی و جیهانیدا.
+- ئەنجام و ڕاسپاردە: دەرەنجامی تیۆری و پراکتیکیی نوێ، بەشداریی ڕەسەنی تێزەکە لە مەعریفەی کوردیدا (Original Contribution)، و پێشنیارکردنی پڕۆژەی توێژینەوەی داهاتوو.`,
+    structure: {
+      totalWords: 90000,
+      introWords: 6000,
+      conclusionWords: 3500,
+      coreChaptersCount: 3,
+      sectionsPerChapter: 3,
+      subSectionsPerSection: 3,
+      maxWordsPerSinglePass: 1400,
+      minSources: 160
+    },
+    citationMode: "scholarly_multilingual_footnotes",
+    designSpec: {
+      fontFamily: "UniQAIDAR_AZZAM, Traditional Arabic, Arial",
+      bodyFontSizePt: 14,
+      h1SizePt: 18,
+      h2SizePt: 16,
+      h3SizePt: 14,
+      footnoteSizePt: 12,
+      lineHeight: 1.5,
+      marginsCm: { top: 2.5, bottom: 2.5, right: 3.5, left: 2.5 },
+      visualStyle: "formal_thesis_binding"
+    }
+  }
+};
+
+export function getLevelProfile(level: string): LevelCalibrationProfile {
+  const norm = (level || "").toLowerCase();
+  if (norm.includes("phd") || norm.includes("دکتۆرا")) return LEVEL_PROFILES.phd;
+  if (norm.includes("master") || norm.includes("ماستەر")) return LEVEL_PROFILES.master;
+  if (norm.includes("school") || norm.includes("قوتابخانە")) return LEVEL_PROFILES.school;
+  return LEVEL_PROFILES.bachelor;
+}
+
+export function buildLevelSystemInstruction(level: string, title = "", discipline = ""): string {
+  const profile = getLevelProfile(level);
+  const domain = detectAcademicDomain(title, discipline);
+  return `
+[${profile.kurdishTitle}] — [${domain.kurdishName}]
+${profile.personaPrompt}
+
+پێوەری تایبەتی بوارەکە (${domain.kurdishName}):
+${domain.methodologyAndTerminologyRules}
+
+هاوسەنگیی فۆڕم و ناوەڕۆک:
+${profile.formAndContentAnatomy}
+
+یاسای زمان و شێواز:
+${profile.vocabularyAndStyleRules}
+
+یاسا قەدەغەکراوەکان:
+${profile.strictlyForbiddenRules}
+
+یاسای پێشەکی و ئەنجام:
+${profile.introAndConclusionRules}
+`.trim();
+}
+
+--- FILE 2: src/lib/gemini/CoreEngine.ts ---
+import { GoogleGenAI, Schema } from "@google/genai";
+
+export interface GenerationRequestConfig {
+  mode: "deep_thinking" | "search_grounded" | "fast_critic";
+  systemInstruction: string;
+  prompt: string;
+  responseSchema?: Schema;
+  cachedContentName?: string;
+  fileUris?: { fileUri: string; mimeType: string }[];
+  temperature?: number;
+}
+
+export class GeminiCoreEngine {
+  private static instance: GeminiCoreEngine;
+  private apiKeys: string[] = [];
+  private activeKeyIndex = 0;
+
+  private discoveredProModel = "gemini-2.5-pro";
+  private discoveredFlashModel = "gemini-2.5-flash";
+  private lastDiscoveryTimestamp = 0;
+  private readonly DISCOVERY_TTL = 1000 * 60 * 60 * 6;
+
+  private constructor() {
+    const envKeys =
+      (typeof process !== "undefined" && (process.env?.["GEMINI_API_KEYS"] || process.env?.["GEMINI_API_KEY"])) ||
+      (typeof window !== "undefined" && (window as any)?.["GEMINI_API_KEY"]) ||
+      "";
+    this.apiKeys = String(envKeys)
+      .split(",")
+      .map((k) => k.trim())
+      .filter(Boolean);
+  }
+
+  public static getInstance(): GeminiCoreEngine {
+    if (!GeminiCoreEngine.instance) {
+      GeminiCoreEngine.instance = new GeminiCoreEngine();
+    }
+    return GeminiCoreEngine.instance;
+  }
+
+  public setRuntimeApiKeys(keys: string[]): void {
+    const valid = keys.map((k) => k.trim()).filter(Boolean);
+    if (valid.length > 0) {
+      this.apiKeys = valid;
+      this.activeKeyIndex = 0;
+    }
+  }
+
+  public getClient(): GoogleGenAI {
+    const key = this.apiKeys[this.activeKeyIndex] || "";
+    return new GoogleGenAI({ apiKey: key });
+  }
+
+  private rotateKey(): void {
+    if (this.apiKeys.length > 1) {
+      this.activeKeyIndex = (this.activeKeyIndex + 1) % this.apiKeys.length;
+    }
+  }
+
+  public async getOptimalModels(): Promise<{ pro: string; flash: string }> {
+    const now = Date.now();
+    if (now - this.lastDiscoveryTimestamp < this.DISCOVERY_TTL) {
+      return { pro: this.discoveredProModel, flash: this.discoveredFlashModel };
+    }
+
+    try {
+      const ai = this.getClient();
+      const pager = await ai.models.list();
+      const names: string[] = [];
+
+      for await (const m of pager) {
+        if (m.name) names.push(m.name.replace(/^models\//, ""));
+      }
+
+      const scoreModel = (name: string): number => {
+        const verMatch = name.match(/gemini-(\d+(?:\.\d+)?)/);
+        const base = verMatch ? parseFloat(verMatch[1]) * 100 : 0;
+        const stabilityBonus = name.includes("exp") || name.includes("preview") ? 2 : 10;
+        return base + stabilityBonus;
+      };
+
+      const proList = names
+        .filter((n) => n.startsWith("gemini-") && n.includes("-pro") && !n.includes("vision"))
+        .sort((a, b) => scoreModel(b) - scoreModel(a));
+
+      const flashList = names
+        .filter((n) => n.startsWith("gemini-") && n.includes("-flash") && !n.includes("8b"))
+        .sort((a, b) => scoreModel(b) - scoreModel(a));
+
+      if (proList.length > 0) this.discoveredProModel = proList[0];
+      if (flashList.length > 0) this.discoveredFlashModel = flashList[0];
+      this.lastDiscoveryTimestamp = now;
+    } catch {
+      // Fallback safely to default models
+    }
+
+    return { pro: this.discoveredProModel, flash: this.discoveredFlashModel };
+  }
+
+  public async createContextCache(
+    displayName: string,
+    systemInstruction: string,
+    referenceTexts: string[],
+    ttlSeconds = 3600
+  ): Promise<string | undefined> {
+    if (!referenceTexts || referenceTexts.length === 0) return undefined;
+    try {
+      const ai = this.getClient();
+      const { pro } = await this.getOptimalModels();
+      const cache = await ai.caches.create({
+        model: pro,
+        config: {
+          displayName,
+          systemInstruction,
+          contents: referenceTexts.map((t) => ({ role: "user", parts: [{ text: t }] })),
+          ttl: `${ttlSeconds}s`
+        }
+      });
+      return cache.name;
+    } catch {
+      return undefined;
+    }
+  }
+
+  public async generate<T = string>(req: GenerationRequestConfig): Promise<T> {
+    const { pro, flash } = await this.getOptimalModels();
+    const targetModel = req.mode === "fast_critic" ? flash : pro;
+    const maxRetries = Math.max(3, this.apiKeys.length * 2);
+
+    let useThinking = req.mode === "deep_thinking";
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const ai = this.getClient();
+        const config: Record<string, any> = {
+          systemInstruction: req.systemInstruction,
+          temperature: req.temperature ?? 0.3
+        };
+
+        if (useThinking) {
+          config.thinkingConfig = { thinkingBudget: 8192 };
+        }
+
+        if (req.mode === "search_grounded") {
+          config.tools = [{ googleSearch: {} }];
+        } else if (req.responseSchema) {
+          config.responseMimeType = "application/json";
+          config.responseSchema = req.responseSchema;
+        }
+
+        if (req.cachedContentName) {
+          config.cachedContent = req.cachedContentName;
+        }
+
+        const parts: any[] = [];
+        if (req.fileUris && req.fileUris.length > 0) {
+          for (const f of req.fileUris) {
+            parts.push({ fileData: { fileUri: f.fileUri, mimeType: f.mimeType } });
+          }
+        }
+        parts.push({ text: req.prompt });
+
+        const response = await ai.models.generateContent({
+          model: targetModel,
+          contents: [{ role: "user", parts }],
+          config
+        });
+
+        if (!response.text) throw new Error("Empty model response.");
+
+        if (req.responseSchema && req.mode !== "search_grounded") {
+          return JSON.parse(response.text) as T;
+        }
+        return response.text as unknown as T;
+      } catch (err: any) {
+        if (err?.message?.toLowerCase().includes("thinking")) {
+          useThinking = false;
+        }
+        this.rotateKey();
+        if (attempt === maxRetries) throw err;
+        await new Promise((r) => setTimeout(r, 1200 * attempt));
+      }
+    }
+
+    throw new Error("Gemini generation failed after maximum retries.");
+  }
+}
+
+--- FILE 3: src/lib/gemini/BlueprintAgent.ts ---
+import { Type, Schema } from "@google/genai";
+import {
+  AcademicLevel,
+  LEVEL_PROFILES,
+  buildLevelSystemInstruction,
+  detectAcademicDomain,
+  normalizeKurdishAcademicProse
+} from "./LevelProfiles";
+import { GeminiCoreEngine } from "./CoreEngine";
+
+export interface SubSectionPlan {
+  code: string;
+  title: string;
+  targetWords: number;
+  microTopicsToCover: string[];
+  transitionFromPreviousGoal: string;
+  transitionToNextGoal: string;
+}
+
+export interface SectionPlan {
+  title: string;
+  axisCentralArgument: string;
+  axisIntroBridge: string;
+  targetWords: number;
+  subSections: SubSectionPlan[];
+}
+
+export interface ChapterPlan {
+  chapterType: "intro" | "core" | "conclusion";
+  title: string;
+  chapterObjective: string;
+  chapterOpeningBridge: string;
+  chapterClosingSynthesisGoal: string;
+  targetWords: number;
+  sections: SectionPlan[];
+}
+
+export interface GlossaryTermItem {
+  termKurdish: string;
+  termEnglish: string;
+  termArabic: string;
+  scholarlyDefinition: string;
+}
+
+export interface TocEntry {
+  levelType: "front" | "chapter" | "section" | "subsection" | "end";
+  title: string;
+  pageLabel: string;
+}
+
+export interface AcademicBlueprint {
+  level: AcademicLevel;
+  domainName: string;
+  titleAnalysis: {
+    coreSubject: string;
+    primaryDimension: string;
+    secondaryDimension: string;
+    recommendedApproach: string;
+    centralThesisThread: string;
+    lockedTerminology: string[];
+  };
+  frontMatterAndIntro: {
+    dedicationMarkdown: string;
+    acknowledgmentMarkdown: string;
+    abstractKurdish: string;
+    abstractEnglish: string;
+    abstractArabic: string;
+    fullIntroductionMarkdown: string;
+  };
+  tocMarkdown: string;
+  tocEntries: TocEntry[];
+  chapters: ChapterPlan[];
+  glossaryTerms: GlossaryTermItem[];
+  glossaryMarkdown: string;
+}
+
+const blueprintSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    titleAnalysis: {
+      type: Type.OBJECT,
+      properties: {
+        coreSubject: { type: Type.STRING },
+        primaryDimension: { type: Type.STRING },
+        secondaryDimension: { type: Type.STRING },
+        recommendedApproach: { type: Type.STRING },
+        centralThesisThread: { type: Type.STRING },
+        lockedTerminology: { type: Type.ARRAY, items: { type: Type.STRING } }
+      },
+      required: [
+        "coreSubject",
+        "primaryDimension",
+        "secondaryDimension",
+        "recommendedApproach",
+        "centralThesisThread",
+        "lockedTerminology"
+      ]
+    },
+    frontMatterAndIntro: {
+      type: Type.OBJECT,
+      properties: {
+        dedicationMarkdown: {
+          type: Type.STRING,
+          description: "دەقی تەواوی پێشکەشکردن بە زمانێکی کوردیی ئەدەبی و ئەکادیمیی باڵا"
+        },
+        acknowledgmentMarkdown: {
+          type: Type.STRING,
+          description: "دەقی تەواوی سوپاس و پێزانین بە جیاکراوەیی لە پێشکەشکردن"
+        },
+        abstractKurdish: { type: Type.STRING },
+        abstractEnglish: { type: Type.STRING },
+        abstractArabic: { type: Type.STRING },
+        fullIntroductionMarkdown: {
+          type: Type.STRING,
+          description: "دەقی تێروتەسەلی پێشەکی / دەروازەی گشتیی توێژینەوەکە بەپێی پێوەری ئاستەکە"
+        }
+      },
+      required: [
+        "dedicationMarkdown",
+        "acknowledgmentMarkdown",
+        "abstractKurdish",
+        "abstractEnglish",
+        "abstractArabic",
+        "fullIntroductionMarkdown"
+      ]
+    },
+    chapters: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          title: { type: Type.STRING },
+          chapterObjective: { type: Type.STRING },
+          chapterOpeningBridge: { type: Type.STRING },
+          chapterClosingSynthesisGoal: { type: Type.STRING },
+          sections: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                axisCentralArgument: { type: Type.STRING },
+                axisIntroBridge: { type: Type.STRING },
+                subSections: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      code: { type: Type.STRING },
+                      title: { type: Type.STRING },
+                      microTopicsToCover: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      transitionFromPreviousGoal: { type: Type.STRING },
+                      transitionToNextGoal: { type: Type.STRING }
+                    },
+                    required: [
+                      "code",
+                      "title",
+                      "microTopicsToCover",
+                      "transitionFromPreviousGoal",
+                      "transitionToNextGoal"
+                    ]
+                  }
+                }
+              },
+              required: ["title", "axisCentralArgument", "axisIntroBridge", "subSections"]
+            }
+          }
+        },
+        required: [
+          "title",
+          "chapterObjective",
+          "chapterOpeningBridge",
+          "chapterClosingSynthesisGoal",
+          "sections"
+        ]
+      }
+    },
+    glossaryTerms: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          termKurdish: { type: Type.STRING },
+          termEnglish: { type: Type.STRING },
+          termArabic: { type: Type.STRING },
+          scholarlyDefinition: { type: Type.STRING }
+        },
+        required: ["termKurdish", "termEnglish", "termArabic", "scholarlyDefinition"]
+      }
+    }
+  },
+  required: ["titleAnalysis", "frontMatterAndIntro", "chapters", "glossaryTerms"]
+};
+
+function toKurdishDigits(num: number | string): string {
+  const d = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+  return num.toString().replace(/\d/g, (m) => d[parseInt(m, 10)]);
+}
+
+function formatTocLine(title: string, pageLabel: string, indentSpaces = 0): string {
+  const indent = " ".repeat(indentSpaces);
+  const cleanTitle = `${indent}${title.trim()}`;
+  const totalWidth = 76;
+  const dotsCount = Math.max(6, totalWidth - cleanTitle.length - pageLabel.length);
+  const dots = ".".repeat(dotsCount);
+  return `${cleanTitle} ${dots} ${pageLabel}`;
+}
+
+export function buildFormattedKurdishTOC(
+  level: AcademicLevel,
+  chapters: ChapterPlan[]
+): { tocMarkdown: string; tocEntries: TocEntry[] } {
+  const profile = LEVEL_PROFILES[level];
+  const wordsPerPage = 350;
+  const entries: TocEntry[] = [];
+  const lines: string[] = [];
+
+  lines.push("## پێڕستی بابەتەکان\n");
+  lines.push("```text");
+  lines.push(formatTocLine("بابەت", "لاپەڕە", 0));
+  lines.push("─".repeat(78));
+
+  if (level !== "school") {
+    entries.push({ levelType: "front", title: "پێشکەشکردن", pageLabel: "أ" });
+    lines.push(formatTocLine("پێشکەشکردن", "أ", 0));
+
+    entries.push({ levelType: "front", title: "سوپاس و پێزانین", pageLabel: "ب" });
+    lines.push(formatTocLine("سوپاس و پێزانین", "ب", 0));
+
+    entries.push({ levelType: "front", title: "پوختەی توێژینەوە (کوردی / ئینگلیزی / عەرەبی)", pageLabel: "ج" });
+    lines.push(formatTocLine("پوختەی توێژینەوە (کوردی / ئینگلیزی / عەرەبی)", "ج", 0));
+  }
+
+  let currentPage = 1;
+  const introTitle = level === "school" ? "پێشەکی" : "دەروازەی گشتیی توێژینەوە";
+  entries.push({ levelType: "front", title: introTitle, pageLabel: toKurdishDigits(currentPage) });
+  lines.push(formatTocLine(introTitle, toKurdishDigits(currentPage), 0));
+
+  currentPage += Math.max(1, Math.round(profile.structure.introWords / wordsPerPage));
+
+  for (const ch of chapters) {
+    const chPage = toKurdishDigits(currentPage);
+    entries.push({ levelType: "chapter", title: ch.title, pageLabel: chPage });
+    lines.push(formatTocLine(ch.title, chPage, 0));
+
+    for (const sec of ch.sections) {
+      const secPage = toKurdishDigits(currentPage);
+      entries.push({ levelType: "section", title: sec.title, pageLabel: secPage });
+      lines.push(formatTocLine(sec.title, secPage, 2));
+
+      for (const sub of sec.subSections) {
+        const subFullTitle = `${sub.code} ${sub.title}`;
+        const subPage = toKurdishDigits(currentPage);
+        entries.push({ levelType: "subsection", title: subFullTitle, pageLabel: subPage });
+        lines.push(formatTocLine(subFullTitle, subPage, 4));
+
+        currentPage += Math.max(1, Math.round((sub.targetWords || 800) / wordsPerPage));
+      }
+    }
+  }
+
+  const conclusionTitle = level === "school" ? "ئەنجامی ڕاپۆرت" : "ئەنجامەکانی توێژینەوە";
+  const concPage = toKurdishDigits(currentPage);
+  entries.push({ levelType: "end", title: conclusionTitle, pageLabel: concPage });
+  lines.push(formatTocLine(conclusionTitle, concPage, 0));
+  currentPage += Math.max(1, Math.round((profile.structure.conclusionWords * 0.6) / wordsPerPage));
+
+  const recTitle = level === "school" ? "پێشنیار و سوودەکان" : "ڕاسپاردە و پێشنیارەکان";
+  const recPage = toKurdishDigits(currentPage);
+  entries.push({ levelType: "end", title: recTitle, pageLabel: recPage });
+  lines.push(formatTocLine(recTitle, recPage, 0));
+  currentPage += Math.max(1, Math.round((profile.structure.conclusionWords * 0.4) / wordsPerPage));
+
+  const glossTitle = "فەرهەنگۆکی زاراوە زانستییەکان (Glossary)";
+  const glossPage = toKurdishDigits(currentPage);
+  entries.push({ levelType: "end", title: glossTitle, pageLabel: glossPage });
+  lines.push(formatTocLine(glossTitle, glossPage, 0));
+  currentPage += 2;
+
+  const bibTitle = level === "school" ? "سەرچاوەکانی ڕاپۆرت" : "لیستی سەرچاوە و بیبلۆگرافیا";
+  const bibPage = toKurdishDigits(currentPage);
+  entries.push({ levelType: "end", title: bibTitle, pageLabel: bibPage });
+  lines.push(formatTocLine(bibTitle, bibPage, 0));
+
+  lines.push("```");
+  return { tocMarkdown: lines.join("\n"), tocEntries: entries };
+}
+
+export function buildGlossaryMarkdown(terms: GlossaryTermItem[]): string {
+  if (!terms || terms.length === 0) return "";
+  let md = `## فەرهەنگۆکی زاراوە زانستییەکان (Glossary)\n\n`;
+  for (const item of terms) {
+    md += `- **${normalizeKurdishAcademicProse(item.termKurdish)}** (*${item.termEnglish}* | ${item.termArabic}): ${normalizeKurdishAcademicProse(item.scholarlyDefinition)}\n`;
+  }
+  return md;
+}
+
+export async function buildLevelCalibratedBlueprint(
+  title: string,
+  level: AcademicLevel,
+  discipline = ""
+): Promise<AcademicBlueprint> {
+  const engine = GeminiCoreEngine.getInstance();
+  const profile = LEVEL_PROFILES[level];
+  const domain = detectAcademicDomain(title, discipline);
+
+  // هەنگاوی ١: گەڕانی زیندوو لە گووگڵ بۆ کۆکردنەوەی چوارچێوەی ڕاستەقینەی بابەتەکە
+  let groundedContext = "";
+  try {
+    groundedContext = await engine.generate<string>({
+      mode: "search_grounded",
+      systemInstruction:
+        "تۆ پسپۆڕی بیبلۆگرافیا و نەخشەسازیی ئەکادیمیت. گرنگترین تەوەرە زانستییەکان، زاراوە سەرەکییەکان و سەرچاوە ڕاستەقینەکانی پەیوەست بەم ناونیشانە دەربهێنە.",
+      prompt: `بابەت: "${title}" لە بواری (${domain.kurdishName}). گرنگترین ڕەهەندە تیۆری و پراکتیکییەکان و سەرچاوە باوەڕپێکراوەکان چین؟`
+    });
+  } catch {
+    groundedContext = "";
+  }
+
+  const systemInstruction = `
+${buildLevelSystemInstruction(level, title, discipline)}
+
+ئەرکی تۆ: داڕشتنی پاکێجی تەواوی دەروازە (پێشکەشکردن، سوپاس و پێزانین، پوختە بە ٣ زمان، پێشەکیی تێروتەسەل) + نەخشەی پێڕستی زنجیرەیی (بەش -> تەوەر -> لق) + فەرهەنگۆکی زاراوەکان بۆ بابەتی: "${title}".
+
+یاسای ئەندازەیی پێڕستەکە:
+- دەبێت ڕێک (${profile.structure.coreChaptersCount}) بەشی سەرەکی دابڕێژیت.
+- هەر بەشێک دابەش بکە بۆ (${profile.structure.sectionsPerChapter}) تەوەر.
+- هەر تەوەرێک دابەش بکە بۆ (${profile.structure.subSectionsPerSection}) لق.
+- هەموو سەردێڕەکان دەبێت ١٠٠٪ هەڵقوڵاوی ناونیشانی "${title}" و بواری (${domain.kurdishName}) بن و بە زنجیرەیەکی توندوتۆڵ بەیەکەوە ببەسترێنەوە.
+- لانیکەم ١٢ زاراوەی سەرەکیی بابەتەکە لە بەشی فەرهەنگۆک (glossaryTerms) بە کوردی، ئینگلیزی، عەرەبی و پێناسەی وردی زانستییەوە بنووسە.
+`;
+
+  const parsed = await engine.generate<any>({
+    mode: "deep_thinking",
+    systemInstruction,
+    prompt: `ناونیشانی داواکراو: "${title}"\nئاست: ${profile.kurdishTitle}\nبوار: ${domain.kurdishName}\n${
+      groundedContext ? `[پاشخانی زانستیی پشتڕاستکراوە]:\n${groundedContext}` : ""
+    }`,
+    responseSchema: blueprintSchema,
+    temperature: 0.3
+  });
+
+  const coreWordsTotal =
+    profile.structure.totalWords - (profile.structure.introWords + profile.structure.conclusionWords);
+  const wordsPerChapter = Math.round(coreWordsTotal / profile.structure.coreChaptersCount);
+  const wordsPerSection = Math.round(wordsPerChapter / profile.structure.sectionsPerChapter);
+  const wordsPerSubSection = Math.round(wordsPerSection / profile.structure.subSectionsPerSection);
+
+  const calibratedChapters: ChapterPlan[] = (parsed.chapters || []).map((ch: any) => ({
+    chapterType: "core",
+    title: normalizeKurdishAcademicProse(ch.title),
+    chapterObjective: normalizeKurdishAcademicProse(ch.chapterObjective || ""),
+    chapterOpeningBridge: normalizeKurdishAcademicProse(ch.chapterOpeningBridge || ""),
+    chapterClosingSynthesisGoal: normalizeKurdishAcademicProse(ch.chapterClosingSynthesisGoal || ""),
+    targetWords: wordsPerChapter,
+    sections: (ch.sections || []).map((sec: any) => ({
+      title: normalizeKurdishAcademicProse(sec.title),
+      axisCentralArgument: normalizeKurdishAcademicProse(sec.axisCentralArgument || ""),
+      axisIntroBridge: normalizeKurdishAcademicProse(sec.axisIntroBridge || ""),
+      targetWords: wordsPerSection,
+      subSections: (sec.subSections || []).map((sub: any) => ({
+        code: sub.code,
+        title: normalizeKurdishAcademicProse(sub.title),
+        targetWords: wordsPerSubSection,
+        microTopicsToCover: (sub.microTopicsToCover || []).map((m: string) => normalizeKurdishAcademicProse(m)),
+        transitionFromPreviousGoal: normalizeKurdishAcademicProse(sub.transitionFromPreviousGoal || ""),
+        transitionToNextGoal: normalizeKurdishAcademicProse(sub.transitionToNextGoal || "")
+      }))
+    }))
+  }));
+
+  const { tocMarkdown, tocEntries } = buildFormattedKurdishTOC(level, calibratedChapters);
+  const glossaryTerms: GlossaryTermItem[] = parsed.glossaryTerms || [];
+
+  return {
+    level,
+    domainName: domain.kurdishName,
+    titleAnalysis: parsed.titleAnalysis,
+    frontMatterAndIntro: {
+      dedicationMarkdown: normalizeKurdishAcademicProse(parsed.frontMatterAndIntro?.dedicationMarkdown || ""),
+      acknowledgmentMarkdown: normalizeKurdishAcademicProse(parsed.frontMatterAndIntro?.acknowledgmentMarkdown || ""),
+      abstractKurdish: normalizeKurdishAcademicProse(parsed.frontMatterAndIntro?.abstractKurdish || ""),
+      abstractEnglish: parsed.frontMatterAndIntro?.abstractEnglish || "",
+      abstractArabic: parsed.frontMatterAndIntro?.abstractArabic || "",
+      fullIntroductionMarkdown: normalizeKurdishAcademicProse(
+        parsed.frontMatterAndIntro?.fullIntroductionMarkdown || ""
+      )
+    },
+    tocMarkdown,
+    tocEntries,
+    chapters: calibratedChapters,
+    glossaryTerms,
+    glossaryMarkdown: buildGlossaryMarkdown(glossaryTerms)
+  };
+}
+
+--- FILE 4: src/lib/gemini/CitationManager.ts ---
+import { AcademicLevel, LEVEL_PROFILES, normalizeKurdishAcademicProse } from "./LevelProfiles";
+
+export interface SourceItem {
+  id: string;
+  author: string;
+  year: string;
+  title: string;
+  publisherOrLocation: string;
+  language: "ku" | "fa" | "ar" | "en";
+  pageOrNote?: string;
+  verificationOrigin?: "google_search_grounded" | "user_verified_library" | "primary_corpus";
+}
+
+export class AdaptiveCitationManager {
+  private level: AcademicLevel;
+  private sourcesMap: Map<string, SourceItem> = new Map();
+  private footnoteCounter = 1;
+
+  private readonly BANNED_FAKE_PATTERNS = [
+    "unknown",
+    "anonymous",
+    "n/a",
+    "example",
+    "placeholder",
+    "نەناسراو",
+    "بێ ناو",
+    "سەرچاوەی گریمانەیی",
+    "کتێبی نموونە",
+    "فڵان",
+    "test author"
+  ];
+
+  constructor(level: AcademicLevel) {
+    this.level = level;
+  }
+
+  private toKurdishNum(num: number | string): string {
+    const d = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+    return num.toString().replace(/\d/g, (m) => d[parseInt(m, 10)]);
+  }
+
+  private makeKey(author: string, title: string): string {
+    return `${author.trim()}_${title.trim()}`.toLowerCase().replace(/\s+/g, "_");
+  }
+
+  private isAuthenticSource(src: SourceItem): boolean {
+    if (!src || !src.author || !src.title || !src.year) return false;
+    const combined = `${src.author} ${src.title} ${src.publisherOrLocation}`.toLowerCase();
+    for (const pattern of this.BANNED_FAKE_PATTERNS) {
+      if (combined.includes(pattern.toLowerCase())) return false;
+    }
+    const cleanYear = src.year.replace(/[^\d٠-٩]/g, "");
+    if (cleanYear.length < 3) return false;
+    return src.author.trim().length >= 3 && src.title.trim().length >= 3;
+  }
+
+  public registerAndFormatCitations(
+    rawMarkdown: string,
+    sources: SourceItem[]
+  ): { cleanMarkdown: string; footnotesBlock: string } {
+    const mode = LEVEL_PROFILES[this.level].citationMode;
+    let text = normalizeKurdishAcademicProse(rawMarkdown);
+    const localFootnotes: string[] = [];
+
+    for (const src of sources || []) {
+      const tagRegex = new RegExp(`\\{\\{CITE:${src.id}\\}\\}`, "g");
+
+      if (!this.isAuthenticSource(src)) {
+        text = text.replace(tagRegex, "");
+        continue;
+      }
+
+      const key = this.makeKey(src.author, src.title);
+      const existedBefore = this.sourcesMap.has(key);
+
+      if (!existedBefore) {
+        this.sourcesMap.set(key, { ...src, id: key });
+      }
+
+      if (mode === "simple_list") {
+        text = text.replace(tagRegex, ` (${src.author}، ${src.year})`);
+      } else {
+        const fnNum = this.toKurdishNum(this.footnoteCounter++);
+        text = text.replace(tagRegex, `<sup>(${fnNum})</sup>`);
+
+        const pagePart = src.pageOrNote && src.pageOrNote !== "—" ? `، ل ${src.pageOrNote}` : "";
+        const fnLine = existedBefore
+          ? `(${fnNum}) ${src.author}، *${src.title}*، (سەرچاوەی پێشوو)${pagePart}.`
+          : `(${fnNum}) ${src.author} (${src.year})، *${src.title}*، ${src.publisherOrLocation}${pagePart}.`;
+        localFootnotes.push(fnLine);
+      }
+    }
+
+    text = text.replace(/\{\{CITE:[^}]+\}\}/g, "");
+
+    const footnotesBlock =
+      localFootnotes.length > 0
+        ? `\n\n---\n**پەراوێز و سەرچاوەکان:**\n` + localFootnotes.join("\n")
+        : "";
+
+    return { cleanMarkdown: text, footnotesBlock };
+  }
+
+  public buildBibliographySection(): string {
+    const all = Array.from(this.sourcesMap.values());
+    if (all.length === 0) return "";
+
+    if (this.level === "school") {
+      return (
+        `## سەرچاوەکانی ڕاپۆرت\n\n` +
+        all
+          .map((s, i) => `${this.toKurdishNum(i + 1)}. ${s.author} (${s.year})، *${s.title}*، ${s.publisherOrLocation}.`)
+          .join("\n")
+      );
+    }
+
+    const byLang = (lang: SourceItem["language"]) =>
+      all.filter((s) => s.language === lang).sort((a, b) => a.author.localeCompare(b.author));
+
+    const sections: { title: string; list: SourceItem[]; rtl: boolean }[] = [
+      { title: "یەکەم: سەرچاوە کوردییەکان", list: byLang("ku"), rtl: true },
+      { title: "دووەم: سەرچاوە فارسییەکان", list: byLang("fa"), rtl: true },
+      { title: "سێیەم: سەرچاوە عەرەبییەکان", list: byLang("ar"), rtl: true },
+      { title: "چوارەم: سەرچاوە ئینگلیزی و نێودەوڵەتییەکان (English References)", list: byLang("en"), rtl: false }
+    ];
+
+    let out = `## لیستی سەرچاوە و بیبلۆگرافیا\n\n`;
+    for (const sec of sections) {
+      if (sec.list.length > 0) {
+        out +=
+          `### ${sec.title}\n` +
+          sec.list
+            .map((s, i) => {
+              const num = sec.rtl ? this.toKurdishNum(i + 1) : `${i + 1}`;
+              return `${num}. ${s.author} (${s.year}). *${s.title}*. ${s.publisherOrLocation}.`;
+            })
+            .join("\n") +
+          `\n\n`;
+      }
+    }
+    return out;
+  }
+}
+
+--- FILE 5: src/lib/gemini/WriterAgent.ts ---
+import { Type, Schema } from "@google/genai";
+import {
+  AcademicLevel,
+  LEVEL_PROFILES,
+  buildLevelSystemInstruction,
+  normalizeKurdishAcademicProse
+} from "./LevelProfiles";
+import { SubSectionPlan } from "./BlueprintAgent";
+import { AdaptiveCitationManager, SourceItem } from "./CitationManager";
+import { GeminiCoreEngine } from "./CoreEngine";
+
+interface PassOutput {
+  proseMarkdown: string;
+  evidenceAndProofsSummary: string[];
+  coveredPoints: string[];
+  closingParagraph: string;
+  sources: SourceItem[];
+}
+
+const passSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    proseMarkdown: { type: Type.STRING },
+    evidenceAndProofsSummary: { type: Type.ARRAY, items: { type: Type.STRING } },
+    coveredPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
+    closingParagraph: { type: Type.STRING },
+    sources: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          author: { type: Type.STRING },
+          year: { type: Type.STRING },
+          title: { type: Type.STRING },
+          publisherOrLocation: { type: Type.STRING },
+          language: { type: Type.STRING, enum: ["ku", "fa", "ar", "en"] },
+          pageOrNote: { type: Type.STRING },
+          verificationOrigin: {
+            type: Type.STRING,
+            enum: ["google_search_grounded", "user_verified_library", "primary_corpus"]
+          }
+        },
+        required: ["id", "author", "year", "title", "publisherOrLocation", "language", "verificationOrigin"]
+      }
+    }
+  },
+  required: ["proseMarkdown", "evidenceAndProofsSummary", "coveredPoints", "closingParagraph", "sources"]
+};
+
+const IRONCLAD_ACADEMIC_AND_COHESION_LAWS = `
+یاسا پۆڵایینەکانی ئەکادیمی (شکاندنی هەر خاڵێک بە هەموو شێوەیەک قەدەغەیە):
+١. قەدەغەکردنی ڕەهای کورتبڕی (ZERO TRUNCATION):
+   - هەرگیز بابەتەکان کورت مەکەرەوە و دەستەواژەی وەک (بە کورتی، هتد...) بەکارمەهێنە؛ هەر خاڵێک بە پەرەگرافی تێروتەسەل و شیکردنەوەی قووڵ بنووسە تا دەگاتە تەواوی ژمارەی وشەی داواکراو.
+٢. قەدەغەکردنی ڕەهای نووسینی بێ بەڵگە (ZERO UNSUBSTANTIATED PROSE):
+   - هەموو پەرەگرافێک دەبێت لەسەر بنەمای: [تێز و بیرۆکە + بەڵگەی کۆنکرێتی (دەق، داتا، ڕووداوی مێژوویی، یان هاوکێشەی زانستی) + سەرچاوەی ڕاستەقینە {{CITE:id}} + شیکردنەوە و ڕاڤەی قووڵ] دابڕێژرێت.
+٣. قەدەغەکردنی ڕەهای سەرچاوەی ساختە (ZERO HALLUCINATED CITATIONS):
+   - هەرگیز ناوی نووسەر، کتێب، ساڵ یان ژمارەی لاپەڕە لە خەیاڵی خۆتەوە دروست مەکە؛ تەنها پشت بەو سەرچاوە ڕاستەقینانە ببەستە کە لە گەڕانی زیندوو و کتێبخانەی توێژەرەوە پێت دراون.
+٤. پاراستنی یەکێتیی زنجیرەیی نێوان (بەش -> تەوەر -> لق -> پەرەگراف):
+   - پەرەگرافی یەکەم دەبێت ڕاستەوخۆ وەک تەواوکەری لۆژیکیی پەرەگرافی کۆتایی پێشوو دەست پێ بکات و پەرەگرافی کۆتاییش زەمینە بۆ لقی داهاتوو خۆش بکات.
+   - ڕێنووس و ڕستەسازیی کوردی دەبێت ١٠٠٪ پاراو، ڕەسەن و بێ هەڵەی ڕێزمانی بێت.
+`;
+
+function countWords(text: string): number {
+  return (text || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+}
+
+export async function writeCalibratedSubSection(params: {
+  thesisTitle: string;
+  level: AcademicLevel;
+  discipline?: string;
+  centralThesisThread?: string;
+  lockedTerminology?: string[];
+  chapterTitle: string;
+  chapterObjective?: string;
+  chapterOpeningBridge?: string;
+  isFirstSubSectionOfChapter?: boolean;
+  isLastSubSectionOfChapter?: boolean;
+  chapterClosingSynthesisGoal?: string;
+  sectionTitle: string;
+  axisCentralArgument?: string;
+  axisIntroBridge?: string;
+  isFirstSubSectionOfAxis?: boolean;
+  subSection: SubSectionPlan;
+  previousClosingParagraph: string;
+  cumulativeChapterMemory?: string[];
+  nextSubSectionTitle?: string;
+  verifiedLibrarySourcesText?: string;
+  cachedContentName?: string;
+  citationManager: AdaptiveCitationManager;
+}): Promise<{ fullSubSectionMarkdown: string; lastParagraph: string; keyFindings: string[] }> {
+  const engine = GeminiCoreEngine.getInstance();
+  const profile = LEVEL_PROFILES[params.level];
+
+  // هەنگاوی ١: گەڕانی زیندووی گووگڵ بۆ هێنانی سەرچاوە و بەڵگەی ڕاستەقینە پێش نووسین
+  let groundedBibliographyAndFacts = "";
+  try {
+    groundedBibliographyAndFacts = await engine.generate<string>({
+      mode: "search_grounded",
+      systemInstruction:
+        "تۆ پسپۆڕی بیبلۆگرافیا و ساغکردنەوەی سەرچاوە زانستییەکانیت. تەنها سەرچاوە، کتێب، توێژینەوە و بەڵگە ڕاستەقینەکان بە ناوی تەواوی نووسەر و ساڵی چاپەوە دەربهێنە.",
+      prompt: `بۆ نووسینی لقی "${params.subSection.title}" (${params.subSection.microTopicsToCover.join("، ")}) لە ناو توێژینەوەی "${params.thesisTitle}"، گرنگترین سەرچاوە زانستییە ڕاستەقینەکان و بەڵگە سەلمێنراوەکان چین؟`
+    });
+  } catch {
+    groundedBibliographyAndFacts = "";
+  }
+
+  const totalPasses = Math.max(
+    1,
+    Math.ceil(params.subSection.targetWords / profile.structure.maxWordsPerSinglePass)
+  );
+  const wordsPerPass = Math.round(params.subSection.targetWords / totalPasses);
+
+  const passParagraphs: string[] = [];
+  const passFootnotes: string[] = [];
+  const cumulativeCovered: string[] = [];
+  let rollingBridgeParagraph = params.previousClosingParagraph;
+
+  for (let pass = 1; pass <= totalPasses; pass++) {
+    const topicSlice =
+      params.subSection.microTopicsToCover[pass - 1] ||
+      params.subSection.microTopicsToCover.join("، ") ||
+      params.subSection.title;
+
+    const systemInstruction = `
+${buildLevelSystemInstruction(params.level, params.thesisTitle, params.discipline)}
+
+${IRONCLAD_ACADEMIC_AND_COHESION_LAWS}
+`;
+
+    const prompt = `
+- ناونیشانی توێژینەوە: "${params.thesisTitle}" (${profile.kurdishTitle})
+- هێڵی ناوەندیی توێژینەوەکە: ${params.centralThesisThread || "پاراستنی یەکێتیی بابەتی"}
+${
+  params.lockedTerminology && params.lockedTerminology.length > 0
+    ? `- زاراوە جێگیرکراوەکان: ${params.lockedTerminology.join("، ")}`
+    : ""
+}
+- بەش: ${params.chapterTitle} | تەوەر: ${params.sectionTitle}
+- لقی ئێستا: ${params.subSection.code} - ${params.subSection.title}
+- قۆناغی نووسین: ${pass} لە کۆی ${totalPasses} (ئامانجی زۆرەملێ: لانیکەم ${wordsPerPass} وشەی تەواو)
+- تەوەری وردی ئەم قۆناغە: (${topicSlice})
+${rollingBridgeParagraph ? `- دوایین پەرەگرافی پێش ئێستا (ڕاستەوخۆ لە دوای ئەمەوە بەردەوام بە): "${rollingBridgeParagraph}"` : ""}
+${
+  pass === totalPasses && params.nextSubSectionTitle
+    ? `- لە کۆتاییدا زەمینە خۆش بکە بۆ لقی داهاتوو: (${params.nextSubSectionTitle})`
+    : ""
+}
+
+[سەرچاوە و بەڵگە ڕاستەقینە دۆزراوەکان]:
+${groundedBibliographyAndFacts || "پشت بە سەرچاوە باوەڕپێکراوەکانی بواری بابەتەکە ببەستە."}
+${params.verifiedLibrarySourcesText ? `\n[سەرچاوەکانی کتێبخانەی توێژەر]:\n${params.verifiedLibrarySourcesText}` : ""}
+${
+  cumulativeCovered.length > 0
+    ? `\n[خاڵە باسکراوەکانی قۆناغی پێشوو (دووبارەیان مەکەرەوە!)]:\n${cumulativeCovered.join(" | ")}`
+    : ""
+}
+`;
+
+    let data = await engine.generate<PassOutput>({
+      mode: "deep_thinking",
+      systemInstruction,
+      prompt,
+      responseSchema: passSchema,
+      cachedContentName: params.cachedContentName,
+      temperature: 0.3
+    });
+
+    let combinedPassProse = normalizeKurdishAcademicProse(data.proseMarkdown || "");
+    let combinedPassSources: SourceItem[] = [...(data.sources || [])];
+
+    // قوفڵی دژە-کورتبڕی (Anti-Truncation Loop)
+    const minimumAcceptableWords = Math.floor(wordsPerPass * 0.85);
+    let expansionAttempt = 0;
+
+    while (countWords(combinedPassProse) < minimumAcceptableWords && expansionAttempt < 2) {
+      expansionAttempt++;
+      const deficitWords = wordsPerPass - countWords(combinedPassProse);
+
+      const expansionData = await engine.generate<PassOutput>({
+        mode: "deep_thinking",
+        systemInstruction,
+        prompt: `
+تۆ تەنها ${countWords(combinedPassProse)} وشەت نووسیوە لە کاتێکدا داوای ${wordsPerPass} وشە کرابوو.
+ڕاستەوخۆ لە دوای ئەم پەرەگرافەی کۆتاییەوە ("${data.closingParagraph}") بەردەوام بە و لانیکەم (${deficitWords}) وشەی نوێی پڕ لە شیکردنەوەی قووڵ، بەڵگەی زانستی/دەقی و نموونەی ڕاستەقینە لەسەر (${topicSlice}) بنووسە بێ دووبارەکردنەوە.
+`,
+        responseSchema: passSchema,
+        cachedContentName: params.cachedContentName,
+        temperature: 0.3
+      });
+
+      if (expansionData.proseMarkdown) {
+        combinedPassProse += `\n\n${normalizeKurdishAcademicProse(expansionData.proseMarkdown)}`;
+        combinedPassSources.push(...(expansionData.sources || []));
+        data.closingParagraph = expansionData.closingParagraph || data.closingParagraph;
+        data.coveredPoints.push(...(expansionData.coveredPoints || []));
+      }
+    }
+
+    const { cleanMarkdown, footnotesBlock } = params.citationManager.registerAndFormatCitations(
+      combinedPassProse,
+      combinedPassSources
+    );
+
+    passParagraphs.push(cleanMarkdown.trim());
+    if (footnotesBlock) passFootnotes.push(footnotesBlock);
+    cumulativeCovered.push(...(data.coveredPoints || []));
+    rollingBridgeParagraph = normalizeKurdishAcademicProse(data.closingParagraph);
+  }
+
+  let structuralPreamble = "";
+  if (params.isFirstSubSectionOfChapter && params.chapterOpeningBridge) {
+    structuralPreamble += `> **دەروازەی بەش:** ${normalizeKurdishAcademicProse(params.chapterOpeningBridge)}\n\n`;
+  }
+  if (params.isFirstSubSectionOfAxis && params.axisIntroBridge) {
+    structuralPreamble += `* **پێشەکیی تەوەر:** ${normalizeKurdishAcademicProse(params.axisIntroBridge)}\n\n`;
+  }
+
+  const fullSubSectionMarkdown =
+    `${structuralPreamble}### ${params.subSection.code} ${params.subSection.title}\n\n` +
+    passParagraphs.join("\n\n") +
+    (passFootnotes.length > 0 ? `\n${passFootnotes.join("\n")}` : "");
+
+  return {
+    fullSubSectionMarkdown,
+    lastParagraph: rollingBridgeParagraph,
+    keyFindings: cumulativeCovered
+  };
+}
+
+export async function generateCalibratedConclusion(
+  title: string,
+  level: AcademicLevel,
+  allFindings: string[],
+  discipline = ""
+): Promise<string> {
+  const engine = GeminiCoreEngine.getInstance();
+  const profile = LEVEL_PROFILES[level];
+
+  const text = await engine.generate<string>({
+    mode: "deep_thinking",
+    systemInstruction: `${buildLevelSystemInstruction(level, title, discipline)}\n${IRONCLAD_ACADEMIC_AND_COHESION_LAWS}`,
+    prompt: `
+ناونیشان: "${title}"
+ئاست: ${profile.kurdishTitle}
+کۆی خاڵ و دۆزینەوە سەلمێنراوەکانی ناو تەواوی بەش و تەوەرەکانی توێژینەوەکە:
+${allFindings.join("\n- ")}
+
+تکایە هەردوو بەشی:
+١. (ئەنجامەکانی توێژینەوە)
+٢. (ڕاسپاردە و پێشنیارەکان)
+بە جیاکراوەیی، بە وردی و بە قەبارەی لانیکەم ${profile.structure.conclusionWords} وشە بەپێی پێوەری (${profile.introAndConclusionRules}) بنووسە.
+`
+  });
+
+  return normalizeKurdishAcademicProse(text || "");
+}
+
+export function generateLevelDesignStylesheet(level: AcademicLevel): string {
+  const d = LEVEL_PROFILES[level].designSpec;
+  return `
+@page {
+  size: A4;
+  margin-top: ${d.marginsCm.top}cm;
+  margin-bottom: ${d.marginsCm.bottom}cm;
+  margin-right: ${d.marginsCm.right}cm;
+  margin-left: ${d.marginsCm.left}cm;
+}
+.academic-document-container {
+  direction: rtl;
+  text-align: justify;
+  font-family: ${d.fontFamily};
+  font-size: ${d.bodyFontSizePt}pt;
+  line-height: ${d.lineHeight};
+  color: #1a1a1a;
+}
+.academic-document-container h1 {
+  font-size: ${d.h1SizePt}pt;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 28pt;
+  margin-bottom: 18pt;
+  page-break-before: always;
+}
+.academic-document-container h2 {
+  font-size: ${d.h2SizePt}pt;
+  font-weight: bold;
+  margin-top: 20pt;
+  margin-bottom: 12pt;
+  border-bottom: 1px solid #444;
+  padding-bottom: 4pt;
+}
+.academic-document-container h3 {
+  font-size: ${d.h3SizePt}pt;
+  font-weight: bold;
+  margin-top: 14pt;
+  margin-bottom: 8pt;
+}
+.academic-document-container p {
+  text-indent: ${level === "school" ? "0.5cm" : "1cm"};
+  margin-bottom: 10pt;
+}
+`;
+}
+
+====================================================================
+PHASE 3: WIRE EXPRESS ROUTES & ANGULAR ACTIONS TO THE NEW ENGINE
+====================================================================
+1. In `src/server/routes/gemini-evolution.routes.ts`:
+   Import `buildLevelCalibratedBlueprint`, `writeCalibratedSubSection`, `generateCalibratedConclusion`, and `AdaptiveCitationManager` from `../../lib/gemini/...` and expose:
+   - `POST /api/gemini/blueprint` -> calls `buildLevelCalibratedBlueprint(req.body.title, req.body.level, req.body.discipline)`
+   - `POST /api/gemini/write-subsection` -> calls `writeCalibratedSubSection(...)`
+   - `POST /api/gemini/conclusion` -> calls `generateCalibratedConclusion(...)`
+
+2. In `src/app/helpers/outline-structure.ts` and `src/app/services/manuscript-bridge-actions.service.ts`:
+   Ensure that `aiGenerateStructure`, `writeSingleChapter`, and `writeAllChapters` call the new `/api/gemini/blueprint` and `/api/gemini/write-subsection` endpoints, populating Dedication (پێشکەشکردن), Acknowledgment (سوپاس و پێزانین), Dotted TOC (`بابەت .... لاپەڕە`), Core Chapters, Conclusion, Recommendations, Glossary (فەرهەنگۆک), and Bibliography into the editor chapters array.
+
+3. Run `npm run build` once to verify zero compilation errors and finish cleanly.

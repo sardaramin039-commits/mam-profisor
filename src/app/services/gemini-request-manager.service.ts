@@ -1,5 +1,4 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { GoogleGenAI } from '@google/genai';
 import { AppNotificationsService } from '../core/app.notifications';
 import { AcademicStoreService } from './academic-store.service';
 import { DigitalLibraryService } from './digital-library.service';
@@ -306,54 +305,35 @@ export class GeminiRequestManagerService {
     return { content: accumulatedText, wordCount: finalWords };
   }
 
-  public async callGeminiApi(contents: any, systemInstruction?: string, retryCount = 0): Promise<string> {
-    const keys = this.apiKeys();
-    const model = this.preferredModel() || 'gemini-2.5-pro';
+  public async callGeminiApi(contents: any, systemInstruction?: string, _retryCount = 0): Promise<string> {
+    const promptText = typeof contents === 'string' ? contents : JSON.stringify(contents);
 
-    if (keys.length > 0) {
-      const currentKey = keys[this.currentKeyIndex() % keys.length];
-      const promptText = typeof contents === 'string' ? contents : JSON.stringify(contents);
+    // Primary: Call server-side smart generation proxy
+    try {
+      const resp = await fetch('/api/gemini/smart-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskType: 'deep_academic_reasoning',
+          prompt: promptText,
+          systemInstruction: systemInstruction || '',
+          enableThinking: true,
+          temperature: 0.35
+        })
+      });
 
-      try {
-        const ai = new GoogleGenAI({ apiKey: currentKey });
-        const config: {
-          temperature: number;
-          thinkingConfig?: { thinkingBudget?: number };
-          systemInstruction?: string;
-        } = {
-          temperature: 0.35,
-          thinkingConfig: { thinkingBudget: 8192 }
-        };
-        if (systemInstruction) {
-          config.systemInstruction = systemInstruction;
-        }
-
-        const response = await ai.models.generateContent({
-          model,
-          contents: promptText,
-          config
-        });
-
-        if (response.text && response.text.trim().length > 0) {
-          return response.text.trim();
-        }
-      } catch (err: any) {
-        const errMsg = err?.message || String(err);
-        if ((errMsg.includes('429') || errMsg.includes('Quota') || errMsg.includes('RESOURCE_EXHAUSTED')) && retryCount < keys.length) {
-          this.notifications.showWarning('سنووری کوۆتا', 'خولانەوە بۆ کلیلی دواتر لە حەوزی API');
-          this.rotateToNextKey();
-          return this.callGeminiApi(contents, systemInstruction, retryCount + 1);
-        }
-        if (retryCount < keys.length - 1) {
-          this.rotateToNextKey();
-          return this.callGeminiApi(contents, systemInstruction, retryCount + 1);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.success && typeof data.result === 'string' && data.result.trim().length > 0) {
+          return data.result.trim();
         }
       }
+    } catch (err) {
+      console.warn('Server smart-generate proxy call failed, falling back:', err);
     }
 
-    // Server proxy fallback
+    // Secondary server fallback: /api/generate_chapter
     try {
-      const promptText = typeof contents === 'string' ? contents : JSON.stringify(contents);
       const resp = await fetch('/api/generate_chapter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -371,7 +351,65 @@ export class GeminiRequestManagerService {
         return typeof data?.content === 'string' ? data.content.trim() : '';
       }
     } catch {}
+
     return '';
+  }
+
+  /**
+   * Real-time Server-Sent Events (SSE) streaming from the server proxy.
+   */
+  public async streamGeminiApi(
+    prompt: string,
+    onChunk: (chunkText: string) => void,
+    systemInstruction?: string
+  ): Promise<string> {
+    try {
+      const response = await fetch('/api/gemini/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          systemInstruction: systemInstruction || ''
+        })
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error('Streaming connection failed');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunkStr = decoder.decode(value, { stream: true });
+        const lines = chunkStr.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim();
+            if (dataStr === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (parsed.text) {
+                fullText += parsed.text;
+                onChunk(parsed.text);
+              }
+            } catch {}
+          }
+        }
+      }
+
+      return fullText;
+    } catch (err) {
+      console.warn('Stream failed, falling back to unary call:', err);
+      const unaryResult = await this.callGeminiApi(prompt, systemInstruction);
+      onChunk(unaryResult);
+      return unaryResult;
+    }
   }
 
   private async fetchChapterChunk(title: string, chapterTitle: string, words: number): Promise<string> {

@@ -56,6 +56,93 @@ function createAxis(
   };
 }
 
+export function toKurdishDigits(num: number | string): string {
+  const d = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  return num.toString().replace(/\d/g, (m) => d[parseInt(m, 10)]);
+}
+
+export function formatTocLine(title: string, pageLabel: string, indentSpaces = 0): string {
+  const indent = ' '.repeat(indentSpaces);
+  const cleanTitle = `${indent}${title.trim()}`;
+  const totalWidth = 78;
+  const dotsCount = Math.max(6, totalWidth - cleanTitle.length - pageLabel.length);
+  const dots = '.'.repeat(dotsCount);
+  return `${cleanTitle} ${dots} ${pageLabel}`;
+}
+
+export function generateClassicKurdishTOC(chapters: ChapterItem[], totalTargetWords = 3500): string {
+  const lines: string[] = [];
+  const entries: { title: string; page: string; level: 'front' | 'chapter' | 'section' | 'subsection' | 'end' }[] = [];
+  const wordsPerPage = 350;
+
+  lines.push('## پێڕستی بابەتەکان\n');
+  lines.push('```text');
+  lines.push(formatTocLine('بابەت', 'لاپەڕە', 0));
+  lines.push('─'.repeat(80));
+
+  // Front matter
+  entries.push({ title: 'پێشکەشکردن و سوپاسنامە', page: 'أ', level: 'front' });
+  lines.push(formatTocLine('پێشکەشکردن و سوپاسنامە', 'أ', 0));
+
+  entries.push({ title: 'پوختەی توێژینەوە (Abstract)', page: 'ب', level: 'front' });
+  lines.push(formatTocLine('پوختەی توێژینەوە (Abstract)', 'ب', 0));
+
+  let currentPage = 1;
+
+  for (const ch of chapters) {
+    // Skip front matter chapters from page body calculation
+    if (ch.title.includes('پێشکەشە') || ch.title.includes('پێڕستی بابەتەکان') || ch.title.includes('Abstracts')) {
+      continue;
+    }
+
+    const chPageStr = toKurdishDigits(currentPage);
+    entries.push({ title: ch.title, page: chPageStr, level: ch.axes && ch.axes.length > 0 ? 'chapter' : 'end' });
+    lines.push(formatTocLine(ch.title, chPageStr, 0));
+
+    if (ch.axes && ch.axes.length > 0) {
+      for (const axis of ch.axes) {
+        const axisPageStr = toKurdishDigits(currentPage);
+        const axisTitle = `${axis.code}: ${axis.title}`;
+        entries.push({ title: axisTitle, page: axisPageStr, level: 'section' });
+        lines.push(formatTocLine(axisTitle, axisPageStr, 2));
+
+        for (const branch of axis.branches) {
+          const branchPageStr = toKurdishDigits(currentPage);
+          const branchTitle = `${branch.code} ${branch.title}`;
+          entries.push({ title: branchTitle, page: branchPageStr, level: 'subsection' });
+          lines.push(formatTocLine(branchTitle, branchPageStr, 4));
+
+          const branchWords = branch.targetWords || 400;
+          const branchPages = Math.max(1, Math.round(branchWords / wordsPerPage));
+          currentPage += branchPages;
+        }
+      }
+    } else {
+      const chWords = ch.customTargetWords || 500;
+      currentPage += Math.max(1, Math.round(chWords / wordsPerPage));
+    }
+  }
+
+  lines.push('```');
+
+  // Printable / Exportable HTML Structure
+  const htmlRows = [
+    `<div class="academic-toc-wrapper" dir="rtl">`,
+    `<div class="toc-header-row"><span class="toc-col-title">بابەت</span><span class="toc-col-page">لاپەڕە</span></div>`,
+    ...entries.map(
+      (e) =>
+        `<div class="toc-row toc-${e.level}">` +
+        `<span class="toc-title">${e.title}</span>` +
+        `<span class="toc-leader"></span>` +
+        `<span class="toc-page">${e.page}</span>` +
+        `</div>`
+    ),
+    `</div>`
+  ].join('\n');
+
+  return `${lines.join('\n')}\n\n${htmlRows}`;
+}
+
 export function buildAcademicThesisOutline(options: ThesisOutlineOptions): ChapterItem[] {
   const title = (options.title || '').trim() || 'تێزی زانستی';
   const targetPages = Math.max(1, options.targetPages || 10);
@@ -72,7 +159,7 @@ export function buildAcademicThesisOutline(options: ThesisOutlineOptions): Chapt
       title: 'پێشکەشە و سوپاسنامە (Dedication & Acknowledgments)',
       wordCount: 0,
       status: 'pending',
-      content: `## پێشکەشە و سوپاسنامە\n\nئەم کارە زانستییە پێشکەشە بە سەرجەم ئەو مامۆستا و توێژەرە بەڕێزانەی کە ڕێگای مەعریفەیان بۆ ڕووناک کردینەوە.\n\nسوپاسی تایبەت بۆ سەرپەرشتیاری بەڕێز و سەرجەم ئەندامانی لێژنەی زانستی کە بە سەرنج و ڕەخنە بەپێزەکانیان ئەم تێزەیان دەوڵەمەندتر کرد.`,
+      content: `## پێشکەشکردن\n\n«پێشکەشە بەو زاتە پاکانەی کە چرای زانست و مەعریفیان لە دڵدا هەڵگیرساند و ڕێگەی تاریکیی نەزانییان بە فکری رۆشن ڕووناک کردەوە؛\nبە گیانی پاکی مامۆستایانی دڵسۆز و پێشەنگانی زمانی کوردی کە لە پێناوی گەشەپێدان و پاراستنی ناسنامەی نەتەوەییدا ماندوونووبوون؛\nو بە هەموو ئەو توێژەر و خۆشەویستانەی خزمەت بە کتێبخانەی کوردی دەکەن؛\nئەم بەرهەمە ئەکادیمییە پێشکەش بە ئاراستەی زانست و وشیاریی نەتەوەیی دەکەین.»\n\n---\n\n## سوپاس و پێزانین\n\n«سوپاس بۆ خودای مەزن کە توانای پێبەخشین تا ئەم کارە ئەکادیمییە بخەینە خزمەت مەعریفی کوردییەوە.\nهەروەها، لە قووڵایی دڵمانەوە سوپاس و پێزانینی بێپایان ئاراستەی سەرجەم ئەو مامۆستا و ڕێنیشاندەرە ئەکادیمییە بەڕێزانە دەکەین کە لە کاتی داڕشتن، سەرپەرشتیکردن و پێداچوونەوەی ئەم تێزەدا، بە ڕێنماییە زانستییەکانیان هاوکارمان بوون. هەروەها دەستخۆشی لەو دەزگا و ناوەندە رۆشنبیری و دیجیتالییانە دەکەین کە سەرچاوە و زانیاریی پێویستیان بۆ توێژەر دابین کرد، بەتایبەت سیستەمی زیرەکی پلاتفۆرمی (Mam Professor) کە لە ڕێکخستنی میتۆدۆلۆژی و داڕشتنی بابەتییدا پشتیوانێکی کارا بوو.»`,
       academicNotes: 'پێشکەشکردنی ئەکادیمی و دەربڕینی پێزانینی زانستی بەپێی نەریتی ئەکادیمی.',
       customTargetWords: 150,
       axes: []
@@ -86,8 +173,8 @@ export function buildAcademicThesisOutline(options: ThesisOutlineOptions): Chapt
       title: 'پێڕستی بابەتەکان و خشتەکان (Table of Contents)',
       wordCount: 0,
       status: 'pending',
-      content: `## پێڕستی گشتیی تەوەر و بەشەکان\n\n**پەیکەری تێز:** ${isHumanities ? 'زانستە مرۆڤایەتییەکان (ئەدەب، زمان، مێژوو، فەلسەفە)' : 'زانستە پەروەردەیی، کۆمەڵایەتی و ئەزموونییەکان (٥ بەشی)'}\n**قەبارەی تێز:** ${targetPages} لاپەڕە (${totalTargetWords} وشە).\n\n- پێڕستی دەروازە و بەشە سەرەکییەکان\n- پێڕستی خشتەکان و نەخشەکان\n- پێڕستی سەرچاوە و بەیبلۆگرافی`,
-      academicNotes: 'پێڕستی فەرمیی تێز بەپێی ستانداردی زانکۆکانی کوردستان.',
+      content: '', // Will be generated after chapters are formed
+      academicNotes: 'پێڕستی فەرمیی تێز بەپێی ستانداردی زانکۆکانی کوردستان (بابەت .......... لاپەڕە).',
       customTargetWords: 200,
       axes: []
     });
@@ -387,6 +474,14 @@ export function buildAcademicThesisOutline(options: ThesisOutlineOptions): Chapt
     ch.fieldWorkOn = Boolean(options.fieldWorkOn);
   });
 
+  // Populate formatted Table of Contents (بابەت .......... لاپەڕە)
+  const tocCh = chapters.find(ch => ch.title.includes('پێڕستی بابەتەکان'));
+  if (tocCh) {
+    tocCh.content = generateClassicKurdishTOC(chapters, totalTargetWords);
+    tocCh.wordCount = countKurdishWords(tocCh.content);
+    tocCh.status = 'completed';
+  }
+
   syncLiveTOCWordCounts(chapters);
   return chapters;
 }
@@ -428,4 +523,187 @@ export function syncLiveTOCWordCounts(chapters: ChapterItem[]): void {
       }
     }
   }
+
+  // نوێکردنەوەی ژمارەی لاپەڕە و پێڕستی بابەتەکان بە شێوازی کلاسیكی کوردی لەگەڵ هەر دەستکارییەک
+  const liveTocCh = chapters.find(ch => ch.title.includes('پێڕستی بابەتەکان'));
+  if (liveTocCh) {
+    liveTocCh.content = generateClassicKurdishTOC(chapters);
+    liveTocCh.wordCount = countKurdishWords(liveTocCh.content);
+  }
 }
+
+export function buildChaptersFromAcademicBlueprint(blueprint: any, title = 'تێزی ئەکادیمی'): ChapterItem[] {
+  const chapters: ChapterItem[] = [];
+  let currentId = 1;
+  const isSchool = blueprint.level === 'school';
+
+  // 1. پێشکەشکردن
+  if (!isSchool && blueprint.frontMatterAndIntro?.dedicationMarkdown) {
+    chapters.push({
+      id: currentId++,
+      title: 'پێشکەشکردن (Dedication)',
+      wordCount: countKurdishWords(blueprint.frontMatterAndIntro.dedicationMarkdown),
+      status: 'completed',
+      content: `## پێشکەشکردن\n\n${blueprint.frontMatterAndIntro.dedicationMarkdown}`,
+      academicNotes: 'پێشکەشکردنی ئەکادیمی بە زمانی کوردیی باڵا.',
+      customTargetWords: 150,
+      axes: []
+    });
+  }
+
+  // 2. سوپاس و پێزانین
+  if (!isSchool && blueprint.frontMatterAndIntro?.acknowledgmentMarkdown) {
+    chapters.push({
+      id: currentId++,
+      title: 'سوپاس و پێزانین (Acknowledgments)',
+      wordCount: countKurdishWords(blueprint.frontMatterAndIntro.acknowledgmentMarkdown),
+      status: 'completed',
+      content: `## سوپاس و پێزانین\n\n${blueprint.frontMatterAndIntro.acknowledgmentMarkdown}`,
+      academicNotes: 'سوپاس و پێزانین بۆ سەرپەرشتیار و لێژنەی زانستی.',
+      customTargetWords: 150,
+      axes: []
+    });
+  }
+
+  // 3. پوختە بە ٣ زمان
+  if (!isSchool && (blueprint.frontMatterAndIntro?.abstractKurdish || blueprint.frontMatterAndIntro?.abstractEnglish)) {
+    const absContent = [
+      `## پوختەی توێژینەوە بە زمانی کوردی\n${blueprint.frontMatterAndIntro.abstractKurdish || ''}`,
+      `---\n## Abstract in English\n${blueprint.frontMatterAndIntro.abstractEnglish || ''}`,
+      blueprint.frontMatterAndIntro.abstractArabic ? `---\n## المستخلص باللغة العربية\n${blueprint.frontMatterAndIntro.abstractArabic}` : ''
+    ].filter(Boolean).join('\n\n');
+
+    chapters.push({
+      id: currentId++,
+      title: 'پوختەی توێژینەوە بە کوردی، ئینگلیزی و عەرەبی (Abstracts)',
+      wordCount: countKurdishWords(absContent),
+      status: 'completed',
+      content: absContent,
+      academicNotes: 'پوختەی فەرمی بەپێی یاسای وەزارەتی خوێندنی باڵا.',
+      customTargetWords: 350,
+      axes: []
+    });
+  }
+
+  // 4. پێڕستی بابەتەکان
+  chapters.push({
+    id: currentId++,
+    title: 'پێڕستی بابەتەکان و خشتەکان (Table of Contents)',
+    wordCount: countKurdishWords(blueprint.tocMarkdown || ''),
+    status: 'completed',
+    content: blueprint.tocMarkdown || '## پێڕستی بابەتەکان\n',
+    academicNotes: 'پێڕستی فەرمیی تێز بە شێوازی کلاسیكی کوردی (بابەت .......... لاپەڕە).',
+    customTargetWords: 200,
+    axes: []
+  });
+
+  // 5. پێشەکی / دەروازەی گشتی
+  const introTitle = isSchool ? 'پێشەکی' : 'دەروازەی گشتیی توێژینەوە';
+  chapters.push({
+    id: currentId++,
+    title: `${introTitle}: چوارچێوەی گشتی و میتۆدی لێکۆڵینەوە`,
+    wordCount: countKurdishWords(blueprint.frontMatterAndIntro?.fullIntroductionMarkdown || ''),
+    status: blueprint.frontMatterAndIntro?.fullIntroductionMarkdown ? 'completed' : 'pending',
+    content: blueprint.frontMatterAndIntro?.fullIntroductionMarkdown
+      ? `## ${introTitle}\n\n${blueprint.frontMatterAndIntro.fullIntroductionMarkdown}`
+      : '',
+    academicNotes: 'دەروازەی سەرەکی و بنەما میتۆدییەکانی توێژینەوە.',
+    customTargetWords: isSchool ? 350 : 2500,
+    axes: []
+  });
+
+  // 6. بەشە سەرەکییەکان، تەوەرەکان و لقەکان
+  if (Array.isArray(blueprint.chapters)) {
+    blueprint.chapters.forEach((ch: any, cIdx: number) => {
+      const axes: AxisItem[] = (ch.sections || []).map((sec: any, sIdx: number) => {
+        const axId = `${cIdx + 1}.${sIdx + 1}`;
+        const branches: SubBranchItem[] = (sec.subSections || []).map((sub: any, bIdx: number) => ({
+          id: `${axId}.${bIdx + 1}`,
+          code: sub.code || `${cIdx + 1}.${sIdx + 1}.${bIdx + 1}`,
+          title: sub.title || `لقی ${bIdx + 1}`,
+          targetWords: sub.targetWords || 600,
+          wordCount: 0,
+          content: '',
+          status: 'pending' as const
+        }));
+
+        return {
+          id: axId,
+          code: `تەوەری ${['یەکەم', 'دووەم', 'سێیەم', 'چوارەم', 'پێنجەم'][sIdx] || sIdx + 1}`,
+          title: sec.title,
+          targetWords: sec.targetWords || 1200,
+          wordCount: 0,
+          branches
+        };
+      });
+
+      chapters.push({
+        id: currentId++,
+        title: ch.title,
+        wordCount: 0,
+        status: 'pending',
+        content: '',
+        academicNotes: ch.chapterObjective || 'بەشی زانستیی تێز.',
+        customTargetWords: ch.targetWords || 3000,
+        axes
+      });
+    });
+  }
+
+  // 7. ئەنجامەکان
+  const conclusionTitle = isSchool ? 'ئەنجامی ڕاپۆرت' : 'ئەنجامەکانی توێژینەوە (Findings)';
+  chapters.push({
+    id: currentId++,
+    title: conclusionTitle,
+    wordCount: 0,
+    status: 'pending',
+    content: '',
+    academicNotes: 'کۆبەندی دۆزینەوە و ئەنجامە سەلمێنراوەکان.',
+    customTargetWords: isSchool ? 300 : 1500,
+    axes: []
+  });
+
+  // 8. ڕاسپاردە و پێشنیارەکان
+  const recTitle = isSchool ? 'پێشنیار و سوودەکان' : 'ڕاسپاردە و پێشنیارەکان (Recommendations)';
+  chapters.push({
+    id: currentId++,
+    title: recTitle,
+    wordCount: 0,
+    status: 'pending',
+    content: '',
+    academicNotes: 'ڕاسپاردەی زانستی و کرداری بۆ لایەنە پەیوەندیدارەکان.',
+    customTargetWords: isSchool ? 200 : 1000,
+    axes: []
+  });
+
+  // 9. فەرهەنگۆکی زاراوەکان
+  if (blueprint.glossaryMarkdown || (blueprint.glossaryTerms && blueprint.glossaryTerms.length > 0)) {
+    chapters.push({
+      id: currentId++,
+      title: 'فەرهەنگۆکی زاراوە زانستییەکان (Glossary)',
+      wordCount: countKurdishWords(blueprint.glossaryMarkdown || ''),
+      status: 'completed',
+      content: blueprint.glossaryMarkdown || '',
+      academicNotes: 'زاراوە سەرەکییەکانی توێژینەوەکە بە کوردی، ئینگلیزی و عەرەبی.',
+      customTargetWords: 300,
+      axes: []
+    });
+  }
+
+  // 10. سەرچاوە و بیبلۆگرافیا
+  const bibTitle = isSchool ? 'سەرچاوەکانی ڕاپۆرت' : 'لیستی سەرچاوە و بیبلۆگرافیا (Bibliography)';
+  chapters.push({
+    id: currentId++,
+    title: bibTitle,
+    wordCount: 0,
+    status: 'pending',
+    content: `## ${bibTitle}\n\n### یەکەم: سەرچاوە کوردییەکان\n\n### دووەم: سەرچاوە عەرەبییەکان\n\n### سێیەم: سەرچاوە بیانییەکان (Foreign / English References)`,
+    academicNotes: 'سەرچاوە ڕاستەقینە بەکارهاتووەکان بەپێی ستانداردی ئەکادیمی.',
+    customTargetWords: 400,
+    axes: []
+  });
+
+  syncLiveTOCWordCounts(chapters);
+  return chapters;
+}
+

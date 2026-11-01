@@ -123,7 +123,7 @@ export class StorageManagerService {
         draftsCount: drafts.length,
         booksCount: books.length,
         cacheItemsCount: caches.length,
-        totalWordsCached: totalWords
+        totalWordsCached: ((Number(totalWords) || 0) as number)
       };
 
       this.metrics.set(newMetrics);

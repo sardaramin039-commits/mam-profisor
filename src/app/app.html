@@ -44,7 +44,16 @@
 
   <app-viewed-chapter-modal [host]="this"></app-viewed-chapter-modal>
 
-  @if (isReputationModalOpen()) {
+  @if (isReadingModeOpen()) {
+    <app-academic-reading-mode
+      [chapters]="editorService.chapters()"
+      [thesisTitle]="manuscriptTitle()"
+      [thesisAuthor]="currentUser()?.displayName || ''"
+      (close)="closeReadingMode()">
+    </app-academic-reading-mode>
+  }
+
+  @if (false) {
     <app-user-reputation-modal (close)="isReputationModalOpen.set(false)"></app-user-reputation-modal>
   }
 </div>

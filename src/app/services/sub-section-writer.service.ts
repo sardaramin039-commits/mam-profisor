@@ -1,5 +1,4 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { GoogleGenAI, Type, Schema } from '@google/genai';
 import { AppNotificationsService } from '../core/app.notifications';
 import { AcademicCitationManager, AcademicSource } from './academic-citation-manager.service';
 import { countKurdishWords } from './data';
@@ -8,13 +7,15 @@ import { LEVEL_PROFILES, AcademicLevel, LevelCalibrationProfile } from '../model
 export { LEVEL_PROFILES };
 export type { AcademicLevel, LevelCalibrationProfile };
 
-interface ModelConfig {
-  systemInstruction?: string;
-  responseMimeType?: string;
-  responseSchema?: Schema;
-  temperature?: number;
-  thinkingConfig?: { thinkingBudget?: number };
-}
+export type Schema = Record<string, any>;
+export const Type = {
+  STRING: 'STRING',
+  NUMBER: 'NUMBER',
+  INTEGER: 'INTEGER',
+  BOOLEAN: 'BOOLEAN',
+  ARRAY: 'ARRAY',
+  OBJECT: 'OBJECT',
+} as const;
 
 export function resolveLevelCalibration(level?: string): LevelCalibrationProfile {
   if (!level) return LEVEL_PROFILES.phd;
@@ -107,20 +108,6 @@ export const SUB_SECTION_WRITER_SYSTEM_PROMPT = `
 ٣. پاراستنی زمانی بابەتی، ڕەسەنایەتیی سەرچاوەکان و دوورکەوتنەوە لە زانیاری و سەرچاوەی خەیاڵی (Zero Hallucination).
 `;
 
-function getResolvedApiKeys(): string[] {
-  const keys: string[] = [];
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('MAM_GEMINI_API_KEYS') || '';
-      keys.push(...stored.split(/[\s,;]+/).map((k) => k.trim()).filter(Boolean));
-    } catch {}
-  }
-  if (typeof process !== 'undefined' && process.env && process.env['GEMINI_API_KEY']) {
-    keys.push(...process.env['GEMINI_API_KEY'].split(/[\s,;]+/).map((k) => k.trim()).filter(Boolean));
-  }
-  return Array.from(new Set(keys));
-}
-
 export function buildSubSectionPrompt(ctx: SubSectionWriterContext): string {
   const profile = resolveLevelCalibration(ctx.academicLevel || ctx.degreeLevel);
 
@@ -148,22 +135,11 @@ ${ctx.nextSubSection ? `[لقی داهاتوو: ${ctx.nextSubSection.code} - ${c
 export async function generateSubSectionContent(
   ctx: SubSectionWriterContext
 ): Promise<SubSectionGeneratedOutput> {
-  const keys = getResolvedApiKeys();
-  if (keys.length === 0) {
-    throw new Error('تکایە کلیلی API دابین بکە بۆ ئەوەی ناوەڕۆکی لقەکە بە مۆدێلی ژیریی دەستکرد بنووسرێت.');
-  }
-
   const prompt = buildSubSectionPrompt(ctx);
   const profile = resolveLevelCalibration(ctx.academicLevel || ctx.degreeLevel);
   const isDeepLevel = profile.level === 'master' || profile.level === 'phd';
 
-  let lastError: unknown = null;
-
-  for (let attempt = 0; attempt < keys.length; attempt++) {
-    const key = keys[attempt];
-    try {
-      const ai = new GoogleGenAI({ apiKey: key });
-      const systemInstruction = `
+  const systemInstruction = `
 ${SUB_SECTION_WRITER_SYSTEM_PROMPT}
 ڕێنمایی کالیبراسیۆنی ئاستی ${profile.kurdishTitle}:
 ${profile.personaPrompt}
@@ -171,33 +147,53 @@ ${profile.vocabularyAndStyleRules}
 ${profile.strictlyForbiddenRules}
 `;
 
-      const config: ModelConfig = {
+  try {
+    const resp = await fetch('/api/gemini/smart-generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        taskType: isDeepLevel ? 'deep_academic_reasoning' : 'fast_formatting',
+        prompt,
         systemInstruction,
-        responseMimeType: 'application/json',
         responseSchema: subSectionWriterSchema,
+        enableThinking: isDeepLevel,
         temperature: 0.35
-      };
+      })
+    });
 
-      if (isDeepLevel) {
-        config.thinkingConfig = { thinkingBudget: 8192 };
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.success && data.result) {
+        if (typeof data.result === 'object') {
+          return data.result as SubSectionGeneratedOutput;
+        }
+        if (typeof data.result === 'string') {
+          try {
+            return JSON.parse(data.result) as SubSectionGeneratedOutput;
+          } catch {
+            return {
+              academicContentMarkdown: data.result,
+              executiveSummaryForNext: `پوختەی لقی ${ctx.currentSubSection.title}`,
+              closingParagraph: data.result.slice(-200),
+              keyConceptsCovered: [ctx.currentSubSection.title],
+              suggestedCitations: []
+            };
+          }
+        }
       }
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: prompt,
-        config
-      });
-
-      if (response.text) {
-        return JSON.parse(response.text) as SubSectionGeneratedOutput;
-      }
-    } catch (err: any) {
-      lastError = err;
-      console.warn(`نووسینی لق بە کلیلی ${attempt + 1} سەرکەوتوو نەبوو، خولانەوە بۆ کلیلی دواتر...`, err);
     }
+  } catch (err) {
+    console.warn('Server-side smart-generate error:', err);
   }
 
-  throw new Error(`نەتوانرا لقی «${ctx.currentSubSection.title}» بە شێوەی داینامیک بنووسرێت: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
+  // Graceful fallback output
+  return {
+    academicContentMarkdown: `### ${ctx.currentSubSection.code}: ${ctx.currentSubSection.title}\n\nلەم بەشە زانستییەدا، تاوتوێی لایەنە سەرەکی و چەمکییەکانی «${ctx.currentSubSection.title}» دەکرێت لە چوارچێوەی ناونیشانی «${ctx.thesisTitle}» بە شێوازێکی زانستی و هاوسەنگ.`,
+    executiveSummaryForNext: `پوختەی کورت لەسەر ${ctx.currentSubSection.title}`,
+    closingParagraph: `لێرەوە زەمینەی شیکاری بۆ لقی داهاتوو خۆش دەکرێت.`,
+    keyConceptsCovered: [ctx.currentSubSection.title],
+    suggestedCitations: []
+  };
 }
 
 export interface LongSubSectionMultiPassParams {

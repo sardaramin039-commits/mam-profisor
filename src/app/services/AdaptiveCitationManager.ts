@@ -1,5 +1,6 @@
 // AdaptiveCitationManager.ts
 import { LEVEL_PROFILES, type AcademicLevel } from './LevelProfiles';
+import { CitationVerificationTrackerService } from './citation-verification-tracker.service';
 
 export interface SourceItem {
   id: string;
@@ -9,15 +10,37 @@ export interface SourceItem {
   publisherOrLocation: string;
   language: 'ku' | 'fa' | 'ar' | 'en';
   pageOrNote?: string;
+  verificationOrigin?: 'google_search_grounded' | 'user_verified_library' | 'primary_corpus';
 }
 
 export class AdaptiveCitationManager {
   private level: AcademicLevel;
   private sourcesMap: Map<string, SourceItem> = new Map();
   private footnoteCounter: number = 1;
+  private tracker?: CitationVerificationTrackerService;
 
-  constructor(level: AcademicLevel = 'phd') {
+  // لیستی وشە گوماناوی و ساختەکان بۆ ڕەتکردنەوەی سەرچاوەی نادروست
+  public readonly BANNED_FAKE_PATTERNS = [
+    'unknown',
+    'anonymous',
+    'n/a',
+    'example',
+    'placeholder',
+    ' نەناسراو',
+    'بێ ناو',
+    'سەرچاوەی گریمانەیی',
+    'کتێبی نموونە',
+    'فڵان',
+    'test author'
+  ];
+
+  constructor(level: AcademicLevel = 'phd', tracker?: CitationVerificationTrackerService) {
     this.level = level;
+    this.tracker = tracker;
+  }
+
+  public setTracker(tracker: CitationVerificationTrackerService): void {
+    this.tracker = tracker;
   }
 
   public setLevel(level: AcademicLevel): void {
@@ -46,6 +69,27 @@ export class AdaptiveCitationManager {
     return `${author.trim()}_${title.trim()}`.toLowerCase().replace(/\s+/g, '_');
   }
 
+  // پشکنینی ڕاستگۆیی سەرچاوەکە پێش تۆمارکردنی
+  public isAuthenticSource(src: SourceItem): { valid: boolean; pattern?: string; reason?: string } {
+    if (!src || !src.author || !src.title || !src.year) {
+      return { valid: false, reason: 'زانیارییە سەرەکییەکانی سەرچاوەکە بەتاڵن' };
+    }
+    const combined = `${src.author} ${src.title} ${src.publisherOrLocation || ''}`.toLowerCase();
+    for (const pattern of this.BANNED_FAKE_PATTERNS) {
+      if (combined.includes(pattern.trim().toLowerCase())) {
+        return { valid: false, pattern, reason: `دەستەواژەی قەدەغەکراوی (${pattern}) تێدایە` };
+      }
+    }
+    const cleanYear = src.year.replace(/[^\d٠-٩]/g, '');
+    if (cleanYear.length < 3) {
+      return { valid: false, reason: 'ساڵی چاپ ناتەواوە' };
+    }
+    if (src.author.trim().length < 3 || src.title.trim().length < 3) {
+      return { valid: false, reason: 'ناوی نووسەر یان ناونیشان ناتەواوە' };
+    }
+    return { valid: true };
+  }
+
   public registerAndFormatCitations(
     rawMarkdown: string,
     sources: SourceItem[]
@@ -54,7 +98,24 @@ export class AdaptiveCitationManager {
     let text = rawMarkdown;
     const localFootnotes: string[] = [];
 
-    for (const src of sources) {
+    for (const src of sources || []) {
+      const tagRegex = new RegExp(`\\{\\{CITE:${src.id}\\}\\}`, 'g');
+
+      // پشکنینی ڕاستگۆیی و نەبوونی وشەی قەدەغەکراو لە سەرچاوەکە
+      const authCheck = this.isAuthenticSource(src);
+      if (!authCheck.valid) {
+        // تۆمارکردنی ئاگاداری ڕەتکردنەوە لە سیستمەکە بۆ ئاگادارکردنەوەی بەکارهێنەر لە UI
+        if (this.tracker) {
+          this.tracker.recordRejection(
+            src,
+            authCheck.reason || 'سەرچاوەی ساختە یان نادروست ڕەتکرایەوە',
+            authCheck.pattern || 'banned_pattern'
+          );
+        }
+        text = text.replace(tagRegex, '');
+        continue;
+      }
+
       const key = this.makeKey(src.author, src.title);
       const existedBefore = this.sourcesMap.has(key);
 
@@ -62,22 +123,29 @@ export class AdaptiveCitationManager {
         this.sourcesMap.set(key, { ...src, id: key });
       }
 
-      const tagRegex = new RegExp(`\\{\\{CITE:${src.id}\\}\\}`, 'g');
+      let assignedFootnoteNum: string | undefined;
 
       if (mode === 'simple_list') {
-        // بۆ ئاستی قوتابخانە: ژمارەی پەراوێزی ئاڵۆز دانانرێت، تەنها لە کۆتایی ڕاپۆرتەکە سەرچاوەکان ڕیز دەکرێن
-        text = text.replace(tagRegex, '');
+        text = text.replace(tagRegex, ` (${src.author}، ${src.year})`);
       } else {
-        // بۆ زانکۆ، ماستەر و دکتۆرا: ژمارەی پەراوێزی زنجیرەیی دادەنرێت
         const fnNum = this.toKurdishNum(this.footnoteCounter++);
+        assignedFootnoteNum = fnNum;
         text = text.replace(tagRegex, `<sup>(${fnNum})</sup>`);
 
+        const pagePart = src.pageOrNote && src.pageOrNote !== '—' ? `، ل ${src.pageOrNote}` : '';
         const fnLine = existedBefore
-          ? `(${fnNum}) ${src.author}، *${src.title}*، (سەرچاوەی پێشوو)، ل ${src.pageOrNote || '—'}.`
-          : `(${fnNum}) ${src.author} (${src.year})، *${src.title}*، ${src.publisherOrLocation}، ل ${
-              src.pageOrNote || '—'
-            }.`;
+          ? `(${fnNum}) ${src.author}، *${src.title}*، (سەرچاوەی پێشوو)${pagePart}.`
+          : `(${fnNum}) ${src.author} (${src.year})، *${src.title}*، ${src.publisherOrLocation}${pagePart}.`;
         localFootnotes.push(fnLine);
+      }
+
+      // تۆمارکردنی سەرچاوەی پشتڕاستکراو لە ترێکەری سیستم بۆ شریتی پێشکەوتن و لیستی زیندوو
+      if (this.tracker) {
+        this.tracker.recordVerification({
+          ...src,
+          footnoteNum: assignedFootnoteNum,
+          verificationOrigin: src.verificationOrigin || 'google_search_grounded'
+        });
       }
     }
 
@@ -86,8 +154,13 @@ export class AdaptiveCitationManager {
 
     const footnotesBlock =
       localFootnotes.length > 0
-        ? `\n\n---\n**پەراوێزەکان:**\n` + localFootnotes.join('\n')
+        ? `\n\n---\n**پەراوێز و سەرچاوە پشتڕاستکراوەکان:**\n` + localFootnotes.join('\n')
         : '';
+
+    // نوێکردنەوەی دەقی شیکاریکراو لە ترێکەر بۆ هەژمارکردنی Quality Score
+    if (this.tracker) {
+      this.tracker.updateAnalyzedText(text);
+    }
 
     return { cleanMarkdown: text, footnotesBlock };
   }

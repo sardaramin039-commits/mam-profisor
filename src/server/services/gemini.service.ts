@@ -24,6 +24,8 @@ let geminiClientsPool: GoogleGenAI[] = [];
 let nextClientIndex = 0;
 
 export { getAutoEvolutionEngine };
+export { GeminiCoreEngine } from '../../lib/gemini/core-engine';
+export { LEVEL_PROFILES } from '../../lib/gemini/LevelProfiles';
 
 export function getGeminiClient(): GoogleGenAI {
   const keysEnv = process.env['GEMINI_API_KEY'];

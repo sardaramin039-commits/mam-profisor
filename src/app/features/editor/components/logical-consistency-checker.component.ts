@@ -2,7 +2,6 @@ import { Component, ChangeDetectionStrategy, signal, input } from '@angular/core
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { GoogleGenAI } from '@google/genai';
 
 export interface LogicalInconsistencyIssue {
   heading: string;

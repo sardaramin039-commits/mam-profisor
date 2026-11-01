@@ -29,86 +29,33 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
         <span>+ دەستپێکردنی تێزی نوێ (بەتاڵ)</span>
       </button>
 
-      <nav class="mam-nav" aria-label="هەنگاوەکانی پێڕەوی ئەکادیمی">
-        <p class="mam-nav-label">پێڕەوی ٥ هەنگاوی ئەکادیمی</p>
+      <nav class="mam-nav" aria-label="ناڤیگەیشنی ئەکادیمی">
+        <p class="mam-nav-label">بەشە سەرەکییەکان</p>
 
-        <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'advanced_research'"
-                (click)="selectTab.emit('advanced_research'); closeMobileNav()">
+        <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'editor'"
+                (click)="selectTab.emit('editor'); closeMobileNav()">
           <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">١</span>
-          <mat-icon class="!text-lg !w-4 !h-4">architecture</mat-icon>
-          <span><b>نەخشەسازیی توێژینەوە</b><small>Blueprint & Setup - ئامادەکاری و میتۆد</small></span>
+          <mat-icon class="!text-lg !w-4 !h-4">history_edu</mat-icon>
+          <span><b>نووسینی توێژینەوە</b><small>Thesis Editor & Outline</small></span>
         </button>
 
         <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'library'"
                 (click)="selectTab.emit('library'); closeMobileNav()">
           <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">٢</span>
           <mat-icon class="!text-lg !w-4 !h-4">auto_stories</mat-icon>
-          <span><b>کتێبخانە و سەرچاوەکان</b><small>Digital Library & Citations - بەڵگە و ژێدەر</small></span>
-        </button>
-
-        <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'editor'"
-                (click)="selectTab.emit('editor'); closeMobileNav()">
-          <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">٣</span>
-          <mat-icon class="!text-lg !w-4 !h-4">history_edu</mat-icon>
-          <span><b>نووسینگە و دەستنووس</b><small>Thesis Editor & Copilot - داڕشتنی بەشەکان</small></span>
-        </button>
-
-        <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'platform'"
-                (click)="selectTab.emit('platform'); closeMobileNav()">
-          <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">٤</span>
-          <mat-icon class="!text-lg !w-4 !h-4">fact_check</mat-icon>
-          <span><b>پشکنینی زانستی و زمانەوانی</b><small>Quality, Tone & Plagiarism Audit</small></span>
-        </button>
-
-        <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'suite'"
-                (click)="selectTab.emit('suite'); closeMobileNav()">
-          <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">٥</span>
-          <mat-icon class="!text-lg !w-4 !h-4">school</mat-icon>
-          <span><b>چاپ و بەرگریی تێز</b><small>Formatting, Export & Viva Defense</small></span>
+          <span><b>کتێبخانەی سەرچاوەکان</b><small>Digital Library & Citations</small></span>
         </button>
       </nav>
 
       <div class="mam-sidebar-bottom">
-        <button type="button" class="mam-sidebar-action" (click)="selectTab.emit('google_drive'); closeMobileNav()">
-          <mat-icon>cloud</mat-icon>
-          <span>هاوبەشی و فایل</span>
-        </button>
-
         <button type="button" class="mam-sidebar-action" (click)="toggleFocusMode.emit(); closeMobileNav()">
           <mat-icon>{{ isFocusMode() ? 'fullscreen_exit' : 'center_focus_strong' }}</mat-icon>
           <span>{{ isFocusMode() ? 'دەرچوون لە سەرنج' : 'دۆخی سەرنج (Focus Mode)' }}</span>
         </button>
 
-        <button type="button" class="mam-sidebar-action" (click)="openReadingMode.emit(); closeMobileNav()">
-          <mat-icon>menu_book</mat-icon>
-          <span>دۆخی خوێندنەوە</span>
-        </button>
-
-        <button type="button" class="mam-sidebar-action" (click)="openReputation.emit(); closeMobileNav()">
-          <mat-icon class="!text-amber-400">military_tech</mat-icon>
-          <span>سیستەمی ناوبانگ ({{ reputationService.score() }} خاڵ - {{ reputationService.tierLabel() }})</span>
-        </button>
-
         <button type="button" class="mam-sidebar-action" (click)="toggleDarkMode.emit()">
           <mat-icon>{{ academicDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
           <span>{{ academicDarkMode() ? 'ڕووناکی' : 'تاریکی' }}</span>
-        </button>
-
-        <button type="button" class="mam-sidebar-action" (click)="backupService.exportFullBackup()">
-          <mat-icon>download</mat-icon>
-          <span>داگرتنی فایلی پڕۆژە (.json)</span>
-        </button>
-
-        <button type="button" class="mam-sidebar-action" (click)="backupFileInput.click()">
-          <mat-icon>upload_file</mat-icon>
-          <span>گەڕاندنەوەی پڕۆژە</span>
-        </button>
-
-        <input type="file" #backupFileInput class="hidden" accept=".json" (change)="onBackupFileSelected($event)" />
-
-        <button type="button" class="mam-sidebar-action danger" (click)="clearEditor.emit(); closeMobileNav()">
-          <mat-icon>restart_alt</mat-icon>
-          <span>پاککردنەوەی پڕۆژە</span>
         </button>
 
         @if (currentUser()) {
@@ -141,68 +88,23 @@ type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_dr
           <mat-icon>{{ mobileNavOpen() ? 'close' : 'menu' }}</mat-icon>
         </button>
         <div class="mam-breadcrumb">
-          <span>ناوەندی مام پڕۆفیسۆر</span>
+          <span>مام پڕۆفیسۆر</span>
           <mat-icon>chevron_left</mat-icon>
           <strong>{{ tabLabel(mainTab()) }}</strong>
         </div>
       </div>
 
       <div class="mam-topbar-right">
-        <!-- New Blank Thesis Button -->
-        <button type="button" class="mam-top-action" (click)="newBlankThesis.emit()" title="دەستپێکردنی توێژینەوەیەکی نوێی بەتاڵ">
-          <mat-icon class="!text-amber-400">add_circle</mat-icon>
-          <span class="font-bold text-amber-200">+ دەستپێکردنی تێزی نوێ (بەتاڵ)</span>
-        </button>
-
-        <!-- Real API & Auto-Save Status Indicator -->
-        <div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 rounded-lg text-[11px] font-sans">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>پاشەکەوت کرا لە بیرگەدا • پەیوەستە بە ژیریی دەستکرد</span>
-        </div>
-
-        <div class="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 text-white rounded-full text-xs font-bold shadow-sm border border-amber-300/40">
-          <mat-icon class="!text-sm">workspace_premium</mat-icon>
-          <span>ئاستی پڕۆ • Pro Active</span>
-        </div>
-
-        <!-- User Reputation Badge & System -->
-        <button type="button" class="mam-top-action cursor-pointer hover:border-amber-400/50" (click)="openReputation.emit()" title="سیستەمی ناوبانگ و متمانەی ئەکادیمی">
-          <mat-icon class="!text-amber-400 !text-sm">military_tech</mat-icon>
-          <span class="text-xs font-bold text-amber-300">{{ reputationService.score() }} خاڵ</span>
-          <span class="text-[10px] bg-amber-950/80 text-amber-300 border border-amber-600/50 px-1.5 py-0.5 rounded font-mono">{{ reputationService.tierLabel() }}</span>
-        </button>
-
-        <!-- Dark Mode Toggle in Topbar -->
-        <button type="button" class="mam-top-action cursor-pointer" (click)="toggleDarkMode.emit()" [title]="academicDarkMode() ? 'گۆڕین بۆ دۆخی ڕووناک' : 'گۆڕین بۆ باری شاراوە (تاریک)'">
-          <mat-icon class="!text-amber-300">{{ academicDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
-          <span>{{ academicDarkMode() ? 'ڕووناک' : 'تاریک' }}</span>
-        </button>
-
-        <!-- 1-Click Backup / Restore Action Buttons in Topbar -->
-        <button type="button" class="mam-top-action" (click)="backupService.exportFullBackup()" title="داگرتنی هەموو داتاکانی تێز بە فایلی JSON">
-          <mat-icon>download</mat-icon>
-          <span>داگرتنی فایلی پڕۆژە (.json)</span>
-        </button>
-
-        <button type="button" class="mam-top-action" (click)="topbarFileInput.click()" title="گەڕاندنەوەی تێز لە فایلی JSON">
-          <mat-icon>upload_file</mat-icon>
-          <span>گەڕاندنەوەی پڕۆژە</span>
-        </button>
-        <input type="file" #topbarFileInput class="hidden" accept=".json" (change)="onBackupFileSelected($event)" />
-
-        <button type="button" class="mam-top-action" (click)="exportWordOrPdf.emit()" title="داگرتنی تێز بە فایلی Word یان PDF">
-          <mat-icon class="!text-emerald-400">description</mat-icon>
-          <span>داگرتنی فایلی Word / PDF</span>
-        </button>
-
+        <!-- Focus Mode Toggle -->
         <button type="button" class="mam-top-action" [class.primary]="isFocusMode()" (click)="toggleFocusMode.emit()" title="دۆخی سەرنج (Focus Mode) - نووسینی ئارام و بێ بەربەست">
           <mat-icon>{{ isFocusMode() ? 'fullscreen_exit' : 'center_focus_strong' }}</mat-icon>
           <span>{{ isFocusMode() ? 'دەرچوون لە سەرنج' : 'دۆخی سەرنج' }}</span>
         </button>
 
-        <button type="button" class="mam-top-action" (click)="openReadingMode.emit()" title="دۆخی خوێندنەوە">
-          <mat-icon>menu_book</mat-icon>
-          <span>خوێندنەوە</span>
+        <!-- Dark Mode Toggle -->
+        <button type="button" class="mam-top-action cursor-pointer" (click)="toggleDarkMode.emit()" [title]="academicDarkMode() ? 'گۆڕین بۆ دۆخی ڕووناک' : 'گۆڕین بۆ باری شاراوە (تاریک)'">
+          <mat-icon class="!text-amber-300">{{ academicDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          <span>{{ academicDarkMode() ? 'ڕووناک' : 'تاریک' }}</span>
         </button>
 
         @if (currentUser()) {

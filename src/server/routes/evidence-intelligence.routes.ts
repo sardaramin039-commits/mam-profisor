@@ -93,7 +93,7 @@ export function createEvidenceIntelligenceRouter(
         const enriched = enrichedSources[index];
         const report = verified.citationEligibleSources.find(source =>
           source.sourceId === chunk.sourceId &&
-          source.evidenceText === enriched?.evidenceText &&
+          source.evidenceText === (enriched as any)?.evidenceText &&
           source.evidenceType === 'full-text' &&
           source.evidenceProvenance === 'server-verified-fulltext' &&
           Boolean(source.evidenceText?.trim())

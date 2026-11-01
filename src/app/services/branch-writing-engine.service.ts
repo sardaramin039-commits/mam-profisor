@@ -1,4 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { AppNotificationsService } from '../core/app.notifications';
 import { EditorService } from '../features/editor/services/editor';
 import { GeminiRequestManagerService } from './gemini-request-manager.service';
@@ -23,6 +25,7 @@ export interface BranchWritingOptions {
   providedIn: 'root'
 })
 export class BranchWritingEngineService {
+  private http = inject(HttpClient);
   private notifications = inject(AppNotificationsService);
   private editorService = inject(EditorService);
   private requestManager = inject(GeminiRequestManagerService);
@@ -118,22 +121,65 @@ export class BranchWritingEngineService {
               };
             }
 
-            // 1. Send dedicated structured request with cognitive bridging
-            const subWriterResult = await this.subSectionWriter.writeAcademicSubSection({
-              thesisTitle: title,
-              degreeLevel: level === 'دکتۆرا' ? 'دکتۆرا' : 'ماستەر',
-              methodologySummary: options.refineFormValue?.methodology || discipline,
-              chapterTitle: chapter.title,
-              sectionTitle: `${axis.code}: ${axis.title}`,
-              currentSubSection: {
-                code: branch.code,
-                title: branch.title,
-                targetWords: targetWords
-              },
-              previousSubSection: lastSubSectionInfo,
-              nextSubSection: nextSubSection,
-              customInstructions: options.refineFormValue?.customInstructions
-            });
+            // 1. Send dedicated structured request to calibrated Gemini write-subsection engine
+            let subWriterResult: any = null;
+            try {
+              const normLevel = (level.includes('دکتۆرا') || level.toLowerCase().includes('phd'))
+                ? 'phd'
+                : (level.includes('بەکالۆریۆس') || level.toLowerCase().includes('bachelor'))
+                ? 'bachelor'
+                : (level.includes('قوتابخانە') || level.toLowerCase().includes('school'))
+                ? 'school'
+                : 'master';
+
+              const apiRes = await firstValueFrom(
+                this.http.post<{ success: boolean; result: any; bibliography?: string }>('/api/gemini/write-subsection', {
+                  thesisTitle: title,
+                  level: normLevel,
+                  discipline,
+                  chapterTitle: chapter.title,
+                  sectionTitle: `${axis.code}: ${axis.title}`,
+                  subSection: {
+                    code: branch.code,
+                    title: branch.title,
+                    targetWords: targetWords,
+                    microTopicsToCover: [branch.title],
+                    transitionFromPreviousGoal: lastSubSectionInfo?.title ? `گرێدان بە ${lastSubSectionInfo.title}` : '',
+                    transitionToNextGoal: nextSubSection?.title ? `ڕادەستکردن بە ${nextSubSection.title}` : ''
+                  },
+                  previousClosingParagraph: lastSubSectionInfo?.lastParagraph || ''
+                })
+              );
+
+              if (apiRes?.success && apiRes.result?.fullSubSectionMarkdown) {
+                subWriterResult = {
+                  academicContentMarkdown: apiRes.result.fullSubSectionMarkdown,
+                  closingParagraph: apiRes.result.lastParagraph,
+                  executiveSummaryForNext: (apiRes.result.keyFindings || []).join(' | '),
+                  suggestedCitations: []
+                };
+              }
+            } catch (apiErr) {
+              console.warn('write-subsection API call notice, falling back to local writer:', apiErr);
+            }
+
+            if (!subWriterResult) {
+              subWriterResult = await this.subSectionWriter.writeAcademicSubSection({
+                thesisTitle: title,
+                degreeLevel: level === 'دکتۆرا' ? 'دکتۆرا' : 'ماستەر',
+                methodologySummary: options.refineFormValue?.methodology || discipline,
+                chapterTitle: chapter.title,
+                sectionTitle: `${axis.code}: ${axis.title}`,
+                currentSubSection: {
+                  code: branch.code,
+                  title: branch.title,
+                  targetWords: targetWords
+                },
+                previousSubSection: lastSubSectionInfo,
+                nextSubSection: nextSubSection,
+                customInstructions: options.refineFormValue?.customInstructions
+              });
+            }
 
             let branchContent = (subWriterResult.academicContentMarkdown || '').trim();
             let words = countKurdishWords(branchContent);

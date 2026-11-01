@@ -112,7 +112,13 @@ export abstract class AppControllerActions extends AppControllerBase {
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
     if (this.viewedChapter()) {
       this.updateChapterContent(this.viewedChapter()!.id, textarea.value);
+    } else if (this.activeChapter()) {
+      this.updateChapterContent(this.activeChapter()!.id, textarea.value);
     }
+  }
+
+  selectChapter(id: number) {
+    this.editorService.activeChapterId.set(id);
   }
 
   getKurdishNumberStr(index: number): string {
@@ -161,8 +167,8 @@ export abstract class AppControllerActions extends AppControllerBase {
     this.isNewBlankThesisModalOpen.set(false);
   }
 
-  createNewBlankThesis(customTitle = 'تێزی ئەکادیمی نوێ', level: 'bachelor' | 'master' | 'phd' = 'master', structure: 'humanities' | 'empirical' = 'humanities'): void {
-    const pages = level === 'phd' ? 80 : (level === 'master' ? 40 : 15);
+  createNewBlankThesis(customTitle = 'تێزی ئەکادیمی نوێ', level: 'school' | 'bachelor' | 'master' | 'phd' = 'master', structure: 'humanities' | 'empirical' = 'humanities'): void {
+    const pages = level === 'phd' ? 250 : level === 'master' ? 120 : level === 'bachelor' ? 40 : 8;
     const blankOutline = buildAcademicThesisOutline({
       title: customTitle,
       academicLevel: level,
@@ -272,11 +278,11 @@ export abstract class AppControllerActions extends AppControllerBase {
     const val = (event.target as HTMLTextAreaElement)?.value || '';
     if (val.trim().length > 3) {
       this.bridge.isQuickPreviewVisible.set(true);
-      this.bridge.quickPreviewSuggestions.set([
-        { author: 'ئەمین، سەردار', title: 'فەلسەفەی زمان و گوتاری کوردی', year: 2024, publisher: 'چاپخانەی زانکۆ' },
-        { author: 'مستەفا، کەمال', title: 'میتۆدۆلۆژیای توێژینەوەی ئەکادیمی', year: 2023, publisher: 'سلێمانی' },
-        { author: 'حەمە، د. ڕەئوف', title: 'زانستی مێژوو و ناسینناسی', year: 2022, publisher: 'هەولێر' }
-      ]);
+      const term = val.toLowerCase();
+      const matched = (this.academicStoreService.sources() || [])
+        .filter(s => (s.title && s.title.toLowerCase().includes(term)) || (s.author && s.author.toLowerCase().includes(term)))
+        .slice(0, 10);
+      this.bridge.quickPreviewSuggestions.set(matched);
     } else {
       this.bridge.isQuickPreviewVisible.set(false);
     }
@@ -399,6 +405,11 @@ export abstract class AppControllerActions extends AppControllerBase {
     }
     this.activeSubTab.set('editor');
     this.toastService.showSuccess('پێکهاتەی بەشەکان ڕێکخرا', `بە سەرکەوتوویی ${newChapters.length} بەشی ئەکادیمی بۆ ناونیشانی «${title}» لە پەنجەرەی دووەم جێگیرکران.`);
+
+    if (!val.customTOCOn) {
+      this.aiGenerateStructure();
+    }
+
     // Scroll window 2 into view gracefully
     if (typeof window !== 'undefined') {
       const w2 = document.getElementById('window-2-section');

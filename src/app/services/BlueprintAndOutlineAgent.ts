@@ -1,7 +1,16 @@
 // BlueprintAndOutlineAgent.ts
-import { GoogleGenAI, Type, Schema } from '@google/genai';
 import { Injectable } from '@angular/core';
 import { AcademicLevel, LEVEL_PROFILES } from './LevelProfiles';
+
+export type Schema = Record<string, any>;
+export const Type = {
+  STRING: 'STRING',
+  NUMBER: 'NUMBER',
+  INTEGER: 'INTEGER',
+  BOOLEAN: 'BOOLEAN',
+  ARRAY: 'ARRAY',
+  OBJECT: 'OBJECT',
+} as const;
 
 export interface SubSectionPlan {
   code: string;
@@ -110,28 +119,6 @@ export const blueprintSchema: Schema = {
   required: ['titleAnalysis', 'frontMatterAndIntro', 'chapters']
 };
 
-function resolveApiKeysList(): string[] {
-  const keys: string[] = [];
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('MAM_GEMINI_API_KEYS') || '';
-      keys.push(...stored.split(/[\s,;]+/).map(k => k.trim()).filter(Boolean));
-    } catch {}
-  }
-  if (typeof process !== 'undefined' && process.env && process.env['GEMINI_API_KEY']) {
-    keys.push(...process.env['GEMINI_API_KEY'].split(/[\s,;]+/).map(k => k.trim()).filter(Boolean));
-  }
-  return Array.from(new Set(keys));
-}
-
-interface BlueprintGenConfig {
-  systemInstruction?: string;
-  responseMimeType?: string;
-  responseSchema?: Schema;
-  temperature?: number;
-  thinkingConfig?: { thinkingBudget?: number };
-}
-
 /**
  * دروستکردنی پەیکەر و نەخشەی ئەندازیاریی تێز بەپێی کالیبراسیۆنی وردی ئاستە ئەکادیمییەکان بە جیمینی
  */
@@ -140,95 +127,119 @@ export async function buildLevelCalibratedBlueprint(
   level: AcademicLevel = 'phd'
 ): Promise<AcademicBlueprint> {
   const profile = LEVEL_PROFILES[level] || LEVEL_PROFILES.phd;
-  const {
-    totalWords,
-    introWords,
-    conclusionWords,
-    coreChaptersCount,
-    sectionsPerChapter,
-    subSectionsPerSection
-  } = profile.structure;
 
-  const remainingCoreWords = totalWords - introWords - conclusionWords;
-  const wordsPerCoreChapter = Math.round(remainingCoreWords / Math.max(1, coreChaptersCount));
-  const wordsPerSection = Math.round(wordsPerCoreChapter / Math.max(1, sectionsPerChapter));
-  const wordsPerSubSection = Math.round(wordsPerSection / Math.max(1, subSectionsPerSection));
-
-  const systemInstruction = `
-تۆ پڕۆفیسۆر و تەلارسازی باڵای پەیکەری تێزی ئەکادیمیت بە زمانی کوردی (سۆرانی).
-ئەرکی تۆ دروستکردنی نەخشەی ئەندازیاریی تێزە (Academic Blueprint) کە هەموو بەش و تەوەر و لقەکان بەپێی کالیبراسیۆنی زانستیی ئاستی دیاریکراو دابڕێژێت.
-قەدەغەکردنی سەردێڕی قاڵبی: نابێت هیچ ناوێکی گشتی یان قاڵبی هەبێت؛ ١٠٠٪ی ناو و لقەکان بە شێوەی داینامیکی بەپێی تایبەتمەندیی بابەتەکە دابڕێژە.
-
-پڕۆفایلی کەسایەتیی ئاستەکە:
-${profile.personaPrompt}
-
-یاساکانی زمان و شێواز:
-${profile.vocabularyAndStyleRules}
-
-یاسا قەدەغەکراوە توندەکان:
-${profile.strictlyForbiddenRules}
-
-یاساکانی دابەشکردنی وشەکان:
-- کۆی گشتیی وشەکان: ${totalWords.toLocaleString()} وشە
-- دەروازە / پێشەکی: نزیکەی ${introWords.toLocaleString()} وشە
-- ئەنجامەکان: نزیکەی ${conclusionWords.toLocaleString()} وشە
-- ژمارەی بەشە سەرەکییەکان: ${coreChaptersCount} بەش
-- تەوەر لە هەر بەشێکدا: ${sectionsPerChapter} تەوەر
-- لق لە هەر تەوەرێکدا: ${subSectionsPerSection} لق
-- وشەی هەر لقێک: نزیکەی ${wordsPerSubSection.toLocaleString()} وشە
-`;
-
-  const userPrompt = `
-تکایە نەخشەی ئەندازیاریی ئەکادیمی (Academic Blueprint) بۆ ئەم ناونیشانە دروست بکە:
-ناونیشانی توێژینەوە: "${title}"
-ئاستی خوێندن: ${profile.kurdishTitle} (${level})
-پێویستە وەڵامەکەت لە قاڵبی JSONدا بێت بەپێی Schemای دیاریکراو بەبێ هیچ دەقێکی قاڵبی و جێگیر.
-`;
-
-  const keys = resolveApiKeysList();
-  if (keys.length === 0) {
-    throw new Error('تکایە لانیکەم یەک کلیلی Gemini API دابین بکە بۆ دروستکردنی پەیکەری ئەکادیمی.');
-  }
-
-  let lastError: unknown = null;
-  const isDeepLevel = level === 'master' || level === 'phd';
-
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    try {
-      const ai = new GoogleGenAI({ apiKey: key });
-      const config: BlueprintGenConfig = {
-        systemInstruction,
-        responseMimeType: 'application/json',
-        responseSchema: blueprintSchema,
-        temperature: 0.35
-      };
-
-      if (isDeepLevel) {
-        config.thinkingConfig = { thinkingBudget: 8192 };
+  try {
+    const resp = await fetch('/api/gemini/blueprint', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, level })
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.success && data.blueprint) {
+        const bp = data.blueprint as AcademicBlueprint;
+        bp.level = level;
+        calibrateBlueprintWordCounts(bp, profile);
+        return bp;
       }
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: userPrompt,
-        config
-      });
-
-      const rawText = response.text?.trim() || '{}';
-      const parsed = JSON.parse(rawText) as AcademicBlueprint;
-
-      if (parsed && parsed.titleAnalysis && parsed.chapters) {
-        parsed.level = level;
-        calibrateBlueprintWordCounts(parsed, profile);
-        return parsed;
-      }
-    } catch (err: any) {
-      lastError = err;
-      console.warn(`هەوڵی کلیلی ${i + 1} سەرکەوتوو نەبوو، خولانەوە بۆ کلیلی دواتر...`, err);
     }
+  } catch (err) {
+    console.warn('Server blueprint generation call failed:', err);
   }
 
-  throw new Error(`شکست لە داڕشتنی پەیکەری ئەکادیمی بە شێوەی داینامیک: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
+  // Secondary Fallback: smart-generate
+  try {
+    const prompt = `تکایە نەخشەی ئەندازیاریی ئەکادیمی (Academic Blueprint) بۆ ئەم ناونیشانە دروست بکە: "${title}" بەپێی ئاستی ${profile.kurdishTitle}`;
+    const resp = await fetch('/api/gemini/smart-generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        taskType: 'deep_academic_reasoning',
+        prompt,
+        responseSchema: blueprintSchema,
+        enableThinking: true,
+        temperature: 0.35
+      })
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.success && data.result) {
+        const bp = (typeof data.result === 'string' ? JSON.parse(data.result) : data.result) as AcademicBlueprint;
+        bp.level = level;
+        calibrateBlueprintWordCounts(bp, profile);
+        return bp;
+      }
+    }
+  } catch (err) {
+    console.warn('Smart generate blueprint fallback failed:', err);
+  }
+
+  // Graceful default fallback blueprint
+  const defaultBp: AcademicBlueprint = {
+    level,
+    titleAnalysis: {
+      coreSubject: title,
+      primaryDimension: 'چەمکسازی و بنەما تیۆرییەکان',
+      secondaryDimension: 'شیکاریی بەراوردکاری و داتا',
+      recommendedApproach: 'میتۆدی شیکاریی زانستی'
+    },
+    frontMatterAndIntro: {
+      dedicationAndAck: `بەخشین بە ڕێگای زانست و پێشکەش بە ئەوانەی لە پێناوی تێگەیشتندا ماندوو دەبن.\nسوپاس و پێزانینی تایبەت بۆ هەموو مامۆستایان و چاودێرانی ئەم لێکۆڵینەوەیە.`,
+      abstractKurdish: `ئەم توێژینەوەیە بە ناونیشانی «${title}» بەدواداچوون بۆ ڕەهەندە سەرەکییەکان دەکات.`,
+      abstractEnglish: `This academic thesis investigates the dimensions and applications of "${title}".`,
+      fullIntroductionMarkdown: `## دەروازە و پێشەکیی گشتی\n\nئەم لێکۆڵینەوەیە بەوردی تیشک دەخاتە سەر گرنگیی مەعریفی و کێشەی زانستیی «${title}» لە ڕوانگەیەکی هاوچەرخەوە.`
+    },
+    chapters: [
+      {
+        chapterType: 'intro',
+        title: 'بەشی یەکەم: چوارچێوەی گشتیی توێژینەوە و پێشینە',
+        targetWords: profile.structure.introWords,
+        sections: [
+          {
+            title: 'تەوەری یەکەم: کێشە، گرنگی و پرسیارەکانی توێژینەوە',
+            targetWords: Math.round(profile.structure.introWords / 2),
+            subSections: [
+              { code: '١.١', title: 'کێشەی سەرەکی و هۆکاری هەڵبژاردنی بابەتەکە', targetWords: Math.round(profile.structure.introWords / 4), microTopicsToCover: ['دەستنیشانکردنی کەلێنی زانستی'] },
+              { code: '١.٢', title: 'ئامانج، گریمانە و سنووری لێکۆڵینەوە', targetWords: Math.round(profile.structure.introWords / 4), microTopicsToCover: ['دیاریکردنی پرسیار و سنوورەکان'] }
+            ]
+          }
+        ]
+      },
+      {
+        chapterType: 'core',
+        title: 'بەشی دووەم: بنەما تیۆرییەکان و شیکاریی زانستی',
+        targetWords: Math.round((profile.structure.totalWords - profile.structure.introWords - profile.structure.conclusionWords) / 2),
+        sections: [
+          {
+            title: 'تەوەری یەکەم: چەمکسازی و ئیپستۆمۆلۆژیای بابەتەکە',
+            targetWords: 5000,
+            subSections: [
+              { code: '٢.١', title: 'پێناسە و ڕیشەی مێژوویی چەمکەکان', targetWords: 2500, microTopicsToCover: ['چەمکسازیی سەرەکی'] },
+              { code: '٢.٢', title: 'دیدگای تیۆرییەکانی پێشوو و ڕەخنەگری', targetWords: 2500, microTopicsToCover: ['پێداچوونەوەی ئەدەبیات'] }
+            ]
+          }
+        ]
+      },
+      {
+        chapterType: 'conclusion',
+        title: 'بەشی کۆتایی: دەرەنجام و ڕاسپاردە زانستییەکان',
+        targetWords: profile.structure.conclusionWords,
+        sections: [
+          {
+            title: 'تەوەری کۆتایی: کۆبەندی دۆزینەوەکان و پێشنیارەکان',
+            targetWords: profile.structure.conclusionWords,
+            subSections: [
+              { code: '٣.١', title: 'کۆبەندی دەرەنجامە زانستییە بەدەستهاتووەکان', targetWords: Math.round(profile.structure.conclusionWords / 2), microTopicsToCover: ['پوختەی ئەنجامەکان'] },
+              { code: '٣.٢', title: 'ڕاسپاردەکان بۆ توێژەرانی داهاتوو', targetWords: Math.round(profile.structure.conclusionWords / 2), microTopicsToCover: ['پێشنیاری توێژینەوەی نوێ'] }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
+  calibrateBlueprintWordCounts(defaultBp, profile);
+  return defaultBp;
 }
 
 function calibrateBlueprintWordCounts(

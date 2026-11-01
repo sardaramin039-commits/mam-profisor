@@ -40,6 +40,8 @@ export abstract class AppTemplateSectionBase extends AppControllerActions {
   override exportWordOrPdf() { if (this.host) this.host.exportWordOrPdf(); else super.exportWordOrPdf(); }
   override backupProject(): void { if (this.host) this.host.backupProject(); else super.backupProject(); }
   override onBackupFileSelected(event: Event): Promise<void> { return this.host ? this.host.onBackupFileSelected(event) : super.onBackupFileSelected(event); }
+  openReadingMode(): void { if (this.host) this.host.isReadingModeOpen.set(true); else this.isReadingModeOpen.set(true); }
+  closeReadingMode(): void { if (this.host) this.host.isReadingModeOpen.set(false); else this.isReadingModeOpen.set(false); }
 
   constructor() {
     super();
@@ -52,7 +54,13 @@ export abstract class AppTemplateSectionBase extends AppControllerActions {
         const host = target._host;
         if (host && property in host) {
           const value = (host as unknown as Record<PropertyKey, unknown>)[property];
-          return typeof value === 'function' ? value.bind(host) : value;
+          if (typeof value === 'function') {
+            if ('set' in value || 'update' in value || 'asReadonly' in value) {
+              return value;
+            }
+            return value.bind(host);
+          }
+          return value;
         }
         return Reflect.get(target, property, receiver);
       },

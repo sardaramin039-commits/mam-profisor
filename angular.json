@@ -24,6 +24,8 @@
             "index": "src/index.html",
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
+            "sourceMap": false,
+            "optimization": false,
             "assets": [
               {
                 "glob": "**/*",
@@ -45,7 +47,9 @@
               "express",
               "dotenv",
               "axios",
-              "zod"
+              "zod",
+              "@google/genai",
+              "ws"
             ]
           },
           "configurations": {
@@ -62,16 +66,9 @@
                   "maximumError": "20MB"
                 }
               ],
-              "outputHashing": "all",
+              "outputHashing": "none",
               "sourceMap": false,
-              "optimization": {
-                "scripts": true,
-                "styles": {
-                  "minify": true,
-                  "inlineCritical": false
-                },
-                "fonts": false
-              }
+              "optimization": false
             },
             "development": {
               "optimization": false,
@@ -84,7 +81,9 @@
                 "express",
                 "dotenv",
                 "axios",
-                "zod"
+                "zod",
+                "@google/genai",
+                "ws"
               ]
             }
           },

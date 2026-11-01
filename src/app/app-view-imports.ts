@@ -51,10 +51,14 @@ import { AcademicQualityCenterComponent } from './features/academic-quality-cent
 import { EditorAutoSaveStatusComponent } from './features/editor/components/editor-auto-save-status.component';
 import { StrictWordCountWidgetComponent } from './features/editor/components/strict-word-count-widget.component';
 import { UserReputationModalComponent } from './features/user-reputation/user-reputation-modal.component';
+import { AcademicReadingModeComponent } from './features/editor/components/academic-reading-mode.component';
+import { CitationIntegrityMonitorComponent } from './features/citation-manager/components/citation-integrity-monitor.component';
 
 export const BASIC_VIEW_IMPORTS = [
   CommonModule,
   MatIconModule,
+  AcademicReadingModeComponent,
+  CitationIntegrityMonitorComponent,
 ] as const;
 
 export const FORM_VIEW_IMPORTS = [
@@ -108,6 +112,7 @@ export const WORKSPACE_FEATURE_IMPORTS = [
   AcademicQualityCenterComponent,
   StrictWordCountWidgetComponent,
   UserReputationModalComponent,
+  CitationIntegrityMonitorComponent,
 ] as const;
 
 /** Legacy aggregate kept for compatibility with feature code outside template sections. */
@@ -167,4 +172,5 @@ export const APP_VIEW_IMPORTS = [
   EditorAutoSaveStatusComponent,
   StrictWordCountWidgetComponent,
   UserReputationModalComponent,
+  CitationIntegrityMonitorComponent,
 ];
