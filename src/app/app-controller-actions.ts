@@ -479,7 +479,17 @@ export abstract class AppControllerActions extends AppControllerBase {
   renameBranch(chapterId: number, axisId: string, branchId: string, title?: string) { this.manuscriptBridgeActions.renameBranch(this.chapters, chapterId, axisId, branchId, title); }
   deleteBranch(chapterId: number, axisId: string, branchId: string) { this.manuscriptBridgeActions.deleteBranch(this.chapters, chapterId, axisId, branchId); }
   aiGenerateStructure() { this.manuscriptBridgeActions.aiGenerateStructure(this.chapters, this.refineForm?.value); }
-  writeSingleBranch(chapterId: number, _axisId: string, _branchId: string) { this.bridge.writeSingleChapter(chapterId); }
+  writeSingleBranch(chapterId: number, axisId: string, branchId: string) {
+    this.bridge.branchEngine.executeBranchByBranchWriting(this.chapters(), {
+      targetChapterId: chapterId,
+      targetBranchId: branchId,
+      manuscriptTitle: this.manuscriptTitle(),
+      academicLevel: this.refineForm?.get('academicLevel')?.value || 'ماستەر',
+      discipline: this.refineForm?.get('discipline')?.value || 'humanities',
+      refineFormValue: this.refineForm?.value,
+      chaptersSignal: this.chapters
+    });
+  }
 
   applySoranispellFixInViewedChapter() { this.bridge.applySoranispellFixInViewedChapter(); }
   encryptChapterInVault(c: any, pwd: any) { this.bridge.encryptChapterInVault(c, pwd); } decryptChapterInVault(c: any, pwd: any) { this.bridge.decryptChapterInVault(c, pwd); }

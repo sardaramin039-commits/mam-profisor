@@ -10,7 +10,7 @@
   "type": "module",
   "scripts": {
     "ng": "node ./node_modules/@angular/cli/bin/ng.js",
-    "dev": "node --max-old-space-size=768 ./node_modules/@angular/cli/bin/ng.js serve",
+    "dev": "node ./node_modules/@angular/cli/bin/ng.js serve",
     "start": "node dist/app/server/server.mjs",
     "build": "tsc --noEmit -p tsconfig.app.json",
     "build:ng": "node ./node_modules/@angular/cli/bin/ng.js build --optimization=false --source-map=false",

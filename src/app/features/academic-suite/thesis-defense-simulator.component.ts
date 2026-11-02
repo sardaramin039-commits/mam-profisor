@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { AppNotificationsService } from '../../core/app.notifications';
 import { ChapterItemModel as ChapterItem } from '../../domain/models';
+import { GeminiSseStreamService } from '../../services/gemini-sse.service';
 
 export interface DefenseQuestion {
   id: string;
@@ -200,8 +201,29 @@ const INITIAL_COMMITTEE_FEEDBACK: CommitteeMemberFeedback[] = [
                       }
                     </div>
                   </div>
-                  <div class="pt-2 flex items-center justify-between border-t border-purple-900/30">
-                    <span class="text-[10px] text-slate-400">ئایا ئامادەیت بۆ وەڵامدانەوە؟</span>
+                  <div class="pt-2 flex items-center justify-between border-t border-purple-900/30 flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        (click)="toggleRecordVivaAnswer(q)"
+                        [disabled]="isEvaluatingViva() && recordingQuestionId() !== q.id"
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-1.5 shadow-md"
+                        [ngClass]="{
+                          'bg-rose-600 text-white hover:bg-rose-500 animate-pulse': recordingQuestionId() === q.id,
+                          'bg-indigo-600 hover:bg-indigo-500 text-white': recordingQuestionId() !== q.id
+                        }">
+                        <mat-icon class="!text-xs !w-4 !h-4">{{ recordingQuestionId() === q.id ? 'stop' : 'mic' }}</mat-icon>
+                        <span>{{ recordingQuestionId() === q.id ? 'ڕاگرتن و هەڵسەنگاندن' : 'وەڵامدانەوە بە دەنگ (Gemini Viva Audio)' }}</span>
+                      </button>
+
+                      @if (recordingQuestionId() === q.id && isEvaluatingViva()) {
+                        <span class="text-[10px] text-amber-300 font-serif flex items-center gap-1 animate-pulse">
+                          <mat-icon class="!text-[12px] animate-spin">autorenew</mat-icon>
+                          لێژنە گوێ لە وەڵامە دەنگییەکەت دەگرێت...
+                        </span>
+                      }
+                    </div>
+
                     <button type="button" (click)="markAnswered(q.id)" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold cursor-pointer transition">
                       وەڵامەکەم ئامادە کرد
                     </button>
@@ -264,12 +286,19 @@ const INITIAL_COMMITTEE_FEEDBACK: CommitteeMemberFeedback[] = [
 export class ThesisDefenseSimulatorComponent {
   chapters = input<ChapterItem[]>([]);
   private notifications = inject(AppNotificationsService);
+  private geminiSse = inject(GeminiSseStreamService);
 
   activeView = signal<'questions' | 'committee'>('questions');
   questions = signal<DefenseQuestion[]>(DEFAULT_DEFENSE_QUESTIONS);
   expandedId = signal<string | null>('q-1');
   answeredIds = signal<Set<string>>(new Set());
   committeeFeedback = signal<CommitteeMemberFeedback[]>(INITIAL_COMMITTEE_FEEDBACK);
+
+  recordingQuestionId = signal<string | null>(null);
+  isEvaluatingViva = signal<boolean>(false);
+
+  private mediaRecorder: MediaRecorder | null = null;
+  private audioChunks: Blob[] = [];
 
   answeredCount = computed(() => this.answeredIds().size);
   readinessScore = computed(() => {
@@ -287,6 +316,115 @@ export class ThesisDefenseSimulatorComponent {
     next.add(id);
     this.answeredIds.set(next);
     this.notifications.showSuccess('تەواو کرا', 'وەڵامەکە وەک ئامادەکراو تۆمار کرا.');
+  }
+
+  async toggleRecordVivaAnswer(q: DefenseQuestion): Promise<void> {
+    if (this.recordingQuestionId() === q.id) {
+      await this.stopRecordingViva(q);
+    } else {
+      await this.startRecordingViva(q);
+    }
+  }
+
+  private async startRecordingViva(q: DefenseQuestion): Promise<void> {
+    if (typeof window === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      this.notifications.showError('مایکرۆفۆن', 'مایکرۆفۆن لەم وێبگەڕەدا پشتگیری ناکرێت.');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.audioChunks = [];
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+
+      this.mediaRecorder = new MediaRecorder(stream, { mimeType });
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) this.audioChunks.push(event.data);
+      };
+
+      this.mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(this.audioChunks, { type: mimeType });
+        stream.getTracks().forEach((track) => track.stop());
+        await this.evaluateSpokenViva(audioBlob, mimeType, q);
+      };
+
+      this.mediaRecorder.start();
+      this.recordingQuestionId.set(q.id);
+      this.notifications.showSuccess('تۆمارکردنی دەنگ', 'تۆمارکردنی دەنگی وەڵامەکەت دەستی پێکرد. بە کوردی وەڵام بدەرەوە...');
+    } catch (err: any) {
+      console.error('Viva mic error:', err);
+      this.recordingQuestionId.set(null);
+      this.notifications.showError('هەڵەی مایکرۆفۆن', 'دەستگەیشتن بە مایکرۆفۆن ڕەتکرایەوە.');
+    }
+  }
+
+  private async stopRecordingViva(_q: DefenseQuestion): Promise<void> {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.recordingQuestionId.set(null);
+  }
+
+  private async evaluateSpokenViva(audioBlob: Blob, mimeType: string, q: DefenseQuestion): Promise<void> {
+    this.isEvaluatingViva.set(true);
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          const base64 = res.split(',')[1] || '';
+          resolve(base64);
+        };
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(audioBlob);
+      const audioBase64 = await base64Promise;
+
+      this.geminiSse.evaluateVivaSpokenAnswer({
+        audioBase64,
+        mimeType,
+        questionText: q.questionKurdish,
+        examinerRole: q.roleTitleKurdish,
+        scoringCriteria: q.scoringCriteria
+      }).subscribe({
+        next: (res) => {
+          this.isEvaluatingViva.set(false);
+          if (res.success && res.evaluation) {
+            const ev = res.evaluation;
+            this.markAnswered(q.id);
+
+            // Add or update committee member feedback based on spoken viva
+            const newFeedback: CommitteeMemberFeedback = {
+              name: q.roleTitleKurdish,
+              role: 'هەڵسەنگاندنی ڕاستەوخۆی دەنگی (Spoken Viva Evaluation)',
+              avatar: '🎙️',
+              grade: ev.grade || 90,
+              decisionStatus: (ev.decisionStatus as any) || 'پەسەندکرا بە ئەنجامی نایاب',
+              gradientBg: 'bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950',
+              feedbackText: ev.critique || 'وەڵامە دەنگییەکەت بە سەرکەوتوویی لەلایەن لێژنەوە تاوتوێ کرا.',
+              recommendations: ev.recommendations || []
+            };
+
+            this.committeeFeedback.update((prev) => [newFeedback, ...prev]);
+            this.activeView.set('committee');
+            this.notifications.showSuccess(
+              'وەڵامەکەت هەڵسەنگێندرا',
+              `نمرە: ${ev.grade}/100 — بڕیار: ${ev.decisionStatus}`
+            );
+          }
+        },
+        error: (err) => {
+          this.isEvaluatingViva.set(false);
+          console.error('Audio viva evaluation error:', err);
+          this.notifications.showError('هەڵەی هەڵسەنگاندن', 'پشکنینی دەنگیی لێژنە سەرکەوتوو نەبوو.');
+        }
+      });
+    } catch (err) {
+      this.isEvaluatingViva.set(false);
+      console.error('Error in evaluateSpokenViva:', err);
+    }
   }
 
   generateCustomQuestion() {

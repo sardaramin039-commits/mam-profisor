@@ -91,10 +91,10 @@ export async function writeCalibratedSubSection(params: {
     console.warn('Server write-subsection proxy call failed, falling back:', err);
   }
 
-  // Fallback
+  // Fallback - return empty content rather than repeated dummy placeholder
   return {
-    fullSubSectionMarkdown: `### ${params.subSection.code} ${params.subSection.title}\n\nلەم بەشە زانستییەدا، تاوتوێی لایەنە سەرەکییەکان و پەیوەندییەکانی «${params.subSection.title}» دەکرێت لە چوارچێوەی بەشی «${params.chapterTitle}» و ناونیشانی سەرەکیی توێژینەوەکە.`,
-    lastParagraph: `بە لێکدانەوەی ئەم خاڵانە دەگەینە دەرئەنجامی سەرەتایی بۆ بەستنەوە بە لقی دواتر.`,
+    fullSubSectionMarkdown: '',
+    lastParagraph: '',
     keyFindings: [params.subSection.title]
   };
 }

@@ -26,10 +26,10 @@
         </button>
 
         <!-- 3. داگرتن بە Word / PDF -->
-        <button type="button" (click)="exportWordOrPdf()" [disabled]="isExportingWord() || !chapters().length" class="mam-dock-btn mam-dock-save" title="داگرتنی تێز بە فایلی فەرمیی Word یان PDF">
-          @if (isExportingWord()) {
+        <button type="button" (click)="exportWordOrPdf()" [disabled]="liveProgress.isBusy() || !chapters().length" class="mam-dock-btn mam-dock-save disabled:opacity-50 disabled:cursor-not-allowed" title="داگرتنی تێز بە فایلی فەرمیی Word یان PDF">
+          @if (liveProgress.activeActionKey() === 'export' || isExportingWord()) {
             <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            <span>خەریکی داگرتنە...</span>
+            <span>خەریکی کارکردنە...</span>
           } @else {
             <mat-icon class="!text-sm !w-4 !h-4">cloud_download</mat-icon>
             <span>داگرتن بە Word / PDF</span>

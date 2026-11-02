@@ -107,9 +107,18 @@ const blueprintSchema: Schema = {
           type: Type.STRING,
           description: "دەقی تەواوی سوپاس و پێزانین بە جیاکراوەیی لە پێشکەشکردن"
         },
-        abstractKurdish: { type: Type.STRING },
-        abstractEnglish: { type: Type.STRING },
-        abstractArabic: { type: Type.STRING },
+        abstractKurdish: {
+          type: Type.STRING,
+          description: "پوختەی ئەکادیمیی تێروتەسەل بە زمانی کوردی (دەوروبەری ٢٥٠ وشە بە داڕشتەی: کێشە و ئامانج، میتۆدۆلۆژیا، دۆزینەوە سەرەکییەکان، و ئەنجامی مەعریفی)"
+        },
+        abstractEnglish: {
+          type: Type.STRING,
+          description: "Comprehensive scholarly abstract in English (~250 words covering background, objective, methodology, core findings, and contributions)"
+        },
+        abstractArabic: {
+          type: Type.STRING,
+          description: "مستخلص أكاديمي رصين باللغة العربية (~٢٥٠ كلمة يشمل إشكالية البحث، الأهداف، المنهجية، وأهم النتائج والتوصيات)"
+        },
         fullIntroductionMarkdown: {
           type: Type.STRING,
           description: "دەقی تێروتەسەلی پێشەکی / دەروازەی گشتیی توێژینەوەکە بەپێی پێوەری ئاستەکە"
@@ -216,7 +225,6 @@ export function buildFormattedKurdishTOC(
   const lines: string[] = [];
 
   lines.push("## پێڕستی بابەتەکان\n");
-  lines.push("```text");
   lines.push(formatTocLine("بابەت", "لاپەڕە", 0));
   lines.push("─".repeat(78));
 
@@ -282,7 +290,6 @@ export function buildFormattedKurdishTOC(
   entries.push({ levelType: "end", title: bibTitle, pageLabel: bibPage });
   lines.push(formatTocLine(bibTitle, bibPage, 0));
 
-  lines.push("```");
   return { tocMarkdown: lines.join("\n"), tocEntries: entries };
 }
 
@@ -320,13 +327,15 @@ export async function buildLevelCalibratedBlueprint(
   const systemInstruction = `
 ${buildLevelSystemInstruction(level, title, discipline)}
 
-ئەرکی تۆ: داڕشتنی پاکێجی تەواوی دەروازە (پێشکەشکردن، سوپاس و پێزانین، پوختە بە ٣ زمان، پێشەکیی تێروتەسەل) + نەخشەی پێڕستی زنجیرەیی (بەش -> تەوەر -> لق) + فەرهەنگۆکی زاراوەکان بۆ بابەتی: "${title}".
+ئەرکی تۆ: داڕشتنی پاکێجی تەواوی دەروازە (پێشکەشکردن، سوپاس و پێزانین، پوختەی تێروتەسەل بە ٣ زمانی کوردی، ئینگلیزی و عەرەبی هەر یەکەی دەوروبەری ٢٥٠ وشە، پێشەکیی تێروتەسەل) + نەخشەی پێڕستی زنجیرەیی (بەش -> تەوەر -> لق) + فەرهەنگۆکی زاراوەکان بۆ بابەتی: "${title}".
 
 یاسای ئەندازەیی پێڕستەکە:
+- پوختەی کوردی، ئینگلیزی و عەرەبی دەبێت پوختەی ڕاستەقینەی زانستی بن بە تەواوی ئامانج، میتۆد، دۆزینەوەکان و دەرەنجامەکان (نزیکەی ٢٥٠ وشە بۆ هەر زمانێک، هەرگیز ڕستەی کورت یان پلەیسهۆڵدەر دانەنێیت).
 - دەبێت ڕێک (${profile.structure.coreChaptersCount}) بەشی سەرەکی دابڕێژیت.
 - هەر بەشێک دابەش بکە بۆ (${profile.structure.sectionsPerChapter}) تەوەر.
 - هەر تەوەرێک دابەش بکە بۆ (${profile.structure.subSectionsPerSection}) لق.
 - هەموو سەردێڕەکان دەبێت ١٠٠٪ هەڵقوڵاوی ناونیشانی "${title}" و بواری (${domain.kurdishName}) بن و بە زنجیرەیەکی توندوتۆڵ بەیەکەوە ببەسترێنەوە.
+- بەشە سەرەکییەکان بە ناوی ڕەسەن و ستاندارد بنووسە: «بەشی یەکەم: ...»، «بەشی دووەم: ...» تا کۆتایی بەپێی ئاستەکە.
 - لانیکەم ١٢ زاراوەی سەرەکیی بابەتەکە لە بەشی فەرهەنگۆک (glossaryTerms) بە کوردی، ئینگلیزی، عەرەبی و پێناسەی وردی زانستییەوە بنووسە.
 `;
 
@@ -337,7 +346,11 @@ ${buildLevelSystemInstruction(level, title, discipline)}
       groundedContext ? `[پاشخانی زانستیی پشتڕاستکراوە]:\n${groundedContext}` : ""
     }`,
     responseSchema: blueprintSchema,
-    temperature: 0.3
+    temperature: 0.3,
+    presencePenalty: 0.35,
+    frequencyPenalty: 0.45,
+    topP: 0.92,
+    topK: 40
   });
 
   const coreWordsTotal =

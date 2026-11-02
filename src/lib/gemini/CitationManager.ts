@@ -54,6 +54,18 @@ export class AdaptiveCitationManager {
     return src.author.trim().length >= 3 && src.title.trim().length >= 3;
   }
 
+  public registerSource(src: SourceItem): void {
+    if (!this.isAuthenticSource(src)) return;
+    const key = this.makeKey(src.author, src.title);
+    if (!this.sourcesMap.has(key)) {
+      this.sourcesMap.set(key, { ...src, id: key });
+    }
+  }
+
+  public getAllSources(): SourceItem[] {
+    return Array.from(this.sourcesMap.values());
+  }
+
   public registerAndFormatCitations(
     rawMarkdown: string,
     sources: SourceItem[]

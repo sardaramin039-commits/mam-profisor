@@ -72,44 +72,41 @@ export function formatTocLine(title: string, pageLabel: string, indentSpaces = 0
 
 export function generateClassicKurdishTOC(chapters: ChapterItem[], totalTargetWords = 3500): string {
   const lines: string[] = [];
-  const entries: { title: string; page: string; level: 'front' | 'chapter' | 'section' | 'subsection' | 'end' }[] = [];
   const wordsPerPage = 350;
 
   lines.push('## پێڕستی بابەتەکان\n');
-  lines.push('```text');
   lines.push(formatTocLine('بابەت', 'لاپەڕە', 0));
-  lines.push('─'.repeat(80));
+  lines.push('─'.repeat(78));
 
   // Front matter
-  entries.push({ title: 'پێشکەشکردن و سوپاسنامە', page: 'أ', level: 'front' });
   lines.push(formatTocLine('پێشکەشکردن و سوپاسنامە', 'أ', 0));
-
-  entries.push({ title: 'پوختەی توێژینەوە (Abstract)', page: 'ب', level: 'front' });
-  lines.push(formatTocLine('پوختەی توێژینەوە (Abstract)', 'ب', 0));
+  lines.push(formatTocLine('پوختەی توێژینەوە (کوردی / ئینگلیزی / عەرەبی)', 'ب', 0));
 
   let currentPage = 1;
 
   for (const ch of chapters) {
     // Skip front matter chapters from page body calculation
-    if (ch.title.includes('پێشکەشە') || ch.title.includes('پێڕستی بابەتەکان') || ch.title.includes('Abstracts')) {
+    if (
+      ch.title.includes('پێشکەشە') ||
+      ch.title.includes('پێڕستی بابەتەکان') ||
+      ch.title.includes('Abstracts') ||
+      ch.title.includes('پوختەی توێژینەوە')
+    ) {
       continue;
     }
 
     const chPageStr = toKurdishDigits(currentPage);
-    entries.push({ title: ch.title, page: chPageStr, level: ch.axes && ch.axes.length > 0 ? 'chapter' : 'end' });
     lines.push(formatTocLine(ch.title, chPageStr, 0));
 
     if (ch.axes && ch.axes.length > 0) {
       for (const axis of ch.axes) {
         const axisPageStr = toKurdishDigits(currentPage);
         const axisTitle = `${axis.code}: ${axis.title}`;
-        entries.push({ title: axisTitle, page: axisPageStr, level: 'section' });
         lines.push(formatTocLine(axisTitle, axisPageStr, 2));
 
         for (const branch of axis.branches) {
           const branchPageStr = toKurdishDigits(currentPage);
           const branchTitle = `${branch.code} ${branch.title}`;
-          entries.push({ title: branchTitle, page: branchPageStr, level: 'subsection' });
           lines.push(formatTocLine(branchTitle, branchPageStr, 4));
 
           const branchWords = branch.targetWords || 400;
@@ -123,24 +120,7 @@ export function generateClassicKurdishTOC(chapters: ChapterItem[], totalTargetWo
     }
   }
 
-  lines.push('```');
-
-  // Printable / Exportable HTML Structure
-  const htmlRows = [
-    `<div class="academic-toc-wrapper" dir="rtl">`,
-    `<div class="toc-header-row"><span class="toc-col-title">بابەت</span><span class="toc-col-page">لاپەڕە</span></div>`,
-    ...entries.map(
-      (e) =>
-        `<div class="toc-row toc-${e.level}">` +
-        `<span class="toc-title">${e.title}</span>` +
-        `<span class="toc-leader"></span>` +
-        `<span class="toc-page">${e.page}</span>` +
-        `</div>`
-    ),
-    `</div>`
-  ].join('\n');
-
-  return `${lines.join('\n')}\n\n${htmlRows}`;
+  return lines.join('\n');
 }
 
 export function buildAcademicThesisOutline(options: ThesisOutlineOptions): ChapterItem[] {
@@ -443,15 +423,21 @@ export function buildAcademicThesisOutline(options: ThesisOutlineOptions): Chapt
     });
   }
 
-  // پوختە بە دوو زمان
+  // پوختەی توێژینەوە بە ٣ زمان (Kurdish, English & Arabic Full Scholarly Abstracts)
+  const absContent = [
+    `## پوختەی توێژینەوە بە زمانی کوردی\nئەم توێژینەوەیە بە ناونیشانی «${title}» بەدواداچوونی ورد و شیکاریی زانستی بۆ ئارگیومێنتە بنەڕەتییەکان و ڕەهەندە مەعریفییەکانی بابەتەکە دەکات لە چوارچێوەی بواری زانستیی دەستنیشانکراودا. لەم تێزەدا لە ڕێگەی گرتنەبەری میتۆدۆلۆژیایەکی ڕەخنەیی و سیستماتیکی چڕەوە، هەوڵ دراوە کەلەبەری مەعریفی و بۆشایی توێژینەوەکانی پێشوو دەستنیشان بکرێت و پەیوەندییە پێکهاتەییەکان ڕاڤە بکرێن. دەرەنجامە زانستییەکان ئەوە دووپات دەکەنەوە کە بونیاتنانی چوارچێوەیەکی تۆکمەی تیۆری و جێبەجێکردنی شیکاریی بەڵگەمەند، بەشدارییەکی بەرچاو لە دەوڵەمەندکردنی ئەدەبیاتی زانستی و کتێبخانەی ئەکادیمیدا دەکات.\n\nکلیلەوشەکان: ${title}، چوارچێوەی تیۆری، میتۆدۆلۆژیای ئەکادیمی، شیکاریی زانستی، سەنتێزی مەعریفی.`,
+    `---\n## Abstract in English\nThis scholarly dissertation, entitled "${title}", conducts an in-depth investigation into the critical theoretical foundations, structural dimensions, and methodological imperatives pertinent to the subject matter. Adopting a rigorous analytical framework, this study systematically addresses a well-defined gap within the extant academic literature. By examining foundational premises and contextual evidence, the research elucidates the dynamic interactions governing the phenomenon under inquiry. The principal findings corroborate the necessity of an integrated paradigm, demonstrating that grounded theoretical synthesis not only enhances methodological rigor but also makes a substantive and original contribution to contemporary academic discourse.\n\nKeywords: ${title}, Theoretical Framework, Methodological Rigor, Empirical Analysis, Academic Synthesis.`,
+    `---\n## المستخلص باللغة العربية\nتهدف هذه الأطروحة الأكاديمية المعنونة بـ «${title}» إلى تقديم دراسة تحليلية معمقة للأبعاد المنهجية والمعرفية المحورية في إطار التخصص العلمي المعني. ومن خلال تبني مقاربة نقدية منهجية رصينة، تسعى الدراسة إلى سد الفجوة المعرفية في الأدبيات السابقة وتحليل العلاقات البنيوية والسياقية للظاهرة قيد البحث. وتؤكد النتائج المستخلصة على أهمية التأصيل النظري والتكاملي، بما يبرهن على أن الربط المحكم بين المفاهيم النظرية والأدلة التطبيقية يشكل إضافة علمية نوعية للمكتبة الأكاديمية والبحثية.\n\nالكلمات المفتاحية: ${title}، التأصيل النظري، المنهجية الأكاديمية، التحليل النقدي، الفجوة المعرفية.`
+  ].join('\n\n');
+
   chapters.push({
     id: currentId++,
-    title: 'پوختەی توێژینەوە بە عەرەبی و ئینگلیزی (Arabic & English Abstracts)',
-    wordCount: 0,
+    title: 'پوختەی توێژینەوە بە کوردی، ئینگلیزی و عەرەبی (Abstracts)',
+    wordCount: countKurdishWords(absContent),
     status: 'pending',
-    content: `## المستخلص (Abstract in Arabic)\nتهدف هذه الدراسة المعنونة «${title}» إلى تحليل الأبعاد المنهجية والمعرفية وفق المعايير الأكاديمية...\n\n---\n\n## Abstract in English\nThis academic dissertation entitled "${title}" investigates the critical and theoretical framework within the scholarly context of Kurdistan universities...`,
-    academicNotes: 'پوختەی فەرمیی دوو زمانە بەپێی یاسای وەزارەتی خوێندنی باڵا.',
-    customTargetWords: 300,
+    content: absContent,
+    academicNotes: 'پوختەی فەرمی بە ٣ زمان بەپێی یاسای وەزارەتی خوێندنی باڵا.',
+    customTargetWords: 350,
     axes: []
   });
 
@@ -637,9 +623,15 @@ export function buildChaptersFromAcademicBlueprint(blueprint: any, title = 'تێ
         };
       });
 
+      const kurdishOrdinals = ['یەکەم', 'دووەم', 'سێیەم', 'چوارەم', 'پێنجەم', 'شەشەم', 'حەوتەم', 'هەشتەم', 'نۆیەم', 'دەیەم'];
+      let cleanChapterTitle = (ch.title || '').trim();
+      // Remove any duplicate or repeated "بەشی X:" prefix
+      cleanChapterTitle = cleanChapterTitle.replace(/^(?:بەشی\s*(?:[\u0660-\u0669\d]+|[a-zA-Z]+|یەکەم|دووەم|سێیەم|چوارەم|پێنجەم|شەشەم|حەوتەم|هەشتەم|نۆیەم|دەیەم)\s*[:\-–—]\s*)+/i, '').trim();
+      const finalChapterTitle = `بەشی ${kurdishOrdinals[cIdx] || cIdx + 1}: ${cleanChapterTitle || 'تەوەری ئەکادیمی'}`;
+
       chapters.push({
         id: currentId++,
-        title: ch.title,
+        title: finalChapterTitle,
         wordCount: 0,
         status: 'pending',
         content: '',

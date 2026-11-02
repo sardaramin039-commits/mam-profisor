@@ -28,7 +28,15 @@ export { GeminiCoreEngine } from '../../lib/gemini/core-engine';
 export { LEVEL_PROFILES } from '../../lib/gemini/LevelProfiles';
 
 export function getGeminiClient(): GoogleGenAI {
-  const keysEnv = process.env['GEMINI_API_KEY'];
+  const keysEnv =
+    (typeof process !== 'undefined' &&
+      (process.env['GEMINI_API_KEY'] ||
+        process.env['API_KEY'] ||
+        process.env['GEMINI_API_KEYS'] ||
+        process.env['GOOGLE_API_KEY'])) ||
+    (typeof globalThis !== 'undefined' &&
+      ((globalThis as any)?.GEMINI_API_KEY || (globalThis as any)?.API_KEY)) ||
+    '';
   if (!keysEnv || keysEnv.trim() === '') {
     return {
       models: {
@@ -39,8 +47,8 @@ export function getGeminiClient(): GoogleGenAI {
     } as unknown as GoogleGenAI;
   }
 
-  const rawKeys = keysEnv.split(/[\s,;]+/).map(k => k.trim()).filter(k => k.length > 0);
-  const keys = Array.from(new Set(rawKeys));
+  const rawKeys: string[] = String(keysEnv).split(/[\s,;]+/).map((k: string) => k.trim()).filter((k: string) => k.length > 0);
+  const keys: string[] = Array.from(new Set<string>(rawKeys));
   if (keys.length === 0) {
     return {
       models: {
@@ -55,7 +63,7 @@ export function getGeminiClient(): GoogleGenAI {
     nextClientIndex = 0;
     const engine = getAutoEvolutionEngine();
 
-    geminiClientsPool = keys.map((key, index) => {
+    geminiClientsPool = keys.map((key: string, index: number) => {
       const client = new GoogleGenAI({
         apiKey: key,
         httpOptions: {

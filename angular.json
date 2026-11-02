@@ -48,7 +48,6 @@
               "dotenv",
               "axios",
               "zod",
-              "@google/genai",
               "ws"
             ]
           },
@@ -82,7 +81,6 @@
                 "dotenv",
                 "axios",
                 "zod",
-                "@google/genai",
                 "ws"
               ]
             }

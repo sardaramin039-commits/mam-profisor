@@ -12,12 +12,19 @@ import { syncLiveTOCWordCounts } from '../helpers/outline-structure';
 import { SYSTEM_PROMPT_GENERATE_CHAPTER } from '../../prompts/system-prompts';
 import { DOCTORAL_ACADEMIC_DIRECTIVES } from '../../prompts/academic-rules';
 
+import { LiveProgressService } from './live-progress.service';
+import { AcademicLevel } from '../models/level-profiles';
+import { writeCalibratedSubSection, generateCalibratedConclusion } from '../../lib/gemini/WriterAgent';
+import { AdaptiveCitationManager as GeminiCitationManager } from '../../lib/gemini/CitationManager';
+
 export interface BranchWritingOptions {
   manuscriptTitle?: string;
   academicLevel?: string;
   discipline?: string;
   targetChapterId?: number;
+  targetBranchId?: string;
   refineFormValue?: any;
+  chaptersSignal?: { (): ChapterItem[]; set: (v: ChapterItem[]) => void };
   onUpdate?: () => void;
 }
 
@@ -31,6 +38,7 @@ export class BranchWritingEngineService {
   private requestManager = inject(GeminiRequestManagerService);
   private subSectionWriter = inject(SubSectionWriterService);
   public citationManager = inject(AcademicCitationManager);
+  public liveProgress = inject(LiveProgressService);
 
   public isBranchWritingInProgress = signal<boolean>(false);
   public currentWritingStatus = signal<string>('');
@@ -69,6 +77,31 @@ export class BranchWritingEngineService {
     this.isBranchWritingInProgress.set(true);
 
     try {
+      let totalBranches = 0;
+      for (const ch of targetChapters) {
+        if (!ch.axes) continue;
+        for (const ax of ch.axes) {
+          if (!ax.branches) continue;
+          for (const br of ax.branches) {
+            if (!options.targetBranchId || br.id === options.targetBranchId) {
+              totalBranches++;
+            }
+          }
+        }
+      }
+      totalBranches = Math.max(1, totalBranches);
+      let branchesCompleted = 0;
+
+      const actionKey = options.targetBranchId
+        ? `branch_${options.targetBranchId}`
+        : options.targetChapterId
+        ? `chapter_${options.targetChapterId}`
+        : 'write_all';
+      const initialDesc = options.targetBranchId
+        ? 'خەریکی داڕشتنی لقی زانستی بە ستانداردی ئەکادیمی...'
+        : `خەریکی نووسینی لقە ئەکادیمییەکان (١ لە ${totalBranches})...`;
+      this.liveProgress.startTask(actionKey, initialDesc, totalBranches * 45);
+
       // Memory state for cognitive bridging between successive sub-sections
       let lastSubSectionInfo: {
         code: string;
@@ -77,25 +110,31 @@ export class BranchWritingEngineService {
         lastParagraph: string;
       } | undefined = undefined;
 
+      const normLevel: AcademicLevel = (level.includes('دکتۆرا') || level.toLowerCase().includes('phd'))
+        ? 'phd'
+        : (level.includes('بەکالۆریۆس') || level.toLowerCase().includes('bachelor'))
+        ? 'bachelor'
+        : (level.includes('قوتابخانە') || level.toLowerCase().includes('school'))
+        ? 'school'
+        : 'master';
+
+      const geminiCitationManager = new GeminiCitationManager(normLevel);
+
       for (let chIdx = 0; chIdx < targetChapters.length; chIdx++) {
         const chapter = targetChapters[chIdx];
         if (!chapter.axes || chapter.axes.length === 0) continue;
 
         chapter.status = 'writing';
         const chName = chapter.title.split(':')[0] || `بەشی ${chIdx + 1}`;
-        let chContent = (chapter.content || '').trim();
 
         for (let aIdx = 0; aIdx < chapter.axes.length; aIdx++) {
           const axis = chapter.axes[aIdx];
 
-          // Check if Axis header already exists in content
-          const axisHeader = `## ${axis.code}: ${axis.title}`;
-          if (!chContent.includes(axisHeader) && !chContent.includes(axis.code)) {
-            chContent += (chContent ? '\n\n' : '') + `${axisHeader}\n`;
-          }
-
           for (let bIdx = 0; bIdx < axis.branches.length; bIdx++) {
             const branch = axis.branches[bIdx];
+            if (options.targetBranchId && branch.id !== options.targetBranchId) {
+              continue;
+            }
             const targetWords = Math.max(350, branch.targetWords || 600);
 
             this.activeSubBranchId.set(branch.id);
@@ -104,8 +143,10 @@ export class BranchWritingEngineService {
             this.branchProgressPercent.set(0);
             branch.status = 'writing';
 
-            const statusText = `خەریکی نووسینی ${chName} / ${axis.code} / لقی ${branch.code} — ٠ لە ${targetWords} وشە...`;
+            const statusText = `خەریکی نووسینی ${chName} لە ${targetChapters.length} (لقی ${branch.code}: ${branch.title})...`;
             this.currentWritingStatus.set(statusText);
+            const currentPct = Math.round((branchesCompleted / totalBranches) * 100);
+            this.liveProgress.updateProgress(currentPct, statusText, (totalBranches - branchesCompleted) * 45);
 
             // Compute next sub-section for boundary defense
             let nextSubSection: { code: string; title: string } | undefined = undefined;
@@ -123,74 +164,145 @@ export class BranchWritingEngineService {
 
             // 1. Send dedicated structured request to calibrated Gemini write-subsection engine
             let subWriterResult: any = null;
+            let lastBranchError: string | null = null;
+
             try {
-              const normLevel = (level.includes('دکتۆرا') || level.toLowerCase().includes('phd'))
-                ? 'phd'
-                : (level.includes('بەکالۆریۆس') || level.toLowerCase().includes('bachelor'))
-                ? 'bachelor'
-                : (level.includes('قوتابخانە') || level.toLowerCase().includes('school'))
-                ? 'school'
-                : 'master';
+              const directRes = await writeCalibratedSubSection({
+                thesisTitle: title,
+                level: normLevel,
+                discipline,
+                chapterTitle: chapter.title,
+                sectionTitle: `${axis.code}: ${axis.title}`,
+                subSection: {
+                  code: branch.code,
+                  title: branch.title,
+                  targetWords: targetWords,
+                  microTopicsToCover: [branch.title],
+                  transitionFromPreviousGoal: lastSubSectionInfo?.title ? `گرێدان بە ${lastSubSectionInfo.title}` : '',
+                  transitionToNextGoal: nextSubSection?.title ? `ڕادەستکردن بە ${nextSubSection.title}` : ''
+                },
+                previousClosingParagraph: lastSubSectionInfo?.lastParagraph || '',
+                citationManager: geminiCitationManager,
+                onLiveProgress: (liveMarkdown, liveWordCount, statusStep) => {
+                  branch.content = liveMarkdown;
+                  branch.wordCount = liveWordCount;
+                  this.currentBranchWords.set(liveWordCount);
+                  this.branchProgressPercent.set(Math.min(100, Math.round((liveWordCount / targetWords) * 100)));
 
-              const apiRes = await firstValueFrom(
-                this.http.post<{ success: boolean; result: any; bibliography?: string }>('/api/gemini/write-subsection', {
-                  thesisTitle: title,
-                  level: normLevel,
-                  discipline,
-                  chapterTitle: chapter.title,
-                  sectionTitle: `${axis.code}: ${axis.title}`,
-                  subSection: {
-                    code: branch.code,
-                    title: branch.title,
-                    targetWords: targetWords,
-                    microTopicsToCover: [branch.title],
-                    transitionFromPreviousGoal: lastSubSectionInfo?.title ? `گرێدان بە ${lastSubSectionInfo.title}` : '',
-                    transitionToNextGoal: nextSubSection?.title ? `ڕادەستکردن بە ${nextSubSection.title}` : ''
-                  },
-                  previousClosingParagraph: lastSubSectionInfo?.lastParagraph || ''
-                })
-              );
+                  // Recalculate parent axis word count
+                  axis.wordCount = axis.branches.reduce((sum, b) => sum + (b.wordCount || 0), 0);
 
-              if (apiRes?.success && apiRes.result?.fullSubSectionMarkdown) {
+                  // Rebuild chapter content
+                  let assembled = '';
+                  for (const ax of chapter.axes) {
+                    const writtenBranches = ax.branches.filter(b => b.content && b.content.trim().length > 0);
+                    if (writtenBranches.length > 0) {
+                      assembled += `## ${ax.code}: ${ax.title}\n\n`;
+                      for (const b of writtenBranches) {
+                        const bText = b.content.trim();
+                        if (!bText.startsWith('###')) {
+                          assembled += `### ${b.code} ${b.title}\n\n${bText}\n\n`;
+                        } else {
+                          assembled += `${bText}\n\n`;
+                        }
+                      }
+                    }
+                  }
+                  chapter.content = assembled.trim();
+                  chapter.wordCount = countKurdishWords(chapter.content);
+
+                  // Immutably clone and update chapters state live across signals
+                  const liveClone = chapters.map(c => {
+                    if (c.id === chapter.id) {
+                      return {
+                        ...c,
+                        content: chapter.content,
+                        wordCount: chapter.wordCount,
+                        axes: chapter.axes.map(ax => ({
+                          ...ax,
+                          wordCount: ax.branches.reduce((sum, b) => sum + (b.wordCount || 0), 0),
+                          branches: ax.branches.map(br => ({ ...br }))
+                        }))
+                      };
+                    }
+                    return c;
+                  });
+
+                  this.editorService.setChapters(liveClone);
+                  if (options.chaptersSignal) {
+                    options.chaptersSignal.set(liveClone);
+                  }
+                  if (statusStep) {
+                    this.currentWritingStatus.set(statusStep);
+                  }
+                }
+              });
+
+              if (directRes && directRes.fullSubSectionMarkdown?.trim()) {
                 subWriterResult = {
-                  academicContentMarkdown: apiRes.result.fullSubSectionMarkdown,
-                  closingParagraph: apiRes.result.lastParagraph,
-                  executiveSummaryForNext: (apiRes.result.keyFindings || []).join(' | '),
+                  academicContentMarkdown: directRes.fullSubSectionMarkdown.trim(),
+                  closingParagraph: directRes.lastParagraph || '',
+                  executiveSummaryForNext: (directRes.keyFindings || []).join(' | '),
                   suggestedCitations: []
                 };
               }
-            } catch (apiErr) {
-              console.warn('write-subsection API call notice, falling back to local writer:', apiErr);
+            } catch (directErr: any) {
+              lastBranchError = directErr?.message || String(directErr);
+              console.warn('writeCalibratedSubSection direct call notice, trying API:', directErr);
+              try {
+                const apiRes = await firstValueFrom(
+                  this.http.post<{ success: boolean; result: any; bibliography?: string }>('/api/gemini/write-subsection', {
+                    thesisTitle: title,
+                    level: normLevel,
+                    discipline,
+                    chapterTitle: chapter.title,
+                    sectionTitle: `${axis.code}: ${axis.title}`,
+                    subSection: {
+                      code: branch.code,
+                      title: branch.title,
+                      targetWords: targetWords,
+                      microTopicsToCover: [branch.title],
+                      transitionFromPreviousGoal: lastSubSectionInfo?.title ? `گرێدان بە ${lastSubSectionInfo.title}` : '',
+                      transitionToNextGoal: nextSubSection?.title ? `ڕادەستکردن بە ${nextSubSection.title}` : ''
+                    },
+                    previousClosingParagraph: lastSubSectionInfo?.lastParagraph || ''
+                  })
+                );
+                if (apiRes?.success && apiRes.result?.fullSubSectionMarkdown?.trim()) {
+                  subWriterResult = {
+                    academicContentMarkdown: apiRes.result.fullSubSectionMarkdown.trim(),
+                    closingParagraph: apiRes.result.lastParagraph || '',
+                    executiveSummaryForNext: (apiRes.result.keyFindings || []).join(' | '),
+                    suggestedCitations: []
+                  };
+                }
+              } catch (apiErr: any) {
+                lastBranchError = apiErr?.message || String(apiErr);
+              }
             }
 
-            if (!subWriterResult) {
-              subWriterResult = await this.subSectionWriter.writeAcademicSubSection({
-                thesisTitle: title,
-                degreeLevel: level === 'دکتۆرا' ? 'دکتۆرا' : 'ماستەر',
-                methodologySummary: options.refineFormValue?.methodology || discipline,
-                chapterTitle: chapter.title,
-                sectionTitle: `${axis.code}: ${axis.title}`,
-                currentSubSection: {
-                  code: branch.code,
-                  title: branch.title,
-                  targetWords: targetWords
-                },
-                previousSubSection: lastSubSectionInfo,
-                nextSubSection: nextSubSection,
-                customInstructions: options.refineFormValue?.customInstructions
-              });
-            }
-
-            let branchContent = (subWriterResult.academicContentMarkdown || '').trim();
+            let branchContent = (subWriterResult?.academicContentMarkdown || '').trim();
             let words = countKurdishWords(branchContent);
+
+            // STOP immediately if generation yielded 0 words! Do not continue looping silently.
+            if (!branchContent || words === 0) {
+              const errMsg = lastBranchError || `نووسینی لقی «${branch.title}» ناوەڕۆکی بەرهەم نەهێنا.`;
+              this.notifications.showError('هەڵە لە نووسیندا', errMsg);
+              this.liveProgress.failTask(`نووسینی لقەکە ڕاوەستا: ${errMsg}`);
+              this.currentWritingStatus.set(`هەڵە لە لقی ${branch.code}: ${errMsg}`);
+              branch.status = 'pending';
+              this.isBranchWritingInProgress.set(false);
+              return;
+            }
+
             this.currentBranchWords.set(words);
             this.branchProgressPercent.set(Math.min(100, Math.round((words / targetWords) * 100)));
 
-            // 2. Deep Analytical Expansion Loop if words < 95% of quota
+            // 2. Deep Analytical Expansion Loop if words < 90% of quota
             let expansionAttempts = 0;
             const maxExpansions = 3;
 
-            while (words < targetWords * 0.95 && expansionAttempts < maxExpansions) {
+            while (words < targetWords * 0.90 && expansionAttempts < maxExpansions) {
               expansionAttempts++;
               branch.status = 'expanding';
               const deficit = targetWords - words;
@@ -198,15 +310,19 @@ export class BranchWritingEngineService {
               const expansionStatus = `درێژەپێدانی قووڵی زانستی: ${chName} / ${axis.code} / لقی ${branch.code} — ${words} لە ${targetWords} وشە...`;
               this.currentWritingStatus.set(expansionStatus);
 
-              const expPrompt = this.buildExpansionPrompt(branch, targetWords, words, deficit, branchContent);
-              const extraText = await this.requestManager.callGeminiApi(expPrompt, SYSTEM_PROMPT_GENERATE_CHAPTER);
+              try {
+                const expPrompt = this.buildExpansionPrompt(branch, targetWords, words, deficit, branchContent);
+                const extraText = await this.requestManager.callGeminiApi(expPrompt, SYSTEM_PROMPT_GENERATE_CHAPTER);
 
-              if (extraText && extraText.trim()) {
-                branchContent += '\n\n' + extraText.trim();
-                words = countKurdishWords(branchContent);
-                this.currentBranchWords.set(words);
-                this.branchProgressPercent.set(Math.min(100, Math.round((words / targetWords) * 100)));
-              } else {
+                if (extraText && extraText.trim()) {
+                  branchContent += '\n\n' + extraText.trim();
+                  words = countKurdishWords(branchContent);
+                  this.currentBranchWords.set(words);
+                  this.branchProgressPercent.set(Math.min(100, Math.round((words / targetWords) * 100)));
+                } else {
+                  break;
+                }
+              } catch {
                 break;
               }
             }
@@ -235,7 +351,7 @@ export class BranchWritingEngineService {
               words = countKurdishWords(branchContent);
             }
 
-            // 4. Complete branch and stream/append into chapter
+            // 4. Update branch data
             branch.content = branchContent;
             branch.wordCount = words;
             branch.status = 'completed';
@@ -245,21 +361,52 @@ export class BranchWritingEngineService {
             branch.suggestedCitations = subWriterResult.suggestedCitations;
             branch.keyConceptsCovered = subWriterResult.keyConceptsCovered;
 
-            const branchHeading = `### ${branch.code} ${branch.title}`;
-            const branchBlock = `${branchHeading}\n\n${branchContent}`;
+            // Recalculate parent axis word count
+            axis.wordCount = axis.branches.reduce((sum, b) => sum + (b.wordCount || 0), 0);
 
-            if (chContent.includes(branchHeading)) {
-              // Replace existing branch section
-              const escapedHeading = branchHeading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-              const replaceRegex = new RegExp(`${escapedHeading}[\\s\\S]*?(?=(?:###|##|$))`);
-              chContent = chContent.replace(replaceRegex, `${branchBlock}\n\n`);
-            } else {
-              chContent += (chContent ? '\n\n' : '') + `${branchBlock}\n`;
+            // Reconstruct chapter content cleanly from all non-empty branches
+            let assembled = '';
+            for (const ax of chapter.axes) {
+              const writtenBranches = ax.branches.filter(b => b.content && b.content.trim().length > 0);
+              if (writtenBranches.length > 0) {
+                assembled += `## ${ax.code}: ${ax.title}\n\n`;
+                for (const b of writtenBranches) {
+                  const bText = b.content.trim();
+                  const bHeading = `### ${b.code} ${b.title}`;
+                  if (!bText.startsWith('###')) {
+                    assembled += `${bHeading}\n\n${bText}\n\n`;
+                  } else {
+                    assembled += `${bText}\n\n`;
+                  }
+                }
+              }
             }
 
-            chapter.content = chContent.trim();
+            chapter.content = assembled.trim();
             chapter.wordCount = countKurdishWords(chapter.content);
-            syncLiveTOCWordCounts(chapters);
+
+            // Immutably clone and update chapters state across signals immediately
+            const updatedChapters = chapters.map(c => {
+              if (c.id === chapter.id) {
+                return {
+                  ...c,
+                  content: chapter.content,
+                  wordCount: chapter.wordCount,
+                  axes: chapter.axes.map(ax => ({
+                    ...ax,
+                    wordCount: ax.branches.reduce((sum, b) => sum + (b.wordCount || 0), 0),
+                    branches: ax.branches.map(br => ({ ...br }))
+                  }))
+                };
+              }
+              return c;
+            });
+
+            syncLiveTOCWordCounts(updatedChapters);
+            this.editorService.setChapters(updatedChapters);
+            if (options.chaptersSignal) {
+              options.chaptersSignal.set(updatedChapters);
+            }
 
             this.editorService.updateChapterContent(
               chapter.id,
@@ -267,39 +414,64 @@ export class BranchWritingEngineService {
               `نووسینی لقی ${branch.code} بە ستانداردی ئەکادیمی`
             );
 
+            branchesCompleted++;
+            const finishedPct = Math.round((branchesCompleted / totalBranches) * 100);
+            this.liveProgress.updateProgress(finishedPct);
+
             options.onUpdate?.();
             this.currentWritingStatus.set(`تەواوبوو: ${chName} / ${axis.code} / لقی ${branch.code} (${words} وشە)`);
+
+            // Add a 1500ms pacing delay between branches in writeAllChapters to prevent 429 rate limits
+            if (!options.targetBranchId && branchesCompleted < totalBranches) {
+              await new Promise(r => setTimeout(r, 1500));
+            }
           }
         }
 
         chapter.status = 'completed';
-        this.notifications.showSuccess(
-          'تەواوبوونی بەش',
-          `تەواوی تەوەر و لقەکانی «${chapter.title}» بە سەرکەوتوویی نووسران (${chapter.wordCount} وشە).`
-        );
       }
 
       // Automatically update the References / Bibliography chapter if present
       const refChapter = chapters.find(
-        (c) => c.title.includes('سەرچاوە') || c.title.toLowerCase().includes('references')
+        (c) => c.title.includes('سەرچاوە') || c.title.toLowerCase().includes('references') || c.title.includes('بیبلۆگرافیا')
       );
-      if (refChapter && this.citationManager.getAllSources().length > 0) {
-        const bibMarkdown = this.citationManager.generateFinalBibliographyMarkdown();
-        refChapter.content = bibMarkdown;
-        refChapter.wordCount = countKurdishWords(bibMarkdown);
-        refChapter.status = 'completed';
-        this.editorService.updateChapterContent(
-          refChapter.id,
-          bibMarkdown,
-          'نوێکردنەوەی خودکاری لیستی سەرچاوە و بیبلۆگرافیا بەپێی زمانەکان'
-        );
+      if (refChapter) {
+        const bibMarkdown = geminiCitationManager.buildBibliographySection() || this.citationManager.generateFinalBibliographyMarkdown();
+        if (bibMarkdown && bibMarkdown.trim()) {
+          refChapter.content = bibMarkdown;
+          refChapter.wordCount = countKurdishWords(bibMarkdown);
+          refChapter.status = 'completed';
+          this.editorService.updateChapterContent(
+            refChapter.id,
+            bibMarkdown,
+            'نوێکردنەوەی خودکاری لیستی سەرچاوە و بیبلۆگرافیا بەپێی زمانەکان'
+          );
+        }
       }
 
-      this.currentWritingStatus.set('سەرجەم لقەکان بە سەرکەوتوویی تەواو کران.');
-      this.notifications.showSuccess('تەواوبوونی نووسینی لقەکان', 'نووسینی لق بە لق بە تەواوی ئامانجی وشەکان بە ئەنجام گەیشت.');
-    } catch (error) {
+      // Verify that words were actually generated before showing green success toast
+      let totalWrittenWords = 0;
+      for (const ch of targetChapters) {
+        for (const ax of ch.axes || []) {
+          for (const br of ax.branches || []) {
+            totalWrittenWords += (br.wordCount || 0);
+          }
+        }
+      }
+
+      if (totalWrittenWords > 0) {
+        this.currentWritingStatus.set(`سەرجەم لقەکان بە سەرکەوتوویی تەواو کران (${totalWrittenWords} وشە).`);
+        this.liveProgress.finishTask(`نووسینی لقە ئەکادیمییەکان بە تەواوی بە ئەنجام گەیشت (${totalWrittenWords} وشە).`);
+        this.notifications.showSuccess('سەرکەوتوو بوو', `نووسینی لقە ئەکادیمییەکان بە سەرکەوتوویی تەواو بوو (${totalWrittenWords} وشە).`);
+      } else {
+        this.liveProgress.failTask('پڕۆسەی نووسین بەبێ بەرهەمهێنانی وشە کۆتایی هات.');
+        this.notifications.showError('هەڵە', 'دەق بەرهەم نەهات. تکایە کلیل و پەیوەندیی سێرڤەر بپشکنە.');
+      }
+    } catch (error: any) {
       console.error('Error during branch writing:', error);
-      this.notifications.showError('هەڵە لە نووسینی لقەکان', 'پڕۆسەی نووسینی لقەکان ڕاوەستا.');
+      const errMsg = error?.message || 'پڕۆسەی نووسینی لقەکان ڕاوەستا.';
+      this.notifications.showError('هەڵە لە نووسیندا', errMsg);
+      this.liveProgress.failTask(errMsg);
     } finally {
       this.isBranchWritingInProgress.set(false);
       this.activeSubBranchId.set(null);

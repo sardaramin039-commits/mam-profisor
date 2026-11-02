@@ -8,6 +8,7 @@ import { AppTemplateBridgeService } from './app-template-bridge.service';
 import { Data } from './data';
 import { ChapterItemModel as ChapterItem } from '../domain/models';
 import { BranchWritingEngineService } from './branch-writing-engine.service';
+import { LiveProgressService } from './live-progress.service';
 
 @Injectable({ providedIn: 'root' })
 export class BottomDockActionsService {
@@ -17,6 +18,7 @@ export class BottomDockActionsService {
   private toastService = inject(AppNotificationsService);
   private bridge = inject(AppTemplateBridgeService);
   private data = inject(Data);
+  private liveProgress = inject(LiveProgressService);
 
   /**
    * 1. پشکنینی بەش (Review chapter structure & academic rigor)
@@ -214,7 +216,7 @@ export class BottomDockActionsService {
     }
 
     setLoading(true);
-    this.toastService.showInfo('هەناردەی Word دەستی پێکرد', 'خەریکی پێداچوونەوەی بەڵگەنامە و دروستکردنی فایلی Wordە...');
+    this.liveProgress.startTask('export', 'خەریکی ئامادەکردن و دروستکردنی فایلی فەرمیی تێز (Word)...', 20);
 
     try {
       const title = (manuscriptTitle || 'توێژینەوەی_زانستی').trim();
@@ -232,11 +234,14 @@ export class BottomDockActionsService {
             qa?.qaResult?.kurdishSummaryStatus || 'پێویستە پشکنینی بەڵگە تەواو بێت پێش هەناردەکردن.'
           );
           setLoading(false);
+          this.liveProgress.failTask('پشکنینی بەڵگە تەواو نەبوو.');
           return;
         }
       } catch {
         // QA gate bypassed on local/offline environments to allow direct docx download
       }
+
+      this.liveProgress.updateProgress(65, 'خەریکی دروستکردنی نەخشە و ڕێکخستنی شێوازی زانکۆیی...');
 
       const blob = await this.wordExportService.generateDocxBlob(
         title,
@@ -252,10 +257,10 @@ export class BottomDockActionsService {
       anchor.click();
       URL.revokeObjectURL(url);
 
-      this.toastService.showSuccess('هەناردەی Word سەرکەوتوو بوو', `فایلی «${title}.docx» بە سەرکەوتوویی دابەزێنرا.`);
+      this.liveProgress.finishTask(`فایلی «${title}.docx» بە سەرکەوتوویی دابەزێنرا.`);
     } catch (error) {
       console.error('Word export failed:', error);
-      this.toastService.showError('هەڵەی هەناردەکردن', 'دروستکردنی فایلی Word سەرکەوتوو نەبوو؛ دووبارە هەوڵبدەرەوە.');
+      this.liveProgress.failTask('دروستکردنی فایلی Word سەرکەوتوو نەبوو.');
     } finally {
       setLoading(false);
     }

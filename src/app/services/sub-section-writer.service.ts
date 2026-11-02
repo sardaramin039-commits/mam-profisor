@@ -186,11 +186,11 @@ ${profile.strictlyForbiddenRules}
     console.warn('Server-side smart-generate error:', err);
   }
 
-  // Graceful fallback output
+  // Graceful fallback output - clean empty content rather than repeated placeholder
   return {
-    academicContentMarkdown: `### ${ctx.currentSubSection.code}: ${ctx.currentSubSection.title}\n\nلەم بەشە زانستییەدا، تاوتوێی لایەنە سەرەکی و چەمکییەکانی «${ctx.currentSubSection.title}» دەکرێت لە چوارچێوەی ناونیشانی «${ctx.thesisTitle}» بە شێوازێکی زانستی و هاوسەنگ.`,
-    executiveSummaryForNext: `پوختەی کورت لەسەر ${ctx.currentSubSection.title}`,
-    closingParagraph: `لێرەوە زەمینەی شیکاری بۆ لقی داهاتوو خۆش دەکرێت.`,
+    academicContentMarkdown: '',
+    executiveSummaryForNext: '',
+    closingParagraph: '',
     keyConceptsCovered: [ctx.currentSubSection.title],
     suggestedCitations: []
   };

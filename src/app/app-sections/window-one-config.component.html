@@ -115,10 +115,16 @@
     <button 
       type="button" 
       (click)="onSendToSecondWindow()" 
-      class="w-full py-4 px-6 bg-gradient-to-r from-stone-950 via-stone-900 to-stone-950 hover:from-black hover:to-black text-white rounded-xl text-sm font-extrabold transition-all duration-300 shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2 border-2 border-amber-500/80 active:scale-[0.99] group">
-      <mat-icon class="!text-lg !w-5 !h-5 text-amber-400 group-hover:rotate-12 transition-transform">auto_awesome</mat-icon>
-      <span class="text-amber-300 text-sm tracking-wide">دروستکردنی پێڕست و دەستپێکردن</span>
-      <mat-icon class="!text-sm !w-4 !h-4 text-amber-400">arrow_back</mat-icon>
+      [disabled]="liveProgress.isBusy()"
+      class="w-full py-4 px-6 bg-gradient-to-r from-stone-950 via-stone-900 to-stone-950 hover:from-black hover:to-black disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl text-sm font-extrabold transition-all duration-300 shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2 border-2 border-amber-500/80 active:scale-[0.99] group">
+      @if (liveProgress.activeActionKey() === 'send_to_second_window' || liveProgress.activeActionKey() === 'generate_structure') {
+        <mat-icon class="!text-lg !w-5 !h-5 text-amber-400 animate-spin">autorenew</mat-icon>
+        <span class="text-amber-300 text-sm tracking-wide">خەریکی کارکردنە...</span>
+      } @else {
+        <mat-icon class="!text-lg !w-5 !h-5 text-amber-400 group-hover:rotate-12 transition-transform">auto_awesome</mat-icon>
+        <span class="text-amber-300 text-sm tracking-wide">دروستکردنی پێڕست و دەستپێکردن</span>
+        <mat-icon class="!text-sm !w-4 !h-4 text-amber-400">arrow_back</mat-icon>
+      }
     </button>
   </div>
 </div>

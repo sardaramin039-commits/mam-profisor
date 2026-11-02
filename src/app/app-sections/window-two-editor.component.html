@@ -43,19 +43,31 @@
           <button 
             type="button" 
             (click)="aiGenerateStructure()" 
-            class="flex-1 py-2 px-2.5 bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1 active:scale-95"
+            [disabled]="liveProgress.isBusy()"
+            class="flex-1 py-2 px-2.5 bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1 active:scale-95"
             title="داڕشتنەوەی پێڕستی زیرەک بە ژیریی دەستکرد">
-            <mat-icon class="!text-xs !w-3.5 !h-3.5 text-amber-300">auto_awesome</mat-icon>
-            <span>پێڕستی زیرەک</span>
+            @if (liveProgress.activeActionKey() === 'generate_structure') {
+              <mat-icon class="!text-xs !w-3.5 !h-3.5 text-amber-300 animate-spin">autorenew</mat-icon>
+              <span>خەریکی کارکردنە...</span>
+            } @else {
+              <mat-icon class="!text-xs !w-3.5 !h-3.5 text-amber-300">auto_awesome</mat-icon>
+              <span>پێڕستی زیرەک</span>
+            }
           </button>
 
           <button 
             type="button" 
             (click)="writeAllChapters()" 
-            class="flex-1 py-2 px-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1 active:scale-95"
+            [disabled]="liveProgress.isBusy()"
+            class="flex-1 py-2 px-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1 active:scale-95"
             title="نووسینی هەموو بەشەکان بە شێوازی لق بە لق">
-            <mat-icon class="!text-xs !w-3.5 !h-3.5 text-white">edit_note</mat-icon>
-            <span>نووسینی هەمووی</span>
+            @if (liveProgress.activeActionKey() === 'write_all') {
+              <mat-icon class="!text-xs !w-3.5 !h-3.5 text-white animate-spin">autorenew</mat-icon>
+              <span>خەریکی کارکردنە...</span>
+            } @else {
+              <mat-icon class="!text-xs !w-3.5 !h-3.5 text-white">edit_note</mat-icon>
+              <span>نووسینی هەمووی</span>
+            }
           </button>
 
           <button 
@@ -100,8 +112,19 @@
                   {{ ch.wordCount || 0 }} / {{ getChapterTarget(ch) }} وشە
                 </span>
 
-                <button type="button" (click)="$event.stopPropagation(); writeSingleChapter(ch.id)" class="p-1 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded cursor-pointer transition shadow-2xs" title="نووسینی ئەم بەشە">
-                  <mat-icon class="!text-xs !w-3.5 !h-3.5">edit_note</mat-icon>
+                <button 
+                  type="button" 
+                  (click)="$event.stopPropagation(); writeSingleChapter(ch.id)" 
+                  [disabled]="liveProgress.isBusy()"
+                  class="px-2 py-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-stone-950 rounded cursor-pointer transition shadow-2xs flex items-center gap-1 font-bold text-[10px]" 
+                  title="نووسینی ئەم بەشە">
+                  @if (liveProgress.activeActionKey() === 'chapter_' + ch.id) {
+                    <mat-icon class="!text-xs !w-3.5 !h-3.5 animate-spin">autorenew</mat-icon>
+                    <span>خەریکی کارکردنە...</span>
+                  } @else {
+                    <mat-icon class="!text-xs !w-3.5 !h-3.5">edit_note</mat-icon>
+                    <span>نووسین</span>
+                  }
                 </button>
 
                 <button type="button" (click)="$event.stopPropagation(); addAxis(ch.id)" class="p-1 hover:bg-emerald-100 text-emerald-800 rounded cursor-pointer" title="زیادکردنی تەوەر">
@@ -164,10 +187,16 @@
                               <button 
                                 type="button" 
                                 (click)="writeSingleBranch(ch.id, axis.id, br.id)" 
-                                class="px-1.5 py-0.5 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold cursor-pointer transition shadow-2xs flex items-center gap-0.5 text-[9px]"
+                                [disabled]="liveProgress.isBusy()"
+                                class="px-2 py-0.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-bold cursor-pointer transition shadow-2xs flex items-center gap-1 text-[9px]"
                                 title="نووسینی ئەم لقە بە ژیریی دەستکرد">
-                                <mat-icon class="!text-[10px] !w-2.5 !h-2.5">auto_awesome</mat-icon>
-                                <span>نووسین</span>
+                                @if (liveProgress.activeActionKey() === 'branch_' + br.id) {
+                                  <mat-icon class="!text-[10px] !w-2.5 !h-2.5 animate-spin">autorenew</mat-icon>
+                                  <span>خەریکی کارکردنە...</span>
+                                } @else {
+                                  <mat-icon class="!text-[10px] !w-2.5 !h-2.5">auto_awesome</mat-icon>
+                                  <span>نووسین</span>
+                                }
                               </button>
                             </div>
                           </div>

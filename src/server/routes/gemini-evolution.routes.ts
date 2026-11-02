@@ -118,6 +118,88 @@ export function createGeminiEvolutionRouter(): Router {
   });
 
   /**
+   * پەخشی ڕاستەوخۆ بۆ نووسینی لق (SSE Calibrated SubSection Streaming)
+   * POST /api/gemini/stream-subsection
+   */
+  router.post('/stream-subsection', async (req, res) => {
+    try {
+      const {
+        thesisTitle,
+        level = 'master',
+        discipline,
+        centralThesisThread,
+        lockedTerminology,
+        chapterTitle,
+        chapterObjective,
+        chapterOpeningBridge,
+        isFirstSubSectionOfChapter,
+        isLastSubSectionOfChapter,
+        chapterClosingSynthesisGoal,
+        sectionTitle,
+        axisCentralArgument,
+        axisIntroBridge,
+        isFirstSubSectionOfAxis,
+        subSection,
+        previousClosingParagraph = '',
+        cumulativeChapterMemory,
+        nextSubSectionTitle,
+        verifiedLibrarySourcesText,
+        cachedContentName
+      } = req.body;
+
+      if (!thesisTitle || !subSection) {
+        res.status(400).json({ success: false, error: 'thesisTitle and subSection are required.' });
+        return;
+      }
+
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      res.write(`data: ${JSON.stringify({ status: 'started', message: 'دەستکرا بە نووسینی لقی ئەکادیمی...' })}\n\n`);
+
+      const citationManager = new AdaptiveCitationManager(level);
+      const result = await writeCalibratedSubSection({
+        thesisTitle,
+        level,
+        discipline,
+        centralThesisThread,
+        lockedTerminology,
+        chapterTitle: chapterTitle || '',
+        chapterObjective,
+        chapterOpeningBridge,
+        isFirstSubSectionOfChapter,
+        isLastSubSectionOfChapter,
+        chapterClosingSynthesisGoal,
+        sectionTitle: sectionTitle || '',
+        axisCentralArgument,
+        axisIntroBridge,
+        isFirstSubSectionOfAxis,
+        subSection,
+        previousClosingParagraph,
+        cumulativeChapterMemory,
+        nextSubSectionTitle,
+        verifiedLibrarySourcesText,
+        cachedContentName,
+        citationManager
+      });
+
+      const bibliography = citationManager.buildBibliographySection();
+      res.write(`data: ${JSON.stringify({ status: 'completed', result, bibliography })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } catch (err: any) {
+      console.error('Error in stream-subsection:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, error: err?.message || 'Streaming subsection failed' });
+      } else {
+        res.write(`data: ${JSON.stringify({ error: err?.message || 'Streaming subsection failed' })}\n\n`);
+        res.end();
+      }
+    }
+  });
+
+  /**
    * دروستکردنی ئەنجام و ڕاسپاردە ئەکادیمییەکان (Calibrated Conclusion & Recommendations)
    * POST /api/gemini/conclusion
    */
@@ -287,6 +369,203 @@ export function createGeminiEvolutionRouter(): Router {
     } catch (err: any) {
       console.error('Embedding generation error:', err);
       res.status(500).json({ success: false, error: err?.message || 'Embedding failed' });
+    }
+  });
+
+  /**
+   * Pillar 16: Pre-flight Token Counting
+   * POST /api/gemini/count-tokens
+   */
+  router.post('/count-tokens', async (req, res) => {
+    try {
+      const { contents, model } = req.body;
+      if (!contents) {
+        res.status(400).json({ success: false, error: 'contents is required.' });
+        return;
+      }
+      const coreEngine = GeminiCoreEngine.getInstance();
+      const totalTokens = await coreEngine.countTokens(contents, model);
+      res.json({ success: true, totalTokens });
+    } catch (err: any) {
+      console.error('Count tokens error:', err);
+      res.status(500).json({ success: false, error: err?.message || 'Count tokens failed' });
+    }
+  });
+
+  /**
+   * Pillar 16: Cache Renewal via ai.caches.update (7200s TTL)
+   * POST /api/gemini/cache-refresh
+   */
+  router.post('/cache-refresh', async (req, res) => {
+    try {
+      const { cacheName, ttlSeconds = 7200 } = req.body;
+      if (!cacheName) {
+        res.status(400).json({ success: false, error: 'cacheName is required.' });
+        return;
+      }
+      const coreEngine = GeminiCoreEngine.getInstance();
+      const updated = await coreEngine.refreshContextCache(cacheName, ttlSeconds);
+      res.json({ success: updated });
+    } catch (err: any) {
+      console.error('Cache refresh error:', err);
+      res.status(500).json({ success: false, error: err?.message || 'Cache refresh failed' });
+    }
+  });
+
+  /**
+   * Pillar 17: Sentence-Level Grounding Supports
+   * POST /api/gemini/grounded-supports
+   */
+  router.post('/grounded-supports', async (req, res) => {
+    try {
+      const { prompt, systemInstruction } = req.body;
+      if (!prompt) {
+        res.status(400).json({ success: false, error: 'prompt is required.' });
+        return;
+      }
+      const coreEngine = GeminiCoreEngine.getInstance();
+      const result = await coreEngine.generate<any>({
+        mode: 'search_grounded',
+        prompt,
+        systemInstruction: systemInstruction || 'پسپۆڕی شیکاری و دۆزینەوەی سەرچاوەی ئەکادیمی',
+        returnGroundingSupports: true
+      });
+      res.json({ success: true, result });
+    } catch (err: any) {
+      console.error('Grounding supports error:', err);
+      res.status(500).json({ success: false, error: err?.message || 'Grounding supports failed' });
+    }
+  });
+
+  /**
+   * Pillar 18: Large PDF / File State Polling (ai.files.get)
+   * POST /api/gemini/poll-file
+   */
+  router.post('/poll-file', async (req, res) => {
+    try {
+      const { fileName, maxWaitMs = 120000 } = req.body;
+      if (!fileName) {
+        res.status(400).json({ success: false, error: 'fileName is required.' });
+        return;
+      }
+      const coreEngine = GeminiCoreEngine.getInstance();
+      const isActive = await coreEngine.pollFileUntilActive(fileName, maxWaitMs);
+      res.json({ success: isActive, state: 'ACTIVE' });
+    } catch (err: any) {
+      console.error('File poll error:', err);
+      res.status(500).json({ success: false, error: err?.message || 'File polling failed' });
+    }
+  });
+
+  /**
+   * Pillar 20: Multimodal Audio Dictation (Speech to Kurdish Academic Text via inlineData)
+   * POST /api/gemini/audio-dictation
+   */
+  router.post('/audio-dictation', async (req, res) => {
+    try {
+      const { audioBase64, mimeType = 'audio/webm;codecs=opus', academicContext = '' } = req.body;
+      if (!audioBase64) {
+        res.status(400).json({ success: false, error: 'audioBase64 is required.' });
+        return;
+      }
+      const ai = getGeminiClient();
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType,
+                  data: audioBase64
+                }
+              },
+              {
+                text: `تۆ تایپکەر و ڕستەبڕی پسپۆڕی دەقی ئەکادیمیی کوردیت. گوێ لەم تۆمارە دەنگییە بگرە و بە تەواوی دەقەکەی بکە بە زمانی کوردیی فەرمی، زانستی، پاراو و ڕێنووس-ستاندارد.
+ڕێساکان:
+١. هیچ وشەیەک مەپەڕێنە.
+٢. پیتەکان پاک بکەرەوە (ک، ی، ە).
+٣. خاڵبەندیی دروست دابنێ.
+${academicContext ? `پاشخانی بەشەکە: ${academicContext}` : ''}
+تەنها دەقە وەرگێڕدراوەکە بنووسە بێ هیچ قسەیەکی زیادە.`
+              }
+            ]
+          }
+        ],
+        config: {
+          temperature: 0.1
+        }
+      });
+
+      const transcript = response.text?.trim() || '';
+      res.json({ success: true, transcript });
+    } catch (err: any) {
+      console.error('Audio dictation error:', err);
+      res.status(500).json({ success: false, error: err?.message || 'Audio dictation failed' });
+    }
+  });
+
+  /**
+   * Pillar 20: Multimodal Audio Viva Defense Evaluator (Spoken Defense to Academic Viva Evaluation)
+   * POST /api/gemini/audio-viva
+   */
+  router.post('/audio-viva', async (req, res) => {
+    try {
+      const {
+        audioBase64,
+        mimeType = 'audio/webm;codecs=opus',
+        questionText,
+        examinerRole,
+        scoringCriteria = []
+      } = req.body;
+
+      if (!audioBase64 || !questionText) {
+        res.status(400).json({ success: false, error: 'audioBase64 and questionText are required.' });
+        return;
+      }
+
+      const ai = getGeminiClient();
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-pro',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType,
+                  data: audioBase64
+                }
+              },
+              {
+                text: `تۆ ئەندامی لێژنەی تاوتوێکردنی تێزی ئەکادیمیت (${examinerRole || 'ناوبژیوانی لێژنە'}).
+پرسیارەکە ئەمە بوو: "${questionText}"
+پێوەرەکانی نمرەدان: ${scoringCriteria.join('، ')}
+
+گوێ لە وەڵامە دەنگییەکەی توێژەر بگرە لەم فایلە دەنگییەدا و بە شێوازی JSON هەڵسەنگاندنی بکە بەم پێکهاتەیە:
+{
+  "transcript": "دەقی ئەوەی توێژەر لە دەنگەکەدا بە کوردی وتی",
+  "grade": 88, // نمرە لەنێوان ٠ تا ١٠٠
+  "decisionStatus": "پەسەندکرا بە ئەنجامی نایاب", // یان "پەسەندکرا بە چاکسازیی بچووک" یان "پێویستی بە پێداچوونەوەی دووبارەیە"
+  "critique": "ڕاڤەی لێژنە لەسەر وەڵامە دەنگییەکە و ئاستی زانستیی وەڵامەکە بە کوردییەکی زۆر بەرز",
+  "recommendations": ["تێبینی و پێشنیاری کردەیی یەکەم", "تێبینی دووەم"]
+}`
+              }
+            ]
+          }
+        ],
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.2
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      res.json({ success: true, evaluation: parsed });
+    } catch (err: any) {
+      console.error('Audio viva evaluation error:', err);
+      res.status(500).json({ success: false, error: err?.message || 'Audio viva evaluation failed' });
     }
   });
 

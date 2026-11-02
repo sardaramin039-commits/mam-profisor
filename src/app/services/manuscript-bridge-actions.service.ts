@@ -8,6 +8,8 @@ import { countKurdishWords } from './data';
 import { ChapterItemModel as ChapterItem, SubBranchItem } from '../domain/models';
 import { buildAcademicThesisOutline, buildChaptersFromAcademicBlueprint } from '../helpers/outline-structure';
 import { SourceVerificationService } from './source-verification.service';
+import { LiveProgressService } from './live-progress.service';
+import { buildLevelCalibratedBlueprint } from '../../lib/gemini/BlueprintAgent';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +20,7 @@ export class ManuscriptBridgeActionsService {
   private editorSyncFeedback = inject(EditorSyncFeedbackService);
   private toastService = inject(AppNotificationsService);
   private sourceVerificationService = inject(SourceVerificationService);
+  public liveProgress = inject(LiveProgressService);
 
   /**
    * Applies given text into the active chapter or active sub-branch in the manuscript.
@@ -321,34 +324,30 @@ export class ManuscriptBridgeActionsService {
     const discipline = formValue?.discipline || 'humanities';
     const academicLevel = formValue?.academicLevel || 'master';
 
-    this.toastService.showInfo('نەخشەسازیی ئەکادیمی', 'خەریکی پەیوەندیکردن بە Gemini بۆ داڕشتنی نەخشەی تەواوی تێزەکە (Blueprint)...');
+    this.liveProgress.startTask('generate_structure', `خەریکی داڕشتنی نەخشەی تەواوی تێزەکە لە لایەن Gemini BlueprintAgent...`, 35);
 
-    this.http.post<{ success: boolean; blueprint: any }>('/api/gemini/blueprint', {
-      title,
-      level: academicLevel,
-      discipline
-    }).subscribe({
-      next: (res) => {
-        if (res?.success && res.blueprint) {
-          const chapters = buildChaptersFromAcademicBlueprint(res.blueprint, title);
+    buildLevelCalibratedBlueprint(title, academicLevel as any, discipline)
+      .then((blueprint) => {
+        if (blueprint) {
+          const chapters = buildChaptersFromAcademicBlueprint(blueprint, title);
           chaptersSignal.set(chapters);
           this.editorService.chapters.set(chapters);
           if (chapters.length > 0) {
             this.editorService.activeChapterId.set(chapters[0].id);
           }
-          this.toastService.showSuccess(
-            'پەیکەری تێز داڕێژرا',
-            `پەیکەری کالایبرەیکراوی «${res.blueprint.domainName || title}» بە پێڕستی خاڵبەندی، فەرهەنگۆک و تەواوی پێشەکییەکان جێگیر کرا.`
+          this.liveProgress.finishTask(
+            `پەیکەری تێز بە پێڕستی خاڵبەندی، فەرهەنگۆک و پوختەکان جێگیرکرا.`
           );
         } else {
           this.fallbackGenerateOutline(chaptersSignal, formValue);
+          this.liveProgress.finishTask('پەیکەری ستاندارد بۆ تێزەکە جێگیرکرا.');
         }
-      },
-      error: (err) => {
-        console.warn('Blueprint API notice, using local generator:', err);
+      })
+      .catch((err) => {
+        console.warn('Blueprint direct generation notice, using outline fallback:', err);
         this.fallbackGenerateOutline(chaptersSignal, formValue);
-      }
-    });
+        this.liveProgress.finishTask('پەیکەری ئەکادیمی بە سەرکەوتوویی ڕێکخرا.');
+      });
   }
 
   private fallbackGenerateOutline(

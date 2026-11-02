@@ -7,6 +7,8 @@ import { TEMPLATES as APPENDIX_TEMPLATES } from '../features/academic-suite/thes
 import { toSoraniNumber } from '../pipes/sorani-number.pipe';
 import { ExportReportBuilder, VerifiedSourceExportItem, WordCountExportAudit } from './export-report-builder';
 
+import { AcademicCitationManager } from './academic-citation-manager.service';
+
 export interface ExportChapterData { title: string; content: string; }
 export interface ExportSourceItem { id?: string; title: string; author: string; year?: number | string; doi?: string; publisher?: string; }
 export interface FullManuscriptExportOptions {
@@ -25,6 +27,7 @@ export interface FullManuscriptExportOptions {
 @Injectable({ providedIn: 'root' })
 export class WordExportService {
   private cameraReadyService = inject(CameraReadyService);
+  private citationManager = inject(AcademicCitationManager);
 
   public getActiveUniversityPreset(customId?: string): UniversityFormatPreset {
     let uniId = customId;
@@ -41,7 +44,7 @@ export class WordExportService {
   }
 
   public getDefaultAppendices(): Array<{ title: string; content: string }> {
-    return APPENDIX_TEMPLATES.map(t => ({ title: t.titleKurdish, content: t.contentTemplate }));
+    return [];
   }
 
   private extractTablesAndFigures(chapters: ExportChapterData[]): { tables: string[]; figures: string[] } {
@@ -78,9 +81,34 @@ export class WordExportService {
     const { Document, HeadingLevel, Packer, Paragraph, TextRun, AlignmentType, SectionType, Footer, PageNumber, NumberFormat } = await import('docx');
     const uni = this.getActiveUniversityPreset(options?.customUniversityId);
     const meta = this.getActiveMetadata(title);
-    const sources = options?.sources || [];
-    const abstract = options?.abstractText || meta.ethicalStatement || '';
-    const appendices = options?.appendices?.length ? options.appendices : this.getDefaultAppendices();
+    
+    // Retrieve real sources from options or from citationManager
+    let sources = options?.sources || [];
+    if (sources.length === 0) {
+      const recorded = this.citationManager.getAllSources();
+      if (recorded.length > 0) {
+        sources = recorded.map((s, idx) => ({
+          id: s.id || `src_${idx}`,
+          author: s.author,
+          title: s.title,
+          year: s.year,
+          publisher: s.publisherOrJournal
+        }));
+      }
+    }
+
+    let abstract = options?.abstractText || '';
+    if (!abstract) {
+      const absCh = chapters.find(c => c.title.includes('پوختە') || c.title.toLowerCase().includes('abstract'));
+      if (absCh && absCh.content) {
+        abstract = absCh.content.replace(/#+\s*/g, '').replace(/---/g, '').trim();
+      }
+    }
+    if (!abstract) {
+      abstract = meta.ethicalStatement || 'ئەم توێژینەوەیە بەدواداچوونی ورد بۆ ئارگیومێنتە زانستییەکان و ڕەهەندە مەعریفییەکانی بابەتەکە دەکات بەپێی میتۆدۆلۆژیای ئەکادیمی.';
+    }
+
+    const appendices = options?.appendices || [];
 
     const rightMarginTwips = Math.round((uni.innerGutterMarginCm || 3.5) * 567);
     const outerMarginTwips = Math.round((uni.outerMarginCm || 2.5) * 567);
@@ -156,13 +184,27 @@ export class WordExportService {
       new Paragraph({ children: [], pageBreakBefore: true })
     );
 
+    // Filter out front matter chapters from main body to avoid duplicating them
+    const bodyChapters = chapters.filter(c => 
+      !c.title.includes('پێشکەشکردن') && 
+      !c.title.includes('پێشکەشە') && 
+      !c.title.includes('سوپاس و پێزانین') && 
+      !c.title.includes('پوختەی توێژینەوە') && 
+      !c.title.includes('پێڕستی بابەتەکان')
+    );
+
     // 5. Table of Contents
     frontMatterChildren.push(mkP('پێڕستی بابەتەکان (Table of Contents)', 32, true, AlignmentType.RIGHT, 240, undefined, false, HeadingLevel.HEADING_1));
-    chapters.forEach((ch, idx) => frontMatterChildren.push(mkP(`بەشی ${toSoraniNumber(idx + 1)}: ${ch.title}`, 24, true, AlignmentType.RIGHT, 100)));
+    bodyChapters.forEach((ch, idx) => {
+      const cleanTitle = ch.title.startsWith('بەشی') ? ch.title : `بەشی ${toSoraniNumber(idx + 1)}: ${ch.title}`;
+      frontMatterChildren.push(mkP(cleanTitle, 24, true, AlignmentType.RIGHT, 100));
+    });
     frontMatterChildren.push(
-      mkP('لیستی سەرچاوە و ژێدەرەکان (References)', 24, true, AlignmentType.RIGHT, 100),
-      mkP('پاشکۆکان و فۆڕمەکانی لێژنەی ئەخلاقی (Appendices & IRB)', 24, true, AlignmentType.RIGHT, 240)
+      mkP('لیستی سەرچاوە و ژێدەرەکان (References)', 24, true, AlignmentType.RIGHT, 100)
     );
+    if (appendices.length > 0) {
+      frontMatterChildren.push(mkP('پاشکۆکان (Appendices)', 24, true, AlignmentType.RIGHT, 240));
+    }
 
     // 6. Table of Tables (Auto-generated if tables exist)
     if (tables.length > 0) {
@@ -183,8 +225,11 @@ export class WordExportService {
     }
 
     // --- SECTION 2: MAIN BODY (Starts at page 1 Decimal) ---
-    chapters.forEach((chapter, index) => {
-      mainBodyChildren.push(mkP(`بەشی ${toSoraniNumber(index + 1)}: ${chapter.title}`, 32, true, AlignmentType.RIGHT, 240, undefined, false, HeadingLevel.HEADING_1));
+    bodyChapters.forEach((chapter, index) => {
+      const cleanTitle = chapter.title.startsWith('بەشی') 
+        ? chapter.title 
+        : `بەشی ${toSoraniNumber(index + 1)}: ${chapter.title}`;
+      mainBodyChildren.push(mkP(cleanTitle, 32, true, AlignmentType.RIGHT, 240, undefined, false, HeadingLevel.HEADING_1));
       const paras = String(chapter.content || '').split(/\n{2,}|\r\n{2,}/);
       const bodyParas: string[] = [];
       const footnoteParas: string[] = [];
@@ -359,8 +404,8 @@ p { margin-bottom: 16px; text-indent: 0.8cm; }
 
 <div class="page-break">
   <h1 class="sec-title">پێشکەشکردن و سوپاس و پێزانین (Dedication & Acknowledgments)</h1>
-  <p><strong>پێشکەشکردن:</strong> پێشکەشە بە کەسوکاری سەربەرزی شەهیدان، دایک و باوکم و هەموو دڵسۆزانی زمانی کوردی.</p>
-  <p><strong>سوپاس و پێزانین:</strong> سوپاسی بێپایان بۆ پەروەردگار و ڕێز و پێزانین بۆ سەرپەرشتیاری بەڕێزم و مامۆستایانی کۆلێژ.</p>
+  <p><strong>پێشکەشکردن:</strong> ${chapters.find(c => c.title.includes('پێشکەش'))?.content?.replace(/#+\s*/g, '') || 'پێشکەشە بە کەسوکاری سەربەرزی شەهیدان، دایک و باوکم و هەموو دڵسۆزانی زمانی کوردی.'}</p>
+  <p><strong>سوپاس و پێزانین:</strong> ${chapters.find(c => c.title.includes('سوپاس'))?.content?.replace(/#+\s*/g, '') || 'سوپاسی بێپایان بۆ پەروەردگار و ڕێز و پێزانین بۆ سەرپەرشتیاری بەڕێزم و مامۆستایانی کۆلێژ.'}</p>
   <div class="footer-badge">پەڕەی ${abjad[++abjadIdx]}</div>
 </div>
 
@@ -375,12 +420,23 @@ p { margin-bottom: 16px; text-indent: 0.8cm; }
   <h1 class="sec-title">پێڕستی بابەتەکان (Table of Contents)</h1>
   <div style="margin-top: 15px;">
 `;
-    chapters.forEach((ch, idx) => {
-      html += `    <div class="toc-item"><span>بەشی ${toSoraniNumber(idx + 1)}: ${ch.title}</span><span>لاپەڕە ${toSoraniNumber((idx * 15) + 1)}</span></div>\n`;
+    const bodyChapters = chapters.filter(c => 
+      !c.title.includes('پێشکەشکردن') && 
+      !c.title.includes('پێشکەشە') && 
+      !c.title.includes('سوپاس و پێزانین') && 
+      !c.title.includes('پوختەی توێژینەوە') && 
+      !c.title.includes('پێڕستی بابەتەکان')
+    );
+
+    bodyChapters.forEach((ch, idx) => {
+      const cleanTitle = ch.title.startsWith('بەشی') ? ch.title : `بەشی ${toSoraniNumber(idx + 1)}: ${ch.title}`;
+      html += `    <div class="toc-item"><span>${cleanTitle}</span><span>لاپەڕە ${toSoraniNumber((idx * 15) + 1)}</span></div>\n`;
     });
-    html += `    <div class="toc-item"><span>لیستی سەرچاوە و ژێدەرەکان (Bibliography)</span><span>سەرچاوە</span></div>
-    <div class="toc-item"><span>پاشکۆکان و فۆڕمەکانی لێژنەی ئەخلاقی (Appendices)</span><span>پاشکۆ</span></div>
-  </div>
+    html += `    <div class="toc-item"><span>لیستی سەرچاوە و ژێدەرەکان (Bibliography)</span><span>سەرچاوە</span></div>\n`;
+    if (appendices.length > 0) {
+      html += `    <div class="toc-item"><span>پاشکۆکان (Appendices)</span><span>پاشکۆ</span></div>\n`;
+    }
+    html += `  </div>
   <div class="footer-badge">پەڕەی ${abjad[++abjadIdx]}</div>
 </div>
 `;
@@ -403,8 +459,9 @@ p { margin-bottom: 16px; text-indent: 0.8cm; }
 
     // MAIN BODY (Arabic / Kurdish numerals starting strictly at 1)
     let pageNum = 1;
-    chapters.forEach((ch, idx) => {
-      html += `<div class="page-break"><h1 class="sec-title">بەشی ${toSoraniNumber(idx + 1)}: ${ch.title}</h1>\n`;
+    bodyChapters.forEach((ch, idx) => {
+      const cleanTitle = ch.title.startsWith('بەشی') ? ch.title : `بەشی ${toSoraniNumber(idx + 1)}: ${ch.title}`;
+      html += `<div class="page-break"><h1 class="sec-title">${cleanTitle}</h1>\n`;
       const paragraphs = String(ch.content || '').split(/\n{2,}|\r\n{2,}/);
       const bodyParas: string[] = [];
       const footnoteParas: string[] = [];
