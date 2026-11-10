@@ -1,46 +1,21 @@
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
-
-# Env variables
+# Environment variables
 .env*
 !.env.example
 
-# Compiled output
-/dist
+# Compiled output and caches
+node_modules/
+dist/
+.angular/
+.vite/
+coverage/
 /tmp
 /out-tsc
 /bazel-out
 
-# Node
-node_modules/
+# Logs
+*.log
 npm-debug.log
 yarn-error.log
-
-# IDEs and editors
-.idea/
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# Visual Studio Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.history/*
-
-# Miscellaneous
-/.angular/cache
-.sass-cache/
-/connect.lock
-/coverage
-/libpeerconnection.log
-testem.log
-/typings
-__screenshots__/
 
 # System files
 .DS_Store
@@ -49,11 +24,14 @@ Thumbs.db
 # TypeScript generated build metadata
 *.tsbuildinfo
 
-# Playwright browser E2E artifacts
-/playwright-report/
-/test-results/
-/blob-report/
+# E2E artifacts
+playwright-report/
+test-results/
+blob-report/
 
 # Package manager locks
+*.lockb
 bun.lock
-bun.lockb
+
+# Temporary archives
+*.tgz

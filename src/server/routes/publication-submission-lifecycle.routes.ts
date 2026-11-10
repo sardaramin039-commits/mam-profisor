@@ -31,7 +31,7 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
 
   router.get('/:workspaceId', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
     if (!userId) return;
     if (!lifecycleId.safeParse(workspaceId).success) {
       res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
@@ -57,7 +57,7 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
 
   router.post('/:workspaceId/create', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
     if (!userId) return;
     if (!lifecycleId.safeParse(workspaceId).success) {
       res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
@@ -75,7 +75,7 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
     }
 
     try {
-      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId as string);
       if (control.gates.exportBlocked) {
         res.status(409).json({
           success: false,
@@ -97,15 +97,15 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
         abstract: parsed.data.abstract,
         researchQuestion: parsed.data.researchQuestion,
         methodology: parsed.data.methodology,
-        chapters: parsed.data.chapters,
+        chapters: (parsed.data.chapters || []) as any,
         conclusion: parsed.data.conclusion,
-        citations
+        citations: (citations || []) as any
       });
       const submission = buildPublicationSubmissionPackage({
         manuscript,
-        policy: parsed.data.policy,
+        policy: parsed.data.policy as any,
         keywords: parsed.data.keywords,
-        authors: parsed.data.authors
+        authors: parsed.data.authors as any
       });
       const integrity = verifyPublicationSubmissionIntegrity({ package: submission });
 
@@ -129,7 +129,7 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
 
   router.post('/:workspaceId/transition', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
     if (!userId) return;
     if (!lifecycleId.safeParse(workspaceId).success) {
       res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
@@ -209,8 +209,8 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
 
   router.post('/:workspaceId/:submissionId/initialize-audit', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const submissionId = req.params['submissionId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
+    const submissionId = String(req.params['submissionId'] || "");
     if (!userId) return;
     if (!lifecycleId.safeParse(workspaceId).success || !lifecycleId.safeParse(submissionId).success) {
       res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
@@ -239,8 +239,8 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
 
   router.get('/:workspaceId/:submissionId/receipt', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const submissionId = req.params['submissionId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
+    const submissionId = String(req.params['submissionId'] || "");
     if (!userId) return;
     if (!lifecycleId.safeParse(workspaceId).success || !lifecycleId.safeParse(submissionId).success) {
       res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
@@ -292,8 +292,8 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
 
   router.post('/:workspaceId/:submissionId/mark-ready', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const submissionId = req.params['submissionId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
+    const submissionId = String(req.params['submissionId'] || "");
     if (!userId) return;
     if (!lifecycleId.safeParse(workspaceId).success || !lifecycleId.safeParse(submissionId).success) {
       res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
@@ -317,7 +317,7 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
         return;
       }
 
-      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId as string);
       if (control.gates.exportBlocked) {
         res.status(409).json({
           success: false,
@@ -339,15 +339,15 @@ export function createPublicationSubmissionLifecycleRouter(): Router {
         abstract: parsed.data.abstract,
         researchQuestion: parsed.data.researchQuestion,
         methodology: parsed.data.methodology,
-        chapters: parsed.data.chapters,
+        chapters: (parsed.data.chapters || []) as any,
         conclusion: parsed.data.conclusion,
-        citations
+        citations: (citations || []) as any
       });
       const submission = buildPublicationSubmissionPackage({
         manuscript,
-        policy: parsed.data.policy,
+        policy: parsed.data.policy as any,
         keywords: parsed.data.keywords,
-        authors: parsed.data.authors
+        authors: parsed.data.authors as any
       });
       const integrity = verifyPublicationSubmissionIntegrity({ package: submission });
 

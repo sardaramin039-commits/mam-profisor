@@ -89,7 +89,7 @@ app.use('/api', promptSanitizerMiddleware);
 app.use('/api', rateLimiterMiddleware);
 
 const angularApp = new AngularNodeAppEngine({
-  allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0', '*.run.app', '*.google.com']
+  allowedHosts: ['localhost', '127.0.0.1', '0.0.0.0', '*.run.app', '*.google.com', '*.usercontent.goog']
 });
 
 // Mount API Routers (Public Docs vs Protected API Routes)
@@ -128,7 +128,7 @@ app.post('/api/generate_embedding', async (req, res) => {
     }
     const ai = getGeminiClient();
     const result = await ai.models.embedContent({
-      model: 'gemini-embedding-2-preview',
+      model: process.env['GEMINI_EMBEDDING_MODEL'] || 'text-embedding-004',
       contents: text,
       config: { outputDimensionality: 768 }
     });
@@ -184,6 +184,15 @@ app.use((req, res, next) => {
     )
     .catch(next);
 });
+
+// Fallback to index.html for client-side routing on GET requests
+app.use((req, res, next) => {
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    return res.sendFile(join(browserDistFolder, 'index.html'));
+  }
+  next();
+});
+
 
 /**
  * Start the server if this module is the main entry point, or it is ran via PM2.

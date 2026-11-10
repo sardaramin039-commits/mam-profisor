@@ -14,8 +14,6 @@ import { DOCTORAL_ACADEMIC_DIRECTIVES } from '../../prompts/academic-rules';
 
 import { LiveProgressService } from './live-progress.service';
 import { AcademicLevel } from '../models/level-profiles';
-import { writeCalibratedSubSection, generateCalibratedConclusion } from '../../lib/gemini/WriterAgent';
-import { AdaptiveCitationManager as GeminiCitationManager } from '../../lib/gemini/CitationManager';
 
 export interface BranchWritingOptions {
   manuscriptTitle?: string;
@@ -118,7 +116,7 @@ export class BranchWritingEngineService {
         ? 'school'
         : 'master';
 
-      const geminiCitationManager = new GeminiCitationManager(normLevel);
+      let lastServerBibliography = '';
 
       for (let chIdx = 0; chIdx < targetChapters.length; chIdx++) {
         const chapter = targetChapters[chIdx];
@@ -162,93 +160,134 @@ export class BranchWritingEngineService {
               };
             }
 
-            // 1. Send dedicated structured request to calibrated Gemini write-subsection engine
+            // Helper to update progress and UI signals as streamed chunks arrive
+            const applyBranchProgress = (liveMarkdown: string, liveWordCount: number, statusStep?: string) => {
+              branch.content = liveMarkdown;
+              branch.wordCount = liveWordCount;
+              this.currentBranchWords.set(liveWordCount);
+              this.branchProgressPercent.set(Math.min(100, Math.round((liveWordCount / targetWords) * 100)));
+
+              // Recalculate parent axis word count
+              axis.wordCount = axis.branches.reduce((sum, b) => sum + (b.wordCount || 0), 0);
+
+              // Rebuild chapter content
+              let assembled = '';
+              for (const ax of chapter.axes) {
+                const writtenBranches = ax.branches.filter(b => b.content && b.content.trim().length > 0);
+                if (writtenBranches.length > 0) {
+                  assembled += `## ${ax.code}: ${ax.title}\n\n`;
+                  for (const b of writtenBranches) {
+                    const bText = b.content.trim();
+                    if (!bText.startsWith('###')) {
+                      assembled += `### ${b.code} ${b.title}\n\n${bText}\n\n`;
+                    } else {
+                      assembled += `${bText}\n\n`;
+                    }
+                  }
+                }
+              }
+              chapter.content = assembled.trim();
+              chapter.wordCount = countKurdishWords(chapter.content);
+
+              // Immutably clone and update chapters state live across signals
+              const liveClone = chapters.map(c => {
+                if (c.id === chapter.id) {
+                  return {
+                    ...c,
+                    content: chapter.content,
+                    wordCount: chapter.wordCount,
+                    axes: chapter.axes.map(ax => ({
+                      ...ax,
+                      wordCount: ax.branches.reduce((sum, b) => sum + (b.wordCount || 0), 0),
+                      branches: ax.branches.map(br => ({ ...br }))
+                    }))
+                  };
+                }
+                return c;
+              });
+
+              this.editorService.setChapters(liveClone);
+              if (options.chaptersSignal) {
+                options.chaptersSignal.set(liveClone);
+              }
+              if (statusStep) {
+                this.currentWritingStatus.set(statusStep);
+              }
+            };
+
+            // 1. Send dedicated structured request to server-side Gemini stream-subsection engine
             let subWriterResult: any = null;
             let lastBranchError: string | null = null;
 
             try {
-              const directRes = await writeCalibratedSubSection({
-                thesisTitle: title,
-                level: normLevel,
-                discipline,
-                chapterTitle: chapter.title,
-                sectionTitle: `${axis.code}: ${axis.title}`,
-                subSection: {
-                  code: branch.code,
-                  title: branch.title,
-                  targetWords: targetWords,
-                  microTopicsToCover: [branch.title],
-                  transitionFromPreviousGoal: lastSubSectionInfo?.title ? `گرێدان بە ${lastSubSectionInfo.title}` : '',
-                  transitionToNextGoal: nextSubSection?.title ? `ڕادەستکردن بە ${nextSubSection.title}` : ''
-                },
-                previousClosingParagraph: lastSubSectionInfo?.lastParagraph || '',
-                citationManager: geminiCitationManager,
-                onLiveProgress: (liveMarkdown, liveWordCount, statusStep) => {
-                  branch.content = liveMarkdown;
-                  branch.wordCount = liveWordCount;
-                  this.currentBranchWords.set(liveWordCount);
-                  this.branchProgressPercent.set(Math.min(100, Math.round((liveWordCount / targetWords) * 100)));
-
-                  // Recalculate parent axis word count
-                  axis.wordCount = axis.branches.reduce((sum, b) => sum + (b.wordCount || 0), 0);
-
-                  // Rebuild chapter content
-                  let assembled = '';
-                  for (const ax of chapter.axes) {
-                    const writtenBranches = ax.branches.filter(b => b.content && b.content.trim().length > 0);
-                    if (writtenBranches.length > 0) {
-                      assembled += `## ${ax.code}: ${ax.title}\n\n`;
-                      for (const b of writtenBranches) {
-                        const bText = b.content.trim();
-                        if (!bText.startsWith('###')) {
-                          assembled += `### ${b.code} ${b.title}\n\n${bText}\n\n`;
-                        } else {
-                          assembled += `${bText}\n\n`;
-                        }
-                      }
-                    }
-                  }
-                  chapter.content = assembled.trim();
-                  chapter.wordCount = countKurdishWords(chapter.content);
-
-                  // Immutably clone and update chapters state live across signals
-                  const liveClone = chapters.map(c => {
-                    if (c.id === chapter.id) {
-                      return {
-                        ...c,
-                        content: chapter.content,
-                        wordCount: chapter.wordCount,
-                        axes: chapter.axes.map(ax => ({
-                          ...ax,
-                          wordCount: ax.branches.reduce((sum, b) => sum + (b.wordCount || 0), 0),
-                          branches: ax.branches.map(br => ({ ...br }))
-                        }))
-                      };
-                    }
-                    return c;
-                  });
-
-                  this.editorService.setChapters(liveClone);
-                  if (options.chaptersSignal) {
-                    options.chaptersSignal.set(liveClone);
-                  }
-                  if (statusStep) {
-                    this.currentWritingStatus.set(statusStep);
-                  }
-                }
+              const streamResp = await fetch('/api/gemini/stream-subsection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  thesisTitle: title,
+                  level: normLevel,
+                  discipline,
+                  chapterTitle: chapter.title,
+                  sectionTitle: `${axis.code}: ${axis.title}`,
+                  subSection: {
+                    code: branch.code,
+                    title: branch.title,
+                    targetWords: targetWords,
+                    microTopicsToCover: [branch.title],
+                    transitionFromPreviousGoal: lastSubSectionInfo?.title ? `گرێدان بە ${lastSubSectionInfo.title}` : '',
+                    transitionToNextGoal: nextSubSection?.title ? `ڕادەستکردن بە ${nextSubSection.title}` : ''
+                  },
+                  previousClosingParagraph: lastSubSectionInfo?.lastParagraph || ''
+                })
               });
 
-              if (directRes && directRes.fullSubSectionMarkdown?.trim()) {
-                subWriterResult = {
-                  academicContentMarkdown: directRes.fullSubSectionMarkdown.trim(),
-                  closingParagraph: directRes.lastParagraph || '',
-                  executiveSummaryForNext: (directRes.keyFindings || []).join(' | '),
-                  suggestedCitations: []
-                };
+              if (streamResp.ok && streamResp.body) {
+                const reader = streamResp.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let sseBuf = '';
+
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+
+                  sseBuf += decoder.decode(value, { stream: true });
+                  const lines = sseBuf.split('\n');
+                  sseBuf = lines.pop() || '';
+
+                  for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed.startsWith('data:')) continue;
+                    const dataStr = trimmed.replace(/^data:\s*/, '');
+                    if (dataStr === '[DONE]') break;
+
+                    try {
+                      const parsed = JSON.parse(dataStr);
+                      if (parsed.status === 'chunk') {
+                        applyBranchProgress(parsed.markdown, parsed.wordCount, parsed.step);
+                      } else if (parsed.status === 'completed' && parsed.result) {
+                        subWriterResult = {
+                          academicContentMarkdown: (parsed.result.fullSubSectionMarkdown || '').trim(),
+                          closingParagraph: parsed.result.lastParagraph || '',
+                          executiveSummaryForNext: (parsed.result.keyFindings || []).join(' | '),
+                          suggestedCitations: []
+                        };
+                        if (parsed.bibliography) {
+                          lastServerBibliography = parsed.bibliography;
+                        }
+                      } else if (parsed.error) {
+                        lastBranchError = parsed.error;
+                      }
+                    } catch {}
+                  }
+                }
               }
-            } catch (directErr: any) {
-              lastBranchError = directErr?.message || String(directErr);
-              console.warn('writeCalibratedSubSection direct call notice, trying API:', directErr);
+            } catch (streamErr: any) {
+              lastBranchError = streamErr?.message || String(streamErr);
+              console.warn('stream-subsection notice, falling back to write-subsection:', streamErr);
+            }
+
+            // Fallback to unary server API if streaming didn't produce full content
+            if (!subWriterResult?.academicContentMarkdown) {
               try {
                 const apiRes = await firstValueFrom(
                   this.http.post<{ success: boolean; result: any; bibliography?: string }>('/api/gemini/write-subsection', {
@@ -275,6 +314,9 @@ export class BranchWritingEngineService {
                     executiveSummaryForNext: (apiRes.result.keyFindings || []).join(' | '),
                     suggestedCitations: []
                   };
+                  if (apiRes.bibliography) {
+                    lastServerBibliography = apiRes.bibliography;
+                  }
                 }
               } catch (apiErr: any) {
                 lastBranchError = apiErr?.message || String(apiErr);
@@ -436,7 +478,7 @@ export class BranchWritingEngineService {
         (c) => c.title.includes('سەرچاوە') || c.title.toLowerCase().includes('references') || c.title.includes('بیبلۆگرافیا')
       );
       if (refChapter) {
-        const bibMarkdown = geminiCitationManager.buildBibliographySection() || this.citationManager.generateFinalBibliographyMarkdown();
+        const bibMarkdown = lastServerBibliography || this.citationManager.generateFinalBibliographyMarkdown();
         if (bibMarkdown && bibMarkdown.trim()) {
           refChapter.content = bibMarkdown;
           refChapter.wordCount = countKurdishWords(bibMarkdown);

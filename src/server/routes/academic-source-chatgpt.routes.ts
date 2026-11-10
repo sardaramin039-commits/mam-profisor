@@ -39,7 +39,7 @@ export function createChatGptAcademicSourcesRouter(): Router {
     }
 
     try {
-      const result = await openAiChatGptService.discoverAcademicSources(parsed.data);
+      const result = await openAiChatGptService.discoverAcademicSources(parsed.data as any);
       res.json(result);
     } catch (error: unknown) {
       console.error('[ChatGPT discover-sources error]:', error);
@@ -67,7 +67,7 @@ export function createChatGptAcademicSourcesRouter(): Router {
     }
 
     try {
-      const result = await openAiChatGptService.organizeAndFormatReferences(parsed.data);
+      const result = await openAiChatGptService.organizeAndFormatReferences(parsed.data as any);
       res.json(result);
     } catch (error: unknown) {
       console.error('[ChatGPT organize-references error]:', error);

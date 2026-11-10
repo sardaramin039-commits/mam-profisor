@@ -8,6 +8,9 @@ import {
 import { SubSectionPlan } from "./BlueprintAgent";
 import { AdaptiveCitationManager, SourceItem } from "./CitationManager";
 import { GeminiCoreEngine } from "./CoreEngine";
+import { autoEvolutionGuardian } from "./AutoEvolutionGuardian";
+import { getHundredPointsAcademicDirective } from "./HundredAcademicRevolution";
+import { getSupremeDoctoralDirective, getDomainSpecificDirectives } from "./SupremeAcademicEncyclopedia111";
 
 interface PassOutput {
   proseMarkdown: string;
@@ -49,6 +52,9 @@ const passSchema: Schema = {
 };
 
 const IRONCLAD_ACADEMIC_AND_COHESION_LAWS = `
+٠. یاسای سێکوچکەی شیکاریی ئەکادیمی (THEORETICAL-TEXTUAL-CRITICAL TRIAD):
+- هەموو تەوەرێک دەبێت بەم ٣ هەنگاوە زانستییە دابڕێژرێت: (١) ناساندنی چەمک یان گریمانە تیۆرییەکە، (٢) هێنانەوەی بەڵگە و نموونەی ڕاستەوخۆ لەناو دەقە بنەڕەتییەکان بە پەراوێزی وردەوە، (٣) شیکردنەوەی ڕەخنەیی و بەراوردکاری بە دەنگی زانستیی توێژەر (Authorial Voice).
+- لە یەکەم دەرکەوتنی هەر زاراوەیەکی زانستیدا، هاوتا ئینگلیزی و عەرەبییەکەی لەناو کەوانەدا بنووسە.
 یاسا پۆڵایینەکانی ئەکادیمی (شکاندنی هەر خاڵێک بە هەموو شێوەیەک قەدەغەیە):
 ١. قەدەغەکردنی ڕەهای کورتبڕی (ZERO TRUNCATION):
    - هەرگیز بابەتەکان کورت مەکەرەوە و دەستەواژەی وەک (بە کورتی، هتد...) بەکارمەهێنە؛ هەر خاڵێک بە پەرەگرافی تێروتەسەل و شیکردنەوەی قووڵ بنووسە تا دەگاتە تەواوی ژمارەی وشەی داواکراو.
@@ -59,6 +65,8 @@ const IRONCLAD_ACADEMIC_AND_COHESION_LAWS = `
 ٤. پاراستنی یەکێتیی زنجیرەیی نێوان (بەش -> تەوەر -> لق -> پەرەگراف):
    - پەرەگرافی یەکەم دەبێت ڕاستەوخۆ وەک تەواوکەری لۆژیکیی پەرەگرافی کۆتایی پێشوو دەست پێ بکات و پەرەگرافی کۆتاییش زەمینە بۆ لقی داهاتوو خۆش بکات.
    - ڕێنووس و ڕستەسازیی کوردی دەبێت ١٠٠٪ پاراو، ڕەسەن و بێ هەڵەی ڕێزمانی بێت.
+${getHundredPointsAcademicDirective()}
+${getSupremeDoctoralDirective()}
 `;
 
 export const COHESION_AND_INTEGRITY_LAWS = IRONCLAD_ACADEMIC_AND_COHESION_LAWS;
@@ -149,11 +157,33 @@ export async function writeCalibratedSubSection(params: {
     });
   }
 
-  // STEP 2: Uncaged Streaming Generation in Pure Markdown
+  // STEP 2: Uncaged Streaming Generation in Pure Markdown with Academic Matrix
+  const matrixDirectives =
+    (typeof window !== "undefined" && (window as any).__MAM_ACADEMIC_MATRIX__?.getDirectives?.()) || "";
+  const matrixConfig =
+    (typeof window !== "undefined" && (window as any).__MAM_ACADEMIC_MATRIX__?.config) || null;
+
+  if (matrixConfig?.customSourcesEnabled && matrixConfig?.customSourcesList?.trim()) {
+    const rawLines = matrixConfig.customSourcesList.split("\n").map((l: string) => l.trim()).filter(Boolean);
+    rawLines.forEach((line: string, idx: number) => {
+      params.citationManager.registerSource({
+        id: `custom_src_${idx + 1}`,
+        author: line.split("(")[0]?.replace(/^\d+[\.\،\-]\s*/, "")?.trim() || line,
+        year: line.match(/\((\d{4})\)/)?.[1] || "٢٠٢٤",
+        title: line,
+        publisherOrLocation: "سەرچاوەی تایبەتی توێژەر",
+        language: "ku",
+        verificationOrigin: "user_verified_library"
+      });
+    });
+  }
+
   const systemInstruction = `
 ${buildLevelSystemInstruction(params.level, params.thesisTitle, params.discipline)}
 
-${IRONCLAD_ACADEMIC_AND_COHESION_LAWS}
+${matrixDirectives}
+
+${IRONCLAD_ACADEMIC_AND_COHESION_LAWS}${autoEvolutionGuardian.getActiveSystemAugmentations()}
 یاسای شێوازی دەق:
 - ڕاستەوخۆ دەقی زانستی و پەرەگرافەکانی لقەکە بە زمانی کوردیی فەرمی (سۆرانی) بنووسە بێ هیچ قاڵب و کۆدێکی JSON.
 - هەموو سەرچاوەیەک بە شێوازی {{CITE:ناسێنەر}} یان ڕاستەوخۆ بە (نووسەر، ساڵ) تۆمار بکە.
@@ -170,7 +200,8 @@ ${params.lockedTerminology && params.lockedTerminology.length > 0 ? `- زارا�
 - تەوەری ورد بۆ تاوتوێکردن: ${params.subSection.microTopicsToCover.join("، ")}
 ${params.previousClosingParagraph ? `- دوایین پەرەگرافی پێشوو (بەستنەوەی لۆژیکی لەگەڵ ئەمەدا دەست پێبکە): "${params.previousClosingParagraph}"` : ""}
 ${params.nextSubSectionTitle ? `- زەمینەسازی بۆ لقی داهاتوو: (${params.nextSubSectionTitle})` : ""}
-
+${matrixDirectives ? `\n[کۆنتڕۆڵە تایبەتە ئەکادیمییە چالاکەکان]:\n${matrixDirectives}\n` : ""}
+${getDomainSpecificDirectives(params.thesisTitle + " " + params.subSection.title, params.discipline || "")}
 [سەرچاوە و بەڵگە ڕاستەقینە دۆزراوەکان]:
 ${openAlexWorks || ""}
 ${groundedText || ""}
@@ -327,7 +358,7 @@ export async function generateCalibratedConclusion(
 
   const text = await engine.generate<string>({
     mode: "deep_thinking",
-    systemInstruction: `${buildLevelSystemInstruction(level, title, discipline)}\n${IRONCLAD_ACADEMIC_AND_COHESION_LAWS}`,
+    systemInstruction: `${buildLevelSystemInstruction(level, title, discipline)}\n${IRONCLAD_ACADEMIC_AND_COHESION_LAWS}${autoEvolutionGuardian.getActiveSystemAugmentations()}`,
     prompt: `
 ناونیشان: "${title}"
 ئاست: ${profile.kurdishTitle}
@@ -383,6 +414,14 @@ export function generateLevelDesignStylesheet(level: AcademicLevel): string {
   font-weight: bold;
   margin-top: 14pt;
   margin-bottom: 8pt;
+}
+.academic-document-container blockquote {
+  margin: 12pt 1.2cm;
+  padding: 8pt 14pt;
+  border-right: 3px solid #334155;
+  background: #f8fafc;
+  font-size: 13pt;
+  line-height: 1.45;
 }
 .academic-document-container p {
   text-indent: ${level === "school" ? "0.5cm" : "1cm"};

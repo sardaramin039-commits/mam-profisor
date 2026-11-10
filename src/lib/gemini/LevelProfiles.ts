@@ -1,3 +1,5 @@
+import { getDomainSpecificDirectives } from "./SupremeAcademicEncyclopedia111";
+
 export type AcademicLevel = "school" | "bachelor" | "master" | "phd";
 
 export type AcademicDomainKey =
@@ -210,9 +212,8 @@ export function normalizeKurdishAcademicProse(rawText: string): string {
     .replace(/ة/g, "ە")
     .replace(/ه\u200c/g, "ە")
     .replace(/ھ/g, "ه")
-    .replace(/([اأإآدذرزژوؤ])ه(\s|$|[.،؛:؟!])/g, "$1ە$2")
-    .replace(/\s+([،؛:؟!])/g, "$1")
-    .replace(/([،؛:؟!])(?=[^\s\d»"'\n)])/g, "$1 ")
+    .replace(/(\S)\s+([،؛؟!.])/g, "$1$2")
+    .replace(/([،؛؟!])(?=[^\s\d"»)\n])/g, "$1 ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
@@ -391,12 +392,16 @@ export function getLevelProfile(level: string): LevelCalibrationProfile {
 export function buildLevelSystemInstruction(level: string, title = "", discipline = ""): string {
   const profile = getLevelProfile(level);
   const domain = detectAcademicDomain(title, discipline);
+  const officialIntroAnatomy = "\n[یاسای پێشەکیی فەرمیی زانکۆکانی کوردستان]: پێشەکی دەبێت بە سەردێڕی جیاواز ئەم ٧ بڕگەیە لەخۆبگرێت: ١. گرنگیی توێژینەوە و هۆکاری هەڵبژاردنی ٢. کێشەی توێژینەوە و پرسیارە سەرەکییەکان ٣. ئامانج و گریمانەی توێژینەوە ٤. میتۆدی توێژینەوە و چوارچێوەی تیۆری ٥. سنووری توێژینەوە (بابەتی، کاتی، شوێنی) ٦. پێشینەی توێژینەوە (Literature Review) ٧. پێکهاتەی توێژینەوەکە.";
+  const doctoralDirectives = getDomainSpecificDirectives(title, discipline);
   return `
 [${profile.kurdishTitle}] — [${domain.kurdishName}]
 ${profile.personaPrompt}
 
 پێوەری تایبەتی بوارەکە (${domain.kurdishName}):
 ${domain.methodologyAndTerminologyRules}
+
+${doctoralDirectives}
 
 هاوسەنگیی فۆڕم و ناوەڕۆک:
 ${profile.formAndContentAnatomy}
@@ -408,6 +413,6 @@ ${profile.vocabularyAndStyleRules}
 ${profile.strictlyForbiddenRules}
 
 یاسای پێشەکی و ئەنجام:
-${profile.introAndConclusionRules}
+${profile.introAndConclusionRules}${officialIntroAnatomy}
 `.trim();
 }

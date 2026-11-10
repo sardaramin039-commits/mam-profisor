@@ -6,15 +6,21 @@ export interface SourceItem {
   year: string;
   title: string;
   publisherOrLocation: string;
-  language: "ku" | "fa" | "ar" | "en";
+  language: "ku" | "fa" | "ar" | "en" | "tr" | "fr";
   pageOrNote?: string;
   verificationOrigin?: "google_search_grounded" | "user_verified_library" | "primary_corpus";
+  doi?: string;
+  isbn?: string;
+  issn?: string;
+  isExplanatoryCommentary?: boolean;
+  transliteratedAuthor?: string;
 }
 
 export class AdaptiveCitationManager {
   private level: AcademicLevel;
   private sourcesMap: Map<string, SourceItem> = new Map();
   private footnoteCounter = 1;
+  private lastCitedKey: string | null = null;
 
   private readonly BANNED_FAKE_PATTERNS = [
     "unknown",
@@ -96,9 +102,15 @@ export class AdaptiveCitationManager {
         text = text.replace(tagRegex, `<sup>(${fnNum})</sup>`);
 
         const pagePart = src.pageOrNote && src.pageOrNote !== "—" ? `، ل ${src.pageOrNote}` : "";
-        const fnLine = existedBefore
-          ? `(${fnNum}) ${src.author}، *${src.title}*، (سەرچاوەی پێشوو)${pagePart}.`
-          : `(${fnNum}) ${src.author} (${src.year})، *${src.title}*، ${src.publisherOrLocation}${pagePart}.`;
+        const isImmediateRepeat = this.lastCitedKey === key;
+        const doiPart = src.doi ? ` DOI: ${src.doi}` : "";
+        const commentaryPrefix = src.isExplanatoryCommentary ? " [تێبینیی ڕوونکردنەوەیی]: " : "";
+        const fnLine = !existedBefore
+          ? `(${fnNum}) ${commentaryPrefix}${src.author} (${src.year})، *${src.title}*، ${src.publisherOrLocation}${pagePart}.${doiPart}`
+          : isImmediateRepeat
+            ? `(${fnNum}) هەمان سەرچاوە${pagePart}.${doiPart}`
+            : `(${fnNum}) ${src.author}، *${src.title}*، (سەرچاوەی پێشوو)${pagePart}.${doiPart}`;
+        this.lastCitedKey = key;
         localFootnotes.push(fnLine);
       }
     }
@@ -119,35 +131,42 @@ export class AdaptiveCitationManager {
 
     if (this.level === "school") {
       return (
-        `## سەرچاوەکانی ڕاپۆرت\n\n` +
+        "# لیستی سەرچاوەکان\n\n" +
         all
           .map((s, i) => `${this.toKurdishNum(i + 1)}. ${s.author} (${s.year})، *${s.title}*، ${s.publisherOrLocation}.`)
           .join("\n")
       );
     }
 
+    const primarySources = all
+      .filter((s) => s.verificationOrigin === "primary_corpus")
+      .sort((a, b) => a.author.localeCompare(b.author));
+
+    const secondaryAll = all.filter((s) => s.verificationOrigin !== "primary_corpus");
     const byLang = (lang: SourceItem["language"]) =>
-      all.filter((s) => s.language === lang).sort((a, b) => a.author.localeCompare(b.author));
+      secondaryAll.filter((s) => s.language === lang).sort((a, b) => a.author.localeCompare(b.author));
 
     const sections: { title: string; list: SourceItem[]; rtl: boolean }[] = [
-      { title: "یەکەم: سەرچاوە کوردییەکان", list: byLang("ku"), rtl: true },
-      { title: "دووەم: سەرچاوە فارسییەکان", list: byLang("fa"), rtl: true },
-      { title: "سێیەم: سەرچاوە عەرەبییەکان", list: byLang("ar"), rtl: true },
-      { title: "چوارەم: سەرچاوە ئینگلیزی و نێودەوڵەتییەکان (English References)", list: byLang("en"), rtl: false }
+      { title: "أ. سەرچاوە بنەڕەتی و دەقەکان (Primary Sources & Corpus)", list: primarySources, rtl: true },
+      { title: "ب. سەرچاوە کوردییەکان", list: byLang("ku"), rtl: true },
+      { title: "ج. سەرچاوە فارسییەکان", list: byLang("fa"), rtl: true },
+      { title: "د. سەرچاوە عەرەبییەکان", list: byLang("ar"), rtl: true },
+      { title: "هـ. سەرچاوە تورکی و عوسمانییەکان", list: byLang("tr"), rtl: true },
+      { title: "و. سەرچاوە ئینگلیزی و ئەورووپییەکان (English & European References)", list: [...byLang("en"), ...byLang("fr")], rtl: false }
     ];
 
-    let out = `## لیستی سەرچاوە و بیبلۆگرافیا\n\n`;
+    let out = "# لیستی سەرچاوە و ژێدەرەکان\n\n";
     for (const sec of sections) {
       if (sec.list.length > 0) {
         out +=
-          `### ${sec.title}\n` +
+          `## ${sec.title}\n` +
           sec.list
             .map((s, i) => {
-              const num = sec.rtl ? this.toKurdishNum(i + 1) : `${i + 1}`;
+              const num = sec.rtl ? this.toKurdishNum(i + 1) : i + 1;
               return `${num}. ${s.author} (${s.year}). *${s.title}*. ${s.publisherOrLocation}.`;
             })
             .join("\n") +
-          `\n\n`;
+          "\n\n";
       }
     }
     return out;

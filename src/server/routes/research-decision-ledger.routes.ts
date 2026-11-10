@@ -18,7 +18,7 @@ export function createResearchDecisionLedgerRouter(): Router {
 
   router.get('/:projectId', async (req: AuthRequest, res) => {
     const userId = req.user?.uid;
-    const projectId = req.params['projectId'];
+    const projectId = String(req.params['projectId'] || "");
     if (!userId) {
       res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
       return;
@@ -28,7 +28,7 @@ export function createResearchDecisionLedgerRouter(): Router {
       return;
     }
     try {
-      res.json({ decisions: await researchDecisionLedgerService.list(userId, projectId) });
+      res.json({ decisions: await researchDecisionLedgerService.list(userId, projectId as string) });
     } catch (error) {
       console.error('Decision ledger list error:', error);
       res.status(500).json({ error: 'نەتوانرا مێژووی بڕیارەکانی توێژینەوە بخوێندرێتەوە.' });
@@ -37,7 +37,7 @@ export function createResearchDecisionLedgerRouter(): Router {
 
   router.post('/:projectId', async (req: AuthRequest, res) => {
     const userId = req.user?.uid;
-    const projectId = req.params['projectId'];
+    const projectId = String(req.params['projectId'] || "");
     if (!userId) {
       res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
       return;
@@ -52,7 +52,7 @@ export function createResearchDecisionLedgerRouter(): Router {
       return;
     }
     try {
-      const decision = await researchDecisionLedgerService.add(userId, projectId, parsed.data);
+      const decision = await researchDecisionLedgerService.add(userId, projectId as string, parsed.data as any);
       res.status(201).json(decision);
     } catch (error) {
       console.error('Decision ledger add error:', error);

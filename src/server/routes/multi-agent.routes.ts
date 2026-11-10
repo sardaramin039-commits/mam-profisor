@@ -36,7 +36,7 @@ export function createMultiAgentRouter(
 
     try {
       const result = await multiAgentOrchestratorService.executePipeline(
-        parsed.data,
+        parsed.data as any,
         getGeminiClient,
         controller.signal
       );

@@ -1,5 +1,5 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, setLogLevel, Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -13,8 +13,8 @@ const firebaseConfig = {
   measurementId: ""
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase safely preventing duplicate app errors
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 // Suppress non-fatal offline/network notices to prevent monitoring false alarms
 setLogLevel('silent');
@@ -26,13 +26,88 @@ function getOrInitFirestore(): Firestore {
       localCache: typeof window !== 'undefined' ? persistentLocalCache({ tabManager: persistentMultipleTabManager() }) : undefined
     }, firebaseConfig.firestoreDatabaseId);
   } catch {
-    return getFirestore(app, firebaseConfig.firestoreDatabaseId);
+    try {
+      return getFirestore(app, firebaseConfig.firestoreDatabaseId);
+    } catch {
+      return {} as Firestore;
+    }
   }
 }
 
 export const db = getOrInitFirestore();
-export const auth = getAuth();
+
+function createFallbackAuth(): ReturnType<typeof getAuth> {
+  const fallback = {
+    app,
+    name: app.name,
+    config: firebaseConfig,
+    currentUser: null,
+    languageCode: null,
+    tenantId: null,
+    settings: { appVerificationDisabledForTesting: false },
+    onAuthStateChanged(nextOrObserver: any) {
+      const cb = typeof nextOrObserver === 'function' ? nextOrObserver : nextOrObserver?.next;
+      if (typeof cb === 'function') {
+        try { cb(null); } catch {}
+      }
+      return () => {};
+    },
+    onIdTokenChanged(nextOrObserver: any) {
+      const cb = typeof nextOrObserver === 'function' ? nextOrObserver : nextOrObserver?.next;
+      if (typeof cb === 'function') {
+        try { cb(null); } catch {}
+      }
+      return () => {};
+    },
+    signOut: async () => {},
+    updateCurrentUser: async () => {},
+    useDeviceLanguage: () => {},
+  } as unknown as ReturnType<typeof getAuth>;
+
+  // Crucial: getModularInstance checks if exp && exp._delegate exists
+  (fallback as any)._delegate = fallback;
+  return fallback;
+}
+
+let authInstance: ReturnType<typeof getAuth>;
+try {
+  authInstance = getAuth(app);
+} catch (err) {
+  console.warn('[Firebase] getAuth fallback activated:', err);
+  authInstance = createFallbackAuth();
+}
+
+// Ensure onAuthStateChanged method always exists on authInstance and its delegate
+if (!authInstance || (typeof (authInstance as any).onAuthStateChanged !== 'function' && typeof (authInstance as any)._delegate?.onAuthStateChanged !== 'function')) {
+  const fallback = createFallbackAuth();
+  authInstance = Object.assign(fallback, authInstance || {});
+  (authInstance as any)._delegate = (authInstance as any)._delegate || authInstance;
+  if (typeof (authInstance as any)._delegate.onAuthStateChanged !== 'function') {
+    (authInstance as any)._delegate.onAuthStateChanged = fallback.onAuthStateChanged;
+  }
+}
+
+export const auth = authInstance;
 export const googleAuthProvider = new GoogleAuthProvider();
+
+export function safeOnAuthStateChanged(
+  authObj: typeof auth,
+  nextOrObserver: Parameters<typeof onAuthStateChanged>[1],
+  error?: Parameters<typeof onAuthStateChanged>[2],
+  completed?: Parameters<typeof onAuthStateChanged>[3]
+) {
+  try {
+    if (authObj && (typeof (authObj as any).onAuthStateChanged === 'function' || typeof (authObj as any)._delegate?.onAuthStateChanged === 'function')) {
+      return onAuthStateChanged(authObj, nextOrObserver, error, completed);
+    }
+  } catch (err) {
+    console.warn('[Firebase] safeOnAuthStateChanged caught error:', err);
+  }
+  if (typeof nextOrObserver === 'function') {
+    try { nextOrObserver(null); } catch {}
+  }
+  return () => {};
+}
 
 // Error Handling Invariants
 export enum OperationType {

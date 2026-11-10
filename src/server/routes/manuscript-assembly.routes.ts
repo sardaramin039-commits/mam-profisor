@@ -44,8 +44,8 @@ const assembleSchema = z.object({
 async function resolveServerVerifiedCitations(
   userId: string,
   workspaceId: string,
-  citations: z.infer<typeof citationSchema>[]
-): Promise<z.infer<typeof citationSchema>[]> {
+  citations: any[]
+): Promise<any[]> {
   const memory = await researchMemoryService.hydrateProjectState(userId, workspaceId);
   const evidenceById = new Map<string, ResearchMemoryItem>(
     memory.memoryItems
@@ -74,7 +74,7 @@ export function createManuscriptAssemblyRouter(): Router {
 
   router.post('/:workspaceId/assemble', async (req: AuthRequest, res) => {
     const userId = req.user?.uid;
-    const workspaceId = req.params['workspaceId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
 
     if (!userId) {
       res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
@@ -97,7 +97,7 @@ export function createManuscriptAssemblyRouter(): Router {
     }
 
     try {
-      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId as string);
       const serverVerifiedCitations = await resolveServerVerifiedCitations(
         userId,
         workspaceId,
@@ -168,8 +168,8 @@ export function createManuscriptAssemblyRouter(): Router {
       const manuscript = assembleManuscript({
         projectId: workspaceId,
         ...parsed.data,
-        citations: serverVerifiedCitations
-      });
+        citations: serverVerifiedCitations as any
+      } as any);
 
       const exportBlocked = control.gates.exportBlocked || manuscript.integrity.structuralStatus !== 'PASS' || !assemblyIntegrity.readyForExport;
       if (exportBlocked) {

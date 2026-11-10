@@ -53,7 +53,7 @@ export function createDefenseRehearsalRouter(): Router {
 
   router.post('/:workspaceId', async (req: AuthRequest, res) => {
     const userId = req.user?.uid;
-    const workspaceId = req.params['workspaceId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
     if (!userId) {
       res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
       return;
@@ -68,7 +68,7 @@ export function createDefenseRehearsalRouter(): Router {
       return;
     }
     try {
-      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId as string);
       const citations = await resolveServerVerifiedCitations(
         userId,
         workspaceId,
@@ -80,8 +80,8 @@ export function createDefenseRehearsalRouter(): Router {
         researchQuestion: parsed.data.researchQuestion,
         methodology: parsed.data.methodology,
         conclusion: parsed.data.conclusion,
-        chapters: parsed.data.chapters,
-        citations
+        chapters: (parsed.data.chapters || []) as any,
+        citations: (citations || []) as any
       });
       const session = defenseRehearsalService.prepare({
         topic: parsed.data.topic,

@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { auth, googleAuthProvider } from '../../firebase';
+import { auth, googleAuthProvider, safeOnAuthStateChanged } from '../../firebase';
 import { onAuthStateChanged, signInWithPopup, signInAnonymously, signOut, User } from 'firebase/auth';
 import { isInternalApiUrl } from '../utils/internal-api-url';
 
@@ -15,33 +15,38 @@ export class CoreFirebase {
   constructor() {
     if (typeof window !== 'undefined') {
       this.installFetchAuthInterceptor();
-      onAuthStateChanged(auth, async (user) => {
-        this.currentUser.set(user);
-        if (user) {
-          try {
-            const tokenResult = await user.getIdTokenResult();
-            const role = (tokenResult.claims['role'] as string) ||
-              ((tokenResult.claims['roles'] as string[])?.[0]) ||
-              'student';
-            this.userRole.set(role);
-            this.userClaims.set(tokenResult.claims);
-          } catch (err) {
-            console.warn('Failed to fetch user token claims:', err);
-            this.userRole.set('student');
-          }
-        } else {
-          this.userRole.set('student');
-          this.userClaims.set({});
-          if (typeof window !== 'undefined' && navigator.onLine) {
+      try {
+        safeOnAuthStateChanged(auth, async (user) => {
+          this.currentUser.set(user);
+          if (user) {
             try {
-              await signInAnonymously(auth);
-            } catch {
-              // Gracefully operate as offline guest
+              const tokenResult = await user.getIdTokenResult();
+              const role = (tokenResult.claims['role'] as string) ||
+                ((tokenResult.claims['roles'] as string[])?.[0]) ||
+                'student';
+              this.userRole.set(role);
+              this.userClaims.set(tokenResult.claims);
+            } catch (err) {
+              console.warn('Failed to fetch user token claims:', err);
+              this.userRole.set('student');
+            }
+          } else {
+            this.userRole.set('student');
+            this.userClaims.set({});
+            if (typeof window !== 'undefined' && navigator.onLine) {
+              try {
+                await signInAnonymously(auth);
+              } catch {
+                // Gracefully operate as offline guest
+              }
             }
           }
-        }
+          this.isAuthLoading.set(false);
+        });
+      } catch (err) {
+        console.warn('CoreFirebase auth observer fallback:', err);
         this.isAuthLoading.set(false);
-      });
+      }
     } else {
       this.isAuthLoading.set(false);
     }

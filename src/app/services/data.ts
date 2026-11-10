@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { auth, db, googleAuthProvider } from '../firebase';
+import { auth, db, googleAuthProvider, safeOnAuthStateChanged } from '../firebase';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
 import { collection, query, where, getDocs, deleteDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -100,18 +100,24 @@ export class Data {
 
   constructor() {
     if (typeof window !== 'undefined') {
-      onAuthStateChanged(auth, (user) => {
-        this.currentUser.set(user);
-        if (user) {
-          this.fetchHistory();
-          this.fetchSources();
-        } else {
-          this.historyList.set([]);
-          this.sourcesList.set([]);
-          this.loadLocalFallback();
-          this.loadLocalSourcesFallback();
-        }
-      });
+      try {
+        safeOnAuthStateChanged(auth, (user) => {
+          this.currentUser.set(user);
+          if (user) {
+            this.fetchHistory();
+            this.fetchSources();
+          } else {
+            this.historyList.set([]);
+            this.sourcesList.set([]);
+            this.loadLocalFallback();
+            this.loadLocalSourcesFallback();
+          }
+        });
+      } catch (err) {
+        console.warn('Data service auth observer fallback:', err);
+        this.loadLocalFallback();
+        this.loadLocalSourcesFallback();
+      }
     }
   }
 

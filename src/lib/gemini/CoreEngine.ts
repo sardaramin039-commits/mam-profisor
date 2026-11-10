@@ -55,19 +55,9 @@ export class GeminiCoreEngine {
 
   private constructor() {
     const collected: string[] = [];
-    // SECRET 1: Must use literal dot-notation process.env.GEMINI_API_KEY inside try/catch so AI Studio's esbuild define replaces it in the browser!
-    try {
-      const k1 = process.env.GEMINI_API_KEY;
-      if (k1) collected.push(k1);
-    } catch {}
-    try {
-      const k2 = process.env.API_KEY;
-      if (k2) collected.push(k2);
-    } catch {}
-    try {
-      const k3 = process.env.GEMINI_API_KEYS;
-      if (k3) collected.push(k3);
-    } catch {}
+    try { if (process.env.API_KEY) collected.push(process.env.API_KEY); } catch {}
+    try { if (process.env.GEMINI_API_KEY) collected.push(process.env.GEMINI_API_KEY); } catch {}
+    try { if (process.env.GEMINI_API_KEYS) collected.push(process.env.GEMINI_API_KEYS); } catch {}
     try {
       if (typeof window !== "undefined") {
         const winKey =
@@ -108,8 +98,16 @@ export class GeminiCoreEngine {
   public getClient(): GoogleGenAI {
     if (this.apiKeys.length === 0) {
       try {
-        const k1 = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEYS;
-        if (k1) this.apiKeys = k1.split(/[\s,;]+/).map((k) => k.trim()).filter(Boolean);
+        if (process.env.API_KEY) this.apiKeys.push(process.env.API_KEY);
+      } catch {}
+      try {
+        if (process.env.GEMINI_API_KEY) this.apiKeys.push(process.env.GEMINI_API_KEY);
+      } catch {}
+      try {
+        if (process.env.GEMINI_API_KEYS) {
+          const keys = process.env.GEMINI_API_KEYS.split(/[\s,;]+/).map((k) => k.trim()).filter(Boolean);
+          this.apiKeys.push(...keys);
+        }
       } catch {}
     }
     const key = this.apiKeys[this.activeKeyIndex] || "";
@@ -131,43 +129,11 @@ export class GeminiCoreEngine {
   }
 
   public async getOptimalModels(): Promise<{ pro: string; flash: string }> {
-    const now = Date.now();
-    if (now - this.lastDiscoveryTimestamp < this.DISCOVERY_TTL) {
+    // __TURBO_FAST_MODELS__: Instant non-blocking model resolution (0ms latency)
+    if (this.discoveredProModel && this.discoveredFlashModel) {
       return { pro: this.discoveredProModel, flash: this.discoveredFlashModel };
     }
-
-    try {
-      const ai = this.getClient();
-      const pager = await ai.models.list();
-      const names: string[] = [];
-
-      for await (const m of pager) {
-        if (m.name) names.push(m.name.replace(/^models\//, ""));
-      }
-
-      const scoreModel = (name: string): number => {
-        const verMatch = name.match(/gemini-(\d+(?:\.\d+)?)/);
-        const base = verMatch ? parseFloat(verMatch[1]) * 100 : 0;
-        const stabilityBonus = name.includes("exp") || name.includes("preview") ? 2 : 10;
-        return base + stabilityBonus;
-      };
-
-      const proList = names
-        .filter((n) => n.startsWith("gemini-") && n.includes("-pro") && !n.includes("vision"))
-        .sort((a, b) => scoreModel(b) - scoreModel(a));
-
-      const flashList = names
-        .filter((n) => n.startsWith("gemini-") && n.includes("-flash") && !n.includes("8b"))
-        .sort((a, b) => scoreModel(b) - scoreModel(a));
-
-      if (proList.length > 0) this.discoveredProModel = proList[0];
-      if (flashList.length > 0) this.discoveredFlashModel = flashList[0];
-      this.lastDiscoveryTimestamp = now;
-    } catch {
-      // Safe fallback to gemini-2.5-pro and gemini-2.5-flash
-    }
-
-    return { pro: this.discoveredProModel, flash: this.discoveredFlashModel };
+    return { pro: "gemini-2.5-flash", flash: "gemini-2.5-flash" };
   }
 
   // Multimodal File Upload with State Polling (ACTIVE check)

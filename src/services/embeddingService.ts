@@ -4,20 +4,17 @@
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   try {
-    // If running in server-side Node.js environment with Direct Gemini key
+    // If running in server-side Node.js environment
     if (typeof window === 'undefined') {
       try {
-        const apiKey = typeof process !== 'undefined' ? process.env['GEMINI_API_KEY'] : undefined;
-        if (apiKey) {
-          const { GoogleGenAI } = await import('@google/genai');
-          const ai = new GoogleGenAI({ apiKey });
-          const response = await ai.models.embedContent({
-            model: 'gemini-embedding-2-preview',
-            contents: text,
-            config: { outputDimensionality: 768 }
-          });
-          return response.embeddings?.[0]?.values || [];
-        }
+        const { getGeminiClient } = await import('../server/services/gemini.service');
+        const ai = getGeminiClient();
+        const response = await ai.models.embedContent({
+          model: 'gemini-embedding-2-preview',
+          contents: text,
+          config: { outputDimensionality: 768 }
+        });
+        return response.embeddings?.[0]?.values || [];
       } catch (nodeErr) {
         console.error('Node native embedding generation error:', nodeErr);
       }

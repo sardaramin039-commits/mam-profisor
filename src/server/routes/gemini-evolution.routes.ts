@@ -181,7 +181,15 @@ export function createGeminiEvolutionRouter(): Router {
         nextSubSectionTitle,
         verifiedLibrarySourcesText,
         cachedContentName,
-        citationManager
+        citationManager,
+        onLiveProgress: (liveMarkdown, liveWordCount, statusStep) => {
+          res.write(`data: ${JSON.stringify({
+            status: 'chunk',
+            markdown: liveMarkdown,
+            wordCount: liveWordCount,
+            step: statusStep
+          })}\n\n`);
+        }
       });
 
       const bibliography = citationManager.buildBibliographySection();
@@ -470,7 +478,7 @@ export function createGeminiEvolutionRouter(): Router {
       }
       const ai = getGeminiClient();
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.8-flash',
         contents: [
           {
             role: 'user',
@@ -527,7 +535,7 @@ ${academicContext ? `پاشخانی بەشەکە: ${academicContext}` : ''}
 
       const ai = getGeminiClient();
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-pro',
+        model: 'gemini-3.8-flash',
         contents: [
           {
             role: 'user',

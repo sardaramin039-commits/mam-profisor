@@ -38,8 +38,8 @@ function validParams(workspaceId: string, submissionId: string): boolean {
 
 async function handleDecision(req: AuthRequest, res: Response): Promise<void> {
   const userId = requireUser(req, res);
-  const workspaceId = req.params['workspaceId'];
-  const submissionId = req.params['submissionId'];
+  const workspaceId = String(req.params['workspaceId'] || "");
+  const submissionId = String(req.params['submissionId'] || "");
   if (!userId) return;
   if (!requireEditorialRole(req, res)) return;
   if (!validParams(workspaceId, submissionId)) {
@@ -53,7 +53,7 @@ async function handleDecision(req: AuthRequest, res: Response): Promise<void> {
   }
   try {
     const result = await publicationSubmissionEditorialDecisionService.record(
-      userId, workspaceId, submissionId, parsed.data
+      userId, workspaceId, submissionId, parsed.data as any
     );
     res.status(201).json({ success: true, ...result });
   } catch (error) {
@@ -64,8 +64,8 @@ async function handleDecision(req: AuthRequest, res: Response): Promise<void> {
 
 async function handleDecisionList(req: AuthRequest, res: Response): Promise<void> {
   const userId = requireUser(req, res);
-  const workspaceId = req.params['workspaceId'];
-  const submissionId = req.params['submissionId'];
+  const workspaceId = String(req.params['workspaceId'] || "");
+  const submissionId = String(req.params['submissionId'] || "");
   if (!userId) return;
   if (!validParams(workspaceId, submissionId)) {
     res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
@@ -84,8 +84,8 @@ async function handleDecisionList(req: AuthRequest, res: Response): Promise<void
 
 async function handleRevisionRead(req: AuthRequest, res: Response): Promise<void> {
   const userId = requireUser(req, res);
-  const workspaceId = req.params['workspaceId'];
-  const submissionId = req.params['submissionId'];
+  const workspaceId = String(req.params['workspaceId'] || "");
+  const submissionId = String(req.params['submissionId'] || "");
   if (!userId) return;
   if (!validParams(workspaceId, submissionId)) {
     res.status(400).json({ error: 'ناسنامەی submission یان workspace نادروستە.' });
@@ -105,9 +105,9 @@ async function handleRevisionRead(req: AuthRequest, res: Response): Promise<void
 
 async function handleRevisionTaskUpdate(req: AuthRequest, res: Response): Promise<void> {
   const userId = requireUser(req, res);
-  const workspaceId = req.params['workspaceId'];
-  const submissionId = req.params['submissionId'];
-  const taskId = req.params['taskId'];
+  const workspaceId = String(req.params['workspaceId'] || "");
+  const submissionId = String(req.params['submissionId'] || "");
+  const taskId = String(req.params['taskId'] || "");
   if (!userId) return;
   if (!validParams(workspaceId, submissionId) || !lifecycleId.safeParse(taskId).success) {
     res.status(400).json({ error: 'ناسنامەی revision task یان submission نادروستە.' });

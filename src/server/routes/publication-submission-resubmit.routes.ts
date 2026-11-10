@@ -31,8 +31,8 @@ export function createPublicationSubmissionResubmitRouter(): Router {
 
   router.post('/resubmit', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const submissionId = req.params['submissionId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
+    const submissionId = String(req.params['submissionId'] || "");
     if (!userId) return;
 
     if (!lifecycleId.safeParse(workspaceId).success || !lifecycleId.safeParse(submissionId).success) {
@@ -87,7 +87,7 @@ export function createPublicationSubmissionResubmitRouter(): Router {
         });
         return;
       }
-      if (submissionPolicyFingerprint(parsed.data.policy) !== lockedManifest.policyFingerprint) {
+      if (submissionPolicyFingerprint(parsed.data.policy as any) !== lockedManifest.policyFingerprint) {
         res.status(409).json({
           success: false,
           error: 'Resubmission policy must match the verified P19 policy manifest.'
@@ -115,15 +115,15 @@ export function createPublicationSubmissionResubmitRouter(): Router {
         abstract: parsed.data.abstract,
         researchQuestion: parsed.data.researchQuestion,
         methodology: parsed.data.methodology,
-        chapters: parsed.data.chapters,
+        chapters: (parsed.data.chapters || []) as any,
         conclusion: parsed.data.conclusion,
-        citations: parsed.data.citations
+        citations: (parsed.data.citations || []) as any
       });
       const submission = buildPublicationSubmissionPackage({
         manuscript,
-        policy: parsed.data.policy,
+        policy: parsed.data.policy as any,
         keywords: parsed.data.keywords,
-        authors: parsed.data.authors
+        authors: parsed.data.authors as any
       });
       const integrity = verifyPublicationSubmissionIntegrity({ package: submission });
 

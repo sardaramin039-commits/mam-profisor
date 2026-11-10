@@ -9,7 +9,6 @@ import { ChapterItemModel as ChapterItem, SubBranchItem } from '../domain/models
 import { buildAcademicThesisOutline, buildChaptersFromAcademicBlueprint } from '../helpers/outline-structure';
 import { SourceVerificationService } from './source-verification.service';
 import { LiveProgressService } from './live-progress.service';
-import { buildLevelCalibratedBlueprint } from '../../lib/gemini/BlueprintAgent';
 
 @Injectable({
   providedIn: 'root'
@@ -326,10 +325,16 @@ export class ManuscriptBridgeActionsService {
 
     this.liveProgress.startTask('generate_structure', `خەریکی داڕشتنی نەخشەی تەواوی تێزەکە لە لایەن Gemini BlueprintAgent...`, 35);
 
-    buildLevelCalibratedBlueprint(title, academicLevel as any, discipline)
-      .then((blueprint) => {
-        if (blueprint) {
-          const chapters = buildChaptersFromAcademicBlueprint(blueprint, title);
+    firstValueFrom(
+      this.http.post<{ success: boolean; blueprint?: any; error?: string }>('/api/gemini/blueprint', {
+        title,
+        level: academicLevel,
+        discipline
+      })
+    )
+      .then((res) => {
+        if (res?.success && res.blueprint) {
+          const chapters = buildChaptersFromAcademicBlueprint(res.blueprint, title);
           chaptersSignal.set(chapters);
           this.editorService.chapters.set(chapters);
           if (chapters.length > 0) {
@@ -344,7 +349,7 @@ export class ManuscriptBridgeActionsService {
         }
       })
       .catch((err) => {
-        console.warn('Blueprint direct generation notice, using outline fallback:', err);
+        console.warn('Server blueprint generation notice, using outline fallback:', err);
         this.fallbackGenerateOutline(chaptersSignal, formValue);
         this.liveProgress.finishTask('پەیکەری ئەکادیمی بە سەرکەوتوویی ڕێکخرا.');
       });

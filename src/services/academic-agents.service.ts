@@ -1,4 +1,3 @@
-import { GoogleGenAI } from '@google/genai';
 import { getGeminiClient } from '../server/services/gemini.service';
 
 export interface AcademicAgentInfo {
@@ -84,7 +83,7 @@ export const ACADEMIC_AGENTS_LIST: AcademicAgentInfo[] = [
 ];
 
 export class AcademicAgentsService {
-  private getClient(): GoogleGenAI {
+  private getClient() {
     return getGeminiClient();
   }
 

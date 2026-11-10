@@ -74,7 +74,7 @@ export function createRagRouter(_getGeminiClient: () => GoogleGenAI): Router {
         year: parsedYear,
         userId,
         documentId: typeof documentId === 'string' ? documentId.trim().slice(0, 200) : undefined,
-        pages,
+        pages: pages as any,
         // Identity metadata verification does not verify caller-supplied document content.
         // Uploaded text remains unverified until the server retrieves and validates authoritative full text.
         verificationStatus: 'unverified'

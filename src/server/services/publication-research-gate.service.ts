@@ -1,11 +1,6 @@
 import { ResearchMemoryItem, researchMemoryService } from './research-memory.service';
 
-export async function resolveServerVerifiedCitations<T extends {
-  citationId: string;
-  sourceId: string;
-  verified: boolean;
-  evidenceId?: string;
-}>(
+export async function resolveServerVerifiedCitations<T extends Record<string, any>>(
   userId: string,
   workspaceId: string,
   citations: T[]

@@ -36,7 +36,7 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
     "font-src 'self' https: data:",
     "connect-src 'self' https: wss:",
     "frame-src 'self' https://accounts.google.com https://*.google.com https://*.firebaseapp.com",
-    "frame-ancestors 'self' https://ai.studio https://*.google.com https://*.run.app",
+    "frame-ancestors * https://ai.studio https://*.google.com https://*.run.app",
     "form-action 'self' https://accounts.google.com",
     "worker-src 'self' blob:"
   ].join('; ');

@@ -7,6 +7,8 @@ import {
   normalizeKurdishAcademicProse
 } from "./LevelProfiles";
 import { GeminiCoreEngine } from "./CoreEngine";
+import { getHundredPointsAcademicDirective } from "./HundredAcademicRevolution";
+import { getSupremeDoctoralDirective, getDomainSpecificDirectives } from "./SupremeAcademicEncyclopedia111";
 
 export interface SubSectionPlan {
   code: string;
@@ -324,8 +326,28 @@ export async function buildLevelCalibratedBlueprint(
     groundedContext = "";
   }
 
+  const matrixDirectives =
+    (typeof window !== "undefined" && (window as any).__MAM_ACADEMIC_MATRIX__?.getDirectives?.()) || "";
+  const matrixConfig =
+    (typeof window !== "undefined" && (window as any).__MAM_ACADEMIC_MATRIX__?.config) || null;
+
+  let outlineDirective = "";
+  if (matrixConfig?.customOutlineEnabled && matrixConfig?.customOutlineText?.trim()) {
+    outlineDirective = `\n[قوفڵی پێڕستی تایبەتی توێژەر]: دەبێت بە تەواوی نەخشەی بەشەکان لەسەر بنەمای ئەم پێڕستە دروست بکەیت:\n${matrixConfig.customOutlineText.trim()}\n`;
+  }
+
+  let sourcesDirective = "";
+  if (matrixConfig?.customSourcesEnabled && matrixConfig?.customSourcesList?.trim()) {
+    sourcesDirective = `\n[قوفڵی سەرچاوە تایبەتەکان]: تەنها و تەنها ئەم سەرچاوانەی خوارەوە بەکاربهێنە بۆ چوارچێوەی فەرهەنگۆک و بابەتەکە:\n${matrixConfig.customSourcesList.trim()}\n`;
+  }
+
   const systemInstruction = `
 ${buildLevelSystemInstruction(level, title, discipline)}
+
+${matrixDirectives}${outlineDirective}${sourcesDirective}
+${getHundredPointsAcademicDirective()}
+${getSupremeDoctoralDirective()}
+${getDomainSpecificDirectives(title, discipline || domain.kurdishName)}
 
 ئەرکی تۆ: داڕشتنی پاکێجی تەواوی دەروازە (پێشکەشکردن، سوپاس و پێزانین، پوختەی تێروتەسەل بە ٣ زمانی کوردی، ئینگلیزی و عەرەبی هەر یەکەی دەوروبەری ٢٥٠ وشە، پێشەکیی تێروتەسەل) + نەخشەی پێڕستی زنجیرەیی (بەش -> تەوەر -> لق) + فەرهەنگۆکی زاراوەکان بۆ بابەتی: "${title}".
 
@@ -343,6 +365,10 @@ ${buildLevelSystemInstruction(level, title, discipline)}
     mode: "deep_thinking",
     systemInstruction,
     prompt: `ناونیشانی داواکراو: "${title}"\nئاست: ${profile.kurdishTitle}\nبوار: ${domain.kurdishName}\n${
+      outlineDirective ? `[پێڕستی تایبەتی داواکراو لەلایەن توێژەرەوە]:\n${outlineDirective}\n` : ""
+    }${
+      sourcesDirective ? `[سەرچاوە باوەڕپێکراوە دیاریکراوەکان]:\n${sourcesDirective}\n` : ""
+    }${
       groundedContext ? `[پاشخانی زانستیی پشتڕاستکراوە]:\n${groundedContext}` : ""
     }`,
     responseSchema: blueprintSchema,

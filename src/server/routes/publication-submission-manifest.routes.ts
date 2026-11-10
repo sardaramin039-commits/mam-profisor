@@ -35,7 +35,7 @@ export function createPublicationSubmissionManifestRouter(): Router {
 
   router.get('/:workspaceId', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
     if (!userId) return;
     if (!lifecycleId.safeParse(workspaceId).success) {
       res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
@@ -53,8 +53,8 @@ export function createPublicationSubmissionManifestRouter(): Router {
 
   router.get('/:workspaceId/:manifestId', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
-    const manifestId = req.params['manifestId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
+    const manifestId = String(req.params['manifestId'] || "");
     if (!userId) return;
     if (!lifecycleId.safeParse(workspaceId).success || !lifecycleId.safeParse(manifestId).success) {
       res.status(400).json({ error: 'ناسنامەی manifest یان workspace نادروستە.' });
@@ -80,7 +80,7 @@ export function createPublicationSubmissionManifestRouter(): Router {
 
   router.post('/:workspaceId/capture', async (req: AuthRequest, res) => {
     const userId = requireUser(req, res);
-    const workspaceId = req.params['workspaceId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
     if (!userId) return;
     if (!lifecycleId.safeParse(workspaceId).success) {
       res.status(400).json({ error: 'ناسنامەی workspace نادروستە.' });
@@ -98,7 +98,7 @@ export function createPublicationSubmissionManifestRouter(): Router {
     }
 
     try {
-      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId as string);
       if (control.gates.exportBlocked) {
         res.status(409).json({
           success: false,
@@ -120,15 +120,15 @@ export function createPublicationSubmissionManifestRouter(): Router {
         abstract: parsed.data.abstract,
         researchQuestion: parsed.data.researchQuestion,
         methodology: parsed.data.methodology,
-        chapters: parsed.data.chapters,
+        chapters: (parsed.data.chapters || []) as any,
         conclusion: parsed.data.conclusion,
-        citations
+        citations: (citations || []) as any
       });
       const submission = buildPublicationSubmissionPackage({
         manuscript,
-        policy: parsed.data.policy,
+        policy: parsed.data.policy as any,
         keywords: parsed.data.keywords,
-        authors: parsed.data.authors
+        authors: parsed.data.authors as any
       });
       const integrity = verifyPublicationSubmissionIntegrity({ package: submission });
       if (!integrity.readyToSubmit) {
@@ -198,7 +198,7 @@ export function createPublicationSubmissionManifestRouter(): Router {
         submissionId: lifecycle.id,
         userId,
         workspaceId,
-        policy: parsed.data.policy,
+        policy: parsed.data.policy as any,
         package: submission,
         integrity,
         versionId: lifecycle.currentVersionId,

@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { auth, googleAuthProvider } from '../firebase';
-import { signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
+import { auth, googleAuthProvider, safeOnAuthStateChanged } from '../firebase';
+import { signInWithPopup, User } from 'firebase/auth';
 import { WorkspaceOAuthHelperService } from './workspace-oauth-helper.service';
 
 export interface GoogleTask {
@@ -35,12 +35,16 @@ export class GoogleTasksService {
 
   constructor() {
     if (typeof window !== 'undefined') {
-      onAuthStateChanged(auth, (user) => {
-        this.currentUser.set(user);
-        if (!user) {
-          this.accessTokenSignal.set(null);
-        }
-      });
+      try {
+        safeOnAuthStateChanged(auth, (user) => {
+          this.currentUser.set(user);
+          if (!user) {
+            this.accessTokenSignal.set(null);
+          }
+        });
+      } catch (err) {
+        console.warn('GoogleTasksService auth observer fallback:', err);
+      }
     }
   }
 

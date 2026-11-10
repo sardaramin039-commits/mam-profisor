@@ -25,7 +25,7 @@ export function createPublicationDefenseReadinessRouter(): Router {
 
   router.post('/:workspaceId/readiness', async (req: AuthRequest, res) => {
     const userId = req.user?.uid;
-    const workspaceId = req.params['workspaceId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
     if (!userId) {
       res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
       return;
@@ -40,7 +40,7 @@ export function createPublicationDefenseReadinessRouter(): Router {
       return;
     }
     try {
-      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId as string);
       const citations = await resolveServerVerifiedCitations(
         userId,
         workspaceId,
@@ -49,8 +49,8 @@ export function createPublicationDefenseReadinessRouter(): Router {
       const manuscript = assembleManuscript({
         projectId: workspaceId,
         ...parsed.data,
-        citations
-      });
+        citations: (citations || []) as any
+      } as any);
       const report = evaluatePublicationDefenseReadiness({
         title: manuscript.title,
         abstract: manuscript.sections.find(section => section.type === 'abstract')?.content,

@@ -5,6 +5,7 @@
   "compilerOptions": {
     "skipLibCheck": true,
     "incremental": true,
+    "tsBuildInfoFile": "/tmp/mam-ng-cache/tsbuildinfo.json",
     "strict": false,
     "noImplicitAny": false,
     "noImplicitOverride": true,

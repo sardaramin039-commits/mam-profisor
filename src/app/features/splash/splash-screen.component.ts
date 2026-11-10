@@ -50,9 +50,9 @@ import { firstValueFrom } from 'rxjs';
             <div class="mam-preview-bar"><span></span><span></span><span></span><b>مام پڕۆفیسۆر</b></div>
             <div class="mam-preview-body">
               <div class="mam-preview-side">
-                <div class="active"><mat-icon>history_edu</mat-icon><span>نووسین</span></div>
-                <div><mat-icon>hub</mat-icon><span>توێژینەوە</span></div>
-                <div><mat-icon>build</mat-icon><span>ئامرازەکان</span></div>
+                <div class="active cursor-pointer hover:opacity-80 transition" (click)="enterWorkspace.emit()"><mat-icon>history_edu</mat-icon><span>نووسین</span></div>
+                <div class="cursor-pointer hover:opacity-80 transition" (click)="enterWorkspace.emit()"><mat-icon>hub</mat-icon><span>توێژینەوە</span></div>
+                <div class="cursor-pointer hover:opacity-80 transition" (click)="enterWorkspace.emit()"><mat-icon>build</mat-icon><span>ئامرازەکان</span></div>
               </div>
               <div class="mam-preview-content">
                 <div class="line wide"></div>

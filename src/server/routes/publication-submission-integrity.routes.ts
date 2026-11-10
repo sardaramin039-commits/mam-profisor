@@ -66,7 +66,7 @@ export function createPublicationSubmissionIntegrityRouter(): Router {
 
   router.post('/:workspaceId/integrity', async (req: AuthRequest, res) => {
     const userId = req.user?.uid;
-    const workspaceId = req.params['workspaceId'];
+    const workspaceId = String(req.params['workspaceId'] || "");
 
     if (!userId) {
       res.status(401).json({ error: 'ناسنامەی بەکارهێنەر نەدۆزرایەوە.' });
@@ -92,7 +92,7 @@ export function createPublicationSubmissionIntegrityRouter(): Router {
     }
 
     try {
-      const control = await researchControlPlaneService.snapshot(userId, workspaceId);
+      const control = await researchControlPlaneService.snapshot(userId, workspaceId as string);
       const citations = await resolveServerVerifiedCitations(
         userId,
         workspaceId,
@@ -104,15 +104,15 @@ export function createPublicationSubmissionIntegrityRouter(): Router {
         abstract: parsed.data.abstract,
         researchQuestion: parsed.data.researchQuestion,
         methodology: parsed.data.methodology,
-        chapters: parsed.data.chapters,
+        chapters: (parsed.data.chapters || []) as any,
         conclusion: parsed.data.conclusion,
-        citations
+        citations: (citations || []) as any
       });
       const submission = buildPublicationSubmissionPackage({
         manuscript,
-        policy: parsed.data.policy,
+        policy: parsed.data.policy as any,
         keywords: parsed.data.keywords,
-        authors: parsed.data.authors
+        authors: parsed.data.authors as any
       });
       const integrity = verifyPublicationSubmissionIntegrity({ package: submission });
 

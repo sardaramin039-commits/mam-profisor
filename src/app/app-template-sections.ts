@@ -9,6 +9,7 @@ import { AppAcademicPerfectionPanelComponent } from './features/academic-perfect
 import { ChapterWordFrequencyPanelComponent } from './app-sections/chapter-word-frequency-panel.component';
 import { SampleSizeCalculatorComponent } from './features/academic-methodology/components/sample-size-calculator.component';
 import { FiftyAcademicToolsSuiteComponent } from './features/academic-suite/fifty-academic-tools-suite.component';
+import { AcademicControlsMatrixBarComponent } from './features/editor/academic-controls-matrix-bar.component';
 const VIEW_IMPORTS = [...APP_VIEW_IMPORTS];
 
 @Component({selector:'app-workspace-header',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/workspace-header.component.html'})
@@ -65,7 +66,7 @@ export class AppAcademicToolsFaqComponent extends AppTemplateSectionBase {}
 @Component({selector:'app-academic-tools',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,AppAcademicToolsCitationComponent,AppAcademicToolsGlossaryComponent,AppAcademicToolsFaqComponent],templateUrl:'./app-sections/academic-tools.component.html'})
 export class AppAcademicToolsComponent extends AppTemplateSectionBase {}
 
-@Component({selector:'app-workspace-main',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,AppWorkspaceAnalyticsComponent,AppWindowOneComponent,AppWindowTwoComponent,AppGlobalSearchComponent,AppAcademicToolsComponent,AppPublicationWorkflowPanelComponent,AppCameraReadyPublishingPanelComponent,AppAcademicPerfectionPanelComponent,SampleSizeCalculatorComponent,FiftyAcademicToolsSuiteComponent],templateUrl:'./app-sections/workspace-main.component.html'})
+@Component({selector:'app-workspace-main',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:[...VIEW_IMPORTS,AcademicControlsMatrixBarComponent,AppWorkspaceAnalyticsComponent,AppWindowOneComponent,AppWindowTwoComponent,AppGlobalSearchComponent,AppAcademicToolsComponent,AppPublicationWorkflowPanelComponent,AppCameraReadyPublishingPanelComponent,AppAcademicPerfectionPanelComponent,SampleSizeCalculatorComponent,FiftyAcademicToolsSuiteComponent],templateUrl:'./app-sections/workspace-main.component.html'})
 export class AppWorkspaceMainComponent extends AppTemplateSectionBase {}
 
 @Component({selector:'app-workspace-bottom-bar',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,imports:VIEW_IMPORTS,templateUrl:'./app-sections/workspace-bottom-bar.component.html'})

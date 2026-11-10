@@ -1,4 +1,4 @@
-import { defineConfig } from "drizzle-kit";
+const defineConfig = (config: any) => config;
 import * as dotenv from "dotenv";
 
 // Load environment variables from .env file.

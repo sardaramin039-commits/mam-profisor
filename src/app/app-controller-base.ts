@@ -179,7 +179,7 @@ export abstract class AppControllerBase implements OnInit {
   exitFocusMode = () => this.editorFocusMode.exitFocusMode();
 
   // Core navigation view state
-  viewMode = signal<'splash' | 'workspace'>('splash');
+  viewMode = signal<'splash' | 'workspace'>('workspace');
   mainTab = signal<'library' | 'editor' | 'suite' | 'advanced_research' | 'google_drive' | 'platform'>('editor');
   isSettingsOpen = signal<boolean>(false);
   isAdminOpen = signal<boolean>(false);

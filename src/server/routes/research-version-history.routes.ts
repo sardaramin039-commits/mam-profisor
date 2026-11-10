@@ -47,7 +47,7 @@ export function createResearchVersionHistoryRouter(): Router {
       return;
     }
     try {
-      const version = await researchVersionHistoryService.create(userId, parsed.data);
+      const version = await researchVersionHistoryService.create(userId, parsed.data as any);
       if (!version) {
         res.status(204).send();
         return;

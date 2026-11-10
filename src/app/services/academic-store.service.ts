@@ -7,7 +7,7 @@ import { ResearchCorpusCard, VerticalAlignmentMatrixItem } from '../helpers/thes
 })
 export class AcademicStoreService {
   // Navigation & View State
-  public viewMode = signal<'splash' | 'workspace'>('splash');
+  public viewMode = signal<'splash' | 'workspace'>('workspace');
   public mainTab = signal<'library' | 'editor' | 'suite' | 'advanced_research' | 'google_drive'>('editor');
   public activeSubTab = signal<'editor' | 'review' | 'glossary' | 'citations' | 'chunks' | 'pulse' | 'health_check' | 'timeline' | 'grammar_panel'>('editor');
   
