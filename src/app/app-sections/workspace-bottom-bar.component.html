@@ -1,0 +1,42 @@
+@if (chapters().length > 0) {
+  <div class="mam-action-dock">
+    <div class="mam-action-dock-inner font-serif">
+      
+      <!-- Info tag -->
+      <div class="mam-dock-status">
+        <mat-icon class="text-emerald-700 leading-none">menu_book</mat-icon>
+        <div class="text-right">
+          <span class="mam-dock-count font-bold">تێزی زانستیی مام پڕۆفیسۆر</span>
+          <span class="mam-dock-subtitle font-mono">{{ chapters().length }} بەش</span>
+        </div>
+      </div>
+
+      <!-- Bottom bar operations row: exactly 3 essential buttons -->
+      <div class="mam-dock-actions">
+        <!-- 1. دۆخی خوێندنەوە -->
+        <button type="button" (click)="openReadingMode()" class="mam-dock-btn" title="خوێندنەوەی دەستنووس لە دۆخی کتێبی فەرمی">
+          <mat-icon class="!text-sm !w-4 !h-4 text-amber-500">menu_book</mat-icon>
+          <span>دۆخی خوێندنەوە</span>
+        </button>
+
+        <!-- 2. پاشەکەوتکردن -->
+        <button type="button" (click)="saveAll()" class="mam-dock-btn" title="پاشەکەوتکردنی تەواوی گۆڕانکارییەکان">
+          <mat-icon class="!text-sm !w-4 !h-4 text-emerald-400">save</mat-icon>
+          <span>پاشەکەوتکردن</span>
+        </button>
+
+        <!-- 3. داگرتن بە Word / PDF -->
+        <button type="button" (click)="exportWordOrPdf()" [disabled]="liveProgress.isBusy() || !chapters().length" class="mam-dock-btn mam-dock-save disabled:opacity-50 disabled:cursor-not-allowed" title="داگرتنی تێز بە فایلی فەرمیی Word یان PDF">
+          @if (liveProgress.activeActionKey() === 'export' || isExportingWord()) {
+            <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            <span>خەریکی کارکردنە...</span>
+          } @else {
+            <mat-icon class="!text-sm !w-4 !h-4">cloud_download</mat-icon>
+            <span>داگرتن بە Word / PDF</span>
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

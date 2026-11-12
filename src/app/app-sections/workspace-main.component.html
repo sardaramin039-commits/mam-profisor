@@ -1,0 +1,182 @@
+<main class="mam-main">
+  @if (errorStr()) {
+    <div class="mam-alert">
+      <mat-icon>error_outline</mat-icon>
+      <div>
+        <strong>کێشەیەک ڕوویدا</strong>
+        <span>{{ errorStr() }}</span>
+      </div>
+    </div>
+  }
+
+  @switch (mainTab()) {
+    @case ('library') {
+      <section class="mam-page-head">
+        <div>
+          <span class="mam-eyebrow">LIBRARY</span>
+          <h1>کتێبخانەی دیجیتاڵی توێژینەوە</h1>
+          <p>گەڕان، خوێندنەوە و بەڕێوەبردنی سەرچاوەکانی کتێبخانە لە یەک شوێن.</p>
+        </div>
+      </section>
+      <app-library-workspace></app-library-workspace>
+    }
+
+    @case ('editor') {
+      <section class="mam-page-head">
+        <div>
+          <span class="mam-eyebrow">WORKSPACE</span>
+          <h1>ناوەندی نووسینی زانستی</h1>
+          <p>لە ڕێکخستنی بیرۆکەوە بۆ دەقی ڕێکخراو، بەڵگەدار و ئامادەی پێداچوونەوە.</p>
+        </div>
+        <div class="mam-page-meta flex items-center gap-2 flex-wrap">
+          <span><mat-icon>description</mat-icon>{{ chapters().length }} بەش</span>
+          <span><mat-icon>translate</mat-icon>سۆرانی</span>
+          <app-editor-auto-save-status (manualSyncRequested)="forceManualSyncNow()"></app-editor-auto-save-status>
+          <button 
+            type="button"
+            (click)="toggleFocusMode()"
+            class="px-2.5 py-1 rounded-lg text-xs font-serif font-bold transition flex items-center gap-1.5 cursor-pointer border shadow-2xs"
+            [class]="isFocusMode() ? 'bg-amber-600 text-white border-amber-700' : 'bg-white hover:bg-stone-100 text-stone-800 border-stone-300'"
+            title="دۆخی سەرنج (Focus Mode) - لابردنی هەموو بەربەستەکان بۆ نووسینی ئارام بە یەک کرتە">
+            <mat-icon class="!text-xs !w-3.5 !h-3.5">{{ isFocusMode() ? 'fullscreen_exit' : 'center_focus_strong' }}</mat-icon>
+            <span>{{ isFocusMode() ? 'دەرچوون لە سەرنج' : 'دۆخی سەرنج' }}</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="mam-workflow">
+        <button type="button" class="mam-step cursor-pointer text-right bg-transparent border-0 active" (click)="mainTab.set('editor')">
+          <span>١</span>
+          <div><strong>نووسینی توێژینەوە</strong><small>Thesis Editor & Outline</small></div>
+        </button>
+        <div class="mam-step-line"></div>
+        <button type="button" class="mam-step cursor-pointer text-right bg-transparent border-0" (click)="mainTab.set('library')">
+          <span>٢</span>
+          <div><strong>کتێبخانەی سەرچاوەکان</strong><small>Digital Library & Citations</small></div>
+        </button>
+      </section>
+
+      @if (hasLocalDraft()) {
+        <section class="mam-draft">
+          <mat-icon>save</mat-icon>
+          <div>
+            <strong>ڕەشنووسی خۆکار دۆزرایەوە</strong>
+            <span>لە {{ lastAutoSaveTime() }} پاشەکەوتکراوە.</span>
+          </div>
+          <div class="mam-draft-actions">
+            <button type="button" (click)="restoreLocalDraft()">گەڕاندنەوە</button>
+            <button type="button" (click)="discardLocalDraft()">سڕینەوە</button>
+          </div>
+        </section>
+      }
+
+      <app-academic-controls-matrix-bar></app-academic-controls-matrix-bar>
+
+      <div class="mam-editor-grid">
+        <section class="mam-editor-section" [class.hidden]="isFocusMode()">
+          <div class="mam-section-heading">
+            <div>
+              <span class="mam-number">٠١</span>
+              <div><h2>ڕێکخستنی پڕۆژە</h2><p>پێش ئەوەی نووسین دەستپێبکات، بنەمای کار دیاری بکە.</p></div>
+            </div>
+          </div>
+          <app-window-one [host]="host"></app-window-one>
+        </section>
+
+        <section class="mam-editor-section" [class.col-span-full]="isFocusMode()">
+          <div class="mam-section-heading" [class.hidden]="isFocusMode()">
+            <div>
+              <span class="mam-number">٠٢</span>
+              <div><h2>نووسین و پشکنینی بەشەکان</h2><p>دەقی بەشەکان، سەرچاوەکان و پێداچوونەوە لێرە کۆکراونەتەوە.</p></div>
+            </div>
+          </div>
+          <app-window-two [host]="host"></app-window-two>
+        </section>
+      </div>
+    }
+
+    @case ('advanced_research') {
+      <section class="mam-page-head">
+        <div><span class="mam-eyebrow">RESEARCH</span><h1>ناوەندی توێژینەوەی پێشکەوتوو</h1><p>گەڕان، هەڵسەنگاندنی بەڵگە و مێتۆدەکانی توێژینەوە لە یەک شوێن.</p></div>
+      </section>
+      <app-advanced-research-hub></app-advanced-research-hub>
+    }
+
+    @case ('platform') {
+      <section class="mam-page-head">
+        <div><span class="mam-eyebrow">QUALITY</span><h1>پشکنین و بڕواپێکراوی</h1><p>QA، بەڵگە، سەرچاوە و ئەنجامی پشکنین لە یەک شوێن.</p></div>
+      </section>
+      <app-academic-platform></app-academic-platform>
+    }
+
+    @case ('google_drive') {
+      <section class="mam-page-head">
+        <div><span class="mam-eyebrow">INTEGRATIONS</span><h1>هاوبەشی و فایل</h1><p>هێنان و بەڕێوەبردنی ناوەڕۆک لە خزمەتگوزارییە بەستراوەکان.</p></div>
+      </section>
+      <div class="mam-integration-stack">
+        <app-google-drive-integration [thesisTitle]="manuscriptTitle()" [thesisContent]="activeChapter()?.content || ''"></app-google-drive-integration>
+        <app-gmail-integration [thesisContent]="activeChapter()?.content || ''"></app-gmail-integration>
+        <app-google-sheets-integration [thesisTitle]="manuscriptTitle()"></app-google-sheets-integration>
+        <app-google-keep-integration></app-google-keep-integration>
+        <app-google-tasks-integration></app-google-tasks-integration>
+      </div>
+    }
+
+    @case ('suite') {
+      <section class="mam-page-head">
+        <div><span class="mam-eyebrow">TOOLS & EXPORT</span><h1>ئامراز و هەناردە</h1><p>تەنها ئامرازەکان لێرە پیشان دەدرێن؛ navigation ـەکان لە سایدبارەکەیە.</p></div>
+      </section>
+
+      <section class="mam-tool-hero">
+        <div class="mam-tool-icon"><mat-icon>build</mat-icon></div>
+        <div><h2>کۆمەڵە ئامرازە ئەکادیمییەکان</h2><p>گەڕان و بەکارهێنانی ئامرازەکان بە شێوەیەکی ڕێکخراوتر لە پێشوو.</p></div>
+      </section>
+
+      <app-ai-tools-suite></app-ai-tools-suite>
+
+      <details class="mam-secondary-tools">
+        <summary><mat-icon>apps</mat-icon><span>ئامرازە پێشووەکان</span><small>بە شێوەی کۆکراوە، نەک هەمووی لە یەک پەڕە</small></summary>
+        <div class="mam-legacy-grid">
+          <app-export-word></app-export-word>
+          <app-harvard-review></app-harvard-review>
+          <app-literature-gap></app-literature-gap>
+          <app-academic-plagiarism-checker></app-academic-plagiarism-checker>
+          <app-python-sandbox></app-python-sandbox>
+          <app-latex></app-latex>
+          <app-glossary></app-glossary>
+          <app-thesis-defense-simulator [chapters]="chapters()"></app-thesis-defense-simulator>
+          <app-citation-feature></app-citation-feature>
+          <app-search-engine></app-search-engine>
+          <app-research-feature></app-research-feature>
+          <app-elite-review></app-elite-review>
+          <app-speech-dictation (dictatedTextAppended)="appendDictatedSpeechText($event)"></app-speech-dictation>
+          <app-formality-tone-control (configChanged)="onFormalityConfigChanged($event)"></app-formality-tone-control>
+          <app-text-lineage-connector (parentSelected)="onLineageParentChanged($event)"></app-text-lineage-connector>
+          <app-d3-chord-diagram [data]="chapterCrossData()"></app-d3-chord-diagram>
+          <app-kurdish-academic-evaluator [textToEvaluate]="activeChapter()?.content || ''"></app-kurdish-academic-evaluator>
+          <app-academic-glossary-table></app-academic-glossary-table>
+          <app-logical-consistency-checker [initialText]="activeChapter()?.content || ''"></app-logical-consistency-checker>
+          <app-editor-pomodoro-timer [activeText]="activeChapter()?.content || ''"></app-editor-pomodoro-timer>
+          <app-academic-additions-sidebar (insertRequested)="onInsertAcademicAddition($event)"></app-academic-additions-sidebar>
+          <app-concept-graph></app-concept-graph>
+          <app-thesis-health-report [thesisText]="activeChapter()?.content || ''"></app-thesis-health-report>
+          <app-daily-research-pulse [totalWordsInput]="activeChapter()?.wordCount || 0" [citationsCountInput]="sources().length" [glossaryCountInput]="filteredGlossary().length"></app-daily-research-pulse>
+          <app-citation-health-check [chapterText]="activeChapter()?.content || ''"></app-citation-health-check>
+          <app-chapter-timeline-view [chapterId]="activeChapter()?.id || 1" [chapterContent]="activeChapter()?.content || ''" (restoreRequested)="updateActiveChapterContent($event)"></app-chapter-timeline-view>
+          <app-grammar-syntax-floating-panel [chapterContent]="activeChapter()?.content || ''" (textUpdated)="updateActiveChapterContent($event)"></app-grammar-syntax-floating-panel>
+          <app-split-view-editor [chapterContent]="activeChapter()?.content || ''" (applyCorrections)="updateActiveChapterContent($event)"></app-split-view-editor>
+        </div>
+      </details>
+    }
+
+    @default {
+      <section class="mam-page-head">
+        <div>
+          <span class="mam-eyebrow">WORKSPACE</span>
+          <h1>ناوەندی کار</h1>
+          <p>بەشێکی دیاریکراو نییە. لە سایدبارەکەوە یەکێک لە بوارەکانی کار هەڵبژێرە.</p>
+        </div>
+      </section>
+    }
+  }
+</main>

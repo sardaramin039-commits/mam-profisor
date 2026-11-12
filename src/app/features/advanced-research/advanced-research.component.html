@@ -1,0 +1,135 @@
+<div class="flex flex-col h-full bg-slate-950 text-slate-100 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden dir-rtl">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-slate-900/90 border-b border-slate-800 gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-cyan-500/20">
+        <mat-icon class="text-2xl">auto_awesome</mat-icon>
+      </div>
+      <div>
+        <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          تەکنەلۆژیای فرە-ئەجێنت و گەڕانی جیهانی
+          <span class="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800/80 px-2 py-0.5 rounded-full">بەڵگە پێش AI</span>
+        </h2>
+        <p class="text-xs text-slate-400">گەڕان، پشکنینی claim، OCR، review و بەڵگەسازی لە یەک جریاندا</p>
+      </div>
+    </div>
+
+    <!-- Professor Mode Selector -->
+    <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+      <span class="text-xs font-semibold text-cyan-400 px-2 flex items-center gap-1">
+        <mat-icon class="text-sm">school</mat-icon>
+        ئاستی نووسین:
+      </span>
+      @for (mode of professorModes; track mode.level) {
+        <button
+          (click)="multiAgent.setProfessorMode(mode.level)"
+          [class]="multiAgent.professorMode() === mode.level ? mode.activeClass : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'"
+          class="px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1"
+        >
+          <span>{{ mode.icon }}</span>
+          <span>{{ mode.level }}</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Evidence state legend: the UI must not imply verification from an AI score alone. -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-2 p-3 border-b border-slate-800 bg-slate-950/70" aria-label="دۆخی بەڵگە">
+    <div class="rounded-xl border border-emerald-800/60 bg-emerald-950/20 px-3 py-2">
+      <strong class="block text-xs text-emerald-300">پشتڕاستکراو</strong>
+      <span class="text-[10px] text-slate-400">سەرچاوە و بەڵگەی source-bound بە شێوەی deterministic پشتڕاستکراوە.</span>
+    </div>
+    <div class="rounded-xl border border-amber-800/60 bg-amber-950/20 px-3 py-2">
+      <strong class="block text-xs text-amber-300">پشکنین پێویستە</strong>
+      <span class="text-[10px] text-slate-400">metadata هەیە، بەڵام بەڵگەی تەواو هێشتا پشتڕاست نەکراوە.</span>
+    </div>
+    <div class="rounded-xl border border-rose-800/60 bg-rose-950/20 px-3 py-2">
+      <strong class="block text-xs text-rose-300">بێ بەڵگە</strong>
+      <span class="text-[10px] text-slate-400">هیچ citation ـێک بەهۆی نمرەی AI ـەوە Verified ناکرێت.</span>
+    </div>
+  </section>
+
+  <!-- Workflow Navigation -->
+  <div class="border-b border-slate-800 bg-slate-900/50 p-3 space-y-3">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+      @for (group of navigationGroups; track group.id) {
+        <button
+          type="button"
+          (click)="setNavigationGroup(group.id)"
+          [class]="navigationGroup() === group.id
+            ? 'bg-cyan-950/80 border-cyan-700 text-cyan-200'
+            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'"
+          class="min-h-16 rounded-xl border px-3 py-2 text-right transition-all"
+        >
+          <span class="flex items-center gap-2">
+            <mat-icon class="text-base">{{group.icon}}</mat-icon>
+            <span class="text-xs font-bold">{{group.label}}</span>
+          </span>
+          <span class="block text-[10px] mt-1 opacity-70">{{group.note}}</span>
+        </button>
+      }
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      @if (navigationGroup() === 'workspace') {
+        <button type="button" (click)="activeTab.set('orchestrator')" [class]="activeTab()==='orchestrator' ? 'research-subtab-active' : 'research-subtab'">
+          <mat-icon>hub</mat-icon> سەرپەرشتیاری AI
+        </button>
+      }
+      @if (navigationGroup() === 'evidence') {
+        <button type="button" (click)="activeTab.set('factchecker')" [class]="activeTab()==='factchecker' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>verified_user</mat-icon> پشکنەری ڕاستی</button>
+        <button type="button" (click)="activeTab.set('multiapi')" [class]="activeTab()==='multiapi' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>dataset</mat-icon> ئاپییە ئەکادیمییەکان</button>
+        <button type="button" (click)="activeTab.set('ocr')" [class]="activeTab()==='ocr' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>document_scanner</mat-icon> OCR</button>
+        <button type="button" (click)="activeTab.set('knowledgegraph')" [class]="activeTab()==='knowledgegraph' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>account_tree</mat-icon> گرافی بەڵگە</button>
+      }
+      @if (navigationGroup() === 'review') {
+        <button type="button" (click)="activeTab.set('peer_review')" [class]="activeTab()==='peer_review' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>rate_review</mat-icon> پێداچوونەوەی هاوتا</button>
+        <button type="button" (click)="activeTab.set('methods_lab')" [class]="activeTab()==='methods_lab' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>science</mat-icon> تاقیگەی مێتۆد</button>
+        <button type="button" (click)="activeTab.set('systematic_review')" [class]="activeTab()==='systematic_review' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>checklist</mat-icon> پێداچوونەوەی سیستەماتیک</button>
+      }
+      @if (navigationGroup() === 'output') {
+        <button type="button" (click)="activeTab.set('citation_export')" [class]="activeTab()==='citation_export' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>file_download</mat-icon> Citation و هەناردە</button>
+        <button type="button" (click)="activeTab.set('extended_tools')" [class]="activeTab()==='extended_tools' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>build_circle</mat-icon> ئامرازە ئەکادیمییەکان</button>
+      }
+      @if (navigationGroup() === 'memory') {
+        <button type="button" (click)="activeTab.set('memory')" [class]="activeTab()==='memory' ? 'research-subtab-active' : 'research-subtab'"><mat-icon>history</mat-icon> بیرگە و مێژوو</button>
+      }
+    </div>
+  </div>
+  <!-- Modular Tab Content -->
+  <div class="flex-1 overflow-y-auto p-5">
+    @if (activeTab() === 'orchestrator') {
+      <app-advanced-research-orchestrator-tab></app-advanced-research-orchestrator-tab>
+    }
+    @if (activeTab() === 'factchecker') {
+      <app-advanced-research-fact-checker-tab></app-advanced-research-fact-checker-tab>
+    }
+    @if (activeTab() === 'multiapi') {
+      <app-advanced-research-multiapi-tab></app-advanced-research-multiapi-tab>
+    }
+    @if (activeTab() === 'knowledgegraph') {
+      <app-advanced-research-knowledge-graph-tab></app-advanced-research-knowledge-graph-tab>
+    }
+    @if (activeTab() === 'ocr') {
+      <app-advanced-research-ocr-tab></app-advanced-research-ocr-tab>
+    }
+    @if (activeTab() === 'peer_review') {
+      <app-advanced-research-peer-review-tab></app-advanced-research-peer-review-tab>
+    }
+    @if (activeTab() === 'citation_export') {
+      <app-advanced-research-citation-export-tab></app-advanced-research-citation-export-tab>
+    }
+    @if (activeTab() === 'extended_tools') {
+      <app-advanced-research-extended-tools-tab></app-advanced-research-extended-tools-tab>
+    }
+    @if (activeTab() === 'methods_lab') {
+      <app-advanced-research-methods-lab-tab></app-advanced-research-methods-lab-tab>
+    }
+    @if (activeTab() === 'systematic_review') {
+      <app-systematic-review-tab></app-systematic-review-tab>
+    }
+    @if (activeTab() === 'memory') {
+      <app-advanced-research-memory-tab></app-advanced-research-memory-tab>
+    }
+  </div>
+</div>

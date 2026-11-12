@@ -1,0 +1,164 @@
+/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans Arabic", "Segoe UI", Tahoma, Arial, "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Amiri", "Times New Roman", Times, Georgia, Cambria, serif;
+  --font-mono: "JetBrains Mono", "Consolas", "Courier New", ui-monospace, monospace;
+  --color-editorial-bg: #FDFCFB;
+  --color-editorial-text: #1A1A1A;
+  --color-editorial-sidebar: #F8F6F2;
+  --color-editorial-border: #E5E1DA;
+  --color-editorial-muted: #8C8273;
+  --color-harvard-crimson: #A51C30;
+  --color-harvard-dark: #2C0E12;
+  --color-harvard-gold: #C49A45;
+  --color-harvard-parchment: #F9F6F0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-editorial-bg);
+  color: var(--color-editorial-text);
+}
+
+/* Elegant and highly visible scrollbar styles for academic content containers */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f4f2ed;
+  border-radius: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #a89f91;
+  border-radius: 6px;
+  border: 2px solid #f4f2ed;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #73695b;
+}
+
+/* For non-webkit browsers */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #a89f91 #f4f2ed;
+  scroll-behavior: smooth;
+}
+
+@keyframes expandFade {
+  0% {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    max-height: 500px;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-expand-fade {
+  animation: expandFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+
+@keyframes fadeInBadge {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in-badge {
+  animation: fadeInBadge 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* =========================================================================
+   Universal Dark Mode (باری شاراوە) - شێوازی تاریک بۆ سەرانسەری بەرنامەکە
+   ========================================================================= */
+html.dark, body.academic-dark, .academic-dark, [data-theme="dark"] {
+  --color-editorial-bg: #0b1117;
+  --color-editorial-text: #f0f6fc;
+  --color-editorial-sidebar: #101923;
+  --color-editorial-border: #223242;
+  --color-editorial-muted: #94a3b8;
+  color-scheme: dark;
+  background-color: #0b1117 !important;
+  color: #f0f6fc !important;
+}
+
+.academic-dark body {
+  background-color: #0b1117 !important;
+  color: #f0f6fc !important;
+}
+
+.academic-dark .bg-white,
+.academic-dark .bg-slate-50,
+.academic-dark .bg-neutral-50,
+.academic-dark .bg-stone-50,
+.academic-dark [class*="bg-[#FDFCFB]"],
+.academic-dark [class*="bg-[#F8F6F2]"],
+.academic-dark [class*="bg-[#FAF8F5]"],
+.academic-dark [class*="bg-[#FBF9F5]"] {
+  background-color: #111b27 !important;
+  color: #f1f5f9 !important;
+  border-color: #223446 !important;
+}
+
+.academic-dark .text-slate-800,
+.academic-dark .text-slate-900,
+.academic-dark .text-stone-800,
+.academic-dark .text-stone-900,
+.academic-dark .text-neutral-900,
+.academic-dark .text-black,
+.academic-dark [class*="text-[#1A1A1A]"] {
+  color: #f8fafc !important;
+}
+
+.academic-dark .text-slate-600,
+.academic-dark .text-slate-700,
+.academic-dark .text-stone-600,
+.academic-dark .text-stone-700,
+.academic-dark [class*="text-[#8C8273]"] {
+  color: #cbd5e1 !important;
+}
+
+.academic-dark .text-slate-500,
+.academic-dark .text-stone-500 {
+  color: #94a3b8 !important;
+}
+
+.academic-dark .border-slate-200,
+.academic-dark .border-stone-200,
+.academic-dark [class*="border-[#E5E1DA]"],
+.academic-dark [class*="border-[#D8D2C2]"] {
+  border-color: #223446 !important;
+}
+
+.academic-dark input:not([type="checkbox"]):not([type="radio"]),
+.academic-dark textarea,
+.academic-dark select {
+  background-color: #0b131d !important;
+  color: #f1f5f9 !important;
+  border-color: #26384a !important;
+}
+
+.academic-dark .scrollbar-thin::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+.academic-dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-color: #0f172a;
+}
+
+
+

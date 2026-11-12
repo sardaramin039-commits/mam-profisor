@@ -1,0 +1,175 @@
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
+import { BackupRestoreService } from '../../core/services/backup-restore.service';
+import { UserReputationService } from '../../services/user-reputation.service';
+
+type MainTab = 'library' | 'editor' | 'suite' | 'advanced_research' | 'google_drive' | 'platform';
+
+@Component({
+  selector: 'app-dashboard-header',
+  standalone: true,
+  imports: [MatIconModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div class="mam-sidebar-backdrop" [class.is-open]="mobileNavOpen()" (click)="closeMobileNav()"></div>
+
+    <aside class="mam-sidebar" [class.is-open]="mobileNavOpen()" aria-label="ناڤیگەیشنی مام پڕۆفیسۆر">
+      <div class="mam-brand">
+        <button type="button" class="mam-brand-mark" (click)="goSplash.emit()" aria-label="گەڕانەوە بۆ پەڕەی سەرەکی">
+          <mat-icon>auto_stories</mat-icon>
+        </button>
+        <div>
+          <strong>مام پڕۆفیسۆر</strong>
+          <span>ناوەندی نووسین و توێژینەوە</span>
+        </div>
+      </div>
+
+      <button type="button" class="mam-new-project" (click)="newBlankThesis.emit(); closeMobileNav()" title="دەستپێکردنی تێزێکی نوێی بەتاڵ">
+        <mat-icon>add_circle</mat-icon>
+        <span>+ دەستپێکردنی تێزی نوێ (بەتاڵ)</span>
+      </button>
+
+      <nav class="mam-nav" aria-label="ناڤیگەیشنی ئەکادیمی">
+        <p class="mam-nav-label">بەشە سەرەکییەکان</p>
+
+        <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'editor'"
+                (click)="selectTab.emit('editor'); closeMobileNav()">
+          <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">١</span>
+          <mat-icon class="!text-lg !w-4 !h-4">history_edu</mat-icon>
+          <span><b>نووسینی توێژینەوە</b><small>Thesis Editor & Outline</small></span>
+        </button>
+
+        <button type="button" class="mam-nav-item" [class.active]="mainTab() === 'library'"
+                (click)="selectTab.emit('library'); closeMobileNav()">
+          <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-xs font-bold font-mono">٢</span>
+          <mat-icon class="!text-lg !w-4 !h-4">auto_stories</mat-icon>
+          <span><b>کتێبخانەی سەرچاوەکان</b><small>Digital Library & Citations</small></span>
+        </button>
+      </nav>
+
+      <div class="mam-sidebar-bottom">
+        <button type="button" class="mam-sidebar-action" (click)="toggleFocusMode.emit(); closeMobileNav()">
+          <mat-icon>{{ isFocusMode() ? 'fullscreen_exit' : 'center_focus_strong' }}</mat-icon>
+          <span>{{ isFocusMode() ? 'دەرچوون لە سەرنج' : 'دۆخی سەرنج (Focus Mode)' }}</span>
+        </button>
+
+        <button type="button" class="mam-sidebar-action" (click)="toggleDarkMode.emit()">
+          <mat-icon>{{ academicDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          <span>{{ academicDarkMode() ? 'ڕووناکی' : 'تاریکی' }}</span>
+        </button>
+
+        @if (currentUser()) {
+          <div class="mam-user-card">
+            @if (currentUser()?.photoURL) {
+              <img [src]="currentUser()?.photoURL" alt="وێنەی بەکارهێنەر" referrerpolicy="no-referrer">
+            } @else {
+              <mat-icon>person</mat-icon>
+            }
+            <div class="mam-user-text">
+              <strong>{{ currentUser()?.displayName || 'بەکارهێنەر' }}</strong>
+              <span>چوونەژوورەوە کراوە</span>
+            </div>
+            <button type="button" (click)="logout.emit()" title="دەرچوون">
+              <mat-icon>logout</mat-icon>
+            </button>
+          </div>
+        } @else {
+          <button type="button" class="mam-login" (click)="loginWithGoogle.emit()">
+            <mat-icon>login</mat-icon>
+            <span>چوونەژوورەوە</span>
+          </button>
+        }
+      </div>
+    </aside>
+
+    <header class="mam-topbar">
+      <div class="mam-topbar-left">
+        <button type="button" class="mam-menu-button" (click)="toggleMobileNav()" aria-label="کردنەوەی ڕێنوێن">
+          <mat-icon>{{ mobileNavOpen() ? 'close' : 'menu' }}</mat-icon>
+        </button>
+        <div class="mam-breadcrumb">
+          <span>مام پڕۆفیسۆر</span>
+          <mat-icon>chevron_left</mat-icon>
+          <strong>{{ tabLabel(mainTab()) }}</strong>
+        </div>
+      </div>
+
+      <div class="mam-topbar-right">
+        <!-- Focus Mode Toggle -->
+        <button type="button" class="mam-top-action" [class.primary]="isFocusMode()" (click)="toggleFocusMode.emit()" title="دۆخی سەرنج (Focus Mode) - نووسینی ئارام و بێ بەربەست">
+          <mat-icon>{{ isFocusMode() ? 'fullscreen_exit' : 'center_focus_strong' }}</mat-icon>
+          <span>{{ isFocusMode() ? 'دەرچوون لە سەرنج' : 'دۆخی سەرنج' }}</span>
+        </button>
+
+        <!-- Dark Mode Toggle -->
+        <button type="button" class="mam-top-action cursor-pointer" (click)="toggleDarkMode.emit()" [title]="academicDarkMode() ? 'گۆڕین بۆ دۆخی ڕووناک' : 'گۆڕین بۆ باری شاراوە (تاریک)'">
+          <mat-icon class="!text-amber-300">{{ academicDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          <span>{{ academicDarkMode() ? 'ڕووناک' : 'تاریک' }}</span>
+        </button>
+
+        @if (currentUser()) {
+          <button type="button" class="mam-top-action" (click)="logout.emit()">
+            <mat-icon>logout</mat-icon>
+            <span>دەرچوون</span>
+          </button>
+        } @else {
+          <button type="button" class="mam-top-action primary" (click)="loginWithGoogle.emit()">
+            <mat-icon>login</mat-icon>
+            <span>چوونەژوورەوە</span>
+          </button>
+        }
+      </div>
+    </header>
+  `
+})
+export class DashboardHeaderComponent {
+  readonly backupService = inject(BackupRestoreService);
+  readonly reputationService = inject(UserReputationService);
+
+  mainTab = input<MainTab>('editor');
+  currentUser = input<any>(null);
+  academicDarkMode = input(false);
+  isFocusMode = input(false);
+
+  goSplash = output<void>();
+  newBlankThesis = output<void>();
+  selectTab = output<MainTab>();
+  loginWithGoogle = output<void>();
+  logout = output<void>();
+  openReadingMode = output<void>();
+  toggleDarkMode = output<void>();
+  clearEditor = output<void>();
+  toggleFocusMode = output<void>();
+  exportWordOrPdf = output<void>();
+  openReputation = output<void>();
+
+  mobileNavOpen = signal(false);
+
+  toggleMobileNav(): void {
+    this.mobileNavOpen.update(open => !open);
+  }
+
+  closeMobileNav(): void {
+    this.mobileNavOpen.set(false);
+  }
+
+  async onBackupFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      await this.backupService.restoreFromFile(input.files[0]);
+      input.value = '';
+    }
+  }
+
+  tabLabel(tab: MainTab): string {
+    const labels: Record<MainTab, string> = {
+      library: 'بەڵگە و سەرچاوە',
+      editor: 'نووسین',
+      suite: 'ئامراز و هەناردە',
+      advanced_research: 'توێژینەوە',
+      google_drive: 'هاوبەشی و فایل',
+      platform: 'پشکنین و بڕواپێکراوی'
+    };
+    return labels[tab];
+  }
+}

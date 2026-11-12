@@ -1,0 +1,175 @@
+<div [formGroup]="refineForm" class="space-y-5 text-right font-serif">
+  <!-- 1. Thesis Title -->
+  <div class="space-y-1.5">
+    <label class="block text-xs font-bold text-stone-900 flex items-center gap-1.5">
+      <mat-icon class="text-amber-600 !text-sm !w-4 !h-4">title</mat-icon>
+      <span>ناونیشانی تێز / توێژینەوەی زانستی:</span>
+    </label>
+    <input 
+      type="text" 
+      formControlName="title" 
+      class="w-full text-xs p-3.5 border-2 border-stone-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white font-bold text-stone-900 placeholder-stone-400 shadow-xs" 
+      placeholder="بۆ نموونە: دیالێکتیکی عەقڵ لای فەیلەسوفانی زمانەوانی هاوچەرخ" />
+  </div>
+
+  <!-- 2 & 3. Academic Level & Discipline Row -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <!-- 2. Academic Level -->
+    <div class="space-y-1.5">
+      <label class="block text-xs font-bold text-stone-900 flex items-center gap-1.5">
+        <mat-icon class="text-stone-800 !text-sm !w-4 !h-4">school</mat-icon>
+        <span>ئاستی ئەکادیمی (Academic Level):</span>
+      </label>
+      <select 
+        formControlName="academicLevel" 
+        class="w-full text-xs p-3 border-2 border-stone-800 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold text-stone-900 cursor-pointer shadow-xs">
+        <option value="school">🎒 ئاستی قوتابخانە (School Report)</option>
+        <option value="bachelor">🎓 بەکالۆریۆس (Bachelor Project)</option>
+        <option value="master">🎓 ماستەر (Master's Thesis)</option>
+        <option value="phd">🎓 دکتۆرا (PhD Dissertation)</option>
+        <option value="journal">📚 توێژینەوەی گۆڤاری زانستی (Scopus / Clarivate)</option>
+      </select>
+    </div>
+
+    <!-- 3. Academic Discipline (All 18 Domains) -->
+    <div class="space-y-1.5">
+      <label class="block text-xs font-bold text-stone-900 flex items-center gap-1.5">
+        <mat-icon class="text-stone-800 !text-sm !w-4 !h-4">account_tree</mat-icon>
+        <span>بواری ئەکادیمی (Discipline - ١٨ بوار):</span>
+      </label>
+      <select 
+        formControlName="discipline" 
+        class="w-full text-xs p-3 border-2 border-stone-800 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold text-stone-900 cursor-pointer shadow-xs">
+        <option value="religion">🕌 بواری ئایینی و زانستە ئیسلامییەکان (Religion & Islamic Studies)</option>
+        <option value="politics">🏛️ زانستە سیاسییەکان و پەیوەندییە نێودەوڵەتییەکان (Politics & IR)</option>
+        <option value="economics">📈 ئابووری و دارایی (Economics & Finance)</option>
+        <option value="sociology">👥 کۆمەڵناسی و پرسە کۆمەڵایەتییەکان (Sociology)</option>
+        <option value="business_industry">🏢 بازرگانی، کارگێڕی و پیشەسازی (Business & Industry)</option>
+        <option value="literature_arts">🎭 ئەدەب، ڕەخنەی ئەدەبی و هونەر (Literature & Arts)</option>
+        <option value="narratology">📖 ئەدەب و گێڕانەوەناسی</option>
+        <option value="discourse">🗣️ گوتارناسی و پۆست-کۆلۆنیالیزم</option>
+        <option value="travelogue">🧭 سەفەرنامەناسی</option>
+        <option value="morpho_syntax">🔤 زمانەوانی و مۆرفۆ-سینتاکس</option>
+        <option value="history">🏺 مێژوو</option>
+        <option value="philosophy">💭 فەلسەفە</option>
+        <option value="education">📘 پەروەردە</option>
+        <option value="sports">⚽ پەروەردەی وەرزشی و زانستەکانی جووڵە (Sports Sciences)</option>
+        <option value="culture">📜 فەرهەنگ، فۆلکلۆر و کەلەپوور (Culture & Heritage)</option>
+        <option value="linguistics_grammar">✍️ زمانەوانی، ڕێزمان و زانستەکانی زمان (Linguistics & Grammar)</option>
+        <option value="psychology">🧠 دەروونناسی و زانستە پەروەردەییەکان (Psychology & Education)</option>
+        <option value="philosophy">🤔 فەلسەفە، لۆژیک و فیکر (Philosophy & Logic)</option>
+        <option value="science_tech_internet">💻 زانستی کۆمپیوتەر، تەکنەلۆجیا و ژیریی دەستکرد (Computer Science & AI)</option>
+        <option value="chemistry">🧪 زانستی کیمیا (Chemistry)</option>
+        <option value="physics">⚛️ زانستی فیزیا (Physics)</option>
+        <option value="mathematics">📐 بیرکاری و ئامار (Mathematics & Statistics)</option>
+        <option value="electrical_engineering">⚡ ئەندازیاریی کارەبا و ئەلیکترۆنیک (Electrical Engineering)</option>
+        <option value="health_medicine">🩺 تەندروستی، پزیشکی و زیندەزانی (Health & Medicine)</option>
+        <option value="general_academic">📚 توێژینەوەی زانستی و ئەکادیمیی فرەڕەهەند (General Academic)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="space-y-1.5">
+      <label class="block text-xs font-bold text-stone-900">شێوازی سەرچاوەدان</label>
+      <select
+        formControlName="citationStyle"
+        (change)="refineForm.patchValue({ academicStyle: refineForm.get('citationStyle')?.value })"
+        class="w-full text-xs p-3 border-2 border-stone-800 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold text-stone-900 cursor-pointer">
+        <option value="chicago">پەراوێزی ژمارەیی کوردی / شیکاگۆ</option>
+        <option value="apa7">APA 7</option>
+        <option value="mla9">MLA 9</option>
+        <option value="harvard">Harvard</option>
+        <option value="ieee">IEEE</option>
+      </select>
+    </div>
+    <div class="space-y-1.5">
+      <label class="block text-xs font-bold text-stone-900">ژمارەی بەشەکان</label>
+      <input
+        type="number"
+        formControlName="targetChapters"
+        min="1"
+        max="20"
+        class="w-full text-xs p-3 border-2 border-stone-800 rounded-xl bg-white font-bold text-stone-900"
+        aria-label="ژمارەی بەشەکانی توێژینەوە">
+    </div>
+  </div>
+
+  <!-- 4. Target Pages -->
+  <div class="space-y-2 p-4 bg-stone-50 border-2 border-stone-800 rounded-xl shadow-xs">
+    <div class="flex items-center justify-between">
+      <label class="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+        <mat-icon class="text-amber-700 !text-sm !w-4 !h-4">straighten</mat-icon>
+        <span>ژمارەی لاپەڕەی ئامانج (Target Pages):</span>
+      </label>
+      <span class="text-[10px] font-mono font-bold bg-amber-200/80 text-amber-950 px-2 py-0.5 rounded border border-amber-400">
+        {{ pageRangeWords().targetWords | number }} وشە (١ لاپەڕە ≈ ٣٥٠ وشە)
+      </span>
+    </div>
+
+    <!-- Quick Presets -->
+    <div class="grid grid-cols-7 gap-1 text-center pt-1">
+      <button type="button" (click)="selectPagePreset(5)" class="py-1 text-[10.5px] font-bold border border-stone-400 rounded-lg bg-white hover:bg-amber-100 transition-all cursor-pointer" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 5">٥ ل.</button>
+      <button type="button" (click)="selectPagePreset(10)" class="py-1 text-[10.5px] font-bold border border-stone-400 rounded-lg bg-white hover:bg-amber-100 transition-all cursor-pointer" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 10">١٠ ل.</button>
+      <button type="button" (click)="selectPagePreset(15)" class="py-1 text-[10.5px] font-bold border border-stone-400 rounded-lg bg-white hover:bg-amber-100 transition-all cursor-pointer" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 15">١٥ ل.</button>
+      <button type="button" (click)="selectPagePreset(20)" class="py-1 text-[10.5px] font-bold border border-stone-400 rounded-lg bg-white hover:bg-amber-100 transition-all cursor-pointer" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 20">٢٠ ل.</button>
+      <button type="button" (click)="selectPagePreset(30)" class="py-1 text-[10.5px] font-bold border border-stone-400 rounded-lg bg-white hover:bg-amber-100 transition-all cursor-pointer" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 30">٣٠ ل.</button>
+      <button type="button" (click)="selectPagePreset(50)" class="py-1 text-[10.5px] font-bold border border-stone-400 rounded-lg bg-white hover:bg-amber-100 transition-all cursor-pointer" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 50">٥٠ ل.</button>
+      <button type="button" (click)="selectPagePreset(100)" class="py-1 text-[10.5px] font-bold border border-stone-400 rounded-lg bg-white hover:bg-amber-100 transition-all cursor-pointer" [class.bg-amber-300]="refineForm.get('targetPages')?.value === 100">١٠٠ ل.</button>
+    </div>
+
+    <input 
+      type="number" 
+      formControlName="targetPages" 
+      (input)="onNumericInput($event, 'targetPages'); onNumericInput($event, 'size')"
+      class="w-full text-xs p-2.5 border-2 border-stone-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-center bg-white font-bold text-stone-900"
+      placeholder="10" 
+      min="1" 
+      max="1000" />
+  </div>
+
+  <div class="space-y-1.5">
+    <label class="block text-xs font-bold text-stone-900">قەبارەی ئامانج بە وشە</label>
+    <input
+      type="number"
+      formControlName="targetWordCount"
+      min="350"
+      step="350"
+      class="w-full text-xs p-3 border-2 border-stone-800 rounded-xl bg-white font-bold text-stone-900"
+      aria-label="قەبارەی توێژینەوە بە وشە">
+  </div>
+
+  <!-- 5. Optional Custom Sources Input -->
+  <div class="space-y-1.5">
+    <label class="block text-xs font-bold text-stone-900 flex items-center justify-between">
+      <span class="flex items-center gap-1.5">
+        <mat-icon class="text-amber-800 !text-sm !w-4 !h-4">menu_book</mat-icon>
+        <span>سەرچاوە تایبەتەکان (ئارەزوومەندانە - Custom Sources):</span>
+      </span>
+      <span class="text-[10px] text-stone-500 font-normal">کتێب، بەڵگە یان نووسەر بنووسە</span>
+    </label>
+    <textarea 
+      formControlName="customSourcesText" 
+      rows="3" 
+      class="w-full p-3 text-xs rounded-xl border-2 border-stone-800 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium text-stone-900 placeholder-stone-400 shadow-xs" 
+      placeholder="ئەگەر سەرچاوەی دیاریکراوت هەیە، لێرە بیلکێنە (بۆ نموونە: د. ئەمین، ٢٠٢٤؛ پڕۆفیسۆر بارزانی، ٢٠٢٢...) تا نووسەر بە تەواوی پشتی پێ ببەستێت."></textarea>
+  </div>
+
+  <!-- 6. Prominent Primary Action Button -->
+  <div class="pt-2">
+    <button 
+      type="button" 
+      (click)="onSendToSecondWindow()" 
+      [disabled]="liveProgress.isBusy()"
+      class="w-full py-4 px-6 bg-gradient-to-r from-stone-950 via-stone-900 to-stone-950 hover:from-black hover:to-black disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl text-sm font-extrabold transition-all duration-300 shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2 border-2 border-amber-500/80 active:scale-[0.99] group">
+      @if (liveProgress.activeActionKey() === 'send_to_second_window' || liveProgress.activeActionKey() === 'generate_structure') {
+        <mat-icon class="!text-lg !w-5 !h-5 text-amber-400 animate-spin">autorenew</mat-icon>
+        <span class="text-amber-300 text-sm tracking-wide">خەریکی کارکردنە...</span>
+      } @else {
+        <mat-icon class="!text-lg !w-5 !h-5 text-amber-400 group-hover:rotate-12 transition-transform">auto_awesome</mat-icon>
+        <span class="text-amber-300 text-sm tracking-wide">دروستکردنی پێڕست و دەستپێکردن</span>
+        <mat-icon class="!text-sm !w-4 !h-4 text-amber-400">arrow_back</mat-icon>
+      }
+    </button>
+  </div>
+</div>

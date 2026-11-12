@@ -1,0 +1,45 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    groups:
+      angular:
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+          - "angular-eslint"
+      typescript-eslint:
+        patterns:
+          - "@typescript-eslint/*"
+          - "typescript-eslint"
+      testing-and-tooling:
+        patterns:
+          - "@types/*"
+          - "eslint"
+          - "@eslint/*"
+      runtime:
+        patterns:
+          - "express"
+          - "firebase"
+          - "firebase-admin"
+          - "zod"
+          - "axios"
+          - "pg"
+          - "drizzle-*"
+      ai:
+        patterns:
+          - "@google/genai"
+          - "d3"
+          - "motion"
+    labels:
+      - "dependencies"
+      - "automated-update"
+    commit-message:
+      prefix: "deps"

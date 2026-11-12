@@ -1,0 +1,372 @@
+<section class="mam-secondary-tools mt-4 border border-stone-200 bg-white">
+  <div class="flex items-start justify-between gap-3 flex-wrap">
+    <div class="flex items-start gap-2">
+      <div class="p-2 rounded-xl bg-stone-900 text-amber-400"><mat-icon>rate_review</mat-icon></div>
+      <div>
+        <h3 class="text-sm font-bold text-stone-900">ناوەندی publication و پێداچوونەوە</h3>
+        <p class="text-[11px] text-stone-500 mt-0.5">P20: بڕیاری editorial، revision plan و gate ـی دووبارەناردن.</p>
+      </div>
+    </div>
+    <button type="button" class="px-3 py-1.5 rounded-lg bg-stone-900 text-white text-[11px] font-bold disabled:opacity-50" (click)="loadSubmissions()" [disabled]="loading() || !workspaceId()">
+      {{ loading() ? 'خەریکی بارکردن...' : 'نوێکردنەوە' }}
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+    <label class="block">
+      <span class="block text-[10px] font-bold text-stone-600 mb-1">Workspace ID</span>
+      <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="workspaceId()" (ngModelChange)="setWorkspace($event)" list="mam-workspaces" placeholder="ناسنامەی workspace" autocomplete="off">
+      <datalist id="mam-workspaces">
+        @for (item of host.historyList(); track item.id) {
+          <option [value]="item.id">{{ item.title }}</option>
+        }
+      </datalist>
+    </label>
+
+    <label class="block">
+      <span class="block text-[10px] font-bold text-stone-600 mb-1">Submission</span>
+      <select class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="submissionId()" (ngModelChange)="selectSubmission($event)">
+        <option value="">هەڵبژێرە...</option>
+        @for (item of submissions(); track item.id) {
+          <option [value]="item.id">{{ item.id }}، {{ statusLabel(item.currentStatus) }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] text-rose-800">{{ errorMessage() }}</div>
+  }
+
+  @if (submissionId() && submissions().length > 0) {
+    @let current = currentSubmission();
+    @if (current) {
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+        <div class="rounded-lg border border-stone-200 bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">دۆخ</span><strong class="text-[11px]">{{ statusLabel(current.currentStatus) }}</strong></div>
+        <div class="rounded-lg border border-stone-200 bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">Version</span><strong class="text-[11px] break-all">{{ current.currentVersionId || '—' }}</strong></div>
+        <div class="rounded-lg border border-stone-200 bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">ژمارەی Version</span><strong class="text-[11px]">{{ current.versionCount }}</strong></div>
+        <div class="rounded-lg border border-stone-200 bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">گۆڤار</span><strong class="text-[11px] truncate">{{ current.journalName }}</strong></div>
+      </div>
+
+      @if (editorialWriteBlocked()) {
+        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[10px] text-amber-900">
+          <strong class="block text-[11px]">دەسەڵاتی تۆمارکردنی بڕیاری editorial نییە</strong>
+          <span class="block mt-1">ئەم بەشە بۆ admin، professor یان editor ـە. ئەگەر role ـەکەت دروستە، token ـی Firebase نوێ بکەرەوە پاش گۆڕینی custom claim.</span>
+        </div>
+      } @else {
+      <div class="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
+        <div class="flex items-start justify-between gap-2 flex-wrap">
+          <div>
+            <h4 class="text-xs font-bold text-stone-900">تۆمارکردنی بڕیاری editorial</h4>
+            <p class="text-[10px] text-stone-500 mt-0.5">تەنها بەکارهێنەرانی admin، professor یان editor دەتوانن بڕیار تۆمار بکەن.</p>
+          </div>
+          <span class="text-[9px] font-bold rounded-full bg-white border border-stone-200 px-2 py-1">{{ decisionTypeLabel(decisionType()) }}</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+          <label class="block">
+            <span class="block text-[10px] font-bold text-stone-600 mb-1">جۆری بڕیار</span>
+            <select class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="decisionType()" (ngModelChange)="setDecisionType($event)" [disabled]="decisionLoading()">
+              @for (type of decisionTypes; track type) {
+                <option [value]="type">{{ decisionTypeLabel(type) }}</option>
+              }
+            </select>
+          </label>
+          <label class="block">
+            <span class="block text-[10px] font-bold text-stone-600 mb-1">External reference، هەبوو</span>
+            <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="decisionExternalReference()" (ngModelChange)="decisionExternalReference.set($event)" maxlength="500" placeholder="DOI، ticket، manuscript ID..." [disabled]="decisionLoading()">
+          </label>
+        </div>
+
+        <label class="block mt-2">
+          <span class="block text-[10px] font-bold text-stone-600 mb-1">تێبینی editorial</span>
+          <textarea class="w-full min-h-20 rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs leading-relaxed" [ngModel]="decisionNote()" (ngModelChange)="decisionNote.set($event)" maxlength="5000" placeholder="هۆکار، تێبینییە سەرەکییەکان و داواکارییەکان..." [disabled]="decisionLoading()"></textarea>
+        </label>
+
+        @if (isDecisionRevision()) {
+          <div class="mt-3 rounded-lg border border-stone-200 bg-white p-3">
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <h5 class="text-[11px] font-bold">Revision tasks</h5>
+              <span class="text-[9px] text-stone-500">{{ decisionTasks().length }} task</span>
+            </div>
+
+            @if (decisionTasks().length > 0) {
+              <div class="space-y-1.5 mb-3">
+                @for (task of decisionTasks(); track $index) {
+                  <div class="flex items-start justify-between gap-2 rounded-lg border border-stone-200 bg-stone-50 p-2">
+                    <div class="min-w-0">
+                      <strong class="block text-[10px]">{{ $index + 1 }}. {{ task.title }}</strong>
+                      <span class="block text-[9px] text-stone-500 mt-0.5">{{ decisionScopeLabel(task.scope) }}، {{ task.required ? 'پێویست' : 'ئارەزوومەندانە' }}{{ task.dueAt ? '، ' + task.dueAt : '' }}</span>
+                      <p class="text-[9px] text-stone-600 mt-1">{{ task.details }}</p>
+                    </div>
+                    <button type="button" class="shrink-0 px-2 py-1 rounded-md border border-rose-200 text-rose-700 text-[9px]" (click)="removeDecisionTask($index)" [disabled]="decisionLoading()">سڕینەوە</button>
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <label class="block">
+                <span class="block text-[9px] font-bold text-stone-600 mb-1">ناونیشانی task</span>
+                <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="decisionTaskDraft().title" (ngModelChange)="updateDecisionTaskDraft('title', $event)" maxlength="500" placeholder="نموونە: ڕوونکردنەوەی methodology" [disabled]="decisionLoading()">
+              </label>
+              <label class="block">
+                <span class="block text-[9px] font-bold text-stone-600 mb-1">بوار</span>
+                <select class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="decisionTaskDraft().scope" (ngModelChange)="updateDecisionTaskDraft('scope', $event)" [disabled]="decisionLoading()">
+                  @for (scope of decisionScopes; track scope) {
+                    <option [value]="scope">{{ decisionScopeLabel(scope) }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+
+            <label class="block mt-2">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">وردەکاری و داواکاری</span>
+              <textarea class="w-full min-h-16 rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="decisionTaskDraft().details" (ngModelChange)="updateDecisionTaskDraft('details', $event)" maxlength="5000" placeholder="چی دەبێت بگۆڕدرێت و چۆن؟" [disabled]="decisionLoading()"></textarea>
+            </label>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 items-end">
+              <label class="block">
+                <span class="block text-[9px] font-bold text-stone-600 mb-1">Deadline، هەبوو</span>
+                <input type="date" class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="decisionTaskDraft().dueAt" (ngModelChange)="updateDecisionTaskDraft('dueAt', $event)" [disabled]="decisionLoading()">
+              </label>
+              <label class="flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-[10px]">
+                <input type="checkbox" [ngModel]="decisionTaskDraft().required" (ngModelChange)="updateDecisionTaskDraft('required', $event)" [disabled]="decisionLoading()">
+                <span>ئەم task ـە پێویستە بۆ resubmit</span>
+              </label>
+            </div>
+
+            <button type="button" class="mt-2 px-3 py-1.5 rounded-lg border border-stone-300 bg-white text-[10px] font-bold disabled:opacity-50" (click)="addDecisionTask()" [disabled]="decisionLoading()">زیادکردنی task</button>
+          </div>
+        }
+
+        <div class="flex justify-end gap-2 mt-3">
+          <button type="button" class="px-3 py-1.5 rounded-lg border border-stone-300 bg-white text-[10px] font-bold" (click)="resetDecisionForm()" [disabled]="decisionLoading()">پاککردنەوەی form</button>
+          <button type="button" class="px-4 py-1.5 rounded-lg bg-stone-900 text-white text-[10px] font-bold disabled:opacity-50" (click)="submitDecision()" [disabled]="decisionLoading() || !currentSubmission()">
+            {{ decisionLoading() ? 'خەریکی تۆمارکردن...' : 'تۆمارکردنی بڕیار' }}
+          </button>
+        </div>
+      </div>
+      }
+
+      <div class="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-3">
+        <div class="rounded-xl border border-stone-200 p-3">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <h4 class="text-xs font-bold">مێژووی بڕیار</h4><span class="text-[9px] text-stone-500">{{ decisions().length }} بڕیار</span>
+          </div>
+          @if (decisions().length === 0) {
+            <p class="text-[10px] text-stone-500">هێشتا بڕیارێکی editorial تۆمار نەکراوە.</p>
+          } @else {
+            <div class="space-y-2 max-h-60 overflow-y-auto">
+              @for (decision of decisions(); track decision.id) {
+                <div class="rounded-lg border border-stone-100 bg-stone-50 p-2.5">
+                  <div class="flex items-center justify-between gap-2 flex-wrap"><strong class="text-[11px]">{{ decision.decisionType }}</strong><span class="text-[9px] text-stone-500">{{ decision.decidedAt | date:'yyyy-MM-dd HH:mm' }}</span></div>
+                  <p class="text-[10px] text-stone-700 mt-1">{{ decision.note }}</p>
+                  <small class="text-[9px] text-stone-500 break-all">{{ decision.submissionVersionId }}</small>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="rounded-xl border border-stone-200 p-3">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <h4 class="text-xs font-bold">Revision plan</h4>
+            @if (revisionGate()) {
+              <span class="text-[9px] font-bold px-2 py-1 rounded-full" [class.bg-emerald-100]="revisionGate()!.ready" [class.text-emerald-800]="revisionGate()!.ready" [class.bg-amber-100]="!revisionGate()!.ready" [class.text-amber-800]="!revisionGate()!.ready">
+                {{ revisionGate()!.ready ? 'ئامادەی resubmit' : 'هێشتا تەواو نییە' }}
+              </span>
+            }
+          </div>
+          @if (!revisionPlan()) {
+            <p class="text-[10px] text-stone-500">هیچ revision plan ـێک نییە.</p>
+          } @else {
+            <div class="text-[10px] text-stone-600 mb-2">جۆر: {{ revisionPlan()!.severity }}، دۆخ: {{ revisionPlan()!.status }}</div>
+            <div class="space-y-2 max-h-60 overflow-y-auto">
+              @for (task of revisionPlan()!.tasks; track task.id) {
+                <div class="rounded-lg border border-stone-100 bg-white p-2.5">
+                  <div class="flex items-start justify-between gap-2">
+                    <div><strong class="text-[10.5px]">{{ task.order }}. {{ task.title }}</strong><span class="block text-[9px] text-stone-500 mt-0.5">{{ task.scope }}، {{ task.required ? 'پێویستە' : 'ئارەزوومەندانە' }}</span></div>
+                    <span class="text-[8px] font-bold">{{ task.status }}</span>
+                  </div>
+                  <p class="text-[9.5px] text-stone-700 mt-1 leading-relaxed">{{ task.details }}</p>
+                  <div class="flex flex-wrap gap-1.5 mt-2">
+                    @for (next of taskStatuses; track next) {
+                      <button type="button" class="px-2 py-1 rounded-md border border-stone-200 text-[9px] font-bold disabled:opacity-50" [disabled]="taskLoading() === task.id || task.status === next" (click)="updateTask(task, next)">
+                        {{ next === 'IN_PROGRESS' ? 'لە کاردایە' : next === 'DONE' ? 'تەواو' : 'waive' }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+      @if (revisionGate()?.reason) {
+        <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] text-amber-900">{{ revisionGate()!.reason }}</div>
+      }
+
+      @if (revisionGate()?.ready && !lockedManifest()) {
+        <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-[10px] text-rose-900">
+          <strong class="block text-[11px]">Resubmission بلۆک کراوە</strong>
+          <span class="block mt-1">P19 manifest ـی version ـی پێشوو نەدۆزرایەوە یان policy ـەکەی قفل نەکراوە؛ بۆ پاراستنی integrity، resubmit بە policy ـی نوێ ناکرێت.</span>
+        </div>
+      }
+
+      @if (canResubmit()) {
+        <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <div class="flex items-start justify-between gap-2 flex-wrap">
+            <div>
+              <h4 class="text-xs font-bold text-emerald-950">Resubmission ـی Version ـی نوێ</h4>
+              <p class="text-[10px] text-emerald-800 mt-0.5">P19 policy قفل کراوە و P18 gate ئامادەیە. ناوەڕۆکی نوێ پێش ناردن دوبارە P14 پشکنرێت.</p>
+            </div>
+            <span class="text-[9px] font-bold rounded-full bg-white border border-emerald-200 px-2 py-1">P18 ✓، P19 ✓</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+            <label class="block">
+              <span class="block text-[10px] font-bold text-stone-600 mb-1">ناونیشانی manuscript</span>
+              <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="resubmitTitle()" (ngModelChange)="updateResubmitSignal('title', $event)" maxlength="1000" [disabled]="resubmitLoading()">
+            </label>
+            <label class="block">
+              <span class="block text-[10px] font-bold text-stone-600 mb-1">Keywords، بە comma جیا بکە</span>
+              <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="resubmitKeywords()" (ngModelChange)="updateResubmitSignal('keywords', $event)" placeholder="توێژینەوە، زمان، ئەدەبیات" [disabled]="resubmitLoading()">
+            </label>
+          </div>
+
+          <label class="block mt-2">
+            <span class="block text-[10px] font-bold text-stone-600 mb-1">پوختە <span class="font-normal text-rose-600">پێویستە</span></span>
+            <textarea class="w-full min-h-24 rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs leading-relaxed" [ngModel]="resubmitAbstract()" (ngModelChange)="updateResubmitSignal('abstract', $event)" maxlength="100000" placeholder="پوختەی نوێی manuscript..." [disabled]="resubmitLoading()"></textarea>
+          </label>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">پرسیاری توێژینەوە، هەبوو</span>
+              <textarea class="w-full min-h-16 rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitResearchQuestion()" (ngModelChange)="updateResubmitSignal('researchQuestion', $event)" [disabled]="resubmitLoading()"></textarea>
+            </label>
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">میتۆدۆلۆجیا، policy پێویستی بکات</span>
+              <textarea class="w-full min-h-16 rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitMethodology()" (ngModelChange)="updateResubmitSignal('methodology', $event)" [disabled]="resubmitLoading()"></textarea>
+            </label>
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">ئەنجام، هەبوو</span>
+              <textarea class="w-full min-h-16 rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitConclusion()" (ngModelChange)="updateResubmitSignal('conclusion', $event)" [disabled]="resubmitLoading()"></textarea>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">ناوی نووسەر، ئەگەر policy پێویستی بکات</span>
+              <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitAuthorName()" (ngModelChange)="updateResubmitSignal('authorName', $event)" maxlength="500" [disabled]="resubmitLoading()">
+            </label>
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">Affiliation</span>
+              <input class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitAuthorAffiliation()" (ngModelChange)="updateResubmitSignal('authorAffiliation', $event)" maxlength="500" [disabled]="resubmitLoading()">
+            </label>
+            <label class="block">
+              <span class="block text-[9px] font-bold text-stone-600 mb-1">Email</span>
+              <input type="email" class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-[10px]" [ngModel]="resubmitAuthorEmail()" (ngModelChange)="updateResubmitSignal('authorEmail', $event)" maxlength="320" [disabled]="resubmitLoading()">
+            </label>
+          </div>
+
+          <label class="block mt-2">
+            <span class="block text-[10px] font-bold text-stone-600 mb-1">Note ـی resubmission</span>
+            <textarea class="w-full min-h-16 rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs" [ngModel]="resubmitNote()" (ngModelChange)="updateResubmitSignal('note', $event)" maxlength="5000" placeholder="چی گۆڕدراوە لە version ـی نوێدا؟" [disabled]="resubmitLoading()"></textarea>
+          </label>
+
+          @if (lockedManifest()!.policy.requiredSections?.length || lockedManifest()!.policy.maxWords || lockedManifest()!.policy.maxAbstractWords || lockedManifest()!.policy.minKeywords) {
+            <div class="mt-2 rounded-lg border border-emerald-200 bg-white p-2 text-[9px] text-stone-600">
+              <strong class="text-stone-800">Policy ـی قفلکراو:</strong>
+              گۆڤار: {{ lockedManifest()!.journalName }}، جۆر: {{ lockedManifest()!.manuscriptType }}
+              @if (lockedManifest()!.policy.requiredSections?.length) {
+                <span>، بەشە پێویستەکان: {{ lockedManifest()!.policy.requiredSections!.join('، ') }}</span>
+              }
+              @if (lockedManifest()!.policy.minKeywords !== undefined) {
+                <span>، کەمترین keyword: {{ lockedManifest()!.policy.minKeywords }}</span>
+              }
+              @if (lockedManifest()!.policy.maxWords !== undefined) {
+                <span>، سەقفی وشە: {{ lockedManifest()!.policy.maxWords }}</span>
+              }
+            </div>
+          }
+
+          @if (lockedManifest()!.referenceCount > 0) {
+            <div class="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[9px] text-amber-900">
+              <strong>پاراستنی citation:</strong>
+              ئەم Version ـە {{ lockedManifest()!.referenceCount }} سەرچاوەی پێشوو هەیە. Quick resubmit لێرە ناکرێت چونکە binding ـی citation ـەکان لە مانيفێستدا خەزن نەکراوە؛ package ـی P13/P14 دوبارە assemble بکە.
+            </div>
+          }
+          <div class="flex justify-end mt-3">
+            <button type="button" class="px-4 py-1.5 rounded-lg bg-emerald-700 text-white text-[10px] font-bold disabled:opacity-50" (click)="submitResubmission()" [disabled]="resubmitLoading() || lockedManifest()!.referenceCount > 0">
+              {{ resubmitLoading() ? 'خەریکی resubmit...' : 'ناردنی Version ـی نوێ' }}
+            </button>
+          </div>
+        </div>
+      }
+
+      <div class="mt-4 rounded-xl border border-stone-200 p-3">
+        <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
+          <div>
+            <h4 class="text-xs font-bold">مێژووی Version</h4>
+            <p class="text-[9px] text-stone-500 mt-0.5">P18/P19: زنجیرەی version و fingerprint و دۆخی integrity.</p>
+          </div>
+          @if (versionReport()) {
+            <span class="text-[9px] font-bold rounded-full px-2 py-1"
+              [class.bg-emerald-100]="versionReport()!.status === 'VERIFIED'"
+              [class.text-emerald-800]="versionReport()!.status === 'VERIFIED'"
+              [class.bg-rose-100]="versionReport()!.status === 'INVALID'"
+              [class.text-rose-800]="versionReport()!.status === 'INVALID'"
+              [class.bg-stone-100]="versionReport()!.status === 'EMPTY' || versionReport()!.status === 'LEGACY_RECONSTRUCTED'"
+              [class.text-stone-700]="versionReport()!.status === 'EMPTY' || versionReport()!.status === 'LEGACY_RECONSTRUCTED'">
+              {{ versionStatusLabel(versionReport()!.status) }}
+            </span>
+          }
+        </div>
+
+        @if (!versionReport() || versionReport()!.status === 'EMPTY') {
+          <p class="text-[10px] text-stone-500">هێشتا Version ـی تۆمارکراو نییە.</p>
+        } @else {
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+            <div class="rounded-lg bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">ژمارە</span><strong class="text-[10px]">{{ versionReport()!.versionCount }}</strong></div>
+            <div class="rounded-lg bg-stone-50 p-2"><span class="block text-[9px] text-stone-500">کۆتا cycle</span><strong class="text-[10px]">{{ versionReport()!.latestCycle }}</strong></div>
+            <div class="rounded-lg bg-stone-50 p-2 col-span-2"><span class="block text-[9px] text-stone-500">کۆتا fingerprint</span><strong class="block text-[9px] break-all">{{ versionReport()!.latestFingerprint }}</strong></div>
+          </div>
+          @if (versionReport()!.errors.length > 0) {
+            <div class="mb-2 rounded-lg border border-rose-200 bg-rose-50 p-2 text-[9px] text-rose-800">
+              @for (error of versionReport()!.errors; track error) {
+                <div>{{ error }}</div>
+              }
+            </div>
+          }
+          <div class="space-y-1.5 max-h-56 overflow-y-auto">
+            @for (version of versions(); track version.id) {
+              <div class="rounded-lg border border-stone-100 bg-stone-50 p-2.5">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <strong class="text-[10px]">V{{ version.cycle }}، {{ versionKindLabel(version.kind) }}</strong>
+                  <span class="text-[9px] text-stone-500">{{ version.capturedAt | date:'yyyy-MM-dd HH:mm' }}</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-[9px]">
+                  <span>دۆخ: {{ statusLabel(version.statusAtCapture) }}</span>
+                  <span class="break-all">ID: {{ version.id }}</span>
+                  <span class="break-all">SHA: {{ version.packageFingerprint }}</span>
+                  @if (version.previousFingerprint) {
+                    <span class="break-all">Previous: {{ version.previousFingerprint }}</span>
+                  }
+                </div>
+                @if (version.note) {
+                  <p class="text-[9px] text-stone-600 mt-1">{{ version.note }}</p>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  } @else {
+    <div class="mt-4 rounded-xl border border-dashed border-stone-300 p-5 text-center">
+      <mat-icon class="text-stone-400">inbox</mat-icon>
+      <p class="text-[10px] text-stone-500 mt-1">Workspace ـێک هەڵبژێرە بۆ پیشاندانی publication workflow.</p>
+    </div>
+  }
+</section>

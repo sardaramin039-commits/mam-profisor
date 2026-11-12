@@ -1,0 +1,67 @@
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-stone-100/60 p-2.5 border border-stone-200 rounded-xl" id="copilot-tab-navigation">
+          
+          <!-- Tab 1: Debate -->
+          <button type="button" 
+                  (click)="vm.copilotActiveTab.set('multi_agent_debate')"
+                  class="px-3.5 py-3 border rounded-lg text-[11.5px] font-extrabold transition-all duration-300 cursor-pointer flex flex-col items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]"
+                  [class.bg-harvard-crimson]="vm.copilotActiveTab() === 'multi_agent_debate'"
+                  [class.text-white]="vm.copilotActiveTab() === 'multi_agent_debate'"
+                  [class.border-harvard-crimson]="vm.copilotActiveTab() === 'multi_agent_debate'"
+                  [class.bg-white]="vm.copilotActiveTab() !== 'multi_agent_debate'"
+                  [class.text-stone-700]="vm.copilotActiveTab() !== 'multi_agent_debate'"
+                  [class.border-stone-200]="vm.copilotActiveTab() !== 'multi_agent_debate'"
+                  id="copilot-tab-debate">
+            <mat-icon class="!text-sm">forum</mat-icon>
+            <span>دەمەتەقێی فرە-بریکار</span>
+            <span class="text-[7.5px] font-bold" [class.text-amber-300]="vm.copilotActiveTab() === 'multi_agent_debate'" [class.text-stone-500]="vm.copilotActiveTab() !== 'multi_agent_debate'">Multi-Agent Debate</span>
+          </button>
+
+          <!-- Tab 2: Gap Analysis -->
+          <button type="button" 
+                  (click)="vm.copilotActiveTab.set('cross_lingual_gap')"
+                  class="px-3.5 py-3 border rounded-lg text-[11.5px] font-extrabold transition-all duration-300 cursor-pointer flex flex-col items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]"
+                  [class.bg-harvard-crimson]="vm.copilotActiveTab() === 'cross_lingual_gap'"
+                  [class.text-white]="vm.copilotActiveTab() === 'cross_lingual_gap'"
+                  [class.border-harvard-crimson]="vm.copilotActiveTab() === 'cross_lingual_gap'"
+                  [class.bg-white]="vm.copilotActiveTab() !== 'cross_lingual_gap'"
+                  [class.text-stone-700]="vm.copilotActiveTab() !== 'cross_lingual_gap'"
+                  [class.border-stone-200]="vm.copilotActiveTab() !== 'cross_lingual_gap'"
+                  id="copilot-tab-gap">
+            <mat-icon class="!text-sm">compare_arrows</mat-icon>
+            <span>بۆشایی فرە-زمان</span>
+            <span class="text-[7.5px] font-bold" [class.text-amber-300]="vm.copilotActiveTab() === 'cross_lingual_gap'" [class.text-stone-500]="vm.copilotActiveTab() !== 'cross_lingual_gap'">Cross-Lingual Gap</span>
+          </button>
+
+          <!-- Tab 3: Stress Testing -->
+          <button type="button" 
+                  (click)="vm.copilotActiveTab.set('logical_stress_test')"
+                  class="px-3.5 py-3 border rounded-lg text-[11.5px] font-extrabold transition-all duration-300 cursor-pointer flex flex-col items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]"
+                  [class.bg-harvard-crimson]="vm.copilotActiveTab() === 'logical_stress_test'"
+                  [class.text-white]="vm.copilotActiveTab() === 'logical_stress_test'"
+                  [class.border-harvard-crimson]="vm.copilotActiveTab() === 'logical_stress_test'"
+                  [class.bg-white]="vm.copilotActiveTab() !== 'logical_stress_test'"
+                  [class.text-stone-700]="vm.copilotActiveTab() !== 'logical_stress_test'"
+                  [class.border-stone-200]="vm.copilotActiveTab() !== 'logical_stress_test'"
+                  id="copilot-tab-stress">
+            <mat-icon class="!text-sm">gavel</mat-icon>
+            <span>سترێسی لۆجیکی</span>
+            <span class="text-[7.5px] font-bold" [class.text-amber-300]="vm.copilotActiveTab() === 'logical_stress_test'" [class.text-stone-500]="vm.copilotActiveTab() !== 'logical_stress_test'">Logical Stress-Test</span>
+          </button>
+
+          <!-- Tab 4: Ontological Mapping -->
+          <button type="button" 
+                  (click)="vm.copilotActiveTab.set('ontological_mapping')"
+                  class="px-3.5 py-3 border rounded-lg text-[11.5px] font-extrabold transition-all duration-300 cursor-pointer flex flex-col items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]"
+                  [class.bg-harvard-crimson]="vm.copilotActiveTab() === 'ontological_mapping'"
+                  [class.text-white]="vm.copilotActiveTab() === 'ontological_mapping'"
+                  [class.border-harvard-crimson]="vm.copilotActiveTab() === 'ontological_mapping'"
+                  [class.bg-white]="vm.copilotActiveTab() !== 'ontological_mapping'"
+                  [class.text-stone-700]="vm.copilotActiveTab() !== 'ontological_mapping'"
+                  [class.border-stone-200]="vm.copilotActiveTab() !== 'ontological_mapping'"
+                  id="copilot-tab-ontology">
+            <mat-icon class="!text-sm">hub</mat-icon>
+            <span>نەخشەسازی ئۆنتۆلۆژی</span>
+            <span class="text-[7.5px] font-bold" [class.text-amber-300]="vm.copilotActiveTab() === 'ontological_mapping'" [class.text-stone-500]="vm.copilotActiveTab() !== 'ontological_mapping'">Ontological Mapping</span>
+          </button>
+
+        </div>

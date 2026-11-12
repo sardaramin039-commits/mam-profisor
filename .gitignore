@@ -1,0 +1,48 @@
+# Environment variables
+.env*
+!.env.example
+
+# Compiled output and caches
+node_modules/
+dist/
+.angular/
+.vite/
+coverage/
+/tmp
+/out-tsc
+/bazel-out
+
+# Logs
+*.log
+npm-debug.log
+yarn-error.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# TypeScript generated build metadata
+*.tsbuildinfo
+
+# E2E artifacts
+playwright-report/
+test-results/
+blob-report/
+
+# Package manager locks
+*.lockb
+bun.lock
+
+# Temporary archives
+*.tgz
+
+# Mam Library Security
+.env.*
+*.cjs
+fix.js
+doctor.js
+*-backup.json
+
+*.txt
+public/local-keys.js
+GOLDEN_BACKUP_APP/

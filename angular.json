@@ -1,0 +1,168 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": {
+    "analytics": false,
+    "packageManager": "npm",
+    "cache": {
+      "enabled": true,
+      "path": "/tmp/mam-ng-cache",
+      "environment": "all"
+    },
+    "schematicCollections": [
+      "angular-eslint"
+    ]
+  },
+  "newProjectRoot": "projects",
+  "projects": {
+    "app": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "outputPath": "dist/app",
+            "index": "src/index.html",
+            "browser": "src/main.ts",
+            "tsConfig": "tsconfig.app.json",
+            "sourceMap": false,
+            "optimization": false,
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
+            "styles": [
+              "src/styles.css"
+            ],
+            "allowedCommonJsDependencies": [
+              "node-domexception",
+              "fetch-blob",
+              "docx"
+            ],
+            "externalDependencies": [
+              "@google/genai",
+              "firebase-admin",
+              "pg",
+              "drizzle-orm",
+              "express",
+              "dotenv",
+              "axios",
+              "zod",
+              "google-auth-library",
+              "ws",
+              "node:path",
+              "node:fs",
+              "node:crypto",
+              "node:stream",
+              "node:http",
+              "node:https",
+              "node:url",
+              "node:util",
+              "node:events",
+              "node:buffer",
+              "node:net",
+              "node:tls",
+              "node:child_process",
+              "node:os"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "15MB",
+                  "maximumError": "25MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "10MB",
+                  "maximumError": "20MB"
+                }
+              ],
+              "outputHashing": "none",
+              "sourceMap": false,
+              "optimization": false
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": false,
+              "externalDependencies": [
+                "@google/genai",
+                "firebase-admin",
+                "pg",
+                "drizzle-orm",
+                "express",
+                "dotenv",
+                "axios",
+                "zod",
+                "google-auth-library",
+                "ws",
+                "node:path",
+                "node:fs",
+                "node:crypto",
+                "node:stream",
+                "node:http",
+                "node:https",
+                "node:url",
+                "node:util",
+                "node:events",
+                "node:buffer",
+                "node:net",
+                "node:tls",
+                "node:child_process",
+                "node:os"
+              ]
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "host": "127.0.0.1",
+            "port": 4200,
+            "allowedHosts": true,
+            "proxyConfig": "proxy.conf.json"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "app:build:production"
+            },
+            "development": {
+              "buildTarget": "app:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "tsconfig.spec.json",
+            "runner": "vitest",
+            "buildTarget": "app:build:development",
+            "exclude": [
+              "src/server/routes/publication-submission-editorial.routes.spec.ts"
+            ]
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

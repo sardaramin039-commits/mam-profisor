@@ -1,0 +1,758 @@
+<!-- ========================================================================= -->
+<!-- 1. PREVIEW SCREEN (شاشەی پریڤیو — وێنەی سروشتی + کتێبخانەی مام)             -->
+<!-- ========================================================================= -->
+@if (viewMode() === 'preview') {
+  <div class="relative min-h-screen w-full overflow-hidden flex flex-col justify-between select-none"
+       style="background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2000&q=85'); background-size: cover; background-position: center;">
+    <div class="absolute inset-0 bg-gradient-to-b from-slate-950/65 via-slate-900/25 to-slate-950/85"></div>
+
+    <!-- Top-Right 2 Small Stacked Vertical Icons: سێتینگ & نوسین -->
+    <div class="fixed top-6 right-6 z-30 flex flex-col gap-3">
+      <button type="button" (click)="isSettingsOpen.set(true)"
+              class="w-20 py-3 px-2 rounded-2xl bg-slate-900/80 hover:bg-emerald-700 backdrop-blur-md border border-white/25 shadow-2xl flex flex-col items-center gap-1.5 transition-all hover:scale-105">
+        <span class="material-icons text-amber-300 text-2xl">settings</span>
+        <span class="text-xs font-bold text-white">سێتینگ</span>
+      </button>
+
+      <button type="button" (click)="viewMode.set('writing')"
+              class="w-20 py-3 px-2 rounded-2xl bg-emerald-700/90 hover:bg-emerald-600 backdrop-blur-md border border-emerald-300/40 shadow-2xl flex flex-col items-center gap-1.5 transition-all hover:scale-105">
+        <span class="material-icons text-white text-2xl">edit_note</span>
+        <span class="text-xs font-bold text-white">نوسین</span>
+      </button>
+    </div>
+
+    <!-- Center-Top Calligraphic Title: کتێبخانەی مام -->
+    <div class="relative z-20 pt-14 px-6 text-center mx-auto max-w-4xl">
+      <div class="inline-block px-10 py-5 rounded-3xl bg-slate-950/50 backdrop-blur-md border border-amber-200/25 shadow-2xl">
+        <h1 class="mam-title-font text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-200 to-emerald-200 drop-shadow-[0_5px_25px_rgba(0,0,0,0.9)] py-2">
+          کتێبخانەی مام
+        </h1>
+        <p class="text-sm md:text-lg text-amber-100/90 font-medium mt-2">
+          سەکۆی باڵای نووسینی کتێب، ماستەرنامە، دکتۆرانامە و توێژینەوەی زانستی
+        </p>
+      </div>
+    </div>
+
+    <div class="relative z-20 pb-8 text-center">
+      <button type="button" (click)="viewMode.set('writing')"
+              class="inline-flex items-center gap-3 px-8 py-3.5 rounded-full bg-slate-900/80 hover:bg-emerald-800 backdrop-blur-md border border-emerald-400/40 text-emerald-200 text-sm font-bold shadow-xl transition-all">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+        <span>چوونە ناو بەشی نوسین ({{ apiKeysList().length }} کلیل ئامادەیە)</span>
+        <span class="material-icons text-base">arrow_back</span>
+      </button>
+    </div>
+  </div>
+}
+
+<!-- ========================================================================= -->
+<!-- 2. UNIFIED WRITING WORKSPACE (پەنجەرەی یەکەم و پەنجەرەی دووەم)              -->
+<!-- ========================================================================= -->
+@if (viewMode() === 'writing') {
+  <div class="min-h-screen flex flex-col" [ngClass]="darkMode() ? 'bg-slate-950 text-slate-100' : 'bg-stone-100 text-stone-900'">
+
+    <!-- Top Navigation & Unified Tool Strip -->
+    <header class="sticky top-0 z-30 backdrop-blur-md border-b px-4 py-2.5 flex flex-wrap items-center justify-between gap-3"
+            [ngClass]="darkMode() ? 'bg-slate-900/95 border-slate-800' : 'bg-white/95 border-stone-300'">
+      <div class="flex items-center gap-3">
+        <button type="button" (click)="viewMode.set('preview')"
+                class="px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold flex items-center gap-1">
+          <span class="material-icons text-sm">landscape</span>
+          <span>پریڤیو</span>
+        </button>
+        <h2 class="mam-title-font text-xl font-black text-emerald-400">کتێبخانەی مام</h2>
+        <button type="button" (click)="isSettingsOpen.set(true)"
+                class="text-xs px-3 py-1 rounded-full bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-bold">
+          کلیلی چالاک: #{{ currentKeyIndex() + 1 }} / {{ apiKeysList().length }} (گۆڕین / تاقیکردنەوە)
+        </button>
+      </div>
+
+      <!-- Window 1 / Window 2 Switcher -->
+      <div class="flex items-center gap-2 bg-slate-800 p-1 rounded-xl border border-slate-700">
+        <button type="button" (click)="activeWindow.set('window1')"
+                class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                [ngClass]="activeWindow() === 'window1' ? 'bg-emerald-600 text-white shadow' : 'text-slate-300 hover:text-white'">
+          <span class="material-icons text-sm">tune</span>
+          <span>پەنجەرەی یەکەم (ڕێکخستن)</span>
+        </button>
+        <button type="button" (click)="activeWindow.set('window2')"
+                class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                [ngClass]="activeWindow() === 'window2' ? 'bg-emerald-600 text-white shadow' : 'text-slate-300 hover:text-white'">
+          <span class="material-icons text-sm">view_list</span>
+          <span>پەنجەرەی دووەم (بەشەکان: {{ parts().length }})</span>
+        </button>
+      </div>
+
+      <!-- All Suite Icons (Stay 100% inside the New UI!) -->
+      <div class="flex items-center gap-1.5">
+        <button type="button" (click)="loadArchiveList();isArchiveOpen.set(true)" class="px-2.5 py-1.5 rounded-xl bg-amber-600/20 hover:bg-amber-600 border border-amber-500/40 text-amber-300 hover:text-white text-xs font-bold flex items-center gap-1"><span class="material-icons text-sm">inventory_2</span><span>ئەرشیفی کتێبەکان ({{ savedBooksArchive().length }})</span></button><button type="button" (click)="openUnifiedToolModal('library')" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-700 text-teal-300 text-xs font-bold flex items-center gap-1"><span class="material-icons text-sm">local_library</span><span>کتێبخانە</span></button>
+        <button type="button" (click)="openUnifiedToolModal('reader')"
+                class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-700 text-amber-200 text-xs font-bold flex items-center gap-1">
+          <span class="material-icons text-sm">menu_book</span>
+          <span>خوێنەرەوە</span>
+        </button>
+        <button type="button" (click)="openUnifiedToolModal('viva')"
+                class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-700 text-amber-300 text-xs font-bold flex items-center gap-1">
+          <span class="material-icons text-sm">gavel</span>
+          <span>تاوتوێ</span>
+        </button>
+        <button type="button" (click)="openUnifiedToolModal('plagiarism')"
+                class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-700 text-emerald-300 text-xs font-bold flex items-center gap-1">
+          <span class="material-icons text-sm">verified_user</span>
+          <span>پشکنەر</span>
+        </button>
+        <button type="button" (click)="openUnifiedToolModal('glossary')"
+                class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-700 text-sky-300 text-xs font-bold flex items-center gap-1">
+          <span class="material-icons text-sm">translate</span>
+          <span>فەرهەنگ</span>
+        </button>
+        <button type="button" (click)="openUnifiedToolModal($any('abstract'))" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-700 text-rose-300 text-xs font-bold flex items-center gap-1"><span class="material-icons text-sm">summarize</span><span>پوختە و سەرچاوە</span></button>
+        <button type="button" (click)="darkMode.set(!darkMode())"
+                class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300">
+          <span class="material-icons text-base">{{ darkMode() ? 'light_mode' : 'dark_mode' }}</span>
+        </button>
+        <button type="button" (click)="isSettingsOpen.set(true)"
+                class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white">
+          <span class="material-icons text-base">settings</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Status Bar -->
+    <div class="bg-emerald-950/70 border-b border-emerald-800/40 px-4 py-1.5 text-xs text-emerald-200 flex items-center justify-between">
+      <div class="flex items-center gap-2 font-bold">
+        <span class="material-icons text-sm text-emerald-400">bolt</span>
+        <span>{{ statusMessage() }}</span>
+      </div>
+      <div class="font-mono text-[11px] text-amber-300">
+        ١ لاپەڕە = ٣٠٠ وشە | کۆی گشتی: {{ totalWords() }} وشە | {{ calculatedPartsCount() }} بەش
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- WINDOW 1: پەنجەرەی یەکەم (فۆڕمی ڕێکخستن و هەموو ئایکۆنەکان)              -->
+    <!-- ===================================================================== -->
+    @if (activeWindow() === 'window1') {
+      <main class="max-w-6xl w-full mx-auto p-4 md:p-6 space-y-6 flex-1">
+        <section class="p-5 rounded-2xl border shadow-xl space-y-5"
+                 [ngClass]="darkMode() ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-stone-300'">
+          <h3 class="text-base font-bold text-emerald-400 flex items-center gap-2 border-b border-slate-800 pb-2.5">
+            <span class="material-icons">edit_Note</span>
+            <span>پەنجەرەی یەکەم: زانیارییەکانی نوسین</span>
+          </h3>
+
+          <div>
+            <label class="block text-sm font-bold mb-1.5 text-amber-300">ناونیشان:</label>
+            <input type="text" [ngModel]="projectTitle()" (ngModelChange)="projectTitle.set($event)"
+                   placeholder="ناونیشانی کتێب، تێز یان توێژینەوەکەت لێرە بنووسە..."
+                   class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white text-base focus:border-emerald-500 focus:outline-none" />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
+              <label class="block text-xs font-bold mb-1.5 text-slate-300">بابەت:</label>
+              <select [ngModel]="subject()" (ngModelChange)="subject.set($event)"
+                      class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm">
+                @for (s of subjectsList; track s) {
+                  <option [value]="s">{{ s }}</option>
+                }
+              </select>
+              @if (subject() === 'هتد') {
+                <input type="text" [ngModel]="customSubject()" (ngModelChange)="customSubject.set($event)"
+                       placeholder="بابەتەکە دیاری بکە..."
+                       class="mt-2 w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white" />
+              }
+            </div>
+
+            <div><label class='block text-xs font-bold mb-1.5 text-emerald-300'>میتۆدی زانستی:</label><select [ngModel]='researchMethod()' (ngModelChange)='researchMethod.set($event)' class='w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm'>@for (m of methodsList; track m) { <option [value]='m'>{{ m }}</option> }</select></div><div><label class='block text-xs font-bold mb-1.5 text-slate-300'>جۆری نوسین:</label>
+              <select [ngModel]="writingType()" (ngModelChange)="writingType.set($event)"
+                      class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm">
+                @for (t of writingTypesList; track t) {
+                  <option [value]="t">{{ t }}</option>
+                }
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold mb-1.5 text-slate-300">ئاست:</label>
+              <select [ngModel]="academicLevel()" (ngModelChange)="academicLevel.set($event)"
+                      class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm">
+                @for (l of levelsList; track l) {
+                  <option [value]="l">{{ l }}</option>
+                }
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold mb-1.5 text-emerald-300">قەبارە (بە لاپەڕە):</label>
+              <input type="number" min="1" max="2000" [ngModel]="targetPages()" (ngModelChange)="targetPages.set($event)"
+                     class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-emerald-600 text-white text-sm font-bold" />
+              <p class="text-[11px] text-amber-300 mt-1">
+                تێبینی: ١ لاپەڕە = ٣٠٠ وشە ({{ totalWords() }} وشە / {{ calculatedPartsCount() }} بەش)
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Control Icons Section -->
+        <section class="p-5 rounded-2xl border shadow-xl space-y-4"
+                 [ngClass]="darkMode() ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-stone-300'">
+          <h3 class="text-base font-bold text-amber-300 flex items-center gap-2 border-b border-slate-800 pb-2.5">
+            <span class="material-icons">dashboard_customize</span>
+            <span>ئایکۆنەکانی کۆنتڕۆڵی نوسین و ژیریی دەستکرد</span>
+          </h3>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <!-- ئایکۆنی ڕۆڵ -->
+            
+
+            <!-- ئایکۆنی دیالێکت -->
+            <button type="button" (click)="dialecticMode.set(!dialecticMode())"
+                    class="p-3.5 rounded-2xl border text-right transition-all flex flex-col justify-between gap-2"
+                    [ngClass]="dialecticMode() ? 'bg-emerald-900/50 border-emerald-500 text-white shadow-lg' : 'bg-slate-950/70 border-slate-800 text-slate-400'">
+              <div class="flex items-center justify-between w-full">
+                <span class="material-icons text-amber-400">account_tree</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      [ngClass]="dialecticMode() ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'">
+                  {{ dialecticMode() ? 'ON' : 'OFF' }}
+                </span>
+              </div>
+              <div>
+                <div class="text-xs font-bold">ئایکۆنی دیالێکت</div>
+                <div class="text-[10px] opacity-80">تێکەڵکراو لەناو پەرەگراف</div>
+              </div>
+            </button>
+
+            <!-- ئایکۆنی کۆپی ستایل -->
+            <button type="button" (click)="copyStyleMode.set(!copyStyleMode())"
+                    class="p-3.5 rounded-2xl border text-right transition-all flex flex-col justify-between gap-2"
+                    [ngClass]="copyStyleMode() ? 'bg-emerald-900/50 border-emerald-500 text-white shadow-lg' : 'bg-slate-950/70 border-slate-800 text-slate-400'">
+              <div class="flex items-center justify-between w-full">
+                <span class="material-icons text-sky-400">content_copy</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      [ngClass]="copyStyleMode() ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'">
+                  {{ copyStyleMode() ? 'ON' : 'OFF' }}
+                </span>
+              </div>
+              <div>
+                <div class="text-xs font-bold">کۆپی ستایل</div>
+                <div class="text-[10px] opacity-80">دەق یان فایلی Word / PDF</div>
+              </div>
+            </button>
+
+            <!-- ئایکۆنی بەراورد -->
+            <button type="button" (click)="comparisonMode.set(!comparisonMode())"
+                    class="p-3.5 rounded-2xl border text-right transition-all flex flex-col justify-between gap-2"
+                    [ngClass]="comparisonMode() ? 'bg-emerald-900/50 border-emerald-500 text-white shadow-lg' : 'bg-slate-950/70 border-slate-800 text-slate-400'">
+              <div class="flex items-center justify-between w-full">
+                <span class="material-icons text-purple-400">compare_arrows</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      [ngClass]="comparisonMode() ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'">
+                  {{ comparisonMode() ? 'ON' : 'OFF' }}
+                </span>
+              </div>
+              <div>
+                <div class="text-xs font-bold">ئایکۆنی بەراورد</div>
+                <div class="text-[10px] opacity-80">٢ فایلی Word/PDF + ڕووی بەراورد</div>
+              </div>
+            </button>
+
+            <!-- بەرگی تێز -->
+            <button type="button" (click)="coverPageMode.set(!coverPageMode())"
+                    class="p-3.5 rounded-2xl border text-right transition-all flex flex-col justify-between gap-2"
+                    [ngClass]="coverPageMode() ? 'bg-emerald-900/50 border-emerald-500 text-white shadow-lg' : 'bg-slate-950/70 border-slate-800 text-slate-400'">
+              <div class="flex items-center justify-between w-full">
+                <span class="material-icons text-rose-400">book</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      [ngClass]="coverPageMode() ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'">
+                  {{ coverPageMode() ? 'ON' : 'OFF' }}
+                </span>
+              </div>
+              <div>
+                <div class="text-xs font-bold">بەرگی تێز</div>
+                <div class="text-[10px] opacity-80">پەڕەی بەرگی فەرمی</div>
+              </div>
+            </button>
+
+            <!-- پلەی گەرمی نوسین -->
+            <div class="p-3.5 rounded-2xl border bg-slate-950/80 border-slate-800 flex flex-col justify-between gap-2">
+              <div class="flex items-center justify-between">
+                <span class="material-icons text-orange-400">thermostat</span>
+                <span class="text-xs font-mono font-bold text-orange-300">{{ temperature() }}</span>
+              </div>
+              <label class="text-xs font-bold text-slate-200">پلەی گەرمی نوسین</label>
+              <input type="range" min="0.1" max="1.2" step="0.05"
+                     [ngModel]="temperature()" (ngModelChange)="temperature.set($event)"
+                     class="w-full accent-orange-400" />
+            </div>
+
+            <!-- تۆکێنی بیرکردنەوە -->
+            <div class="p-3.5 rounded-2xl border bg-slate-950/80 border-slate-800 flex flex-col justify-between gap-2">
+              <div class="flex items-center justify-between">
+                <span class="material-icons text-cyan-400">psychology</span>
+                <span class="text-[11px] font-mono font-bold text-cyan-300">{{ thinkingTokens() }}</span>
+              </div>
+              <label class="text-xs font-bold text-slate-200">تۆکێنی بیرکردنەوە</label>
+              <select [ngModel]="thinkingTokens()" (ngModelChange)="thinkingTokens.set($event)"
+                      class="w-full px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white">
+                <option [ngValue]="0">0 (بێ بیرکردنەوە)</option>
+                <option [ngValue]="1024">1,024 (ڕێژەی زێڕینی پڕۆفیسۆر)</option>
+                <option [ngValue]="2048">2,048</option>
+                <option [ngValue]="4096">4,096</option>
+                <option [ngValue]="8192">8,192</option>
+                <option [ngValue]="16384">16,384</option>
+              </select>
+            </div>
+
+            <!-- تۆکێنی نوسین -->
+            <div class="p-3.5 rounded-2xl border bg-slate-950/80 border-slate-800 flex flex-col justify-between gap-2">
+              <div class="flex items-center justify-between">
+                <span class="material-icons text-emerald-400">generating_tokens</span>
+                <span class="text-[11px] font-mono font-bold text-emerald-300">{{ outputTokens() }}</span>
+              </div>
+              <label class="text-xs font-bold text-slate-200">تۆکێنی نوسین</label>
+              <select [ngModel]="outputTokens()" (ngModelChange)="outputTokens.set($event)"
+                      class="w-full px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white">
+                <option [ngValue]="4096">4,096</option>
+                <option [ngValue]="8192">8,192 (ستاندارد)</option>
+                <option [ngValue]="16384">16,384 (درێژ)</option>
+                <option [ngValue]="32768">32,768 (زۆر درێژ)</option>
+              </select>
+            </div>
+
+            <!-- سەرچاوەی تایبەت -->
+            <button type="button" (click)="customSourcesMode.set(!customSourcesMode())"
+                    class="p-3.5 rounded-2xl border text-right transition-all flex flex-col justify-between gap-2"
+                    [ngClass]="customSourcesMode() ? 'bg-emerald-900/50 border-emerald-500 text-white' : 'bg-slate-950/70 border-slate-800 text-slate-400'">
+              <div class="flex items-center justify-between w-full">
+                <span class="material-icons text-teal-400">library_books</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      [ngClass]="customSourcesMode() ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'">
+                  {{ customSourcesMode() ? 'ON' : 'OFF' }}
+                </span>
+              </div>
+              <div>
+                <div class="text-xs font-bold">سەرچاوەی تایبەت</div>
+                <div class="text-[10px] opacity-80">قوفڵی سەرچاوەکان</div>
+              </div>
+            </button>
+
+            <!-- پێڕستی تایبەت -->
+            <button type="button" (click)="customOutlineMode.set(!customOutlineMode())"
+                    class="p-3.5 rounded-2xl border text-right transition-all flex flex-col justify-between gap-2"
+                    [ngClass]="customOutlineMode() ? 'bg-emerald-900/50 border-emerald-500 text-white' : 'bg-slate-950/70 border-slate-800 text-slate-400'">
+              <div class="flex items-center justify-between w-full">
+                <span class="material-icons text-indigo-400">format_list_numbered</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      [ngClass]="customOutlineMode() ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'">
+                  {{ customOutlineMode() ? 'ON' : 'OFF' }}
+                </span>
+              </div>
+              <div>
+                <div class="text-xs font-bold">پێڕستی تایبەت</div>
+                <div class="text-[10px] opacity-80">دابەشکاریی دەستی</div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Drawer: کۆپی ستایل -->
+          @if (copyStyleMode()) {
+            <div class="p-4 rounded-xl bg-slate-950 border border-sky-500/40 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-xs font-bold text-sky-300">کۆپی ستایل (دەق یان فایلی Word / PDF):</span>
+                <label class="cursor-pointer px-3 py-1.5 rounded-lg bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold flex items-center gap-1">
+                  <span class="material-icons text-sm">upload_file</span>
+                  <span>بارکردنی فایلی Word / PDF</span>
+                  <input type="file" accept=".docx,.doc,.pdf,.txt" (change)="handleFileUpload($event, 'style')" class="hidden" />
+                </label>
+              </div>
+              @if (styleFileName()) { <div class="text-xs text-emerald-400">فایل: {{ styleFileName() }}</div> }
+              <textarea rows="3" [ngModel]="styleSampleText()" (ngModelChange)="styleSampleText.set($event)"
+                        placeholder="دەقی نموونە لێرە دابنێ..."
+                        class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"></textarea>
+            </div>
+          }
+
+          <!-- Drawer: بەراوردکاری -->
+          @if (comparisonMode()) {
+            <div class="p-4 rounded-xl bg-slate-950 border border-purple-500/40 space-y-3">
+              <h4 class="text-xs font-bold text-purple-300">بەراوردکاری (دوو فایلی Word/PDF + بۆشایی ڕووی بەراوردکاری):</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold">١. فایلی یەکەم:</span>
+                    <label class="cursor-pointer px-2.5 py-1 rounded bg-purple-700 hover:bg-purple-600 text-white text-[11px] font-bold">
+                      <span>بارکردنی Word/PDF</span>
+                      <input type="file" accept=".docx,.doc,.pdf,.txt" (change)="handleFileUpload($event, 'comp1')" class="hidden" />
+                    </label>
+                  </div>
+                  @if (compareFile1Name()) { <div class="text-[11px] text-emerald-400">{{ compareFile1Name() }}</div> }
+                  <textarea rows="3" [ngModel]="compareText1()" (ngModelChange)="compareText1.set($event)"
+                            placeholder="دەقی یەکەم..."
+                            class="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"></textarea>
+                </div>
+
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold">٢. فایلی دووەم:</span>
+                    <label class="cursor-pointer px-2.5 py-1 rounded bg-purple-700 hover:bg-purple-600 text-white text-[11px] font-bold">
+                      <span>بارکردنی Word/PDF</span>
+                      <input type="file" accept=".docx,.doc,.pdf,.txt" (change)="handleFileUpload($event, 'comp2')" class="hidden" />
+                    </label>
+                  </div>
+                  @if (compareFile2Name()) { <div class="text-[11px] text-emerald-400">{{ compareFile2Name() }}</div> }
+                  <textarea rows="3" [ngModel]="compareText2()" (ngModelChange)="compareText2.set($event)"
+                            placeholder="دەقی دووەم..."
+                            class="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"></textarea>
+                </div>
+
+                <div class="space-y-2">
+                  <span class="text-xs font-bold text-amber-300 block">٣. ڕووی بەراوردکاری:</span>
+                  <textarea rows="3" [ngModel]="comparisonAxis()" (ngModelChange)="comparisonAxis.set($event)"
+                            placeholder="ڕووی بەراوردکاری لێرە بنووسە..."
+                            class="w-full p-2.5 rounded-lg bg-slate-900 border border-amber-500/40 text-xs text-white"></textarea>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Drawer: بەرگی تێز -->
+          @if (coverPageMode()) {
+            <div class="p-4 rounded-xl bg-slate-950 border border-rose-500/30 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">ناوی زانکۆ / ناوەند:</label>
+                <input type="text" [ngModel]="universityName()" (ngModelChange)="universityName.set($event)"
+                       class="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white" />
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">ناوی توێژەر / نووسەر:</label>
+                <input type="text" [ngModel]="researcherName()" (ngModelChange)="researcherName.set($event)"
+                       class="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white" />
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">ناوی سەرپەرشتیار:</label>
+                <input type="text" [ngModel]="supervisorName()" (ngModelChange)="supervisorName.set($event)"
+                       class="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white" />
+              </div>
+              <div>
+                <label class="text-[11px] text-slate-400 block mb-1">شێوازی سەرچاوەدان:</label>
+                <select [ngModel]="citationStyle()" (ngModelChange)="citationStyle.set($event)"
+                        class="w-full px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white">
+                  @for (c of citationStylesList; track c) {
+                    <option [value]="c">{{ c }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          }
+
+          @if (customSourcesMode()) {
+            <div class="p-3 rounded-xl bg-slate-950 border border-teal-500/40">
+              <label class="text-xs font-bold text-teal-300 block mb-1">سەرچاوە تایبەتەکان:</label>
+              <textarea rows="3" [ngModel]="customSourcesText()" (ngModelChange)="customSourcesText.set($event)"
+                        class="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"></textarea>
+            </div>
+          }
+
+          @if (customOutlineMode()) {
+            <div class="p-3 rounded-xl bg-slate-950 border border-indigo-500/40">
+              <label class="text-xs font-bold text-indigo-300 block mb-1">پێڕستی تایبەت (هەر بەشێک لە دێڕێکدا):</label>
+              <textarea rows="4" [ngModel]="customOutlineText()" (ngModelChange)="customOutlineText.set($event)"
+                        class="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"></textarea>
+            </div>
+          }
+        </section>
+
+        <!-- Send to Window 2 Icon Button -->
+        <div class="flex justify-center pt-2 pb-10">
+          <button type="button" (click)="sendToWindow2()"
+                  class="px-10 py-4 rounded-2xl bg-gradient-to-l from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-base shadow-2xl flex items-center gap-3 transition-all hover:scale-105">
+            <span class="material-icons text-2xl">send</span>
+            <span>ناردن بۆ پەنجەرەی دووەم (دابەشکردن بۆ {{ calculatedPartsCount() }} بەشی زنجیرەیی)</span>
+            <span class="material-icons text-xl">arrow_back</span>
+          </button>
+        </div>
+      </main>
+    }
+
+    <!-- ===================================================================== -->
+    <!-- WINDOW 2: پەنجەرەی دووەم (لیستی ستوونی + چاو 👁️ + ٤ ئایکۆنی خوارەوە)     -->
+    <!-- ===================================================================== -->
+    @if (activeWindow() === 'window2') {
+      <main class="max-w-5xl w-full mx-auto p-4 md:p-6 pb-28 space-y-4 flex-1">
+        <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-lg font-black text-amber-300">{{ projectTitle() || 'بێ ناونیشان' }}</h3>
+            <p class="text-xs text-slate-400">
+              {{ writingType() }} • ئاستی {{ academicLevel() }} • {{ targetPages() }} لاپەڕە ({{ totalWords() }} وشە) • {{ parts().length }} ئەڵقەی زنجیرەیی
+            </p>
+          </div>
+          <button type="button" (click)="activeWindow.set('window1')"
+                  class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center gap-1">
+            <span class="material-icons text-sm">edit</span>
+            <span>گەڕانەوە بۆ پەنجەرەی یەکەم</span>
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          @for (part of parts(); track part.id; let idx = $index) {
+            <div class="p-4 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                 [ngClass]="part.status === 'completed' || part.status === 'humanized'
+                   ? 'bg-emerald-950/30 border-emerald-600/50'
+                   : part.status === 'writing' || part.status === 'humanizing'
+                     ? 'bg-amber-950/30 border-amber-500 animate-pulse'
+                     : part.status === 'error'
+                       ? 'bg-rose-950/40 border-rose-500'
+                       : 'bg-slate-900/80 border-slate-800'">
+
+              <div class="flex items-start gap-3 flex-1">
+                <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex flex-col items-center justify-center text-xs font-black text-amber-300 shrink-0">
+                  <span>#{{ part.id }}</span>
+                  <span class="material-icons text-[12px] text-emerald-400">link</span>
+                </div>
+                <div class="space-y-1 flex-1">
+                  <input type="text" [(ngModel)]="part.title"
+                         class="w-full bg-transparent font-bold text-sm md:text-base text-white focus:outline-none focus:border-b border-emerald-500" />
+                  <div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+                    <span>ئامانج: {{ part.targetPages }} لاپەڕە ({{ part.targetWords }} وشە)</span>
+                    <span>•</span>
+                    <span class="text-emerald-300 font-bold">نووسراو: {{ part.wordCount }} وشە</span>
+                    <span>•</span>
+                    @if (part.status === 'pending') { <span>چاوەڕوانە</span> }
+                    @if (part.status === 'writing') { <span class="text-amber-300 font-bold">لە قۆناغی نووسیندایە... ⏳</span> }
+                    @if (part.status === 'completed') { <span class="text-emerald-400 font-bold">تەواوبوو ✅</span> }
+                    @if (part.status === 'humanizing') { <span class="text-purple-300 font-bold">لە قۆناغی هیومانایزدایە... ✨</span> }
+                    @if (part.status === 'humanized') { <span class="text-sky-400 font-bold">هیومانایزکراو ✨</span> }
+                    @if (part.status === 'error') { <span class="text-rose-400 font-bold">هەڵە: {{ part.errorMsg }}</span> }
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 self-end sm:self-center">
+                <!-- SMALL EYE ICON (👁️) -->
+                <button type="button" (click)="inspectedPart.set(part)"
+                        title="بینینی دەقی ئەم بەشە"
+                        class="px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1 transition-all"
+                        [ngClass]="part.content
+                          ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-400 text-white shadow-lg'
+                          : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'">
+                  <span class="material-icons text-base">visibility</span>
+                  <span>بینین</span>
+                </button>
+                <button type="button" (click)="movePartOrder(idx,-1)" title="سەرخستن" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs">↑</button>
+                <button type="button" (click)="movePartOrder(idx,1)" title="داگرتن" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs">↓</button>
+                <button type="button" (click)="removePartManual(idx)" title="سڕینەوەی بەش" class="p-2 rounded-xl bg-slate-800 hover:bg-rose-700 text-rose-300 text-xs">✕</button>
+
+                <button type="button" (click)="writeSinglePart(idx)"
+                        [disabled]="part.status === 'writing'"
+                        class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1">
+                  <span class="material-icons text-sm">edit_note</span>
+                  <span>نووسین</span>
+                </button>
+
+                @if (part.content) {
+                  
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- 4 COMPACT BOTTOM ICONS -->
+        <div class="fixed bottom-4 inset-x-0 mx-auto z-40 w-[95%] max-w-4xl px-4 py-2.5 rounded-2xl bg-slate-900/95 backdrop-blur-md border border-emerald-500/40 shadow-2xl flex flex-wrap items-center justify-center gap-2">
+          <button type="button" (click)="reviewStructureAndTitles()"
+                  [disabled]="isReviewingStructure()"
+                  class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center gap-1.5 shadow">
+            <span class="material-icons text-base">auto_fix_high</span>
+            <span>{{ isReviewingStructure() ? 'بەهێزکردن...' : 'پێداچوونەوەی پێکهاتە' }}</span>
+          </button>
+
+          <button type="button" (click)="toggleAutoWrite()"
+                  class="px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 shadow"
+                  [ngClass]="isAutoWriting() ? 'bg-rose-600 hover:bg-rose-500 animate-pulse' : 'bg-emerald-600 hover:bg-emerald-500'">
+            <span class="material-icons text-base">{{ isAutoWriting() ? 'pause_circle' : 'play_circle' }}</span>
+            <span>{{ isAutoWriting() ? 'وەستاندنی ئۆتۆڕایت' : 'ئۆتۆڕایت' }}</span>
+          </button>
+
+          
+
+          <div class="flex items-center gap-1.5">
+            <button type="button" (click)="saveAllAsBook('word')"
+                    class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1 shadow">
+              <span class="material-icons text-base">description</span>
+              <span>سەیڤ ئۆڵ (Word)</span>
+            </button>
+            <button type="button" (click)="saveAllAsBook('pdf')"
+                    class="px-3.5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold flex items-center gap-1 shadow">
+              <span class="material-icons text-base">picture_as_pdf</span>
+              <span>PDF</span>
+            </button>
+          </div>
+        </div>
+      </main>
+    }
+  </div>
+}
+
+<!-- ========================================================================= -->
+<!-- EYE ICON (👁️) MODAL                                                       -->
+<!-- ========================================================================= -->
+@if (inspectedPart(); as part) {
+  <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-emerald-500/40 rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-emerald-400">👁️ بەشی #{{ part.id }}: {{ part.title }}</h3>
+          <span class="text-xs text-slate-400">ژمارەی وشەکان: {{ part.wordCount }} وشە</span>
+        </div>
+        <button type="button" (click)="inspectedPart.set(null)"
+                class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold">
+          داخستن ✕
+        </button>
+      </div>
+      <div class="p-5 overflow-y-auto flex-1">
+        @if (part.content) {
+          <textarea rows="18" [(ngModel)]="part.content"
+                    class="w-full p-4 rounded-2xl bg-slate-950 border border-slate-800 text-slate-100 text-sm leading-8 focus:outline-none"></textarea>
+        } @else {
+          <div class="text-center py-16 text-slate-400">
+            ئەم بەشە هێشتا نەنووسراوە. کلیک لە دوگمەی «نووسین» یان «ئۆتۆڕایت» بکە.
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ========================================================================= -->
+<!-- SETTINGS MODAL WITH LIVE KEY TEST BUTTON (سێتینگ + تاقیکردنەوەی کلیل)       -->
+<!-- ========================================================================= -->
+@if (isSettingsOpen()) {
+  <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-xl w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-amber-300 flex items-center gap-2">
+          <span class="material-icons">settings</span>
+          <span>سێتینگ و تاقیکردنەوەی کلیلی جیمینی ({{ apiKeysList().length }} کلیل)</span>
+        </h3>
+        <button type="button" (click)="isSettingsOpen.set(false)" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">مۆدێلی ژیریی دەستکرد:</label>
+          <select [ngModel]="selectedModel()" (ngModelChange)="selectedModel.set($event)"
+                  class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white">
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (خێرا و ستاندارد)</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash (جێگرەوەی خێرا)</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro (قووڵترین ئاست)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-emerald-300 mb-1">کلیلە نوێیەکەت (یان چەند کلیلێک بە فاریزە) لێرە دابنێ:</label>
+          <textarea rows="4" [ngModel]="rawKeysInput()" (ngModelChange)="rawKeysInput.set($event)"
+                    placeholder="AIzaSy..."
+                    class="w-full p-3 rounded-xl bg-slate-950 border border-emerald-600 text-xs font-mono text-emerald-300"></textarea>
+        </div>
+
+        @if (keyTestStatus()) {
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-700 text-xs leading-6"
+               [ngClass]="keyTestStatus().includes('✅') ? 'text-emerald-400 border-emerald-500/50' : 'text-amber-300'">
+            {{ keyTestStatus() }}
+          </div>
+        }
+      </div>
+
+      <div class="flex items-center justify-between gap-2 pt-2">
+        <button type="button" (click)="testApiKeyNow()" [disabled]="isTestingKey()"
+                class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center gap-1.5">
+          <span class="material-icons text-sm">fact_check</span>
+          <span>{{ isTestingKey() ? 'تاقیدەکرێتەوە...' : '١. تاقیکردنەوەی کلیل و VPN' }}</span>
+        </button>
+
+        <button type="button" (click)="saveSettings()"
+                class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">
+          ٢. پاشەکەوتکردن و داخستن
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ========================================================================= -->
+<!-- UNIFIED SUITE MODALS (کتێبخانە، خوێنەرەوە، تاوتوێ، پشکنەر، فەرهەنگ)         -->
+<!-- ========================================================================= -->
+@if (activeToolModal(); as tool) {
+  <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-4xl w-full p-6 space-y-4 max-h-[88vh] flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-amber-300">
+          @if (tool === 'library') { 📚 کتێبخانەی سەرچاوەکان و فایلە بارکراوەکان }
+          @if (tool === 'reader') { 📖 دۆخی خوێندنەوەی یەکپارچەی کتێب }
+          @if (tool === 'viva') { 🎓 سیمولەیتەری لیژنەی تاوتوێ (Viva Defense) }
+          @if (tool === 'plagiarism') { 🛡️ پشکنەری ڕەسەنایەتیی زانستی }
+          @if (tool === 'glossary') { 🌐 فەرهەنگی زاراوە چوارزمانییەکان }
+        </h3>
+        <button type="button" (click)="activeToolModal.set(null)" class="px-3 py-1 rounded-lg bg-rose-600 text-white text-xs font-bold">داخستن ✕</button>
+      </div>
+
+      <div class="overflow-y-auto flex-1 p-4 bg-slate-950 rounded-2xl text-sm leading-8 text-slate-200 whitespace-pre-wrap">
+        @if (tool === 'library') {
+          <div class="space-y-4">
+            <label class="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold">
+              <span class="material-icons text-sm">upload_file</span>
+              <span>بارکردنی کتێب یان سەرچاوەی نوێ (Word / PDF / TXT)</span>
+              <input type="file" accept=".docx,.doc,.pdf,.txt" (change)="handleFileUpload($event, 'library')" class="hidden" />
+            </label>
+            @if (librarySources().length === 0) {
+              <p class="text-slate-400 text-xs">هێشتا هیچ فایلێکت بار نەکردووە بۆ ناو کتێبخانە.</p>
+            }
+            @for (src of librarySources(); track src) {
+              <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs">{{ src }}</div>
+            }
+          </div>
+        } @else if (tool === 'reader') {
+          @for (p of parts(); track p.id) {
+            @if (p.content) {
+              <div class="mb-8 pb-6 border-b border-slate-800">
+                <h4 class="text-lg font-bold text-emerald-400 mb-3">{{ p.title }}</h4>
+                <div>{{ p.content }}</div>
+              </div>
+            }
+          }
+        } @else {
+          {{ toolOutputText() }}
+        }
+      </div>
+    </div>
+  </div>
+}
+
+@if (isArchiveOpen()) {
+  <div class='fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4'>
+    <div class='bg-slate-900 border border-amber-500/40 rounded-3xl max-w-3xl w-full p-6 space-y-4 max-h-[85vh] flex flex-col shadow-2xl'>
+      <div class='flex items-center justify-between border-b border-slate-800 pb-3'>
+        <h3 class='text-base font-bold text-amber-300'>🗄️ ئەرشیفی بێسنووری کتێبەکان (IndexedDB)</h3>
+        <div class='flex items-center gap-2'>
+          <button type='button' (click)='startNewBookProject()' class='px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold'>+ کتێبی نوێ</button>
+          <button type='button' (click)='isArchiveOpen.set(false)' class='px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold'>داخستن ✕</button>
+        </div>
+      </div>
+      <div class='overflow-y-auto flex-1 space-y-2.5'>
+        @if (savedBooksArchive().length === 0) { <p class='text-slate-400 text-xs text-center py-10'>هیچ کتێبێک هێشتا لە ئەرشیفدا نییە. هەر بەشێک بنووسیت خۆکار لێرە پاشەکەوت دەبێت.</p> }
+        @for (b of savedBooksArchive(); track b.id) {
+          <div class='p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3'>
+            <div>
+              <div class='text-sm font-bold text-emerald-400'>{{ b.title }}</div>
+              <div class='text-[11px] text-slate-400'>{{ b.writingType }} • {{ b.academicLevel }} • {{ (b.parts || []).length }} بەش • دوایین نوێکردنەوە: {{ b.updatedAt }}</div>
+            </div>
+            <div class='flex items-center gap-2'>
+              <button type='button' (click)='openBookFromArchive(b)' class='px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold'>کردنەوە</button>
+              <button type='button' (click)='deleteBookFromArchive(b.id)' class='px-2.5 py-1.5 rounded-xl bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold'>سڕینەوە</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

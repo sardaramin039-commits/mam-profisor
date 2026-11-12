@@ -1,0 +1,17 @@
+<app-dashboard-header
+  [mainTab]="mainTab()"
+  [currentUser]="currentUser()"
+  [academicDarkMode]="academicDarkMode()"
+  [isFocusMode]="isFocusMode()"
+  (goSplash)="viewMode.set('splash')"
+  (newBlankThesis)="openNewBlankThesisModal()"
+  (selectTab)="mainTab.set($event)"
+  (loginWithGoogle)="loginWithGoogle()"
+  (logout)="logout()"
+  (openReadingMode)="openReadingMode()"
+  (toggleDarkMode)="toggleAcademicDarkMode()"
+  (clearEditor)="clearEditor()"
+  (toggleFocusMode)="toggleFocusMode()"
+  (exportWordOrPdf)="exportWordOrPdf()"
+  (openReputation)="isReputationModalOpen.set(true)">
+</app-dashboard-header>

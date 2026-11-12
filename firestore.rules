@@ -1,0 +1,244 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable, hardened global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true;
+    }
+
+    function isAdminOrProfessor() {
+      return isSignedIn()
+        && (request.auth.token.role == 'admin' || request.auth.token.role == 'professor');
+    }
+
+    function isSubmissionOwner(submissionId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/peer_submissions/$(submissionId))
+        && get(/databases/$(database)/documents/peer_submissions/$(submissionId)).data.userId == request.auth.uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    function isValidRefinement(data) {
+      return data.userId is string 
+        && data.userId == request.auth.uid
+        && (data.get('title', null) == null || data.title is string)
+        && (data.get('discipline', null) == null || data.discipline is string)
+        && (data.get('academicLevel', null) == null || data.academicLevel is string)
+        && (data.get('pages', null) == null || data.pages is number || data.pages is string)
+        && (data.get('chapters', null) == null || data.chapters is list);
+    }
+
+    function isValidSubmission(data) {
+      return data.userId is string
+        && data.userId == request.auth.uid
+        && data.title is string && data.title.size() <= 200
+        && data.content is string && data.content.size() <= 200000;
+    }
+
+    function isValidReview(data) {
+      return data.submissionId is string
+        && data.reviewerId is string
+        && data.reviewerId == request.auth.uid
+        && data.isAnonymous is bool
+        && data.clarityScore is number && data.clarityScore >= 1 && data.clarityScore <= 5
+        && data.argumentationScore is number && data.argumentationScore >= 1 && data.argumentationScore <= 5
+        && data.academicStandardsScore is number && data.academicStandardsScore >= 1 && data.academicStandardsScore <= 5
+        && data.generalComments is string && data.generalComments.size() <= 10000;
+    }
+
+    function isValidSource(data) {
+      return data.userId is string
+        && data.userId == request.auth.uid
+        && data.title is string && data.title.size() >= 5
+        && data.author is string && data.author.size() >= 3
+        && data.year is int && data.year >= 1000 && data.year <= 2027
+        && data.publisher is string
+        && data.sourceType in ['book', 'journal', 'thesis', 'manuscript']
+        && data.isVerified is bool;
+    }
+
+    function canCreateUnverifiedSource(data) {
+      return isValidSource(data) && data.isVerified == false;
+    }
+
+    function canUpdateSource(data) {
+      return isValidSource(data)
+        && data.isVerified == false
+        && resource.data.isVerified == false;
+    }
+
+    function isValidLibraryIndex(data) {
+      return data.userId is string
+        && data.userId == request.auth.uid
+        && data.title is string && data.title.size() <= 200
+        && data.content is string && data.content.size() <= 200000
+        && data.embedding is list
+        && data.processedAt is string;
+    }
+
+    // Match refinements collection
+    match /refinements/{refinementId} {
+      allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(refinementId);
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(refinementId) && isValidRefinement(request.resource.data);
+      allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(refinementId);
+      allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(refinementId) && isValidRefinement(request.resource.data);
+    }
+
+    // Match elite_reports collection
+    match /elite_reports/{reportId} {
+      allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(reportId);
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(reportId) && request.resource.data.userId == request.auth.uid;
+      allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(reportId);
+      allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(reportId) && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Peer submissions are private to their author, with reviewer/admin access
+    // handled through explicit claims. Do not expose the whole collection to users.
+    match /peer_submissions/{submissionId} {
+      allow get: if isVerifiedUser()
+        && isValidId(submissionId)
+        && (resource.data.userId == request.auth.uid || isAdminOrProfessor());
+      allow list: if isVerifiedUser()
+        && (resource.data.userId == request.auth.uid || isAdminOrProfessor());
+      allow create: if isVerifiedUser()
+        && isValidId(submissionId)
+        && isValidSubmission(request.resource.data);
+      allow delete: if isVerifiedUser()
+        && resource.data.userId == request.auth.uid
+        && isValidId(submissionId);
+      allow update: if isVerifiedUser()
+        && resource.data.userId == request.auth.uid
+        && isValidId(submissionId)
+        && isValidSubmission(request.resource.data);
+    }
+
+    // Peer reviews are private to the reviewer and visible to the submission owner.
+    match /peer_reviews/{reviewId} {
+      allow get: if isVerifiedUser()
+        && isValidId(reviewId)
+        && (
+          resource.data.reviewerId == request.auth.uid ||
+          isSubmissionOwner(resource.data.submissionId) ||
+          isAdminOrProfessor()
+        );
+      allow list: if isVerifiedUser()
+        && (
+          resource.data.reviewerId == request.auth.uid ||
+          isSubmissionOwner(resource.data.submissionId) ||
+          isAdminOrProfessor()
+        );
+      allow create: if isVerifiedUser()
+        && isValidId(reviewId)
+        && isValidReview(request.resource.data);
+      allow delete: if isVerifiedUser()
+        && resource.data.reviewerId == request.auth.uid
+        && isValidId(reviewId);
+      allow update: if isVerifiedUser()
+        && resource.data.reviewerId == request.auth.uid
+        && isValidId(reviewId)
+        && isValidReview(request.resource.data);
+    }
+
+    // Match sources collection: sources are private to their owner.
+    match /sources/{sourceId} {
+      allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId);
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(sourceId) && canCreateUnverifiedSource(request.resource.data);
+      allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId);
+      allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(sourceId) && canUpdateSource(request.resource.data);
+    }
+
+    // Research memory is isolated by Firebase user ID.
+    match /research_memory/{userId}/projects/{projectId} {
+      allow get, create, update: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(projectId);
+      allow delete: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(projectId);
+      allow list: if isVerifiedUser() && userId == request.auth.uid;
+
+      match /items/{itemId} {
+        allow get, create, update: if isVerifiedUser()
+          && userId == request.auth.uid
+          && isValidId(projectId)
+          && isValidId(itemId)
+          && request.resource.data.userId == request.auth.uid;
+        allow delete: if isVerifiedUser()
+          && userId == request.auth.uid
+          && isValidId(projectId)
+          && isValidId(itemId)
+          && resource.data.userId == request.auth.uid;
+        allow list: if isVerifiedUser() && userId == request.auth.uid;
+      }
+    }
+
+    // Research workspaces are isolated by Firebase user ID.
+    match /research_workspaces/{userId}/items/{workspaceId} {
+      allow get, create, update: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(workspaceId)
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(workspaceId)
+        && resource.data.userId == request.auth.uid;
+      allow list: if isVerifiedUser() && userId == request.auth.uid;
+    }
+
+    // Match library_index collection
+    match /library_index/{indexId} {
+      allow get: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(indexId);
+      allow list: if isVerifiedUser() && resource.data.userId == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(indexId) && isValidLibraryIndex(request.resource.data);
+      allow delete: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(indexId);
+      allow update: if isVerifiedUser() && resource.data.userId == request.auth.uid && isValidId(indexId) && isValidLibraryIndex(request.resource.data);
+    }
+
+    // Publication submission lifecycle is isolated by Firebase user ID.
+    match /publication_submission_lifecycle/{userId}/items/{submissionId} {
+      allow get, create, update: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(submissionId)
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(submissionId)
+        && resource.data.userId == request.auth.uid;
+      allow list: if isVerifiedUser() && userId == request.auth.uid;
+
+      match /{subcollection=**} {
+        allow read, write: if isVerifiedUser() && userId == request.auth.uid;
+      }
+    }
+
+    // Publication submission manifests are isolated by Firebase user ID.
+    match /publication_submission_manifests/{userId}/items/{manifestId} {
+      allow get, create, update: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(manifestId)
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if isVerifiedUser()
+        && userId == request.auth.uid
+        && isValidId(manifestId)
+        && resource.data.userId == request.auth.uid;
+      allow list: if isVerifiedUser() && userId == request.auth.uid;
+    }
+  }
+}

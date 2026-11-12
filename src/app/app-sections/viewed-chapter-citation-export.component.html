@@ -1,0 +1,140 @@
+                    <!-- COMPONENT 3: SCHOLARLY REFERENCE EXPORTER -->
+                    <div class="p-4 bg-white border border-stone-300 rounded-xl shadow-sm space-y-3 flex flex-col justify-between">
+                      <div class="space-y-2">
+                        <div class="flex items-center gap-1 text-amber-950 border-b border-stone-100 pb-1.5 justify-between">
+                          <div class="flex items-center gap-1.5">
+                            <mat-icon class="!text-sm font-bold">library_books</mat-icon>
+                            <h4 class="text-xs font-serif font-extrabold">٣. ڕێکخەری فرە-ستایلی سەرچاوە زانستییەکان (BibTeX & Citation)</h4>
+                          </div>
+                          <span class="text-[9px] font-mono bg-amber-50 text-amber-950 px-1.5 py-0.5 rounded font-bold">Citation Exporter</span>
+                        </div>
+                        <p class="text-[10.5px] text-stone-600 leading-relaxed">
+                          بەکار دێت بۆ گۆڕینی هەر فۆرمێک لە سەرچاوە بۆ فۆرماتی ئەکادیمی جیهانی وەک APA, IEEE, Harvard و ڕوونووسە بەسوودەکەی BibTeX.
+                        </p>
+
+                        <!-- Citation inputs -->
+                        <div class="grid grid-cols-2 gap-2 text-[10px] pt-1 border-b border-stone-100 pb-2">
+                          <div class="flex flex-col gap-0.5">
+                            <label for="citationAuthor" class="font-bold text-stone-750">نووسەر(Author):</label>
+                            <input 
+                              id="citationAuthor"
+                              type="text" 
+                              [value]="citationAuthorStyle()" 
+                              (input)="citationAuthorStyle.set($any($event.target).value)" 
+                              class="p-1 border border-stone-300 rounded focus:bg-white text-stone-850 text-xs">
+                          </div>
+                          <div class="flex flex-col gap-0.5">
+                            <label for="citationTitle" class="font-bold text-stone-750">ناونیشانی کار (Title):</label>
+                            <input 
+                              id="citationTitle"
+                              type="text" 
+                              [value]="citationTitleStyle()" 
+                              (input)="citationTitleStyle.set($any($event.target).value)" 
+                              class="p-1 border border-stone-300 rounded focus:bg-white text-stone-850 text-xs">
+                          </div>
+                          <div class="flex flex-col gap-0.52 font-serif">
+                            <label for="citationPublisher" class="font-bold text-stone-750">بڵاوکەرەوە / ژورنال:</label>
+                            <input 
+                              id="citationPublisher"
+                              type="text" 
+                              [value]="citationPublisherStyle()" 
+                              (input)="citationPublisherStyle.set($any($event.target).value)" 
+                              class="p-1 border border-stone-300 rounded focus:bg-white text-stone-850 text-xs">
+                          </div>
+                          <div class="grid grid-cols-2 gap-1 col-span-1">
+                            <div class="flex flex-col gap-0.5">
+                              <label for="citationYear" class="font-bold text-stone-750">ساڵ:</label>
+                              <input 
+                                id="citationYear"
+                                type="text" 
+                                [value]="citationYearStyle()" 
+                                (input)="citationYearStyle.set($any($event.target).value)" 
+                                class="p-1 border border-stone-300 rounded focus:bg-white text-stone-850 text-xs font-mono">
+                            </div>
+                            <div class="flex flex-col gap-0.5">
+                              <label for="citationVolume" class="font-bold text-stone-750">قەبارە/بەرگ:</label>
+                              <input 
+                                id="citationVolume"
+                                type="text" 
+                                [value]="citationVolumeStyle()" 
+                                (input)="citationVolumeStyle.set($any($event.target).value)" 
+                                class="p-1 border border-stone-300 rounded focus:bg-white text-stone-850 text-xs">
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Selector Style -->
+                        <div class="flex items-center gap-2 pt-1">
+                          <label for="citationStyleSelect" class="text-[10px] font-bold text-stone-800 shrink-0">خوازیاری ستایل:</label>
+                          <select 
+                            id="citationStyleSelect"
+                            [value]="selectedCitationStyle()"
+                            (change)="selectedCitationStyle.set($any($event.target).value)"
+                            class="p-1 bg-stone-50 border border-stone-300 text-xs rounded cursor-pointer text-stone-850 focus:bg-white">
+                            <option value="bibtex">ستایلی ڕەوای مۆدێرن (BibTeX Format)</option>
+                            <option value="apa">فۆرماتی نووسەری ئەمریکی (APA 7th)</option>
+                            <option value="harvard">ڕێبەری هارفەرد (Harvard Style)</option>
+                            <option value="ieee">ئەندازیاری فەرمی (IEEE style)</option>
+                            <option value="chicago">زانکۆی شیکاگۆ (Chicago Style)</option>
+                          </select>
+                        </div>
+
+                        <!-- Error display -->
+                        @if (citationError()) {
+                          <div class="text-[10.5px] text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                            {{ citationError() }}
+                          </div>
+                        }
+
+                        <!-- Results code and copy option -->
+                        @if (formattedMultiStyle()) {
+                          <div class="p-3 bg-stone-50 border border-stone-300 rounded space-y-2 text-[10.5px] font-serif">
+                            <div class="space-y-1">
+                              <strong>دەقی ئاماژەکراو:</strong>
+                              <div class="p-2.5 bg-white border border-stone-200 rounded text-stone-800 text-xs select-all text-justify italic">
+                                {{ formattedMultiStyle()?.formatted }}
+                              </div>
+                            </div>
+
+                            <div class="space-y-1 pt-1 font-mono">
+                              <div class="flex items-center justify-between text-[10px] font-serif text-stone-500">
+                                <span>ڕوونووسی BibTeX:</span>
+                                <button 
+                                  type="button" 
+                                  (click)="copyCitationsToClipboard(formattedMultiStyle()?.bibtex || '')"
+                                  class="text-[9px] text-indigo-700 hover:underline">کۆپی بکە</button>
+                              </div>
+                              <pre class="p-2 bg-stone-900 text-amber-250 text-[10px] rounded overflow-x-auto whitespace-pre font-mono leading-tight select-all">
+                                {{ formattedMultiStyle()?.bibtex }}
+                              </pre>
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+                      <div class="pt-2 flex items-center justify-end gap-2 border-t border-stone-100">
+                        @if (formattedMultiStyle()) {
+                          <button 
+                            type="button" 
+                            (click)="appendCitationToChapter(viewedChapter()!)"
+                            class="px-2.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white text-[10px] font-bold rounded cursor-pointer transition flex items-center gap-1 shadow-sm">
+                            <mat-icon class="!text-xs">add_circle</mat-icon>
+                            <span>چاندنی پێرست لە پاشکۆ</span>
+                          </button>
+                        }
+                        
+                        <button 
+                          type="button" 
+                          (click)="generateMultiStyleCitation()"
+                          [disabled]="isFormattingCitation()"
+                          class="px-3 py-1.5 bg-stone-900 hover:bg-stone-950 disabled:bg-stone-400 text-white text-[10px] font-extrabold rounded cursor-pointer transition flex items-center gap-1 shadow">
+                          @if (isFormattingCitation()) {
+                            <div class="w-3 h-3 border-2 border-stone-300 border-t-white rounded-full animate-spin"></div>
+                            <span>داڕشتن...</span>
+                          } @else {
+                            <mat-icon class="!text-xs">sync</mat-icon>
+                            <span>داڕشتنی سەرچاوە</span>
+                          }
+                        </button>
+                      </div>
+                    </div>
